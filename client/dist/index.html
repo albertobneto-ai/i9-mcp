@@ -54,6 +54,8 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .cmd-btn:hover{background:#2a2540;color:#a78bfa;border-color:#7c3aed44}
 .cmd-btn.dev{color:#34d399;border-color:#10b98133}
 .cmd-btn.dev:hover{color:#6ee7b7;border-color:#10b98166}
+.cmd-btn.runbook{color:#f59e0b;border-color:#f59e0b33;font-weight:600}
+.cmd-btn.runbook:hover{color:#fbbf24;border-color:#f59e0b66}
 .cmd-group{display:flex;align-items:center;gap:6px;padding-right:12px;border-right:1px solid #1e1a2e}
 .cmd-group:last-child{border-right:none}
 .cmd-label{font-size:9px;color:#4a4560;text-transform:uppercase;letter-spacing:1px;font-weight:600}
@@ -110,6 +112,7 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
         <span onclick="setCmd('/tooling SELECT Id, Name, Status FROM ApexClass LIMIT 10')">Apex Classes</span>
         <span onclick="setCmd('/create-field ')">Criar Campo</span>
         <span onclick="setCmd('/apex ')">Executar Apex</span>
+        <span onclick="setCmd('/runbook ')">Runbook</span>
         <span onclick="setCmd('/help')">Todos os Comandos</span>
       </div>
     </div>
@@ -126,6 +129,7 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
       <div class="cmd-btn dev" onclick="setCmd('/create-field ')">/create-field</div>
       <div class="cmd-btn dev" onclick="setCmd('/apex ')">/apex</div>
       <div class="cmd-btn dev" onclick="setCmd('/metadata-read ')">/metadata-read</div>
+      <div class="cmd-btn runbook" onclick="setCmd('/runbook ')">/runbook</div>
     </div>
     <div class="cmd-group"><span class="cmd-label">Org</span>
       <div class="cmd-btn" onclick="setCmd('/status')">/status</div>
