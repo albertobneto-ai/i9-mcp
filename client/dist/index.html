@@ -52,6 +52,11 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .cmd-bar{display:flex;gap:6px;padding:6px 24px;background:#16131f;border-top:1px solid #1e1a2e;overflow-x:auto}
 .cmd-btn{font-size:11px;padding:5px 12px;background:#1e1a2e;border:1px solid #2a2540;border-radius:16px;color:#94a3b8;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
 .cmd-btn:hover{background:#2a2540;color:#a78bfa;border-color:#7c3aed44}
+.cmd-btn.dev{color:#34d399;border-color:#10b98133}
+.cmd-btn.dev:hover{color:#6ee7b7;border-color:#10b98166}
+.cmd-group{display:flex;align-items:center;gap:6px;padding-right:12px;border-right:1px solid #1e1a2e}
+.cmd-group:last-child{border-right:none}
+.cmd-label{font-size:9px;color:#4a4560;text-transform:uppercase;letter-spacing:1px;font-weight:600}
 
 .typing{color:#7c3aed;font-size:13px;padding:8px 18px;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -91,20 +96,34 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
       <h2>SF Agent</h2>
       <p>Assistente especialista Salesforce com acesso direto à org.</p>
       <div class="cmds" id="welcomeCmds">
-        <span onclick="setCmd('/status')">/status</span>
-        <span onclick="setCmd('/objetos')">/objetos</span>
-        <span onclick="setCmd('/describe Account')">/describe Account</span>
-        <span onclick="setCmd('/soql SELECT Id, Name FROM Account LIMIT 5')">/soql</span>
-        <span onclick="setCmd('/help')">/help</span>
+        <span onclick="setCmd('/status')">Status da Org</span>
+        <span onclick="setCmd('/objetos')">Listar Objetos</span>
+        <span onclick="setCmd('/describe Account')">Describe Account</span>
+        <span onclick="setCmd('/soql SELECT Id, Name FROM Account LIMIT 5')">SOQL Query</span>
+        <span onclick="setCmd('/tooling SELECT Id, Name, Status FROM ApexClass LIMIT 10')">Apex Classes</span>
+        <span onclick="setCmd('/create-field ')">Criar Campo</span>
+        <span onclick="setCmd('/apex ')">Executar Apex</span>
+        <span onclick="setCmd('/help')">Todos os Comandos</span>
       </div>
     </div>
   </div>
   <div class="cmd-bar">
-    <div class="cmd-btn" onclick="setCmd('/status')">/status</div>
-    <div class="cmd-btn" onclick="setCmd('/describe ')">/describe</div>
-    <div class="cmd-btn" onclick="setCmd('/soql ')">/soql</div>
-    <div class="cmd-btn" onclick="setCmd('/objetos')">/objetos</div>
-    <div class="cmd-btn" onclick="setCmd('/help')">/help</div>
+    <div class="cmd-group"><span class="cmd-label">Consulta</span>
+      <div class="cmd-btn" onclick="setCmd('/describe ')">/describe</div>
+      <div class="cmd-btn" onclick="setCmd('/objetos')">/objetos</div>
+      <div class="cmd-btn" onclick="setCmd('/soql ')">/soql</div>
+      <div class="cmd-btn" onclick="setCmd('/tooling ')">/tooling</div>
+      <div class="cmd-btn" onclick="setCmd('/layout ')">/layout</div>
+    </div>
+    <div class="cmd-group"><span class="cmd-label">Dev</span>
+      <div class="cmd-btn dev" onclick="setCmd('/create-field ')">/create-field</div>
+      <div class="cmd-btn dev" onclick="setCmd('/apex ')">/apex</div>
+      <div class="cmd-btn dev" onclick="setCmd('/metadata-read ')">/metadata-read</div>
+    </div>
+    <div class="cmd-group"><span class="cmd-label">Org</span>
+      <div class="cmd-btn" onclick="setCmd('/status')">/status</div>
+      <div class="cmd-btn" onclick="setCmd('/help')">/help</div>
+    </div>
   </div>
   <div class="input-area">
     <textarea id="chatInput" placeholder="Digite sua mensagem ou comando..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
