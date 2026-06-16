@@ -34,12 +34,33 @@ export async function describeObject(org, objectName) {
   return {
     name: meta.name,
     label: meta.label,
+    labelPlural: meta.labelPlural,
+    keyPrefix: meta.keyPrefix,
+    custom: meta.custom,
+    queryable: meta.queryable,
+    createable: meta.createable,
+    updateable: meta.updateable,
+    deletable: meta.deletable,
+    searchable: meta.searchable,
     fields: meta.fields.map(f => ({
       name: f.name, label: f.label, type: f.type,
-      length: f.length, custom: f.custom,
+      length: f.length, precision: f.precision, scale: f.scale,
+      custom: f.custom, unique: f.unique,
+      nillable: f.nillable, createable: f.createable, updateable: f.updateable,
+      defaultValue: f.defaultValue,
+      calculatedFormula: f.calculatedFormula,
+      inlineHelpText: f.inlineHelpText,
       referenceTo: f.referenceTo,
+      relationshipName: f.relationshipName,
+      externalId: f.externalId,
+      picklistValues: f.picklistValues && f.picklistValues.length > 0
+        ? f.picklistValues.filter(p => p.active).map(p => ({ value: p.value, label: p.label, default: p.defaultValue }))
+        : undefined,
     })),
     recordTypeInfos: meta.recordTypeInfos,
+    childRelationships: meta.childRelationships ? meta.childRelationships.map(c => ({
+      childSObject: c.childSObject, field: c.field, relationshipName: c.relationshipName,
+    })) : [],
   };
 }
 
