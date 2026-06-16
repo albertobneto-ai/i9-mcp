@@ -86,6 +86,29 @@ function formatStepPreview(step) {
   return text;
 }
 
+async function logDeployAction(entry) {
+  try {
+    await pool.query(
+      `INSERT INTO deploy_log (us_number, component, action, description, result, result_message, org_id, org_name, user_id, user_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [entry.us || null, entry.component || null, entry.action || null, entry.description || null,
+       entry.result || null, entry.resultMessage || null, entry.orgId || null, entry.orgName || null,
+       entry.userId || null, entry.userName || null]
+    );
+  } catch (e) { console.error('logDeployAction fail:', e.message); }
+}
+
+// Extrai número da US do step ou do runbook
+function extractComponent(step) {
+  if (step.body && step.body.fullName) return step.body.fullName;
+  if (step.name) return step.name;
+  if (step.fullName) return step.fullName;
+  if (step.object && step.field) return step.object + '.' + step.field;
+  if (step.action === 'soql') return 'SOQL';
+  if (step.action === 'validate') return 'Validação';
+  return step.action;
+}
+
 async function executeRunbookStep(step, org) {
   if (step.action === 'create-field') {
     const fullName = step.object + '.' + step.field;
@@ -922,10 +945,39 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         }
         preview += `\n**Confirme para iniciar a execução passo a passo.**`;
 
-        const payload = { steps, currentStep: 0 };
+        // Detect US number from input (CRMB2B-90, US-123, etc.)
+        const usMatch = input.match(/\b([A-Z]{2,}-?B?\d*B?-?\d+)\b/) || input.match(/\b(US[- ]?\d+)\b/i);
+        const usNumber = usMatch ? usMatch[1].toUpperCase() : null;
+
+        const payload = { steps, currentStep: 0, us: usNumber };
+
+        let usLine = usNumber ? `**US:** ${usNumber}\n` : '';
+        preview = preview.replace('**Org:**', usLine + '**Org:**');
 
         return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(payload)).toString('base64') } });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro ao processar runbook: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+        // ── /log [US] — histórico de auditoria de deploys ──
+    if (lower === '/log' || lower.startsWith('/log ')) {
+      const filter = userMsg.trim().substring(4).trim().toUpperCase();
+      try {
+        let rows;
+        if (filter) {
+          rows = (await pool.query('SELECT * FROM deploy_log WHERE UPPER(us_number) = $1 OR UPPER(component) LIKE $2 ORDER BY created_at DESC LIMIT 100', [filter, '%' + filter + '%'])).rows;
+        } else {
+          rows = (await pool.query('SELECT * FROM deploy_log ORDER BY created_at DESC LIMIT 50')).rows;
+        }
+        if (!rows.length) return res.json({ choices: [{ message: { content: filter ? `📭 Nenhum registro para "${filter}".` : '📭 Nenhum deploy registrado ainda.' } }], modelo_usado: 'local', modelo_label: 'Auditoria', tipo: 'log' });
+        let text = `## Auditoria de Deploys${filter ? ' — ' + filter : ' (últimos 50)'}\n\n`;
+        text += `| Data | US | Componente | Ação | Resultado | Descrição |\n|---|---|---|---|---|---|\n`;
+        for (const r of rows) {
+          const dt = new Date(r.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const icon = r.result === 'success' ? '✅' : r.result === 'exists' ? 'ℹ️' : '❌';
+          text += `| ${dt} | ${r.us_number || '—'} | ${r.component || '—'} | ${r.action || '—'} | ${icon} | ${(r.description || '').substring(0, 50)} |\n`;
+        }
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'local', modelo_label: 'Auditoria', tipo: 'log' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
         // ── /debug-dr — debug DuplicateRule state ──
@@ -977,13 +1029,27 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           const text = ok
             ? `✅ **Campo criado com sucesso!**\n- **${body.fullName}** (${body.type})`
             : `❌ **Erro:** ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}`;
+          await logDeployAction({ us: null, component: body.fullName, action: 'create-field', description: 'Campo ' + body.type, result: ok ? 'success' : 'error', resultMessage: text, orgId: org.id, orgName: org.name, userId: req.user.id, userName: req.user.name });
           return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
         }
         if (action === 'runbook') {
-          const { steps, currentStep } = body;
+          const { steps, currentStep, us } = body;
           const step = steps[currentStep];
           // Execute current step
           const result = await executeRunbookStep(step, org);
+          // Log to deploy_log
+          await logDeployAction({
+            us: us,
+            component: extractComponent(step),
+            action: step.action,
+            description: step.description || '',
+            result: result.ok ? (result.alreadyExists ? 'exists' : 'success') : 'error',
+            resultMessage: result.message,
+            orgId: org.id,
+            orgName: org.name,
+            userId: req.user.id,
+            userName: req.user.name
+          });
           let text = `### Passo ${currentStep + 1} de ${steps.length}\n\n${result.message}\n`;
           const nextStep = currentStep + 1;
           if (nextStep < steps.length) {
