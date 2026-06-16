@@ -6,6 +6,62 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
+function formatStepPreview(step) {
+  let text = '';
+  if (step.action === 'create-field') {
+    text += `**Ação:** Criar Campo\n`;
+    text += `- **Objeto:** ${step.object}\n`;
+    text += `- **Campo:** ${step.field}\n`;
+    if (step.label) text += `- **Label:** ${step.label}\n`;
+    text += `- **Tipo:** ${step.type || 'Text'}`;
+    if (step.length) text += ` (${step.length})`;
+    text += `\n`;
+    if (step.values) text += `- **Valores:** ${step.values.join(', ')}\n`;
+    if (step.referenceTo) text += `- **Referência:** ${step.referenceTo}\n`;
+  } else if (step.action === 'create-object') {
+    text += `**Ação:** Criar Objeto\n`;
+    text += `- **Objeto:** ${step.object}\n`;
+    text += `- **Label:** ${step.label || step.object.replace('__c','')}\n`;
+  } else if (step.action === 'apex') {
+    text += `**Ação:** Executar Apex\n`;
+    text += `\`\`\`\n${(step.code || '').substring(0, 500)}\n\`\`\`\n`;
+  } else if (step.action === 'soql') {
+    text += `**Ação:** SOQL Query\n`;
+    text += `\`\`\`\n${step.query}\n\`\`\`\n`;
+  } else {
+    text += `**Ação:** ${step.action}\n`;
+    text += `\`\`\`json\n${JSON.stringify(step, null, 2).substring(0, 500)}\n\`\`\`\n`;
+  }
+  return text;
+}
+
+async function executeRunbookStep(step, org) {
+  if (step.action === 'create-field') {
+    const fullName = step.object + '.' + step.field;
+    const body = { fullName, label: step.label || step.field.replace('__c','').replace(/_/g,' '), type: step.type || 'Text' };
+    if (['Text'].includes(body.type)) body.length = step.length || 255;
+    if (body.type === 'LongTextArea') { body.length = step.length || 32768; body.visibleLines = 4; }
+    if (['Number','Currency','Percent'].includes(body.type)) { body.precision = step.precision || 18; body.scale = step.scale ?? 2; }
+    if (body.type === 'Lookup' && step.referenceTo) { body.referenceTo = step.referenceTo; body.relationshipLabel = body.label; }
+    if (['Picklist','MultiselectPicklist'].includes(body.type) && step.values) { body.picklist = step.values; }
+    const result = await sfMulti.metadataCreate(org, 'CustomField', body);
+    const item = Array.isArray(result) ? result[0] : result;
+    const ok = item?.success !== false;
+    const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+    return { ok, message: ok ? `✅ Campo criado: ${fullName}` : `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+  }
+  if (step.action === 'apex') {
+    const r = await sfMulti.executeApex(org, step.code);
+    const ok = r.success !== false && !r.compileProblem;
+    return { ok, message: ok ? '✅ Apex executado' : `❌ ${r.compileProblem || r.exceptionMessage || 'Erro'}` };
+  }
+  if (step.action === 'soql') {
+    const r = await sfMulti.runSoql(org, step.query);
+    return { ok: true, message: `✅ SOQL: ${r.totalSize || 0} registros` };
+  }
+  return { ok: false, message: '❌ Ação não suportada: ' + step.action };
+}
+
 const SYSTEM_PROMPT = `Você é o SF Agent, um assistente especialista em Salesforce (Sales Cloud, Service Cloud, Data Cloud, Revenue Cloud, Agentforce, MuleSoft).
 
 Regras:
@@ -364,6 +420,57 @@ Regras:
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
+        // ── /runbook — lê manifest e executa passo a passo ──
+    if (lower.startsWith('/runbook')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const input = userMsg.trim().substring(8).trim();
+      if (!input) return res.json({ choices: [{ message: { content: '⚠️ Cole o runbook (JSON ou texto livre).\n\nExemplo JSON:\n```json\n[\n  { "action": "create-field", "object": "Lead", "field": "Segmento__c", "type": "Picklist", "values": ["PME","Enterprise"] },\n  { "action": "create-field", "object": "Lead", "field": "SLA__c", "type": "Number" },\n  { "action": "apex", "code": "System.debug(\'done\');" }\n]\n```\nOu descreva em texto livre que o Claude interpreta.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      try {
+        let steps;
+        // Try JSON first
+        try {
+          const clean = input.replace(/```json\n?|```\n?/g, '').trim();
+          steps = JSON.parse(clean);
+          if (!Array.isArray(steps)) steps = [steps];
+        } catch {
+          // Natural language → Claude parses into steps
+          const parsePrompt = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
+
+Cada ação deve ter:
+- "action": "create-field" | "create-object" | "apex" | "soql"
+- Para create-field: "object", "field" (API name com __c), "label", "type" (Text/Number/Checkbox/Date/DateTime/Email/Phone/Url/Currency/Percent/LongTextArea/Picklist/Lookup), "length" (se Text), "values" (se Picklist, array de strings), "referenceTo" (se Lookup)
+- Para create-object: "object" (API name com __c), "label", "pluralLabel"
+- Para apex: "code" (código Apex)
+- Para soql: "query" (SOQL query)
+
+Se o campo não tem __c, adicione. Converta nomes para API format.`;
+
+          const parsed = await claude.call(parsePrompt, [{ role: 'user', content: input }], 4096);
+          const cleanParsed = parsed.replace(/```json\n?|```\n?/g, '').trim();
+          steps = JSON.parse(cleanParsed);
+          if (!Array.isArray(steps)) steps = [steps];
+        }
+
+        if (!steps.length) return res.json({ choices: [{ message: { content: '❌ Nenhuma ação encontrada no runbook.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'error' });
+
+        // Get org URL
+        let orgUrl = '';
+        try { const c = await sfMulti.testConnection(org); orgUrl = c.instanceUrl || ''; } catch {}
+        const orgLink = orgUrl ? orgUrl.replace('https://','') : org.username;
+
+        // Show step 1 preview
+        const step = steps[0];
+        let preview = `### Runbook — Passo 1 de ${steps.length}\n\n`;
+        preview += `**Org:** [${orgLink}](${orgUrl})\n\n`;
+        preview += formatStepPreview(step);
+
+        const payload = { steps, currentStep: 0 };
+
+        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(payload)).toString('base64') } });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro ao processar runbook: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
         // ── /confirm:ACTION:PAYLOAD — executa ação pendente ──
     if (lower.startsWith('/confirm:')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
@@ -381,6 +488,24 @@ Regras:
             ? `✅ **Campo criado com sucesso!**\n- **${body.fullName}** (${body.type})`
             : `❌ **Erro:** ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}`;
           return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
+        }
+        if (action === 'runbook') {
+          const { steps, currentStep } = body;
+          const step = steps[currentStep];
+          // Execute current step
+          const result = await executeRunbookStep(step, org);
+          let text = `### Passo ${currentStep + 1} de ${steps.length}\n\n${result.message}\n`;
+          const nextStep = currentStep + 1;
+          if (nextStep < steps.length) {
+            // Show next step preview
+            text += `\n---\n### Próximo — Passo ${nextStep + 1} de ${steps.length}\n\n`;
+            text += formatStepPreview(steps[nextStep]);
+            const nextPayload = { steps, currentStep: nextStep };
+            return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } });
+          } else {
+            text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
+            return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
+          }
         }
         return res.json({ choices: [{ message: { content: '❌ Ação desconhecida: ' + action } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'error' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
