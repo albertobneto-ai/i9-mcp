@@ -28,6 +28,25 @@ function formatStepPreview(step) {
   } else if (step.action === 'soql') {
     text += `**Ação:** SOQL Query\n`;
     text += `\`\`\`\n${step.query}\n\`\`\`\n`;
+  } else if (step.action === 'metadata-create') {
+    text += `**Ação:** Criar Metadado\n`;
+    text += `- **Tipo:** ${step.type}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
+    const b = step.body || {};
+    if (b.fullName) text += `- **Full Name:** ${b.fullName}\n`;
+    if (b.label) text += `- **Label:** ${b.label}\n`;
+    const details = Object.keys(b).filter(k => !['fullName','label'].includes(k));
+    if (details.length > 0) {
+      text += `- **Detalhes:**\n`;
+      for (const k of details) {
+        const v = b[k];
+        const display = typeof v === 'object' ? JSON.stringify(v) : v;
+        text += `  - ${k}: ${String(display).substring(0, 120)}\n`;
+      }
+    }
+  } else if (step.action === 'manual-step') {
+    text += `**⚠️ Ação Manual Necessária**\n\n`;
+    text += `${step.description || 'Passo manual — verifique na org.'}\n`;
   } else {
     text += `**Ação:** ${step.action}\n`;
     text += `\`\`\`json\n${JSON.stringify(step, null, 2).substring(0, 500)}\n\`\`\`\n`;
@@ -58,6 +77,31 @@ async function executeRunbookStep(step, org) {
   if (step.action === 'soql') {
     const r = await sfMulti.runSoql(org, step.query);
     return { ok: true, message: `✅ SOQL: ${r.totalSize || 0} registros` };
+  }
+  if (step.action === 'metadata-create') {
+    const mtype = step.type;
+    const body = step.body;
+    if (!mtype || !body) return { ok: false, message: '❌ metadata-create requer type e body' };
+    const result = await sfMulti.metadataCreate(org, mtype, body);
+    const item = Array.isArray(result) ? result[0] : result;
+    const ok = item?.success !== false;
+    const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+    const name = body.fullName || body.label || mtype;
+    return { ok, message: ok ? `✅ ${mtype} criado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+  }
+  if (step.action === 'metadata-update') {
+    const mtype = step.type;
+    const body = step.body;
+    if (!mtype || !body) return { ok: false, message: '❌ metadata-update requer type e body' };
+    const result = await sfMulti.metadataUpdate(org, mtype, body);
+    const item = Array.isArray(result) ? result[0] : result;
+    const ok = item?.success !== false;
+    const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+    const name = body.fullName || body.label || mtype;
+    return { ok, message: ok ? `✅ ${mtype} atualizado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+  }
+  if (step.action === 'manual-step') {
+    return { ok: true, message: `✅ Passo manual registrado — prosseguindo.` };
   }
   return { ok: false, message: '❌ Ação não suportada: ' + step.action };
 }
