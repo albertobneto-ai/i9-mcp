@@ -58,6 +58,13 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .cmd-group:last-child{border-right:none}
 .cmd-label{font-size:9px;color:#4a4560;text-transform:uppercase;letter-spacing:1px;font-weight:600}
 
+.confirm-box{display:flex;gap:10px;margin-top:14px}
+.confirm-btn{padding:10px 24px;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.confirm-btn.yes{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.confirm-btn.yes:hover{opacity:.9}
+.confirm-btn.no{background:transparent;border:1.5px solid #475569;color:#94a3b8}
+.confirm-btn.no:hover{border-color:#f87171;color:#f87171}
+.confirm-btn:disabled{cursor:not-allowed}
 .typing{color:#7c3aed;font-size:13px;padding:8px 18px;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .welcome{text-align:center;margin:auto;max-width:520px}
@@ -282,6 +289,20 @@ function renderMd(text){
   text=text.replace(/((?:<tr>.*<\/tr>\s*)+)/g,'<table>$1</table>');
   text=text.replace(/^- (.+)$/gm,'• $1');
   return text;
+}
+
+function doConfirm(action,payload){
+  // Disable buttons after click
+  document.querySelectorAll('.confirm-btn').forEach(b=>{b.disabled=true;b.style.opacity='.5';});
+  const input=document.getElementById('chatInput');
+  input.value='/confirm:'+action+':'+payload;
+  sendMessage();
+}
+function doCancel(){
+  document.querySelectorAll('.confirm-btn').forEach(b=>{b.disabled=true;b.style.opacity='.5';});
+  const input=document.getElementById('chatInput');
+  input.value='/cancel';
+  sendMessage();
 }
 
 document.getElementById('chatInput').addEventListener('input',function(){
