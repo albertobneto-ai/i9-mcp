@@ -347,26 +347,36 @@ async function deployLWCBundle(conn, name, files) {
     archive.finalize();
   });
 
-  // Submit deploy (non-blocking) and poll manually with cap
-  const deployResult = await conn.metadata.deploy(zipBuffer, { singlePackage: true, rollbackOnError: true });
-  const deployId = deployResult.id || deployResult.async?.id;
-  if (!deployId) {
-    // Some jsforce versions return the result directly
-    if (deployResult.success || deployResult.status === 'Succeeded') return { success: true };
+  // Submit deploy and get the deploy ID, then poll via checkDeployStatus (avoids .complete() crash)
+  const locator = conn.metadata.deploy(zipBuffer, { singlePackage: true, rollbackOnError: true });
+  // Attach error handler to prevent unhandled 'error' event from crashing process
+  if (locator && typeof locator.on === 'function') {
+    locator.on('error', () => {}); // swallow — we poll manually
   }
-  // Poll up to ~22s (within Heroku 30s limit)
+  let deployId;
+  try {
+    const submitted = await locator;
+    deployId = submitted.id || submitted.async?.id || submitted;
+  } catch (e) {
+    return { success: false, errors: [{ message: 'Falha ao submeter deploy: ' + (e.message || String(e)) }] };
+  }
+  if (!deployId || typeof deployId !== 'string') {
+    return { success: false, errors: [{ message: 'Deploy ID inválido' }] };
+  }
+  // Poll up to ~22s
   for (let i = 0; i < 11; i++) {
     await new Promise(r => setTimeout(r, 2000));
-    const status = await conn.metadata.checkDeployStatus(deployId, true);
-    if (status.done) {
-      if (status.success || status.status === 'Succeeded') return { success: true };
-      const failures = status.details?.componentFailures;
-      const failArr = failures ? (Array.isArray(failures) ? failures : [failures]) : [];
-      return { success: false, errors: failArr.map(f => ({ message: f.problem })) };
-    }
+    try {
+      const status = await conn.metadata.checkDeployStatus(deployId, true);
+      if (status.done) {
+        if (status.success || status.status === 'Succeeded') return { success: true };
+        const failures = status.details?.componentFailures;
+        const failArr = failures ? (Array.isArray(failures) ? failures : [failures]) : [];
+        return { success: false, errors: failArr.map(f => ({ message: f.problem || f.message })) };
+      }
+    } catch (e) { /* keep polling */ }
   }
-  // Still in progress — return deployId for later check
-  return { success: false, pending: true, deployId, errors: [{ message: 'Deploy em andamento (timeout). ID: ' + deployId }] };
+  return { success: false, pending: true, deployId, errors: [{ message: 'Deploy em andamento. ID: ' + deployId }] };
 }
 
 // ── Flow deploy via Metadata API ──
