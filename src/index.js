@@ -48,13 +48,19 @@ app.get('/api/init-db', async (req, res) => {
       org_type VARCHAR(20) DEFAULT 'sandbox', org_id VARCHAR(50),
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS jobs (
+      id SERIAL PRIMARY KEY, user_id INT, kind VARCHAR(40),
+      status VARCHAR(20) DEFAULT 'pending', input TEXT,
+      result TEXT, error TEXT, meta JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
       await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
         ['Alberto Bottaro', 'admin@everi9.com', hash, 'admin']);
     }
-    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs'] });
+    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs'] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -62,6 +68,15 @@ app.get('/api/init-db', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/orgs', orgRoutes);
 app.use('/api/download', downloadRoutes);
+
+// Job status polling
+app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, kind, status, result, error, meta FROM jobs WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Job não encontrado' });
+    res.json(r.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // Chat route (lazy load)
 let chatRouter = null;
