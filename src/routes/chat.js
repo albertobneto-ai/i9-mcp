@@ -1004,9 +1004,9 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
               // Campo: verificar via Tooling query (sem cache, ao contrário do describe)
               const [objName, fieldName] = comp.split('.');
               const devName = fieldName.replace(/__c$/, '');
-              const q = await sfMulti.runToolingQuery(org, `SELECT Id, DataType FROM CustomField WHERE TableEnumOrId = '${objName}' AND DeveloperName = '${devName}'`);
+              const q = await sfMulti.runToolingQuery(org, `SELECT Id, Length FROM CustomField WHERE TableEnumOrId = '${objName}' AND DeveloperName = '${devName}'`);
               ok = q.records && q.records.length > 0;
-              check = ok ? `Campo existe (${q.records[0].DataType || 'OK'})` : 'Campo NÃO encontrado';
+              check = ok ? 'Campo existe' : 'Campo NÃO encontrado';
               status = ok ? '✅' : '❌';
             } else if (act === 'metadata-create' || act === 'metadata-update') {
               // Metadado: inferir tipo pelo nome e ler
@@ -1160,7 +1160,7 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             // Show next step preview
             text += `\n---\n### Próximo — Passo ${nextStep + 1} de ${steps.length}\n\n`;
             text += formatStepPreview(steps[nextStep]);
-            const nextPayload = { steps, currentStep: nextStep };
+            const nextPayload = { steps, currentStep: nextStep, us };
             return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } });
           } else {
             text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
