@@ -376,3 +376,23 @@ export async function deployFlow(org, fullName, flowMetadata) {
   const result = await conn.metadata.create('Flow', { fullName, ...flowMetadata });
   return result;
 }
+
+export async function deleteApexClass(org, name) {
+  const conn = await connectToOrg(org);
+  const r = await conn.tooling.query(`SELECT Id FROM ApexClass WHERE Name = '${name}'`);
+  if (r.records && r.records.length > 0) {
+    await conn.tooling.sobject('ApexClass').delete(r.records[0].Id);
+    return { success: true };
+  }
+  return { success: false, message: 'não encontrado' };
+}
+
+export async function deleteApexTrigger(org, name) {
+  const conn = await connectToOrg(org);
+  const r = await conn.tooling.query(`SELECT Id FROM ApexTrigger WHERE Name = '${name}'`);
+  if (r.records && r.records.length > 0) {
+    await conn.tooling.sobject('ApexTrigger').delete(r.records[0].Id);
+    return { success: true };
+  }
+  return { success: false, message: 'não encontrado' };
+}
