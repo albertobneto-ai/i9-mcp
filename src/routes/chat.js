@@ -72,7 +72,13 @@ async function executeRunbookStep(step, org) {
     const item = Array.isArray(result) ? result[0] : result;
     const ok = item?.success !== false;
     const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
-    return { ok, message: ok ? `✅ Campo criado: ${fullName}` : `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+    if (ok) return { ok: true, message: `✅ Campo criado: ${fullName}` };
+    const alreadyExists = errs.some(e => {
+      const msg = (e.message || e.statusCode || JSON.stringify(e)).toLowerCase();
+      return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe');
+    });
+    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ Campo já existe: ${fullName} — prosseguindo` };
+    return { ok: false, message: `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
   }
   if (step.action === 'apex') {
     const r = await sfMulti.executeApex(org, step.code);
@@ -103,7 +109,13 @@ async function executeRunbookStep(step, org) {
     const ok = item?.success !== false;
     const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
     const name = body.fullName || body.label || mtype;
-    return { ok, message: ok ? `✅ ${mtype} criado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+    const alreadyExists = errs.some(e => {
+      const msg = (e.message || e.statusCode || JSON.stringify(e)).toLowerCase();
+      return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe') || msg.includes('já existe');
+    });
+    if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name}` };
+    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo` };
+    return { ok: false, message: `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
   }
   if (step.action === 'metadata-update') {
     const mtype = step.type;
