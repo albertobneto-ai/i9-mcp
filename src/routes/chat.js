@@ -107,11 +107,23 @@ async function executeRunbookStep(step, org) {
 
     // Auto-resolve DuplicateRule: delete this rule if exists, compute correct sortOrder from ALL rules
     if (mtype === 'DuplicateRule' && body.fullName) {
-      // Ensure required fields with sensible defaults
+      // Ensure required fields with correct DuplicateRule semantics
       if (!body.securityOption) body.securityOption = 'EnforceSharingRules';
-      // DuplicateRule uses actionOnInsert/actionOnUpdate (Allow|Block). Do NOT set operationsOnInsert (different enum, causes errors).
-      delete body.operationsOnInsert;
-      delete body.operationsOnUpdate;
+      // Block: action=Block, no operations, no alertText
+      // Allow+Alert: action=Allow, operationsOnInsert=['Alert','Report'], with alertText
+      if (body.actionOnInsert === 'Block') {
+        delete body.operationsOnInsert;
+      } else if (body.actionOnInsert === 'Allow') {
+        body.operationsOnInsert = body.alertText ? ['Alert', 'Report'] : ['Report'];
+      }
+      if (body.actionOnUpdate === 'Block') {
+        delete body.operationsOnUpdate;
+      } else if (body.actionOnUpdate === 'Allow') {
+        body.operationsOnUpdate = body.alertText ? ['Alert', 'Report'] : ['Report'];
+      }
+      // alertText only valid if at least one action is Allow (alert mode)
+      const hasAlert = body.actionOnInsert === 'Allow' || body.actionOnUpdate === 'Allow';
+      if (!hasAlert) delete body.alertText;
       const objName = (body.fullName || '').split('.')[0] || 'Account';
       // Use listMetadata (authoritative) to find existing rules and max sortOrder
       let maxSort = 0;
