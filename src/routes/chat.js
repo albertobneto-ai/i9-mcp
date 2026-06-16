@@ -274,25 +274,81 @@ router.post('/', async (req, res) => {
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
-    // ── /create-field Object.Field__c Type [length] ──
-    if (lower.startsWith('/create-field ')) {
+    // ── /create-field (natural language → Claude parses → executes) ──
+    if (lower.startsWith('/create-field')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
-      const parts = userMsg.trim().substring(14).trim().split(/\s+/);
-      const fullName = parts[0]; // Object.Field__c
-      const ftype = parts[1] || 'Text';
-      const flen = parseInt(parts[2]) || 255;
-      if (!fullName || !fullName.includes('.')) return res.json({ choices: [{ message: { content: '⚠️ Use: /create-field Account.MeuCampo__c Text 100\nFormatos: Object.Field__c Type [length]\nTipos: Text, Number, Checkbox, Date, DateTime, Email, Phone, Url, Currency, Percent, LongTextArea, Picklist, Lookup' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      const input = userMsg.trim().substring(13).trim();
+      if (!input) return res.json({ choices: [{ message: { content: '⚠️ Descreva o campo. Ex:\n• /create-field campo teste no objeto Lead, texto, tamanho 30\n• /create-field Account email secundário, tipo Email\n• /create-field Lead.Segmento__c Picklist valores: PME, Enterprise, Governo' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
       try {
-        const body = { fullName, label: fullName.split('.')[1].replace('__c','').replace(/_/g,' '), type: ftype };
-        if (['Text','LongTextArea'].includes(ftype)) body.length = flen;
-        if (ftype === 'LongTextArea') body.visibleLines = 4;
-        if (['Number','Currency','Percent'].includes(ftype)) { body.precision = 18; body.scale = 2; }
+        const parsePrompt = `Extraia os dados para criar um campo Salesforce a partir desta instrução do usuário. Responda SOMENTE com um JSON puro (sem markdown, sem backticks).
+
+Instrução: "${input}"
+
+JSON esperado:
+{
+  "object": "NomeDoObjeto (API Name, ex: Lead, Account, Opportunity)",
+  "fieldName": "Nome_API_Do_Campo__c (se não tiver __c, adicione)",
+  "label": "Label legível do campo",
+  "type": "Text|Number|Checkbox|Date|DateTime|Email|Phone|Url|Currency|Percent|LongTextArea|Picklist|MultiselectPicklist|Lookup",
+  "length": 255,
+  "precision": null,
+  "scale": null,
+  "referenceTo": null,
+  "picklistValues": null,
+  "description": null
+}
+
+Regras:
+- Se o tipo for Text, length padrão 255 (a menos que especificado)
+- Se Number/Currency/Percent, precision=18 scale=2
+- Se LongTextArea, length=32768
+- Se Picklist, extraia os valores em picklistValues como array de strings
+- Se Lookup, coloque o objeto referenciado em referenceTo
+- Se o usuário não especificou __c, adicione automaticamente
+- Converta nomes como "teste_mcp_server" em "teste_mcp_server__c" e label "Teste Mcp Server"`;
+
+        const parsed = await claude.call(parsePrompt, [{ role: 'user', content: input }], 1024);
+        let spec;
+        try {
+          const clean = parsed.replace(/```json\n?|```\n?/g, '').trim();
+          spec = JSON.parse(clean);
+        } catch (pe) {
+          return res.json({ choices: [{ message: { content: `❌ Não consegui interpretar. Tente algo como:\n/create-field campo teste no Lead, tipo texto, tamanho 50` } }], modelo_usado: 'claude-sonnet-4-6', modelo_label: 'SF Agent', tipo: 'error' });
+        }
+
+        // Build metadata
+        const fullName = spec.object + '.' + spec.fieldName;
+        const body = { fullName, label: spec.label || spec.fieldName.replace('__c','').replace(/_/g,' '), type: spec.type || 'Text' };
+        if (['Text'].includes(body.type)) body.length = spec.length || 255;
+        if (body.type === 'LongTextArea') { body.length = spec.length || 32768; body.visibleLines = 4; }
+        if (['Number','Currency','Percent'].includes(body.type)) { body.precision = spec.precision || 18; body.scale = spec.scale ?? 2; }
+        if (body.type === 'Lookup' && spec.referenceTo) { body.referenceTo = spec.referenceTo; body.relationshipLabel = spec.label || spec.fieldName.replace('__c',''); }
+        if (['Picklist','MultiselectPicklist'].includes(body.type) && spec.picklistValues) { body.picklist = spec.picklistValues; }
+        if (spec.description) body.description = spec.description;
+
+        // Confirm what will be created
+        let preview = `**Criando campo na org...**\n\n`;
+        preview += `- **Objeto:** ${spec.object}\n`;
+        preview += `- **Campo:** ${spec.fieldName}\n`;
+        preview += `- **Label:** ${body.label}\n`;
+        preview += `- **Tipo:** ${body.type}`;
+        if (body.length) preview += ` (${body.length})`;
+        preview += `\n`;
+        if (body.picklist) preview += `- **Valores:** ${body.picklist.join(', ')}\n`;
+        if (body.referenceTo) preview += `- **Referência:** ${body.referenceTo}\n`;
+
         const result = await sfMulti.metadataCreate(org, 'CustomField', body);
         const item = Array.isArray(result) ? result[0] : result;
         const ok = item?.success !== false;
         const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
-        let text = ok ? `✅ **Campo criado:** ${fullName} (${ftype})` : `❌ **Erro:** ${errs.map(e=>e.message||e).join(', ')}`;
-        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'create-field' });
+
+        if (ok) {
+          preview += `\n✅ **Campo criado com sucesso!**`;
+        } else {
+          preview += `\n❌ **Erro:** ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}`;
+        }
+
+        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'create-field' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
