@@ -143,7 +143,7 @@ async function executeRunbookStep(step, org) {
     const name = body.fullName || body.label || mtype;
     const alreadyExists = errs.some(e => {
       const msg = (e.message || e.statusCode || JSON.stringify(e)).toLowerCase();
-      return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe') || msg.includes('já existe');
+      return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe') || msg.includes('já existe') || msg.includes('unique') || msg.includes('already exists');
     });
     if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name}` };
     if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo` };
