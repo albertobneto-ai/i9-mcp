@@ -3,6 +3,7 @@ import * as claude from '../services/claude.js';
 import * as grok from '../services/grok.js';
 import * as sfMulti from '../services/sf-multi.js';
 import pool from '../config/db.js';
+import specInstructions from '../prompts/spec.js';
 
 const router = express.Router();
 
@@ -754,7 +755,69 @@ Regras:
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
-        // ── /runbook — lê manifest e executa passo a passo ──
+        // ── /spec — gera Especificação Técnica a partir de HF (Opus + gap analysis) ──
+    if (lower.startsWith('/spec')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada para gap analysis.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const hf = userMsg.trim().substring(5).trim();
+      if (!hf) return res.json({ choices: [{ message: { content: '⚠️ Cole a História Funcional após /spec. O Opus vai gerar a especificação técnica completa (.docx Dark) com gap analysis contra a ORG ARQUITETURA + runbook acoplado.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      try {
+        // ── Gap Analysis: descobrir objetos mencionados e checar o que já existe na org ──
+        let gapContext = '';
+        try {
+          // Extrair nomes de objetos prováveis da HF (standard + custom __c)
+          const objMatches = [...new Set((hf.match(/\b([A-Z][a-zA-Z]+__c|Account|Contact|Lead|Opportunity|Case|Order|Product2|Quote|Contract|Asset|Campaign)\b/g) || []))];
+          const found = [];
+          for (const obj of objMatches.slice(0, 5)) {
+            try {
+              const d = await sfMulti.describeObject(org, obj);
+              if (d && d.fields) {
+                const customFields = d.fields.filter(f => f.custom).map(f => f.name);
+                found.push(`- **${obj}** (existe, ${d.fields.length} campos): custom = ${customFields.slice(0, 30).join(', ') || 'nenhum'}`);
+              }
+            } catch { found.push(`- ${obj}: não existe na org (CRIAR NOVO se necessário)`); }
+          }
+          if (found.length > 0) {
+            gapContext = `\n\n--- GAP ANALYSIS (ORG ARQUITETURA: ${org.name}) ---\nObjetos e campos já existentes na org. Use para separar "JÁ EXISTE (reaproveitar)" vs "CRIAR NOVO" nas seções 04 (Data Model) e 12/18 (Deploy/Runbook):\n${found.join('\n')}\n--- FIM GAP ANALYSIS ---`;
+          }
+        } catch (e) { console.error('Gap analysis falhou:', e.message); }
+
+        // ── Gerar spec com Opus ──
+        const fullSystem = specInstructions + gapContext;
+        const result = await claude.callRouted('spec', fullSystem, [{ role: 'user', content: hf }], 16384);
+        const specMarkdown = result.text;
+
+        // Salvar spec na conversa para permitir download
+        let convId = conversationId;
+        try {
+          const title = 'Spec — ' + (hf.substring(0, 60));
+          const fullMsgs = [...messages, { role: 'assistant', content: specMarkdown }];
+          if (convId) {
+            await pool.query('UPDATE conversations SET messages = $1, title = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(fullMsgs), title, convId, req.user.id]);
+          } else {
+            const r = await pool.query('INSERT INTO conversations (user_id, title, messages) VALUES ($1, $2, $3) RETURNING id', [req.user.id, title, JSON.stringify(fullMsgs)]);
+            convId = r.rows[0].id;
+          }
+        } catch {}
+
+        // Extrair título da spec para nome do arquivo
+        const titleMatch = specMarkdown.match(/(?:User Story ID|ID)[:\s|]*([A-Z]+-?\d+)/i);
+        const docTitle = titleMatch ? 'Spec_' + titleMatch[1] : 'Especificacao_Tecnica';
+
+        return res.json({
+          choices: [{ message: { content: specMarkdown } }],
+          modelo_usado: result.model,
+          modelo_label: result.model.includes('opus') ? 'Claude Opus 4.6' : result.model,
+          tipo: 'spec',
+          conversationId: convId,
+          downloadData: { type: 'spec', title: docTitle, content: specMarkdown }
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: `❌ Erro ao gerar spec: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /runbook — lê manifest e executa passo a passo ──
     if (lower.startsWith('/runbook')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
       const input = userMsg.trim().substring(8).trim();
