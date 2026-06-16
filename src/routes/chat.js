@@ -102,8 +102,22 @@ async function executeRunbookStep(step, org) {
   }
   if (step.action === 'metadata-create') {
     const mtype = step.type;
-    const body = step.body;
+    const body = { ...step.body };
     if (!mtype || !body) return { ok: false, message: '❌ metadata-create requer type e body' };
+
+    // Auto-resolve sortOrder for DuplicateRule
+    if (mtype === 'DuplicateRule') {
+      try {
+        const objName = (body.fullName || '').split('.')[0] || 'Account';
+        const existing = await sfMulti.runSoql(org, `SELECT DeveloperName, SortOrder FROM DuplicateRule WHERE SobjectType = '${objName}' ORDER BY SortOrder DESC LIMIT 1`);
+        const maxSort = existing.records && existing.records.length > 0 ? (existing.records[0].SortOrder || 0) : 0;
+        body.sortOrder = maxSort + 1;
+      } catch (e) {
+        // If query fails, keep existing sortOrder or default to 1
+        if (!body.sortOrder) body.sortOrder = 1;
+      }
+    }
+
     const result = await sfMulti.metadataCreate(org, mtype, body);
     const item = Array.isArray(result) ? result[0] : result;
     const ok = item?.success !== false;
