@@ -580,6 +580,74 @@ async function handleStatus(org) {
   } catch (e) { return { text: `❌ Erro: ${e.message}`, tipo: 'error' }; }
 }
 
+const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
+
+Ações disponíveis:
+- "action": "create-field" — criar campo custom
+- "action": "metadata-create" — criar qualquer metadado (MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, CustomObject, ListView)
+- "action": "metadata-update" — atualizar metadado existente
+- "action": "apex-class" — criar Apex Class (gerar código completo)
+- "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
+- "action": "lwc" — criar Lightning Web Component (gerar bundle)
+- "action": "flow" — criar Flow (gerar metadata)
+- "action": "apex" — executar Apex anônimo
+- "action": "soql" — executar SOQL
+- "action": "validate" — validação (query + condition: "empty"|"has-results"|"no-modify-all-data")
+- "action": "manual-step" — passo manual (description obrigatória). Use para coisas que não dá pra automatizar via API (ex: importar CSV via Data Loader, configurar em Setup UI).
+
+Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup)
+Para metadata-create/update: "type", "body" (JSON exato da Metadata API), "description"
+
+FORMATOS METADATA API OBRIGATÓRIOS:
+- MatchingRule: { fullName, label, ruleStatus:"Active", matchingRuleItems:[{fieldName, matchingMethod:"Exact"|"CompanyName"|"FirstName"|"LastName"|"Phone"|"City"|"Street"|"Zip"|"Title"}] }. NÃO usar "Fuzzy" — para fuzzy de empresa usar "CompanyName".
+- DuplicateRule: { fullName, masterLabel (NÃO label!), isActive, actionOnInsert:"Block"|"Allow", actionOnUpdate, alertText, duplicateRuleMatchRules:[{matchRuleSObjectType, matchingRule}] }. NÃO incluir sortOrder nem operationsOnInsert (resolvidos automaticamente). NÃO usar objectMapping.
+- ValidationRule: { fullName:"Obj.Name", active:true, errorConditionFormula, errorMessage, errorDisplayField }
+- RecordType: { fullName:"Obj.Name", label, active:true }
+- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}] }
+
+FORMATOS COMPONENTES EXÓTICOS:
+- apex-class: { "action":"apex-class", "name":"NomeClasse", "body":"public with sharing class NomeClasse { ... }", "description":"..." }. Inclua test class separada (outro step apex-class com @isTest, cobertura 75%+).
+- apex-trigger: { "action":"apex-trigger", "name":"NomeTrigger", "body":"trigger NomeTrigger on Account (...) { ... }", "description":"..." }. Trigger fino + handler class (handler primeiro).
+- lwc: { "action":"lwc", "name":"meuComponente", "files": { "html":"...", "js":"...", "meta":"..." }, "description":"..." }. Nome camelCase, classe PascalCase.
+- flow: { "action":"flow", "fullName":"Nome_Flow", "body": { "label":"...", "processType":"AutoLaunchedFlow"|"Flow", "status":"Active", ... }, "description":"..." }.
+
+REGRAS:
+- Ordene por dependência: campos antes de Apex; handler class antes do trigger; Matching Rules antes de Duplicate Rules; objetos pai antes de filhos.
+- Para passos que NÃO são automatizáveis via Metadata API (importar dados CSV, configurar Lead Convert Settings, ativar features), use "manual-step" com description clara.
+Se o campo não tem __c, adicione. Converta nomes para API format.`;
+
+async function parseRunbookJob(jobId, input, org, us) {
+  const parsedResult = await claude.callRouted('runbook-parse', RUNBOOK_PARSE_PROMPT, [{ role: 'user', content: input }], 8192);
+  const parsed = parsedResult.text;
+  const cleanParsed = parsed.replace(/```json\n?|```\n?/g, '').trim();
+  let steps = JSON.parse(cleanParsed);
+  if (!Array.isArray(steps)) steps = [steps];
+
+  // Monta o plano (preview markdown) + payload base64
+  let orgUrl = '';
+  try { const c = await sfMulti.testConnection(org); orgUrl = c.instanceUrl || ''; } catch {}
+  const orgLink = orgUrl ? orgUrl.replace('https://', '') : org.username;
+
+  let preview = `## Runbook — ${steps.length} passos\n\n`;
+  if (us) preview += `**US:** ${us}\n`;
+  preview += `**Org:** [${orgLink}](${orgUrl})\n`;
+  preview += `**Gerado por:** ${parsedResult.model.includes('opus') ? 'Claude Opus 4.6' : parsedResult.model}\n\n`;
+  preview += `| # | Ação | Componente | Detalhes |\n|---|---|---|---|\n`;
+  steps.forEach((s, i) => {
+    const comp = extractComponent(s);
+    const det = (s.description || s.type || '').substring(0, 60);
+    preview += `| ${i + 1} | ${s.action} | ${comp} | ${det} |\n`;
+  });
+  preview += `\n**Confirme para iniciar a execução passo a passo.**`;
+
+  const payload = Buffer.from(JSON.stringify({ steps, currentStep: 0, us })).toString('base64');
+
+  await pool.query(
+    'UPDATE jobs SET status = $1, result = $2, meta = meta || $3, updated_at = NOW() WHERE id = $4',
+    ['done', preview, JSON.stringify({ model: parsedResult.model, confirmAction: 'runbook', confirmPayload: payload }), jobId]
+  );
+}
+
 async function generateSpecJob(jobId, hf, org, userId) {
   // Gap Analysis
   let gapContext = '';
@@ -853,16 +921,39 @@ Regras:
       const input = userMsg.trim().substring(8).trim();
       if (!input) return res.json({ choices: [{ message: { content: '⚠️ Cole o runbook (JSON ou texto livre).\n\nExemplo JSON:\n```json\n[\n  { "action": "create-field", "object": "Lead", "field": "Segmento__c", "type": "Picklist", "values": ["PME","Enterprise"] },\n  { "action": "create-field", "object": "Lead", "field": "SLA__c", "type": "Number" },\n  { "action": "apex", "code": "System.debug(\'done\');" }\n]\n```\nOu descreva em texto livre que o Claude interpreta.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
 
+      // Detecta se é JSON puro (rápido) ou texto livre (precisa Opus = async)
+      let isJson = false;
+      try { const t = input.replace(/```json\n?|```\n?/g, '').trim(); JSON.parse(t); isJson = true; } catch { isJson = false; }
+
+      // Texto livre → job assíncrono (evita timeout 30s do Heroku no parsing Opus)
+      if (!isJson) {
+        const usMatch2 = input.match(/\b([A-Z][A-Z0-9]*B2B-\d+)\b/i) || input.match(/\b(US[-\s]?\d+)\b/i) || input.match(/\b([A-Z]{2,}-[A-Z0-9]+)\b/);
+        const usNum2 = usMatch2 ? usMatch2[1].toUpperCase().replace(/\s+/, '-') : null;
+        const jobRes = await pool.query(
+          'INSERT INTO jobs (user_id, kind, status, input, meta) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+          [req.user.id, 'runbook-parse', 'processing', input, JSON.stringify({ orgId: org.id, orgName: org.name, us: usNum2 })]
+        );
+        const jobId = jobRes.rows[0].id;
+        parseRunbookJob(jobId, input, org, usNum2).catch(e => {
+          console.error('Runbook parse job error:', e.message);
+          pool.query('UPDATE jobs SET status = $1, error = $2, updated_at = NOW() WHERE id = $3', ['error', e.message, jobId]).catch(() => {});
+        });
+        return res.json({
+          choices: [{ message: { content: '⏳ **Analisando runbook com Claude Opus 4.6...**\n\nO Opus está montando o plano de deploy (pode levar até 1 min para runbooks grandes). Aguarde.' } }],
+          modelo_usado: 'job', modelo_label: 'Opus 4.6 (processando)', tipo: 'job-started', jobId, jobKind: 'runbook-parse'
+        });
+      }
+
       try {
         let steps;
         let parseModel = null;
-        // Try JSON first
-        try {
+        // JSON puro
+        {
           const clean = input.replace(/```json\n?|```\n?/g, '').trim();
           steps = JSON.parse(clean);
           if (!Array.isArray(steps)) steps = [steps];
-        } catch {
-          // Natural language → Claude parses into steps
+        }
+        if (false) {
           const parsePrompt = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
 
 Ações disponíveis:
