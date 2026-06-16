@@ -1,6 +1,6 @@
 {
   "name": "i9-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "SF Agent — Chat IA Salesforce",
   "scripts": { "start": "node src/index.js" },
@@ -11,6 +11,7 @@
     "bcrypt": "^5.1.1",
     "jsonwebtoken": "^9.0.2",
     "jsforce": "^3.6.2",
-    "archiver": "^7.0.1"
+    "archiver": "^7.0.1",
+    "docx": "^9.0.0"
   }
 }
