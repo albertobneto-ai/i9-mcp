@@ -37,13 +37,73 @@ async function handleDescribe(objectName, org) {
     const fields = result.fields || [];
     const custom = fields.filter(f => f.custom);
     const standard = fields.filter(f => !f.custom);
+    const required = fields.filter(f => !f.nillable && f.createable);
+    const formulas = fields.filter(f => f.calculatedFormula);
+    const lookups = fields.filter(f => f.type === 'reference');
+    const picklists = fields.filter(f => f.picklistValues && f.picklistValues.length > 0);
+    const externalIds = fields.filter(f => f.externalId);
+
     let text = `## ${result.label} (${result.name})\n`;
-    text += `**Total:** ${fields.length} campos (${custom.length} custom, ${standard.length} standard)\n\n`;
-    text += `| Campo | Label | Tipo | Custom |\n|---|---|---|---|\n`;
-    for (const f of fields.slice(0, 80)) {
-      text += `| ${f.name} | ${f.label} | ${f.type} | ${f.custom ? '✓' : ''} |\n`;
+    text += `**Key Prefix:** ${result.keyPrefix || 'N/A'} | **Custom:** ${result.custom ? 'Sim' : 'Não'}\n`;
+    text += `**Queryable:** ${result.queryable ? '✓' : '✗'} | **Createable:** ${result.createable ? '✓' : '✗'} | **Updateable:** ${result.updateable ? '✓' : '✗'} | **Deletable:** ${result.deletable ? '✓' : '✗'}\n\n`;
+
+    // Summary
+    text += `### Resumo\n`;
+    text += `- **Total campos:** ${fields.length} (${custom.length} custom, ${standard.length} standard)\n`;
+    text += `- **Obrigatórios:** ${required.length}\n`;
+    text += `- **Lookups:** ${lookups.length}\n`;
+    text += `- **Picklists:** ${picklists.length}\n`;
+    text += `- **Fórmulas:** ${formulas.length}\n`;
+    if (externalIds.length) text += `- **External IDs:** ${externalIds.length}\n`;
+    text += `\n`;
+
+    // Record Types
+    const rts = (result.recordTypeInfos || []).filter(r => r.name !== 'Master');
+    if (rts.length > 0) {
+      text += `### Record Types (${rts.length})\n`;
+      for (const rt of rts) {
+        text += `- **${rt.name}** — ${rt.active ? '🟢 Ativo' : '🔴 Inativo'} ${rt.defaultRecordTypeMapping ? '(Default)' : ''}\n`;
+      }
+      text += `\n`;
     }
-    if (fields.length > 80) text += `\n*... e mais ${fields.length - 80} campos*`;
+
+    // ALL Fields table
+    text += `### Campos (${fields.length})\n`;
+    text += `| # | API Name | Label | Tipo | Req | Custom | Detalhes |\n|---|---|---|---|---|---|---|\n`;
+    let idx = 0;
+    for (const f of fields) {
+      idx++;
+      let details = '';
+      if (f.length && f.type !== 'boolean' && f.type !== 'id') details += `len:${f.length}`;
+      if (f.precision) details += ` prec:${f.precision}`;
+      if (f.scale) details += `,${f.scale}`;
+      if (f.referenceTo && f.referenceTo.length) details += `→${f.referenceTo.join(',')}`;
+      if (f.unique) details += ' UNIQUE';
+      if (f.externalId) details += ' ExtId';
+      if (f.calculatedFormula) details += ' FORMULA';
+      if (f.defaultValue !== null && f.defaultValue !== undefined) details += ` def:${f.defaultValue}`;
+      const req = (!f.nillable && f.createable) ? '✓' : '';
+      text += `| ${idx} | ${f.name} | ${f.label} | ${f.type} | ${req} | ${f.custom ? '✓' : ''} | ${details.trim()} |\n`;
+    }
+
+    // Picklists with values
+    if (picklists.length > 0) {
+      text += `\n### Picklist Values\n`;
+      for (const f of picklists) {
+        const vals = f.picklistValues.map(p => p.default ? `**${p.value}**` : p.value);
+        text += `- **${f.name}:** ${vals.join(', ')}\n`;
+      }
+    }
+
+    // Child Relationships
+    const children = (result.childRelationships || []).filter(c => c.relationshipName);
+    if (children.length > 0) {
+      text += `\n### Child Relationships (${children.length})\n`;
+      for (const c of children) {
+        text += `- ${c.childSObject}.${c.field} → ${c.relationshipName}\n`;
+      }
+    }
+
     return { text, tipo: 'describe' };
   } catch (e) { return { text: `❌ Erro: ${e.message}`, tipo: 'error' }; }
 }
