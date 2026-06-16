@@ -336,9 +336,9 @@ Regras:
         preview += `\n`;
         if (body.picklist) preview += `- **Valores:** ${body.picklist.join(', ')}\n`;
         if (body.referenceTo) preview += `- **Referência:** ${body.referenceTo}\n`;
-        preview += `\n[[CONFIRM:create-field:${Buffer.from(JSON.stringify(body)).toString('base64')}]]`;
+        
 
-        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', pendingAction: 'create-field' });
+        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'create-field', payload: Buffer.from(JSON.stringify(body)).toString('base64') } });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
