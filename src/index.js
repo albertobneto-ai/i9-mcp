@@ -54,13 +54,29 @@ app.get('/api/init-db', async (req, res) => {
       result TEXT, error TEXT, meta JSONB DEFAULT '{}',
       created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS deploy_log (
+      id SERIAL PRIMARY KEY,
+      us_number VARCHAR(40),
+      component VARCHAR(255),
+      action VARCHAR(60),
+      description TEXT,
+      result VARCHAR(20),
+      result_message TEXT,
+      org_id INT,
+      org_name VARCHAR(100),
+      user_id INT,
+      user_name VARCHAR(100),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_deploylog_us ON deploy_log(us_number)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_deploylog_created ON deploy_log(created_at DESC)');
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
       await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
         ['Alberto Bottaro', 'admin@everi9.com', hash, 'admin']);
     }
-    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs'] });
+    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs', 'deploy_log'] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
