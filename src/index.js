@@ -97,5 +97,13 @@ app.get(/^\/(?!api\/).*/, (req, res) => {
   });
 });
 
+// Global safety nets — prevent any uncaught error from killing the dyno
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err.message, err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.0.1 on port ${PORT}`));
+app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
