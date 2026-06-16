@@ -98,3 +98,32 @@ export async function callAny(model, systemPrompt, messages, maxTokens = 8192) {
   pushUsage(model, data.usage);
   return data.content?.[0]?.text || '';
 }
+
+// ── Roteamento híbrido de modelos por tipo de tarefa ──
+export const MODELS = {
+  OPUS: 'claude-opus-4-6',
+  SONNET: 'claude-sonnet-4-6',
+  HAIKU: 'claude-haiku-4-5-20251001',
+};
+
+// Mapa de tarefa → modelo. Spec/runbook/Flow/LWC usam Opus; resto Sonnet.
+export function modelForTask(task) {
+  const opusTasks = ['spec', 'runbook-parse', 'flow', 'lwc', 'apex-gen'];
+  return opusTasks.includes(task) ? MODELS.OPUS : MODELS.SONNET;
+}
+
+// Chamada roteada com fallback automático Opus → Sonnet se Opus falhar
+export async function callRouted(task, systemPrompt, messages, maxTokens = 8192) {
+  const model = modelForTask(task);
+  try {
+    return { text: await callAny(model, systemPrompt, messages, maxTokens), model };
+  } catch (err) {
+    // Fallback para Sonnet se Opus indisponível
+    if (model === MODELS.OPUS) {
+      console.error('Opus falhou, fallback Sonnet:', err.message);
+      const text = await callAny(MODELS.SONNET, systemPrompt, messages, maxTokens);
+      return { text, model: MODELS.SONNET + ' (fallback)' };
+    }
+    throw err;
+  }
+}
