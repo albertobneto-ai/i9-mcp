@@ -952,9 +952,18 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         }
         preview += `\n**Confirme para iniciar a execução passo a passo.**`;
 
-        // Detect US number from input (CRMB2B-90, US-123, etc.)
-        const usMatch = input.match(/\b([A-Z]{2,}-?B?\d*B?-?\d+)\b/) || input.match(/\b(US[- ]?\d+)\b/i);
-        const usNumber = usMatch ? usMatch[1].toUpperCase() : null;
+        // Detect US number: pega a primeira "palavra-código" antes do JSON/descrição
+        // Padrões: CRMB2B-90, TESTE-QA, US-123, ABC-456, JIRA-1234
+        let usNumber = null;
+        const usPatterns = [
+          /\b([A-Z][A-Z0-9]*B2B-\d+)\b/i,        // CRMB2B-90
+          /\b(US[-\s]?\d+)\b/i,                   // US-123, US 123
+          /\b([A-Z]{2,}-[A-Z0-9]+)\b/,            // TESTE-QA, ABC-123, JIRA-456
+        ];
+        for (const pat of usPatterns) {
+          const m = input.match(pat);
+          if (m) { usNumber = m[1].toUpperCase().replace(/\s+/, '-'); break; }
+        }
 
         const payload = { steps, currentStep: 0, us: usNumber };
 
