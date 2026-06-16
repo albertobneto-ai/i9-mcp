@@ -170,8 +170,9 @@ async function executeRunbookStep(step, org) {
       return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe') || msg.includes('já existe') || msg.includes('unique') || msg.includes('already exists');
     });
     if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name} (sortOrder ${body.sortOrder || '-'})` };
-    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo` };
-    return { ok: false, message: `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+    const rawErrs = errs.map(e => e.message || JSON.stringify(e)).join(' | ');
+    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo\n_debug: ${rawErrs}_` };
+    return { ok: false, message: `❌ Erro em ${name}: ${rawErrs}` };
   }
   if (step.action === 'metadata-update') {
     const mtype = step.type;
