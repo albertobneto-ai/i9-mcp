@@ -222,15 +222,20 @@ export async function deployApexClass(org, name, body) {
 }
 
 // ── Apex Trigger deploy via Tooling API ──
-export async function deployApexTrigger(org, name, body) {
+export async function deployApexTrigger(org, name, body, sobjectType) {
   const conn = await connectToOrg(org);
-  return await deployApexTooling(conn, 'ApexTrigger', name, body);
+  // Extract object from trigger body if not provided: "trigger X on Account ("
+  let obj = sobjectType;
+  if (!obj) {
+    const m = (body || '').match(/trigger\s+\w+\s+on\s+(\w+)/i);
+    obj = m ? m[1] : null;
+  }
+  return await deployApexTooling(conn, 'ApexTrigger', name, body, obj);
 }
 
 // Deploy Apex via Tooling MetadataContainer (correct way to UPDATE existing Apex)
-async function deployApexTooling(conn, metaType, name, body) {
+async function deployApexTooling(conn, metaType, name, body, sobjectType) {
   const memberType = metaType === 'ApexClass' ? 'ApexClassMember' : 'ApexTriggerMember';
-  const idField = metaType === 'ApexClass' ? 'ContentEntityId' : 'ContentEntityId';
 
   // Check if exists
   const existing = await conn.tooling.query(`SELECT Id FROM ${metaType} WHERE Name = '${name}'`);
@@ -239,10 +244,17 @@ async function deployApexTooling(conn, metaType, name, body) {
   if (!exists) {
     // New — simple create
     try {
-      const r = await conn.tooling.sobject(metaType).create({ Name: name, Body: body });
+      const payload = { Name: name, Body: body };
+      // ApexTrigger requires the target object
+      if (metaType === 'ApexTrigger') {
+        const m = (body || '').match(/trigger\s+\w+\s+on\s+(\w+)/i);
+        payload.TableEnumOrId = sobjectType || (m ? m[1] : null);
+      }
+      const r = await conn.tooling.sobject(metaType).create(payload);
       return { success: r.success !== false, errors: r.errors };
     } catch (e) {
-      return { success: false, errors: [{ message: e.message || String(e) }] };
+      const msg = e.message || (e.errors ? JSON.stringify(e.errors) : String(e));
+      return { success: false, errors: [{ message: msg }] };
     }
   }
 
