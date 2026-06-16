@@ -926,8 +926,12 @@ Regras:
       if (!input) return res.json({ choices: [{ message: { content: '⚠️ Cole o runbook (JSON ou texto livre).\n\nExemplo JSON:\n```json\n[\n  { "action": "create-field", "object": "Lead", "field": "Segmento__c", "type": "Picklist", "values": ["PME","Enterprise"] },\n  { "action": "create-field", "object": "Lead", "field": "SLA__c", "type": "Number" },\n  { "action": "apex", "code": "System.debug(\'done\');" }\n]\n```\nOu descreva em texto livre que o Claude interpreta.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
 
       // Detecta se é JSON puro (rápido) ou texto livre (precisa Opus = async)
+      // Remove US token no início (ex: "CRMB2B-90 [...]") antes de tentar parsear
+      let jsonCandidate = input.replace(/```json\n?|```\n?/g, '').trim();
+      const leadingUs = jsonCandidate.match(/^([A-Z][A-Z0-9]*-[A-Z0-9]+)\s+(?=[\[{])/i);
+      if (leadingUs) jsonCandidate = jsonCandidate.substring(leadingUs[0].length).trim();
       let isJson = false;
-      try { const t = input.replace(/```json\n?|```\n?/g, '').trim(); JSON.parse(t); isJson = true; } catch { isJson = false; }
+      try { JSON.parse(jsonCandidate); isJson = true; } catch { isJson = false; }
 
       // Texto livre → job assíncrono (evita timeout 30s do Heroku no parsing Opus)
       if (!isJson) {
@@ -951,10 +955,10 @@ Regras:
       try {
         let steps;
         let parseModel = null;
-        // JSON puro
+        // JSON puro — também extrai US do início se houver
+        const usFromJson = leadingUs ? leadingUs[1].toUpperCase() : null;
         {
-          const clean = input.replace(/```json\n?|```\n?/g, '').trim();
-          steps = JSON.parse(clean);
+          steps = JSON.parse(jsonCandidate);
           if (!Array.isArray(steps)) steps = [steps];
         }
         if (false) {
@@ -1047,17 +1051,18 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         }
         preview += `\n**Confirme para iniciar a execução passo a passo.**`;
 
-        // Detect US number: pega a primeira "palavra-código" antes do JSON/descrição
-        // Padrões: CRMB2B-90, TESTE-QA, US-123, ABC-456, JIRA-1234
-        let usNumber = null;
-        const usPatterns = [
-          /\b([A-Z][A-Z0-9]*B2B-\d+)\b/i,        // CRMB2B-90
-          /\b(US[-\s]?\d+)\b/i,                   // US-123, US 123
-          /\b([A-Z]{2,}-[A-Z0-9]+)\b/,            // TESTE-QA, ABC-123, JIRA-456
-        ];
-        for (const pat of usPatterns) {
-          const m = input.match(pat);
-          if (m) { usNumber = m[1].toUpperCase().replace(/\s+/, '-'); break; }
+        // US do início do JSON (já extraída) ou detecta no input
+        let usNumber = usFromJson;
+        if (!usNumber) {
+          const usPatterns = [
+            /\b([A-Z][A-Z0-9]*B2B-\d+)\b/i,
+            /\b(US[-\s]?\d+)\b/i,
+            /\b([A-Z]{2,}-[A-Z0-9]+)\b/,
+          ];
+          for (const pat of usPatterns) {
+            const m = input.match(pat);
+            if (m) { usNumber = m[1].toUpperCase().replace(/\s+/, '-'); break; }
+          }
         }
 
         const payload = { steps, currentStep: 0, us: usNumber };
