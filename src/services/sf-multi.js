@@ -208,3 +208,9 @@ export async function describeGlobal(org) {
   const result = await conn.describeGlobal();
   return result;
 }
+
+export async function listMetadata(org, type) {
+  const conn = await connectToOrg(org);
+  const result = await conn.metadata.list([{ type }], conn.version);
+  return Array.isArray(result) ? result : (result ? [result] : []);
+}
