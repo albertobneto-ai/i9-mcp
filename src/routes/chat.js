@@ -198,17 +198,118 @@ router.post('/', async (req, res) => {
     }
     if (lower === '/help') {
       const help = `## Comandos Disponíveis\n\n` +
+        `### Consulta\n` +
         `| Comando | Descrição |\n|---|---|\n` +
-        `| \`/describe Objeto\` | Campos e metadados de um objeto |\n` +
-        `| \`/soql QUERY\` | Executa SOQL na org conectada |\n` +
-        `| \`/objetos\` | Lista objetos da org |\n` +
-        `| \`/status\` | Status da conexão com a org |\n` +
-        `| \`/help\` | Lista de comandos |\n\n` +
-        `Qualquer outra mensagem é respondida pelo Claude Sonnet 4.6.`;
+        `| \`/describe Objeto\` | Metadados completos (campos, RTs, picklists, relationships) |\n` +
+        `| \`/objetos\` | Lista todos os objetos da org (custom + standard) |\n` +
+        `| \`/soql QUERY\` | Executa SOQL na org |\n` +
+        `| \`/tooling QUERY\` | Consulta Tooling API (ApexClass, Flow, CustomField) |\n` +
+        `| \`/layout Objeto\` | Lista layouts e seções de um objeto |\n` +
+        `| \`/metadata-read Tipo FullName\` | Lê metadado raw (CustomField, Profile, etc) |\n\n` +
+        `### Desenvolvimento\n` +
+        `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/create-field Obj.Campo__c Tipo [tam]\` | Cria campo custom na org |\n` +
+        `| \`/apex CÓDIGO\` | Executa Apex anônimo |\n\n` +
+        `### Org\n` +
+        `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/status\` | Status da conexão |\n` +
+        `| \`/help\` | Este menu |\n\n` +
+        `**Tipos de campo:** Text, Number, Checkbox, Date, DateTime, Email, Phone, Url, Currency, Percent, LongTextArea, Picklist, Lookup\n\n` +
+        `Qualquer outra mensagem é respondida pelo **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
 
-    // ── AI Chat ──
+    // ── /apex CODE ──
+    if (lower.startsWith('/apex ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const code = userMsg.trim().substring(6).trim();
+      if (!code) return res.json({ choices: [{ message: { content: '⚠️ Use: /apex System.debug(\'Hello\');' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        const r = await sfMulti.executeApex(org, code);
+        const success = r.success !== false && !r.compileProblem;
+        let text = success ? '✅ **Apex executado com sucesso**' : '❌ **Erro na execução**';
+        if (r.compileProblem) text += `\n\nCompile: ${r.compileProblem}`;
+        if (r.exceptionMessage) text += `\n\nException: ${r.exceptionMessage}\n${r.exceptionStackTrace || ''}`;
+        if (r.logs) text += `\n\n\`\`\`\n${r.logs.substring(0, 3000)}\n\`\`\``;
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'apex' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+    // ── /tooling QUERY ──
+    if (lower.startsWith('/tooling ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const q = userMsg.trim().substring(9).trim();
+      try {
+        const result = await sfMulti.runToolingQuery(org, q);
+        if (result.error) return res.json({ choices: [{ message: { content: `❌ ${result.error}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+        const records = result.records || [];
+        if (!records.length) return res.json({ choices: [{ message: { content: '📭 Nenhum resultado.' } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'tooling' });
+        const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
+        let text = `**${result.totalSize} resultado(s) — Tooling API**\n\n| ${keys.join(' | ')} |\n|${keys.map(() => '---').join('|')}|\n`;
+        for (const r of records.slice(0, 50)) text += `| ${keys.map(k => { const v = r[k]; return v && typeof v === 'object' ? JSON.stringify(v).substring(0,40) : (v ?? ''); }).join(' | ')} |\n`;
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'tooling' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+    // ── /layout ObjectName ──
+    if (lower.startsWith('/layout ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const objName = userMsg.trim().substring(8).trim();
+      try {
+        const result = await sfMulti.describeLayouts(org, objName);
+        if (result.error) return res.json({ choices: [{ message: { content: `❌ ${result.error}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+        const layouts = result.layouts || result;
+        let text = `## Layouts — ${objName}\n\n`;
+        if (Array.isArray(layouts)) {
+          for (const l of layouts) {
+            text += `### ${l.name || l.fullName || 'Layout'}\n`;
+            if (l.sections) for (const s of l.sections) {
+              text += `- **${s.label || s.heading || 'Section'}** (${(s.layoutColumns || []).reduce((a,c) => a + (c.layoutItems||[]).length, 0)} campos)\n`;
+            }
+          }
+        } else {
+          text += '```\n' + JSON.stringify(layouts, null, 2).substring(0, 4000) + '\n```';
+        }
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'layout' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+    // ── /create-field Object.Field__c Type [length] ──
+    if (lower.startsWith('/create-field ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const parts = userMsg.trim().substring(14).trim().split(/\s+/);
+      const fullName = parts[0]; // Object.Field__c
+      const ftype = parts[1] || 'Text';
+      const flen = parseInt(parts[2]) || 255;
+      if (!fullName || !fullName.includes('.')) return res.json({ choices: [{ message: { content: '⚠️ Use: /create-field Account.MeuCampo__c Text 100\nFormatos: Object.Field__c Type [length]\nTipos: Text, Number, Checkbox, Date, DateTime, Email, Phone, Url, Currency, Percent, LongTextArea, Picklist, Lookup' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        const body = { fullName, label: fullName.split('.')[1].replace('__c','').replace(/_/g,' '), type: ftype };
+        if (['Text','LongTextArea'].includes(ftype)) body.length = flen;
+        if (ftype === 'LongTextArea') body.visibleLines = 4;
+        if (['Number','Currency','Percent'].includes(ftype)) { body.precision = 18; body.scale = 2; }
+        const result = await sfMulti.metadataCreate(org, 'CustomField', body);
+        const item = Array.isArray(result) ? result[0] : result;
+        const ok = item?.success !== false;
+        const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+        let text = ok ? `✅ **Campo criado:** ${fullName} (${ftype})` : `❌ **Erro:** ${errs.map(e=>e.message||e).join(', ')}`;
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'create-field' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+    // ── /metadata-read Type FullName ──
+    if (lower.startsWith('/metadata-read ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const parts = userMsg.trim().substring(15).trim().split(/\s+/);
+      const mtype = parts[0]; const fname = parts.slice(1).join(' ');
+      if (!mtype || !fname) return res.json({ choices: [{ message: { content: '⚠️ Use: /metadata-read CustomField Account.Industry' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        const result = await sfMulti.metadataRead(org, mtype, fname);
+        let text = `## Metadata: ${mtype} — ${fname}\n\`\`\`json\n${JSON.stringify(result, null, 2).substring(0, 5000)}\n\`\`\``;
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'metadata' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+        // ── AI Chat ──
     const apiMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
     let response, modelUsed, modelLabel;
     try {
