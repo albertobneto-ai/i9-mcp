@@ -118,6 +118,10 @@ async function executeRunbookStep(step, org) {
     if (['Number','Currency','Percent'].includes(body.type)) { body.precision = step.precision || 18; body.scale = step.scale ?? 2; }
     if (body.type === 'Lookup' && step.referenceTo) { body.referenceTo = step.referenceTo; body.relationshipLabel = body.label; }
     if (['Picklist','MultiselectPicklist'].includes(body.type) && step.values) { body.picklist = step.values; }
+    // Checkbox requires defaultValue
+    if (body.type === 'Checkbox') { body.defaultValue = (step.defaultValue === true || step.defaultValue === 'true'); }
+    // LongTextArea visibleLines default
+    if (body.type === 'LongTextArea' && !body.visibleLines) body.visibleLines = 4;
     const result = await sfMulti.metadataCreate(org, 'CustomField', body);
     const item = Array.isArray(result) ? result[0] : result;
     const ok = item?.success !== false;
@@ -595,7 +599,7 @@ Ações disponíveis:
 - "action": "validate" — validação (query + condition: "empty"|"has-results"|"no-modify-all-data")
 - "action": "manual-step" — passo manual (description obrigatória). Use para coisas que não dá pra automatizar via API (ex: importar CSV via Data Loader, configurar em Setup UI).
 
-Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup)
+Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false)
 Para metadata-create/update: "type", "body" (JSON exato da Metadata API), "description"
 
 FORMATOS METADATA API OBRIGATÓRIOS:
@@ -968,7 +972,7 @@ Ações disponíveis:
 - "action": "soql" — executar SOQL
 - "action": "validate" — validação automática (query + condition: "empty"|"has-results"|"no-modify-all-data")
 
-Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup)
+Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false)
 Para metadata-create/update: "type" (tipo do metadado), "body" (JSON exato da Metadata API), "description"
 
 FORMATOS METADATA API OBRIGATÓRIOS:
