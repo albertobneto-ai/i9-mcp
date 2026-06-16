@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt';
 import pool from './config/db.js';
 import authRoutes from './routes/auth.js';
 import orgRoutes from './routes/orgs.js';
+import downloadRoutes from './routes/download.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,7 @@ app.get('/api/init-db', async (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/orgs', orgRoutes);
+app.use('/api/download', downloadRoutes);
 
 // Chat route (lazy load)
 let chatRouter = null;
