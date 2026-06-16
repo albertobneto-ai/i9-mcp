@@ -183,7 +183,57 @@ Regras:
 - Use terminologia técnica Salesforce quando relevante
 - Seja direto e objetivo
 - Formate com markdown quando útil
-- Para perguntas técnicas, priorize configuração nativa (OOTB) > Flow > Apex`;
+- Para perguntas técnicas, priorize configuração nativa (OOTB) > Flow > Apex
+
+## Referência Metadata API — Formatos Corretos para Runbook
+
+### CustomField
+{ "fullName": "Object.Field__c", "label": "Label", "type": "Text|Number|Checkbox|Date|DateTime|Email|Phone|Url|Currency|Percent|LongTextArea|Picklist|MultiselectPicklist|Lookup",
+  "length": 255, "precision": 18, "scale": 2, "visibleLines": 4,
+  "referenceTo": "TargetObject", "relationshipLabel": "Label",
+  "picklist": ["Val1","Val2"], "description": "..." }
+
+### CustomObject
+{ "fullName": "MyObject__c", "label": "My Object", "pluralLabel": "My Objects",
+  "nameField": { "label": "Name", "type": "Text" },
+  "deploymentStatus": "Deployed", "sharingModel": "ReadWrite" }
+
+### MatchingRule
+{ "fullName": "Object.RuleName", "label": "Label", "ruleStatus": "Active",
+  "matchingRuleItems": [{ "fieldName": "Field__c", "matchingMethod": "Exact|CompanyName|FirstName|LastName|Phone|City|Street|Zip|Title" }] }
+IMPORTANTE: matchingMethod NÃO aceita "Fuzzy". Para fuzzy em nomes de empresa usar "CompanyName".
+
+### DuplicateRule
+{ "fullName": "Object.RuleName", "masterLabel": "Label (NÃO usar label)",
+  "isActive": true, "sortOrder": 1,
+  "actionOnInsert": "Block|Allow", "actionOnUpdate": "Block|Allow",
+  "alertText": "Mensagem ao usuario",
+  "duplicateRuleMatchRules": [{ "matchRuleSObjectType": "Object", "matchingRule": "MatchingRuleName" }] }
+IMPORTANTE: usar masterLabel (não label). sortOrder sequencial a partir de 1. objectMapping NÃO existe — usar matchRuleSObjectType.
+
+### ValidationRule
+{ "fullName": "Object.RuleName", "active": true,
+  "errorConditionFormula": "ISBLANK(Field__c)",
+  "errorMessage": "Mensagem de erro",
+  "errorDisplayField": "Field__c" }
+
+### RecordType
+{ "fullName": "Object.RTName", "label": "Label", "active": true,
+  "description": "..." }
+
+### PermissionSet
+{ "fullName": "PSName", "label": "Label", "description": "...",
+  "fieldPermissions": [{ "field": "Object.Field__c", "editable": true, "readable": true }],
+  "objectPermissions": [{ "object": "Object__c", "allowCreate": true, "allowRead": true, "allowEdit": true, "allowDelete": false }] }
+
+### Profile (metadata-update apenas)
+{ "fullName": "Admin", "fieldPermissions": [{ "field": "Object.Field__c", "editable": true, "readable": true }] }
+
+### ListView
+{ "fullName": "Object.ViewName", "label": "Label",
+  "filterScope": "Everything", "columns": ["FIELD1","FIELD2"],
+  "filters": [{ "field": "FIELD", "operation": "equals", "value": "val" }] }
+`;
 
 // Helper: get selected org from header or default
 async function getSelectedOrg(req) {
@@ -551,12 +601,23 @@ Regras:
           // Natural language → Claude parses into steps
           const parsePrompt = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
 
-Cada ação deve ter:
-- "action": "create-field" | "create-object" | "apex" | "soql"
-- Para create-field: "object", "field" (API name com __c), "label", "type" (Text/Number/Checkbox/Date/DateTime/Email/Phone/Url/Currency/Percent/LongTextArea/Picklist/Lookup), "length" (se Text), "values" (se Picklist, array de strings), "referenceTo" (se Lookup)
-- Para create-object: "object" (API name com __c), "label", "pluralLabel"
-- Para apex: "code" (código Apex)
-- Para soql: "query" (SOQL query)
+Ações disponíveis:
+- "action": "create-field" — criar campo custom
+- "action": "metadata-create" — criar qualquer metadado (MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, CustomObject, ListView)
+- "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
+- "action": "apex" — executar Apex anônimo
+- "action": "soql" — executar SOQL
+- "action": "validate" — validação automática (query + condition: "empty"|"has-results"|"no-modify-all-data")
+
+Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup)
+Para metadata-create/update: "type" (tipo do metadado), "body" (JSON exato da Metadata API), "description"
+
+FORMATOS METADATA API OBRIGATÓRIOS:
+- MatchingRule: { fullName, label, ruleStatus:"Active", matchingRuleItems:[{fieldName, matchingMethod:"Exact"|"CompanyName"|"FirstName"|"LastName"|"Phone"|"City"|"Street"|"Zip"|"Title"}] }. NÃO usar "Fuzzy" — para fuzzy de empresa usar "CompanyName".
+- DuplicateRule: { fullName, masterLabel (NÃO label!), isActive, sortOrder (sequencial de 1), actionOnInsert:"Block"|"Allow", actionOnUpdate, alertText, duplicateRuleMatchRules:[{matchRuleSObjectType, matchingRule}] }. NÃO usar objectMapping — usar matchRuleSObjectType.
+- ValidationRule: { fullName:"Obj.Name", active:true, errorConditionFormula, errorMessage, errorDisplayField }
+- RecordType: { fullName:"Obj.Name", label, active:true }
+- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}] }
 
 Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
