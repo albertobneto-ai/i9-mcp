@@ -105,32 +105,32 @@ async function executeRunbookStep(step, org) {
     const body = { ...step.body };
     if (!mtype || !body) return { ok: false, message: '❌ metadata-create requer type e body' };
 
-    // Auto-resolve DuplicateRule: check if exists (corrupt or not), delete if needed, fix sortOrder
+    // Auto-resolve DuplicateRule: delete this rule if exists, compute correct sortOrder from ALL rules
     if (mtype === 'DuplicateRule' && body.fullName) {
+      const objName = (body.fullName || '').split('.')[0] || 'Account';
+      // Step 1: delete this specific rule if it already exists (clean slate)
       try {
-        // Check if this rule already exists
         const existing = await sfMulti.metadataRead(org, 'DuplicateRule', body.fullName);
-        if (existing && (existing.masterLabel !== undefined)) {
-          const isCorrupt = !existing.masterLabel || existing.sortOrder === 0 || existing.actionOnInsert === '';
-          if (isCorrupt || existing.masterLabel) {
-            // Delete existing (corrupt or not) to recreate clean
-            try { await sfMulti.metadataDelete(org, 'DuplicateRule', body.fullName); } catch {}
-          }
+        if (existing && existing.masterLabel !== undefined) {
+          try { await sfMulti.metadataDelete(org, 'DuplicateRule', body.fullName); } catch {}
         }
       } catch {}
-      // Find max sortOrder among remaining rules
+      // Step 2: list ALL DuplicateRules for this object, find max sortOrder
       try {
-        const objName = (body.fullName || '').split('.')[0] || 'Account';
-        // Read all existing DuplicateRules for this object
-        const allRules = [];
-        const knownNames = ['Standard_Account_Duplicate_Rule'];
-        for (const rn of knownNames) {
+        const allRules = await sfMulti.listMetadata(org, 'DuplicateRule');
+        const objRules = allRules.filter(r => {
+          const fn = r.fullName || '';
+          return fn.startsWith(objName + '.') && fn !== body.fullName;
+        });
+        let maxSort = 0;
+        for (const r of objRules) {
           try {
-            const r = await sfMulti.metadataRead(org, 'DuplicateRule', objName + '.' + rn);
-            if (r && r.sortOrder) allRules.push(r.sortOrder);
+            const detail = await sfMulti.metadataRead(org, 'DuplicateRule', r.fullName);
+            const so = detail?.sortOrder || 0;
+            if (so > maxSort) maxSort = so;
           } catch {}
         }
-        body.sortOrder = allRules.length > 0 ? Math.max(...allRules) + 1 : 1;
+        body.sortOrder = maxSort + 1;
       } catch {
         if (!body.sortOrder) body.sortOrder = 1;
       }
