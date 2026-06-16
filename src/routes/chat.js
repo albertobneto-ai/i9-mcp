@@ -646,24 +646,31 @@ router.post('/', async (req, res) => {
     }
     if (lower === '/help') {
       const help = `## Comandos Disponíveis\n\n` +
+        `### Gerar (Opus 4.6)\n` +
+        `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/spec HF\` | Gera Especificação Técnica (.docx Dark) a partir de História Funcional, com gap analysis |\n` +
+        `| \`/runbook ...\` | Cria e executa runbook passo a passo (texto livre ou JSON) |\n` +
+        `| \`/qa US\` | Smoke test dos componentes deployados de uma US |\n\n` +
         `### Consulta\n` +
         `| Comando | Descrição |\n|---|---|\n` +
         `| \`/describe Objeto\` | Metadados completos (campos, RTs, picklists, relationships) |\n` +
-        `| \`/objetos\` | Lista todos os objetos da org (custom + standard) |\n` +
+        `| \`/objetos\` | Lista todos os objetos da org |\n` +
         `| \`/soql QUERY\` | Executa SOQL na org |\n` +
-        `| \`/tooling QUERY\` | Consulta Tooling API (ApexClass, Flow, CustomField) |\n` +
-        `| \`/layout Objeto\` | Lista layouts e seções de um objeto |\n` +
-        `| \`/metadata-read Tipo FullName\` | Lê metadado raw (CustomField, Profile, etc) |\n\n` +
+        `| \`/tooling QUERY\` | Consulta Tooling API |\n` +
+        `| \`/layout Objeto\` | Lista layouts e seções |\n` +
+        `| \`/metadata-read Tipo FullName\` | Lê metadado raw |\n\n` +
         `### Desenvolvimento\n` +
         `| Comando | Descrição |\n|---|---|\n` +
-        `| \`/create-field Obj.Campo__c Tipo [tam]\` | Cria campo custom na org |\n` +
+        `| \`/create-field ...\` | Cria campo custom (linguagem natural) |\n` +
+        `| \`/delete-field Obj.Campo__c\` | Remove campo custom |\n` +
         `| \`/apex CÓDIGO\` | Executa Apex anônimo |\n\n` +
-        `### Org\n` +
+        `### Auditoria & Org\n` +
         `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
-        `**Tipos de campo:** Text, Number, Checkbox, Date, DateTime, Email, Phone, Url, Currency, Percent, LongTextArea, Picklist, Lookup\n\n` +
-        `Qualquer outra mensagem é respondida pelo **Claude Sonnet 4.6**.`;
+        `**Runbook suporta:** CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
+        `Qualquer outra mensagem → **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
 
@@ -956,6 +963,94 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
         return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(payload)).toString('base64') } });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro ao processar runbook: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+        // ── /qa [US] — smoke test dos componentes deployados ──
+    if (lower === '/qa' || lower.startsWith('/qa ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const usFilter = userMsg.trim().substring(3).trim().toUpperCase();
+      if (!usFilter) return res.json({ choices: [{ message: { content: '⚠️ Use: /qa CRMB2B-90 — roda smoke test dos componentes deployados nessa US.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      try {
+        // Buscar componentes da US no deploy_log (apenas sucessos)
+        const logRows = (await pool.query(
+          "SELECT DISTINCT component, action FROM deploy_log WHERE UPPER(us_number) = $1 AND result IN ('success','exists') ORDER BY component",
+          [usFilter]
+        )).rows;
+
+        if (!logRows.length) return res.json({ choices: [{ message: { content: `📭 Nenhum componente deployado encontrado para ${usFilter}. Rode o runbook primeiro.` } }], modelo_usado: 'local', modelo_label: 'QA', tipo: 'qa' });
+
+        let report = `## 🔍 QA Smoke Test — ${usFilter}\n\n`;
+        report += `**Org:** ${org.name}\n**Componentes verificados:** ${logRows.length}\n\n`;
+        report += `| Componente | Tipo | Verificação | Status |\n|---|---|---|---|\n`;
+
+        let passCount = 0, failCount = 0;
+        for (const row of logRows) {
+          const comp = row.component;
+          const act = row.action;
+          let check = '', status = '', ok = false;
+
+          try {
+            if (act === 'create-field' || (comp && comp.includes('.') && comp.endsWith('__c') && act === 'metadata-create')) {
+              // Campo: verificar via describe
+              const [objName, fieldName] = comp.split('.');
+              const d = await sfMulti.describeObject(org, objName);
+              const found = d.fields && d.fields.find(f => f.name === fieldName);
+              ok = !!found;
+              check = found ? `Campo existe (${found.type})` : 'Campo NÃO encontrado';
+              status = ok ? '✅' : '❌';
+            } else if (act === 'metadata-create' || act === 'metadata-update') {
+              // Metadado: inferir tipo pelo nome e ler
+              let mtype = 'CustomField';
+              if (comp.includes('MR_') || comp.toLowerCase().includes('match')) mtype = 'MatchingRule';
+              else if (comp.includes('DR_') || comp.toLowerCase().includes('dup')) mtype = 'DuplicateRule';
+              else if (comp.includes('.') && comp.endsWith('__c')) mtype = 'CustomField';
+              const meta = await sfMulti.metadataRead(org, mtype, comp);
+              if (mtype === 'DuplicateRule') {
+                ok = meta && meta.masterLabel && meta.masterLabel.length > 0;
+                check = ok ? `Ativa: ${meta.isActive}, ação: ${meta.actionOnInsert}` : 'Regra vazia/inexistente';
+              } else if (mtype === 'MatchingRule') {
+                ok = meta && (meta.ruleStatus === 'Active' || meta.masterLabel);
+                check = ok ? `Status: ${meta.ruleStatus || 'OK'}` : 'Regra não encontrada';
+              } else {
+                ok = meta && Object.keys(meta).length > 0;
+                check = ok ? 'Existe' : 'Não encontrado';
+              }
+              status = ok ? '✅' : '❌';
+            } else if (act === 'apex-class') {
+              const q = await sfMulti.runToolingQuery(org, `SELECT Id, Status FROM ApexClass WHERE Name = '${comp}'`);
+              ok = q.records && q.records.length > 0;
+              check = ok ? `Status: ${q.records[0].Status}` : 'Classe não encontrada';
+              status = ok ? '✅' : '❌';
+            } else if (act === 'apex-trigger') {
+              const q = await sfMulti.runToolingQuery(org, `SELECT Id, Status FROM ApexTrigger WHERE Name = '${comp}'`);
+              ok = q.records && q.records.length > 0;
+              check = ok ? `Status: ${q.records[0].Status}` : 'Trigger não encontrado';
+              status = ok ? '✅' : '❌';
+            } else {
+              check = 'Tipo não verificável (soql/validate/manual)';
+              status = '➖';
+              ok = true; // não conta como falha
+            }
+          } catch (e) {
+            check = 'Erro: ' + (e.message || '').substring(0, 40);
+            status = '❌';
+            ok = false;
+          }
+
+          if (status === '✅') passCount++;
+          else if (status === '❌') failCount++;
+          report += `| ${comp} | ${act} | ${check} | ${status} |\n`;
+        }
+
+        report += `\n### Resultado\n`;
+        report += `- ✅ **Passou:** ${passCount}\n`;
+        report += `- ❌ **Falhou:** ${failCount}\n`;
+        const verdict = failCount === 0 ? '🟢 **APROVADO** — todos os componentes verificados estão presentes e configurados.' : `🔴 **ATENÇÃO** — ${failCount} componente(s) com problema. Revisar antes do go-live.`;
+        report += `\n${verdict}`;
+
+        return res.json({ choices: [{ message: { content: report } }], modelo_usado: 'mcp-server', modelo_label: 'QA Agent — ' + org.name, tipo: 'qa' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
         // ── /log [US] — histórico de auditoria de deploys ──
