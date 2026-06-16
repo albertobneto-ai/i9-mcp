@@ -136,16 +136,34 @@ async function executeRunbookStep(step, org) {
       }
     }
 
-    const result = await sfMulti.metadataCreate(org, mtype, body);
-    const item = Array.isArray(result) ? result[0] : result;
-    const ok = item?.success !== false;
-    const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+    let result = await sfMulti.metadataCreate(org, mtype, body);
+    let item = Array.isArray(result) ? result[0] : result;
+    let ok = item?.success !== false;
+    let errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
     const name = body.fullName || body.label || mtype;
+
+    // RETRY logic for DuplicateRule sortOrder errors — increment until it works
+    if (!ok && mtype === 'DuplicateRule') {
+      const sortErr = errs.some(e => (e.message || '').toLowerCase().includes('sortorder'));
+      if (sortErr) {
+        for (let attempt = 1; attempt <= 10 && !ok; attempt++) {
+          body.sortOrder = attempt;
+          result = await sfMulti.metadataCreate(org, mtype, body);
+          item = Array.isArray(result) ? result[0] : result;
+          ok = item?.success !== false;
+          errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          if (ok) break;
+          const stillSort = errs.some(e => (e.message || '').toLowerCase().includes('sortorder'));
+          if (!stillSort) break; // different error, stop retrying
+        }
+      }
+    }
+
     const alreadyExists = errs.some(e => {
       const msg = (e.message || e.statusCode || JSON.stringify(e)).toLowerCase();
       return msg.includes('already') || msg.includes('duplicate') || msg.includes('existe') || msg.includes('já existe') || msg.includes('unique') || msg.includes('already exists');
     });
-    if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name}` };
+    if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name} (sortOrder ${body.sortOrder || '-'})` };
     if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo` };
     return { ok: false, message: `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
   }
