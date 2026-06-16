@@ -303,26 +303,38 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData){
 }
 
 async function pollJob(jobId){
-  const maxTries=60; // ~3 min
+  const maxTries=90; // ~4.5 min
+  let progressEl=null;
   for(let i=0;i<maxTries;i++){
     await new Promise(r=>setTimeout(r,3000));
+    // Update progress indicator
+    if(!progressEl){
+      progressEl=document.createElement('div');
+      progressEl.className='typing';
+      document.getElementById('messages').appendChild(progressEl);
+    }
+    progressEl.textContent='⏳ Opus gerando especificação... '+((i+1)*3)+'s';
+    progressEl.scrollIntoView({behavior:'smooth'});
     try{
       const r=await fetch(API+'/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+token}});
       if(!r.ok) continue;
       const j=await r.json();
       if(j.status==='done'){
+        if(progressEl) progressEl.remove();
         const meta=j.meta||{};
         const modelLabel=(meta.model&&meta.model.includes('opus'))?'Claude Opus 4.6':(meta.model||'Opus');
         appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
         return;
       }
       if(j.status==='error'){
+        if(progressEl) progressEl.remove();
         appendMsg('assistant','❌ Erro ao gerar spec: '+(j.error||'desconhecido'),'Erro',true);
         return;
       }
     }catch(e){}
   }
-  appendMsg('assistant','⚠️ A geração está demorando mais que o esperado. Tente novamente.','Timeout',true);
+  if(progressEl) progressEl.remove();
+  appendMsg('assistant','⚠️ A geração está demorando mais que o esperado. O documento pode ainda estar processando — recarregue em 1 min.','Timeout',true);
 }
 
 async function doDownload(data, btn){
