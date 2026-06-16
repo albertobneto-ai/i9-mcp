@@ -258,9 +258,11 @@ async function sendMessage(){
       history.push({role:'assistant',content});
       conversationId=d.conversationId||conversationId;
     }
-    const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local';
+    const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
     appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData);
     if(!isOrgCmd) document.getElementById('modelBadge').textContent=d.modelo_label||'AI';
+    // If a job was started, poll for result
+    if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
   }catch(e){
     typingEl.remove();
     appendMsg('assistant','Erro de conexão: '+e.message);
@@ -298,6 +300,29 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData){
   const w=document.querySelector('.welcome');if(w)w.remove();
   document.getElementById('messages').appendChild(el);
   el.scrollIntoView({behavior:'smooth'});
+}
+
+async function pollJob(jobId){
+  const maxTries=60; // ~3 min
+  for(let i=0;i<maxTries;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    try{
+      const r=await fetch(API+'/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+token}});
+      if(!r.ok) continue;
+      const j=await r.json();
+      if(j.status==='done'){
+        const meta=j.meta||{};
+        const modelLabel=(meta.model&&meta.model.includes('opus'))?'Claude Opus 4.6':(meta.model||'Opus');
+        appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
+        return;
+      }
+      if(j.status==='error'){
+        appendMsg('assistant','❌ Erro ao gerar spec: '+(j.error||'desconhecido'),'Erro',true);
+        return;
+      }
+    }catch(e){}
+  }
+  appendMsg('assistant','⚠️ A geração está demorando mais que o esperado. Tente novamente.','Timeout',true);
 }
 
 async function doDownload(data, btn){
