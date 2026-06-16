@@ -181,3 +181,9 @@ export async function describeLayouts(org, objectName) {
   return await conn.request(url);
 }
 
+
+export async function describeGlobal(org) {
+  const conn = await connectToOrg(org);
+  const result = await conn.describeGlobal();
+  return result;
+}
