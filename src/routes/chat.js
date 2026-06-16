@@ -49,6 +49,32 @@ function formatStepPreview(step) {
     if (step.description) text += `- **Verificação:** ${step.description}\n`;
     if (step.query) text += `- **Query:** \`${step.query.substring(0, 120)}\`\n`;
     if (step.condition) text += `- **Condição:** ${step.condition}\n`;
+  } else if (step.action === 'apex-class') {
+    text += `**Ação:** Criar Apex Class\n`;
+    text += `- **Nome:** ${step.name || step.className}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
+    const code = step.body || step.code || '';
+    text += `\n\`\`\`apex\n${code.substring(0, 400)}${code.length > 400 ? '\n...' : ''}\n\`\`\`\n`;
+  } else if (step.action === 'apex-trigger') {
+    text += `**Ação:** Criar Apex Trigger\n`;
+    text += `- **Nome:** ${step.name || step.triggerName}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
+    const code = step.body || step.code || '';
+    text += `\n\`\`\`apex\n${code.substring(0, 400)}${code.length > 400 ? '\n...' : ''}\n\`\`\`\n`;
+  } else if (step.action === 'lwc') {
+    text += `**Ação:** Criar LWC (Lightning Web Component)\n`;
+    text += `- **Nome:** ${step.name}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
+    if (step.files) {
+      text += `- **Arquivos:** ${Object.keys(step.files).filter(k => ['html','js','meta','css'].includes(k)).join(', ')}\n`;
+    }
+  } else if (step.action === 'flow') {
+    text += `**Ação:** Criar Flow\n`;
+    text += `- **Nome:** ${step.fullName || step.name}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
+    const b = step.body || {};
+    if (b.label) text += `- **Label:** ${b.label}\n`;
+    if (b.processType) text += `- **Tipo:** ${b.processType}\n`;
   } else if (step.action === 'manual-step') {
     text += `**⚠️ Ação Manual Necessária**\n\n`;
     text += `${step.description || 'Passo manual — verifique na org.'}\n`;
@@ -84,6 +110,60 @@ async function executeRunbookStep(step, org) {
     const r = await sfMulti.executeApex(org, step.code);
     const ok = r.success !== false && !r.compileProblem;
     return { ok, message: ok ? '✅ Apex executado' : `❌ ${r.compileProblem || r.exceptionMessage || 'Erro'}` };
+  }
+  if (step.action === 'apex-class') {
+    const name = step.name || step.className;
+    const body = step.body || step.code;
+    if (!name || !body) return { ok: false, message: '❌ apex-class requer name e body' };
+    try {
+      const r = await sfMulti.deployApexClass(org, name, body);
+      const ok = r.success !== false;
+      if (ok) return { ok: true, message: `✅ Apex Class criada: ${name}` };
+      const errs = r.errors ? (Array.isArray(r.errors) ? r.errors : [r.errors]) : [];
+      return { ok: false, message: `❌ Erro na classe ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+    } catch (e) {
+      const msg = e.message || String(e);
+      // Tooling API returns compile errors in the exception
+      return { ok: false, message: `❌ ${name}: ${msg.substring(0, 300)}` };
+    }
+  }
+  if (step.action === 'apex-trigger') {
+    const name = step.name || step.triggerName;
+    const body = step.body || step.code;
+    if (!name || !body) return { ok: false, message: '❌ apex-trigger requer name e body' };
+    try {
+      const r = await sfMulti.deployApexTrigger(org, name, body);
+      const ok = r.success !== false;
+      if (ok) return { ok: true, message: `✅ Apex Trigger criado: ${name}` };
+      const errs = r.errors ? (Array.isArray(r.errors) ? r.errors : [r.errors]) : [];
+      return { ok: false, message: `❌ Erro no trigger ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ ${name}: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'lwc') {
+    const name = step.name;
+    const files = step.files;
+    if (!name || !files) return { ok: false, message: '❌ lwc requer name e files (html, js, meta)' };
+    try {
+      const r = await sfMulti.deployLWC(org, name, files);
+      const ok = r.success === true || r.status === 'Succeeded';
+      if (ok) return { ok: true, message: `✅ LWC deployado: ${name}` };
+      const details = r.details?.componentFailures || [];
+      const errMsg = Array.isArray(details) ? details.map(d => d.problem).join('; ') : (r.errorMessage || JSON.stringify(r).substring(0, 200));
+      return { ok: false, message: `❌ LWC ${name}: ${errMsg}` };
+    } catch (e) { return { ok: false, message: `❌ LWC ${name}: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'flow') {
+    const fullName = step.fullName || step.name;
+    const flowBody = step.body || step.flow;
+    if (!fullName || !flowBody) return { ok: false, message: '❌ flow requer fullName e body' };
+    try {
+      const r = await sfMulti.deployFlow(org, fullName, flowBody);
+      const item = Array.isArray(r) ? r[0] : r;
+      const ok = item?.success !== false;
+      if (ok) return { ok: true, message: `✅ Flow criado: ${fullName}` };
+      const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+      return { ok: false, message: `❌ Erro no Flow ${fullName}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ Flow ${fullName}: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
   if (step.action === 'soql') {
     const r = await sfMulti.runSoql(org, step.query);
@@ -687,6 +767,10 @@ Ações disponíveis:
 - "action": "create-field" — criar campo custom
 - "action": "metadata-create" — criar qualquer metadado (MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, CustomObject, ListView)
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
+- "action": "apex-class" — criar Apex Class (gerar código completo)
+- "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
+- "action": "lwc" — criar Lightning Web Component (gerar bundle)
+- "action": "flow" — criar Flow (gerar metadata)
 - "action": "apex" — executar Apex anônimo
 - "action": "soql" — executar SOQL
 - "action": "validate" — validação automática (query + condition: "empty"|"has-results"|"no-modify-all-data")
@@ -700,6 +784,17 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 - ValidationRule: { fullName:"Obj.Name", active:true, errorConditionFormula, errorMessage, errorDisplayField }
 - RecordType: { fullName:"Obj.Name", label, active:true }
 - PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}] }
+
+FORMATOS COMPONENTES EXÓTICOS:
+- apex-class: { "action":"apex-class", "name":"NomeClasse", "body":"public with sharing class NomeClasse { ... }", "description":"..." }. Gere código Apex completo e válido. Inclua test class separada quando fizer sentido (outro step apex-class com @isTest).
+- apex-trigger: { "action":"apex-trigger", "name":"NomeTrigger", "body":"trigger NomeTrigger on Account (before insert, before update) { ... }", "description":"..." }. Sempre delegue lógica a uma handler class (best practice). O body do trigger deve ser fino.
+- lwc: { "action":"lwc", "name":"meuComponente", "files": { "html":"<template>...</template>", "js":"import { LightningElement } from 'lwc'; export default class MeuComponente extends LightningElement { ... }", "meta":"<?xml version=\"1.0\"?><LightningComponentBundle xmlns=\"http://soap.sforce.com/2006/04/metadata\"><apiVersion>62.0</apiVersion><isExposed>true</isExposed><targets><target>lightning__RecordPage</target></targets></LightningComponentBundle>" }, "description":"..." }. Nome em camelCase. Classe JS em PascalCase.
+- flow: { "action":"flow", "fullName":"Nome_Flow", "body": { "label":"Label do Flow", "processType":"AutoLaunchedFlow"|"Flow", "status":"Active", "start":{...}, ... }, "description":"..." }. Para Flow, gere a metadata estruturada. Prefira processType AutoLaunchedFlow para record-triggered. Flows complexos: gere os elementos (recordLookups, decisions, assignments, recordUpdates) com conectores corretos.
+
+REGRAS DE DEPLOY (best practices):
+- Apex Trigger sempre fino + handler class (2 steps: apex-class do handler primeiro, depois apex-trigger).
+- Apex Class de negócio sempre com test class (cobertura mínima 75%).
+- Ordene os steps por dependência: campos antes de Apex que os usa; handler class antes do trigger; Matching Rules antes de Duplicate Rules.
 
 Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
