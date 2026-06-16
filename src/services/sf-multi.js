@@ -215,59 +215,66 @@ export async function listMetadata(org, type) {
   return Array.isArray(result) ? result : (result ? [result] : []);
 }
 
-// ── Apex Class deploy via Metadata API (deploy zip — handles create+update) ──
+// ── Apex Class deploy via Tooling API (síncrono, rápido) com create-or-update ──
 export async function deployApexClass(org, name, body) {
   const conn = await connectToOrg(org);
-  return await deployApexViaMetadata(conn, 'ApexClass', name, body, name + '.cls');
+  return await deployApexTooling(conn, 'ApexClass', name, body);
 }
 
-// ── Apex Trigger deploy via Metadata API ──
+// ── Apex Trigger deploy via Tooling API ──
 export async function deployApexTrigger(org, name, body) {
   const conn = await connectToOrg(org);
-  return await deployApexViaMetadata(conn, 'ApexTrigger', name, body, name + '.trigger');
+  return await deployApexTooling(conn, 'ApexTrigger', name, body);
 }
 
-// Generic Apex deploy via Metadata API zip (idempotent — create or update)
-async function deployApexViaMetadata(conn, metaType, name, body, fileName) {
-  const archiver = await import('archiver');
-  const { PassThrough } = await import('stream');
-  const folder = metaType === 'ApexClass' ? 'classes' : 'triggers';
-  const metaExt = fileName + '-meta.xml';
-  const metaContent = `<?xml version="1.0" encoding="UTF-8"?>
-<${metaType} xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
-    <status>Active</status>
-</${metaType}>`;
-  const pkgXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <types><members>${name}</members><name>${metaType}</name></types>
-    <version>62.0</version>
-</Package>`;
+// Deploy Apex via Tooling MetadataContainer (correct way to UPDATE existing Apex)
+async function deployApexTooling(conn, metaType, name, body) {
+  const memberType = metaType === 'ApexClass' ? 'ApexClassMember' : 'ApexTriggerMember';
+  const idField = metaType === 'ApexClass' ? 'ContentEntityId' : 'ContentEntityId';
 
-  return new Promise((resolve, reject) => {
-    const archive = archiver.default('zip');
-    const chunks = [];
-    const stream = new PassThrough();
-    stream.on('data', c => chunks.push(c));
-    stream.on('end', async () => {
-      try {
-        const zipBuffer = Buffer.concat(chunks);
-        const result = await conn.metadata.deploy(zipBuffer, { singlePackage: true, rollbackOnError: true }).complete({ details: true });
-        if (result.success || result.status === 'Succeeded') {
-          resolve({ success: true });
-        } else {
-          const failures = result.details?.componentFailures;
-          const failArr = failures ? (Array.isArray(failures) ? failures : [failures]) : [];
-          resolve({ success: false, errors: failArr.map(f => ({ message: f.problem })) });
-        }
-      } catch (e) { reject(e); }
-    });
-    archive.pipe(stream);
-    archive.append(body, { name: `${folder}/${fileName}` });
-    archive.append(metaContent, { name: `${folder}/${metaExt}` });
-    archive.append(pkgXml, { name: 'package.xml' });
-    archive.finalize();
-  });
+  // Check if exists
+  const existing = await conn.tooling.query(`SELECT Id FROM ${metaType} WHERE Name = '${name}'`);
+  const exists = existing.records && existing.records.length > 0;
+
+  if (!exists) {
+    // New — simple create
+    try {
+      const r = await conn.tooling.sobject(metaType).create({ Name: name, Body: body });
+      return { success: r.success !== false, errors: r.errors };
+    } catch (e) {
+      return { success: false, errors: [{ message: e.message || String(e) }] };
+    }
+  }
+
+  // Exists — update via MetadataContainer
+  const containerName = 'i9deploy_' + Date.now();
+  let container;
+  try {
+    container = await conn.tooling.sobject('MetadataContainer').create({ Name: containerName });
+    const memberPayload = { MetadataContainerId: container.id, ContentEntityId: existing.records[0].Id, Body: body };
+    await conn.tooling.sobject(memberType).create(memberPayload);
+    // Deploy the container (async request)
+    const asyncReq = await conn.tooling.sobject('ContainerAsyncRequest').create({ MetadataContainerId: container.id, IsCheckOnly: false });
+    // Poll for completion (fast for single class)
+    let state = 'Queued';
+    for (let i = 0; i < 15 && (state === 'Queued' || state === 'InProgress'); i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const status = await conn.tooling.query(`SELECT State, ErrorMsg, DeployDetails FROM ContainerAsyncRequest WHERE Id = '${asyncReq.id}'`);
+      state = status.records[0].State;
+      if (state === 'Completed') { try { await conn.tooling.sobject('MetadataContainer').delete(container.id); } catch {} return { success: true }; }
+      if (state === 'Failed' || state === 'Error') {
+        const dd = status.records[0].DeployDetails;
+        const failures = dd?.componentFailures || [];
+        try { await conn.tooling.sobject('MetadataContainer').delete(container.id); } catch {}
+        return { success: false, errors: failures.map(f => ({ message: f.problem })) };
+      }
+    }
+    try { await conn.tooling.sobject('MetadataContainer').delete(container.id); } catch {}
+    return { success: state === 'Completed' };
+  } catch (e) {
+    if (container) { try { await conn.tooling.sobject('MetadataContainer').delete(container.id); } catch {} }
+    return { success: false, errors: [{ message: e.message || String(e) }] };
+  }
 }
 
 // ── LWC deploy via Metadata API (LightningComponentBundle) ──
