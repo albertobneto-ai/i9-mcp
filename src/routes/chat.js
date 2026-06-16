@@ -105,15 +105,33 @@ async function executeRunbookStep(step, org) {
     const body = { ...step.body };
     if (!mtype || !body) return { ok: false, message: '❌ metadata-create requer type e body' };
 
-    // Auto-resolve sortOrder for DuplicateRule
-    if (mtype === 'DuplicateRule') {
+    // Auto-resolve DuplicateRule: check if exists (corrupt or not), delete if needed, fix sortOrder
+    if (mtype === 'DuplicateRule' && body.fullName) {
+      try {
+        // Check if this rule already exists
+        const existing = await sfMulti.metadataRead(org, 'DuplicateRule', body.fullName);
+        if (existing && (existing.masterLabel !== undefined)) {
+          const isCorrupt = !existing.masterLabel || existing.sortOrder === 0 || existing.actionOnInsert === '';
+          if (isCorrupt || existing.masterLabel) {
+            // Delete existing (corrupt or not) to recreate clean
+            try { await sfMulti.metadataDelete(org, 'DuplicateRule', body.fullName); } catch {}
+          }
+        }
+      } catch {}
+      // Find max sortOrder among remaining rules
       try {
         const objName = (body.fullName || '').split('.')[0] || 'Account';
-        const existing = await sfMulti.runSoql(org, `SELECT DeveloperName, SortOrder FROM DuplicateRule WHERE SobjectType = '${objName}' ORDER BY SortOrder DESC LIMIT 1`);
-        const maxSort = existing.records && existing.records.length > 0 ? (existing.records[0].SortOrder || 0) : 0;
-        body.sortOrder = maxSort + 1;
-      } catch (e) {
-        // If query fails, keep existing sortOrder or default to 1
+        // Read all existing DuplicateRules for this object
+        const allRules = [];
+        const knownNames = ['Standard_Account_Duplicate_Rule'];
+        for (const rn of knownNames) {
+          try {
+            const r = await sfMulti.metadataRead(org, 'DuplicateRule', objName + '.' + rn);
+            if (r && r.sortOrder) allRules.push(r.sortOrder);
+          } catch {}
+        }
+        body.sortOrder = allRules.length > 0 ? Math.max(...allRules) + 1 : 1;
+      } catch {
         if (!body.sortOrder) body.sortOrder = 1;
       }
     }
