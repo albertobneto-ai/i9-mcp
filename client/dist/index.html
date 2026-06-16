@@ -317,7 +317,7 @@ async function pollJob(jobId){
       progressEl.className='typing';
       document.getElementById('messages').appendChild(progressEl);
     }
-    progressEl.textContent='⏳ Opus gerando especificação... '+((i+1)*3)+'s';
+    progressEl.textContent='⏳ Opus processando... '+((i+1)*3)+'s';
     progressEl.scrollIntoView({behavior:'smooth'});
     try{
       const r=await fetch(API+'/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+token}});
@@ -327,7 +327,13 @@ async function pollJob(jobId){
         if(progressEl) progressEl.remove();
         const meta=j.meta||{};
         const modelLabel=(meta.model&&meta.model.includes('opus'))?'Claude Opus 4.6':(meta.model||'Opus');
-        appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
+        if(j.kind==='runbook-parse'&&meta.confirmAction){
+          // Runbook plan ready — show with confirm/cancel buttons
+          appendMsg('assistant',j.result,'Org: ORG ARQUITETURA',true,{action:meta.confirmAction,payload:meta.confirmPayload});
+        } else {
+          // Spec ready — show with download button
+          appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
+        }
         return;
       }
       if(j.status==='error'){
