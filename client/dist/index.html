@@ -58,6 +58,8 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .cmd-btn.runbook:hover{color:#fbbf24;border-color:#f59e0b66}
 .cmd-btn.spec{color:#60a5fa;border-color:#60a5fa33;font-weight:600}
 .cmd-btn.spec:hover{color:#93c5fd;border-color:#60a5fa66}
+.cmd-btn.qa{color:#34d399;border-color:#34d39933;font-weight:600}
+.cmd-btn.qa:hover{color:#6ee7b7;border-color:#34d39966}
 .download-box{margin-top:14px}
 .download-btn{padding:10px 20px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
 .download-btn:hover{opacity:.9}
@@ -135,6 +137,7 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
     <div class="cmd-group"><span class="cmd-label">Gerar</span>
       <div class="cmd-btn spec" onclick="setCmd('/spec ')">/spec</div>
       <div class="cmd-btn runbook" onclick="setCmd('/runbook ')">/runbook</div>
+      <div class="cmd-btn qa" onclick="setCmd('/qa ')">/qa</div>
     </div>
     <div class="cmd-group"><span class="cmd-label">Dev</span>
       <div class="cmd-btn dev" onclick="setCmd('/create-field ')">/create-field</div>
