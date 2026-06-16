@@ -215,29 +215,59 @@ export async function listMetadata(org, type) {
   return Array.isArray(result) ? result : (result ? [result] : []);
 }
 
-// ── Apex Class deploy via Tooling API ──
+// ── Apex Class deploy via Metadata API (deploy zip — handles create+update) ──
 export async function deployApexClass(org, name, body) {
   const conn = await connectToOrg(org);
-  // Check if exists
-  const existing = await conn.tooling.query(`SELECT Id FROM ApexClass WHERE Name = '${name}'`);
-  if (existing.records && existing.records.length > 0) {
-    // Update via MetadataContainer (Tooling) — delete + recreate is simpler for Dev
-    const id = existing.records[0].Id;
-    await conn.tooling.sobject('ApexClass').delete(id);
-  }
-  const result = await conn.tooling.sobject('ApexClass').create({ Name: name, Body: body });
-  return result;
+  return await deployApexViaMetadata(conn, 'ApexClass', name, body, name + '.cls');
 }
 
-// ── Apex Trigger deploy via Tooling API ──
+// ── Apex Trigger deploy via Metadata API ──
 export async function deployApexTrigger(org, name, body) {
   const conn = await connectToOrg(org);
-  const existing = await conn.tooling.query(`SELECT Id FROM ApexTrigger WHERE Name = '${name}'`);
-  if (existing.records && existing.records.length > 0) {
-    await conn.tooling.sobject('ApexTrigger').delete(existing.records[0].Id);
-  }
-  const result = await conn.tooling.sobject('ApexTrigger').create({ Name: name, Body: body });
-  return result;
+  return await deployApexViaMetadata(conn, 'ApexTrigger', name, body, name + '.trigger');
+}
+
+// Generic Apex deploy via Metadata API zip (idempotent — create or update)
+async function deployApexViaMetadata(conn, metaType, name, body, fileName) {
+  const archiver = await import('archiver');
+  const { PassThrough } = await import('stream');
+  const folder = metaType === 'ApexClass' ? 'classes' : 'triggers';
+  const metaExt = fileName + '-meta.xml';
+  const metaContent = `<?xml version="1.0" encoding="UTF-8"?>
+<${metaType} xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <status>Active</status>
+</${metaType}>`;
+  const pkgXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types><members>${name}</members><name>${metaType}</name></types>
+    <version>62.0</version>
+</Package>`;
+
+  return new Promise((resolve, reject) => {
+    const archive = archiver.default('zip');
+    const chunks = [];
+    const stream = new PassThrough();
+    stream.on('data', c => chunks.push(c));
+    stream.on('end', async () => {
+      try {
+        const zipBuffer = Buffer.concat(chunks);
+        const result = await conn.metadata.deploy(zipBuffer, { singlePackage: true, rollbackOnError: true }).complete({ details: true });
+        if (result.success || result.status === 'Succeeded') {
+          resolve({ success: true });
+        } else {
+          const failures = result.details?.componentFailures;
+          const failArr = failures ? (Array.isArray(failures) ? failures : [failures]) : [];
+          resolve({ success: false, errors: failArr.map(f => ({ message: f.problem })) });
+        }
+      } catch (e) { reject(e); }
+    });
+    archive.pipe(stream);
+    archive.append(body, { name: `${folder}/${fileName}` });
+    archive.append(metaContent, { name: `${folder}/${metaExt}` });
+    archive.append(pkgXml, { name: 'package.xml' });
+    archive.finalize();
+  });
 }
 
 // ── LWC deploy via Metadata API (LightningComponentBundle) ──
