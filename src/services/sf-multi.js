@@ -214,3 +214,100 @@ export async function listMetadata(org, type) {
   const result = await conn.metadata.list([{ type }], conn.version);
   return Array.isArray(result) ? result : (result ? [result] : []);
 }
+
+// ── Apex Class deploy via Tooling API ──
+export async function deployApexClass(org, name, body) {
+  const conn = await connectToOrg(org);
+  // Check if exists
+  const existing = await conn.tooling.query(`SELECT Id FROM ApexClass WHERE Name = '${name}'`);
+  if (existing.records && existing.records.length > 0) {
+    // Update via MetadataContainer (Tooling) — delete + recreate is simpler for Dev
+    const id = existing.records[0].Id;
+    await conn.tooling.sobject('ApexClass').delete(id);
+  }
+  const result = await conn.tooling.sobject('ApexClass').create({ Name: name, Body: body });
+  return result;
+}
+
+// ── Apex Trigger deploy via Tooling API ──
+export async function deployApexTrigger(org, name, body) {
+  const conn = await connectToOrg(org);
+  const existing = await conn.tooling.query(`SELECT Id FROM ApexTrigger WHERE Name = '${name}'`);
+  if (existing.records && existing.records.length > 0) {
+    await conn.tooling.sobject('ApexTrigger').delete(existing.records[0].Id);
+  }
+  const result = await conn.tooling.sobject('ApexTrigger').create({ Name: name, Body: body });
+  return result;
+}
+
+// ── LWC deploy via Metadata API (LightningComponentBundle) ──
+export async function deployLWC(org, name, files) {
+  const conn = await connectToOrg(org);
+  // files: { html, js, meta, css? }
+  const metadata = {
+    fullName: name,
+    apiVersion: 62.0,
+    isExposed: files.isExposed !== false,
+    lwcResources: { lwcResource: [] },
+  };
+  // Build the bundle via metadata.create with the LightningComponentBundle
+  // jsforce expects the bundle as a deploy zip; use a simpler approach via metadata
+  const bundle = {
+    fullName: name,
+    metadata: {
+      apiVersion: 62.0,
+      isExposed: files.isExposed !== false,
+      targets: files.targets || undefined,
+    },
+  };
+  // LWC requires zip deploy — return structured data for the deploy
+  return await deployLWCBundle(conn, name, files);
+}
+
+async function deployLWCBundle(conn, name, files) {
+  // Use Metadata API deploy with a zip containing the LWC bundle
+  const archiver = await import('archiver');
+  const { PassThrough } = await import('stream');
+
+  const metaXml = files.meta || `<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>${files.isExposed !== false}</isExposed>
+</LightningComponentBundle>`;
+
+  return new Promise((resolve, reject) => {
+    const archive = archiver.default('zip');
+    const chunks = [];
+    const stream = new PassThrough();
+    stream.on('data', c => chunks.push(c));
+    stream.on('end', async () => {
+      const zipBuffer = Buffer.concat(chunks);
+      try {
+        const result = await conn.metadata.deploy(zipBuffer, { singlePackage: true }).complete({ details: true });
+        resolve(result);
+      } catch (e) { reject(e); }
+    });
+    archive.pipe(stream);
+    const base = `lwc/${name}/`;
+    archive.append(files.js || '', { name: base + name + '.js' });
+    archive.append(files.html || '', { name: base + name + '.html' });
+    archive.append(metaXml, { name: base + name + '.js-meta.xml' });
+    if (files.css) archive.append(files.css, { name: base + name + '.css' });
+    // package.xml
+    const pkgXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types><members>${name}</members><name>LightningComponentBundle</name></types>
+    <version>62.0</version>
+</Package>`;
+    archive.append(pkgXml, { name: 'package.xml' });
+    archive.finalize();
+  });
+}
+
+// ── Flow deploy via Metadata API ──
+export async function deployFlow(org, fullName, flowMetadata) {
+  const conn = await connectToOrg(org);
+  // flowMetadata is the Flow metadata object (or XML)
+  const result = await conn.metadata.create('Flow', { fullName, ...flowMetadata });
+  return result;
+}
