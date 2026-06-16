@@ -666,11 +666,38 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         try { const c = await sfMulti.testConnection(org); orgUrl = c.instanceUrl || ''; } catch {}
         const orgLink = orgUrl ? orgUrl.replace('https://','') : org.username;
 
-        // Show step 1 preview
-        const step = steps[0];
-        let preview = `### Runbook — Passo 1 de ${steps.length}\n\n`;
+        // Show FULL PLAN summary before starting
+        let preview = `## Runbook — ${steps.length} passos\n\n`;
         preview += `**Org:** [${orgLink}](${orgUrl})\n\n`;
-        preview += formatStepPreview(step);
+        preview += `| # | Ação | Componente | Detalhes |\n|---|---|---|---|\n`;
+        for (let i = 0; i < steps.length; i++) {
+          const s = steps[i];
+          let comp = '', det = '';
+          if (s.action === 'metadata-create' || s.action === 'metadata-update') {
+            comp = s.body?.fullName || s.type || '';
+            det = s.description || s.body?.masterLabel || s.body?.label || s.type;
+          } else if (s.action === 'create-field') {
+            comp = s.object + '.' + s.field;
+            det = s.type || 'Text';
+          } else if (s.action === 'soql') {
+            comp = 'SOQL';
+            det = s.description || (s.query || '').substring(0, 60);
+          } else if (s.action === 'validate') {
+            comp = 'Validação';
+            det = s.description || s.condition || '';
+          } else if (s.action === 'apex') {
+            comp = 'Apex';
+            det = s.description || (s.code || '').substring(0, 60);
+          } else if (s.action === 'manual-step') {
+            comp = 'Manual';
+            det = (s.description || '').substring(0, 60);
+          } else {
+            comp = s.action;
+            det = s.description || '';
+          }
+          preview += `| ${i + 1} | ${s.action} | ${comp} | ${det.substring(0, 80)} |\n`;
+        }
+        preview += `\n**Confirme para iniciar a execução passo a passo.**`;
 
         const payload = { steps, currentStep: 0 };
 
