@@ -44,6 +44,11 @@ function formatStepPreview(step) {
         text += `  - ${k}: ${String(display).substring(0, 120)}\n`;
       }
     }
+  } else if (step.action === 'validate') {
+    text += `**🔍 Validação Automática**\n`;
+    if (step.description) text += `- **Verificação:** ${step.description}\n`;
+    if (step.query) text += `- **Query:** \`${step.query.substring(0, 120)}\`\n`;
+    if (step.condition) text += `- **Condição:** ${step.condition}\n`;
   } else if (step.action === 'manual-step') {
     text += `**⚠️ Ação Manual Necessária**\n\n`;
     text += `${step.description || 'Passo manual — verifique na org.'}\n`;
@@ -76,7 +81,18 @@ async function executeRunbookStep(step, org) {
   }
   if (step.action === 'soql') {
     const r = await sfMulti.runSoql(org, step.query);
-    return { ok: true, message: `✅ SOQL: ${r.totalSize || 0} registros` };
+    if (r.error) return { ok: false, message: `❌ SOQL: ${r.error}` };
+    const records = r.records || [];
+    let msg = `✅ SOQL: ${r.totalSize || 0} registro(s)`;
+    if (records.length > 0) {
+      const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
+      msg += `\n\n| ${keys.join(' | ')} |\n|${keys.map(() => '---').join('|')}|\n`;
+      for (const rec of records.slice(0, 20)) {
+        msg += `| ${keys.map(k => { const v = rec[k]; return v && typeof v === 'object' ? JSON.stringify(v).substring(0,50) : (v ?? ''); }).join(' | ')} |\n`;
+      }
+    }
+    if (step.description) msg += `\n${step.description}`;
+    return { ok: true, message: msg };
   }
   if (step.action === 'metadata-create') {
     const mtype = step.type;
@@ -99,6 +115,48 @@ async function executeRunbookStep(step, org) {
     const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
     const name = body.fullName || body.label || mtype;
     return { ok, message: ok ? `✅ ${mtype} atualizado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+  }
+  if (step.action === 'validate') {
+    // Run SOQL and evaluate condition
+    if (!step.query) return { ok: false, message: '❌ validate requer query' };
+    try {
+      const r = await sfMulti.runSoql(org, step.query);
+      if (r.error) return { ok: false, message: `❌ Validação falhou: ${r.error}` };
+      const records = r.records || [];
+      const count = r.totalSize || 0;
+      let passed = true;
+      let detail = '';
+
+      if (step.condition === 'empty' || step.condition === 'no-results') {
+        passed = count === 0;
+        detail = passed ? 'Nenhum registro encontrado (esperado)' : `${count} registro(s) encontrado(s) — ATENÇÃO`;
+      } else if (step.condition === 'has-results' || step.condition === 'not-empty') {
+        passed = count > 0;
+        detail = passed ? `${count} registro(s) encontrado(s)` : 'Nenhum registro — ATENÇÃO';
+      } else if (step.condition === 'no-modify-all-data') {
+        // Check if any user has ModifyAllData
+        const bad = records.filter(rec => {
+          const p = rec.Profile || rec;
+          return p.PermissionsModifyAllData === true;
+        });
+        passed = bad.length === 0;
+        detail = passed ? 'Nenhum user de integração com Modify All Data ✓' : `⚠️ ${bad.length} user(s) com Modify All Data!`;
+      } else {
+        detail = `${count} registro(s) retornado(s)`;
+      }
+
+      // Show results
+      let msg = passed ? `✅ Validação OK — ${detail}` : `⚠️ Validação com alerta — ${detail}`;
+      if (step.description) msg += `\n📋 ${step.description}`;
+      if (records.length > 0 && records.length <= 10) {
+        const keys = Object.keys(records[0]).filter(k => k !== 'attributes');
+        msg += `\n\n| ${keys.join(' | ')} |\n|${keys.map(() => '---').join('|')}|\n`;
+        for (const rec of records) {
+          msg += `| ${keys.map(k => { const v = rec[k]; return v && typeof v === 'object' ? JSON.stringify(v).substring(0,50) : (v ?? ''); }).join(' | ')} |\n`;
+        }
+      }
+      return { ok: true, message: msg };
+    } catch (e) { return { ok: false, message: `❌ Erro na validação: ${e.message}` }; }
   }
   if (step.action === 'manual-step') {
     return { ok: true, message: `✅ Passo manual registrado — prosseguindo.` };
