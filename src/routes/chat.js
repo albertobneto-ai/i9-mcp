@@ -132,7 +132,7 @@ async function executeRunbookStep(step, org) {
     const body = step.body || step.code;
     if (!name || !body) return { ok: false, message: '❌ apex-trigger requer name e body' };
     try {
-      const r = await sfMulti.deployApexTrigger(org, name, body);
+      const r = await sfMulti.deployApexTrigger(org, name, body, step.object || step.sobjectType);
       const ok = r.success !== false;
       if (ok) return { ok: true, message: `✅ Apex Trigger criado: ${name}` };
       const errs = r.errors ? (Array.isArray(r.errors) ? r.errors : [r.errors]) : [];
