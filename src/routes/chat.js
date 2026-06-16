@@ -727,6 +727,26 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro ao processar runbook: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
+        // ── /debug-dr — debug DuplicateRule state ──
+    if (lower === '/debug-dr') {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Sem org.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      try {
+        const list = await sfMulti.listMetadata(org, 'DuplicateRule');
+        let text = `## Debug DuplicateRule\n\n**listMetadata retornou ${list.length} regras:**\n\n`;
+        for (const r of list) {
+          text += `- ${r.fullName}\n`;
+        }
+        text += `\n**Detalhes (metadata.read):**\n\n`;
+        for (const r of list.filter(x => (x.fullName||'').startsWith('Account.'))) {
+          try {
+            const d = await sfMulti.metadataRead(org, 'DuplicateRule', r.fullName);
+            text += `- **${r.fullName}**: sortOrder=${d.sortOrder}, masterLabel="${d.masterLabel}", isActive=${d.isActive}\n`;
+          } catch (e) { text += `- ${r.fullName}: erro ao ler\n`; }
+        }
+        return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Debug', tipo: 'debug' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
         // ── /confirm:ACTION:PAYLOAD — executa ação pendente ──
     if (lower.startsWith('/confirm:')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
