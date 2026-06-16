@@ -107,6 +107,10 @@ async function executeRunbookStep(step, org) {
 
     // Auto-resolve DuplicateRule: delete this rule if exists, compute correct sortOrder from ALL rules
     if (mtype === 'DuplicateRule' && body.fullName) {
+      // Ensure required fields with sensible defaults
+      if (!body.securityOption) body.securityOption = 'EnforceSharingRules';
+      if (!body.operationsOnInsert && body.actionOnInsert) body.operationsOnInsert = [body.actionOnInsert];
+      if (!body.operationsOnUpdate && body.actionOnUpdate) body.operationsOnUpdate = [body.actionOnUpdate];
       const objName = (body.fullName || '').split('.')[0] || 'Account';
       // Step 1: delete this specific rule if it already exists (clean slate)
       try {
