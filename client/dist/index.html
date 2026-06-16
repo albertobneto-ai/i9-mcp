@@ -64,6 +64,9 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .download-btn{padding:10px 20px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
 .download-btn:hover{opacity:.9}
 .download-btn:disabled{opacity:.5}
+.runbook-gen-btn{padding:10px 20px;margin-left:10px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
+.runbook-gen-btn:hover{opacity:.9}
+.runbook-gen-btn:disabled{opacity:.5}
 .cmd-group{display:flex;align-items:center;gap:6px;padding-right:12px;border-right:1px solid #1e1a2e}
 .cmd-group:last-child{border-right:none}
 .cmd-label{font-size:9px;color:#4a4560;text-transform:uppercase;letter-spacing:1px;font-weight:600}
@@ -299,6 +302,14 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData){
     btn.innerHTML='\u2193 Baixar .docx (tema Dark)';
     btn.onclick=function(){ doDownload(downloadData, btn); };
     box.appendChild(btn);
+    // Botão Gerar Runbook (só para specs)
+    if(downloadData.type==='spec'&&downloadData.content){
+      const rbBtn=document.createElement('button');
+      rbBtn.className='runbook-gen-btn';
+      rbBtn.innerHTML='\u25B6 Gerar Runbook desta Spec';
+      rbBtn.onclick=function(){ generateRunbookFromSpec(downloadData.content, rbBtn); };
+      box.appendChild(rbBtn);
+    }
     el.appendChild(box);
   }
   const w=document.querySelector('.welcome');if(w)w.remove();
@@ -345,6 +356,34 @@ async function pollJob(jobId){
   }
   if(progressEl) progressEl.remove();
   appendMsg('assistant','⚠️ A geração está demorando mais que o esperado. O documento pode ainda estar processando — recarregue em 1 min.','Timeout',true);
+}
+
+async function generateRunbookFromSpec(specContent, btn){
+  btn.disabled=true; btn.innerHTML='\u25B6 Gerando runbook...';
+  // Extrai a seção 18 (Runbook) da spec, ou usa a spec inteira como contexto
+  let runbookInput=specContent;
+  const idx=specContent.search(/##\s*18[.\s]/);
+  if(idx>=0){ runbookInput=specContent.substring(idx); }
+  // Detecta US da spec
+  const usM=specContent.match(/\b([A-Z][A-Z0-9]*B2B-\d+)\b/i)||specContent.match(/\b(US[-\s]?\d+)\b/i);
+  const us=usM?usM[1]:'';
+  appendMsg('user','▶ Gerar runbook a partir da especificação'+(us?' '+us:''));
+  try{
+    const r=await fetch(API+'/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({messages:[{role:'user',content:'/runbook '+(us?us+' ':'')+runbookInput}]})
+    });
+    const d=await r.json();
+    const content=d.choices[0].message.content;
+    const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData);
+    if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
+    btn.innerHTML='\u2713 Runbook gerado';
+  }catch(e){
+    btn.innerHTML='\u2717 Erro'; btn.disabled=false;
+    appendMsg('assistant','❌ Erro ao gerar runbook: '+e.message,'Erro',true);
+  }
 }
 
 async function doDownload(data, btn){
