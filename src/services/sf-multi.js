@@ -314,7 +314,6 @@ export async function deployLWC(org, name, files) {
 }
 
 async function deployLWCBundle(conn, name, files) {
-  // Use Metadata API deploy with a zip containing the LWC bundle
   const archiver = await import('archiver');
   const { PassThrough } = await import('stream');
 
@@ -324,25 +323,21 @@ async function deployLWCBundle(conn, name, files) {
     <isExposed>${files.isExposed !== false}</isExposed>
 </LightningComponentBundle>`;
 
-  return new Promise((resolve, reject) => {
+  // Build zip buffer
+  const zipBuffer = await new Promise((resolve, reject) => {
     const archive = archiver.default('zip');
     const chunks = [];
     const stream = new PassThrough();
     stream.on('data', c => chunks.push(c));
-    stream.on('end', async () => {
-      const zipBuffer = Buffer.concat(chunks);
-      try {
-        const result = await conn.metadata.deploy(zipBuffer, { singlePackage: true }).complete({ details: true });
-        resolve(result);
-      } catch (e) { reject(e); }
-    });
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+    archive.on('error', reject);
     archive.pipe(stream);
     const base = `lwc/${name}/`;
     archive.append(files.js || '', { name: base + name + '.js' });
     archive.append(files.html || '', { name: base + name + '.html' });
     archive.append(metaXml, { name: base + name + '.js-meta.xml' });
     if (files.css) archive.append(files.css, { name: base + name + '.css' });
-    // package.xml
     const pkgXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types><members>${name}</members><name>LightningComponentBundle</name></types>
@@ -351,6 +346,27 @@ async function deployLWCBundle(conn, name, files) {
     archive.append(pkgXml, { name: 'package.xml' });
     archive.finalize();
   });
+
+  // Submit deploy (non-blocking) and poll manually with cap
+  const deployResult = await conn.metadata.deploy(zipBuffer, { singlePackage: true, rollbackOnError: true });
+  const deployId = deployResult.id || deployResult.async?.id;
+  if (!deployId) {
+    // Some jsforce versions return the result directly
+    if (deployResult.success || deployResult.status === 'Succeeded') return { success: true };
+  }
+  // Poll up to ~22s (within Heroku 30s limit)
+  for (let i = 0; i < 11; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const status = await conn.metadata.checkDeployStatus(deployId, true);
+    if (status.done) {
+      if (status.success || status.status === 'Succeeded') return { success: true };
+      const failures = status.details?.componentFailures;
+      const failArr = failures ? (Array.isArray(failures) ? failures : [failures]) : [];
+      return { success: false, errors: failArr.map(f => ({ message: f.problem })) };
+    }
+  }
+  // Still in progress — return deployId for later check
+  return { success: false, pending: true, deployId, errors: [{ message: 'Deploy em andamento (timeout). ID: ' + deployId }] };
 }
 
 // ── Flow deploy via Metadata API ──
