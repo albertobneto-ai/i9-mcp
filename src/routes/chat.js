@@ -109,8 +109,9 @@ async function executeRunbookStep(step, org) {
     if (mtype === 'DuplicateRule' && body.fullName) {
       // Ensure required fields with sensible defaults
       if (!body.securityOption) body.securityOption = 'EnforceSharingRules';
-      if (!body.operationsOnInsert && body.actionOnInsert) body.operationsOnInsert = [body.actionOnInsert];
-      if (!body.operationsOnUpdate && body.actionOnUpdate) body.operationsOnUpdate = [body.actionOnUpdate];
+      // DuplicateRule uses actionOnInsert/actionOnUpdate (Allow|Block). Do NOT set operationsOnInsert (different enum, causes errors).
+      delete body.operationsOnInsert;
+      delete body.operationsOnUpdate;
       const objName = (body.fullName || '').split('.')[0] || 'Account';
       // Use listMetadata (authoritative) to find existing rules and max sortOrder
       let maxSort = 0;
@@ -171,7 +172,7 @@ async function executeRunbookStep(step, org) {
     });
     if (ok) return { ok: true, message: `✅ ${mtype} criado: ${name} (sortOrder ${body.sortOrder || '-'})` };
     const rawErrs = errs.map(e => e.message || JSON.stringify(e)).join(' | ');
-    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo\n_debug: ${rawErrs}_` };
+    if (alreadyExists) return { ok: true, alreadyExists: true, message: `ℹ️ ${mtype} já existe: ${name} — prosseguindo` };
     return { ok: false, message: `❌ Erro em ${name}: ${rawErrs}` };
   }
   if (step.action === 'metadata-update') {
