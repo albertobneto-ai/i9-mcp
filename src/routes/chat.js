@@ -112,7 +112,7 @@ async function executeRunbookStep(step, org) {
       if (!body.operationsOnInsert && body.actionOnInsert) body.operationsOnInsert = [body.actionOnInsert];
       if (!body.operationsOnUpdate && body.actionOnUpdate) body.operationsOnUpdate = [body.actionOnUpdate];
       const objName = (body.fullName || '').split('.')[0] || 'Account';
-      // Compute correct sortOrder from ALL existing rules (excluding self)
+      // Use listMetadata (authoritative) to find existing rules and max sortOrder
       let maxSort = 0;
       let selfExists = false;
       try {
@@ -121,6 +121,7 @@ async function executeRunbookStep(step, org) {
           const fn = r.fullName || '';
           if (!fn.startsWith(objName + '.')) continue;
           if (fn === body.fullName) { selfExists = true; continue; }
+          // listMetadata is authoritative — read sortOrder
           try {
             const detail = await sfMulti.metadataRead(org, 'DuplicateRule', fn);
             const so = detail?.sortOrder || 0;
@@ -129,7 +130,7 @@ async function executeRunbookStep(step, org) {
         }
       } catch {}
       body.sortOrder = maxSort + 1;
-      // If self exists (even corrupt), use UPDATE instead of CREATE
+      // Only UPDATE if listMetadata confirmed it exists; otherwise CREATE
       if (selfExists) {
         const upd = await sfMulti.metadataUpdate(org, 'DuplicateRule', body);
         const uitem = Array.isArray(upd) ? upd[0] : upd;
@@ -138,6 +139,7 @@ async function executeRunbookStep(step, org) {
         if (uok) return { ok: true, message: `✅ DuplicateRule atualizada: ${body.fullName} (sortOrder ${body.sortOrder})` };
         return { ok: false, message: `❌ Erro ao atualizar ${body.fullName}: ${uerrs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
       }
+      // Falls through to CREATE below
     }
 
     let result = await sfMulti.metadataCreate(org, mtype, body);
