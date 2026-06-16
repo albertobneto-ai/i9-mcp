@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SF Agent — Ever i9</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
+.login-wrap{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#0f0d1a 0%,#1a1333 100%)}
+.login-box{background:#1e1a2e;border:1px solid #2a2540;border-radius:16px;padding:40px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.login-box h1{font-size:24px;font-weight:700;color:#a78bfa;margin-bottom:4px}
+.login-box p{font-size:13px;color:#64748b;margin-bottom:24px}
+.login-box input{width:100%;padding:12px 16px;background:#12101e;border:1px solid #2a2540;border-radius:10px;color:#e2e8f0;font-family:inherit;font-size:14px;margin-bottom:12px;outline:none;transition:border .2s}
+.login-box input:focus{border-color:#7c3aed}
+.login-box button{width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.login-box button:hover{opacity:.9}
+.login-box .error{color:#f87171;font-size:12px;margin-bottom:8px}
+
+.app{display:flex;flex-direction:column;height:100vh}
+.header{background:linear-gradient(135deg,#1e1a2e,#2a1f4e);padding:14px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #2a2540}
+.header .logo{font-size:18px;font-weight:700;color:#a78bfa}
+.header .model-badge{font-size:11px;background:#7c3aed22;color:#a78bfa;padding:4px 10px;border-radius:20px;border:1px solid #7c3aed33}
+.header .spacer{flex:1}
+.header .user-info{font-size:12px;color:#64748b}
+.header .logout{background:none;border:1px solid #374151;color:#94a3b8;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px}
+
+.messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.msg{max-width:80%;padding:14px 18px;border-radius:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border-bottom-right-radius:4px}
+.msg.assistant{align-self:flex-start;background:#1e1a2e;border:1px solid #2a2540;color:#e2e8f0;border-bottom-left-radius:4px}
+.msg.assistant .model-tag{font-size:10px;color:#7c3aed;margin-bottom:6px;font-weight:600}
+.msg code{background:#12101e;padding:2px 6px;border-radius:4px;font-size:13px}
+.msg pre{background:#12101e;padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0}
+
+.input-area{padding:16px 24px;background:#1e1a2e;border-top:1px solid #2a2540;display:flex;gap:10px}
+.input-area textarea{flex:1;padding:12px 16px;background:#12101e;border:1px solid #2a2540;border-radius:12px;color:#e2e8f0;font-family:inherit;font-size:14px;resize:none;outline:none;min-height:48px;max-height:200px;transition:border .2s}
+.input-area textarea:focus{border-color:#7c3aed}
+.input-area button{padding:12px 20px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:12px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px;white-space:nowrap}
+.input-area button:disabled{opacity:.5;cursor:not-allowed}
+.typing{color:#7c3aed;font-size:13px;padding:8px 18px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.welcome{text-align:center;margin:auto;max-width:500px}
+.welcome h2{font-size:28px;color:#a78bfa;margin-bottom:8px}
+.welcome p{color:#64748b;font-size:14px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginView" class="login-wrap">
+  <div class="login-box">
+    <h1>SF Agent</h1>
+    <p>Ever i9 — Chat IA Salesforce</p>
+    <div id="loginError" class="error hidden"></div>
+    <input id="loginEmail" type="email" placeholder="Email" autocomplete="email">
+    <input id="loginPass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="app hidden">
+  <div class="header">
+    <div class="logo">SF Agent</div>
+    <div class="model-badge" id="modelBadge">Claude Sonnet 4.6</div>
+    <div class="spacer"></div>
+    <div class="user-info" id="userInfo"></div>
+    <button class="logout" onclick="doLogout()">Sair</button>
+  </div>
+  <div class="messages" id="messages">
+    <div class="welcome">
+      <h2>SF Agent</h2>
+      <p>Assistente especialista Salesforce.<br>Pergunte sobre Sales Cloud, Service Cloud, Data Cloud, Revenue Cloud, Agentforce, MuleSoft.</p>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="chatInput" placeholder="Digite sua mensagem..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">Enviar</button>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('i9mcp_token');
+let user = JSON.parse(localStorage.getItem('i9mcp_user') || 'null');
+let history = [];
+let conversationId = null;
+let sending = false;
+
+if (token && user) showApp();
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Erro'; errEl.classList.remove('hidden'); return; }
+    token = d.token; user = d.user;
+    localStorage.setItem('i9mcp_token', token);
+    localStorage.setItem('i9mcp_user', JSON.stringify(user));
+    showApp();
+  } catch (e) { errEl.textContent = 'Erro de conexão'; errEl.classList.remove('hidden'); }
+}
+
+function doLogout() {
+  token = null; user = null; history = []; conversationId = null;
+  localStorage.removeItem('i9mcp_token');
+  localStorage.removeItem('i9mcp_user');
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('appView').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('userInfo').textContent = user.name + ' (' + user.role + ')';
+  document.getElementById('chatInput').focus();
+}
+
+async function sendMessage() {
+  if (sending) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  history.push({ role: 'user', content: text });
+  appendMsg('user', text);
+  sending = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const typingEl = document.createElement('div');
+  typingEl.className = 'typing';
+  typingEl.textContent = 'Pensando...';
+  document.getElementById('messages').appendChild(typingEl);
+  typingEl.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const r = await fetch(API + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ messages: history, conversationId })
+    });
+    if (r.status === 401) { doLogout(); return; }
+    const d = await r.json();
+    typingEl.remove();
+    const content = d.choices?.[0]?.message?.content || d.error || 'Sem resposta';
+    history.push({ role: 'assistant', content });
+    conversationId = d.conversationId || conversationId;
+    appendMsg('assistant', content, d.modelo_label);
+    document.getElementById('modelBadge').textContent = d.modelo_label || 'AI';
+  } catch (e) {
+    typingEl.remove();
+    appendMsg('assistant', 'Erro de conexão: ' + e.message);
+  }
+  sending = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+function appendMsg(role, content, modelLabel) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  if (role === 'assistant' && modelLabel) {
+    el.innerHTML = '<div class="model-tag">' + escHtml(modelLabel) + '</div>' + formatMsg(content);
+  } else {
+    el.innerHTML = formatMsg(content);
+  }
+  const welcome = document.querySelector('.welcome');
+  if (welcome) welcome.remove();
+  document.getElementById('messages').appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatMsg(text) {
+  text = escHtml(text);
+  // Code blocks
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  // Inline code
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return text;
+}
+
+// Auto-resize textarea
+document.getElementById('chatInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+});
+</script>
+</body>
+</html>
