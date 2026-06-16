@@ -198,6 +198,17 @@ async function executeRunbookStep(step, org) {
     const name = body.fullName || body.label || mtype;
     return { ok, message: ok ? `✅ ${mtype} atualizado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
   }
+  if (step.action === 'metadata-delete') {
+    const mtype = step.type;
+    const fname = step.fullName || (step.body && step.body.fullName);
+    if (!mtype || !fname) return { ok: false, message: '❌ metadata-delete requer type e fullName' };
+    try {
+      const result = await sfMulti.metadataDelete(org, mtype, fname);
+      const item = Array.isArray(result) ? result[0] : result;
+      const ok = item?.success !== false;
+      return { ok, message: ok ? `✅ ${mtype} deletado: ${fname}` : `❌ Erro ao deletar ${fname}` };
+    } catch (e) { return { ok: false, message: `❌ ${e.message}` }; }
+  }
   if (step.action === 'validate') {
     // Run SOQL and evaluate condition
     if (!step.query) return { ok: false, message: '❌ validate requer query' };
@@ -763,6 +774,19 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
+        // ── /delete-field Object.Field__c ──
+    if (lower.startsWith('/delete-field ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const fname = userMsg.trim().substring(14).trim();
+      if (!fname || !fname.includes('.')) return res.json({ choices: [{ message: { content: '⚠️ Use: /delete-field Lead.Campo__c' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      let orgUrl = '';
+      try { const c = await sfMulti.testConnection(org); orgUrl = c.instanceUrl || ''; } catch {}
+      const orgLink = orgUrl ? orgUrl.replace('https://','') : org.username;
+      const preview = `### Deletar campo?\n\n**Org:** [${orgLink}](${orgUrl})\n\n- **Campo:** ${fname}\n\n⚠️ Esta ação é irreversível.`;
+      const payload = Buffer.from(JSON.stringify({ type: 'CustomField', fullName: fname })).toString('base64');
+      return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'delete-field', payload } });
+    }
+
         // ── /confirm:ACTION:PAYLOAD — executa ação pendente ──
     if (lower.startsWith('/confirm:')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
@@ -798,6 +822,13 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
             return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
           }
+        }
+        if (action === 'delete-field') {
+          const result = await sfMulti.metadataDelete(org, body.type || 'CustomField', body.fullName);
+          const item = Array.isArray(result) ? result[0] : result;
+          const ok = item?.success !== false;
+          const text = ok ? `✅ **Campo deletado:** ${body.fullName}` : `❌ Erro ao deletar ${body.fullName}`;
+          return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
         }
         return res.json({ choices: [{ message: { content: '❌ Ação desconhecida: ' + action } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'error' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
