@@ -1000,13 +1000,13 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           let check = '', status = '', ok = false;
 
           try {
-            if (act === 'create-field' || (comp && comp.includes('.') && comp.endsWith('__c') && act === 'metadata-create')) {
-              // Campo: verificar via describe
+            if (act === 'create-field' || (comp && comp.includes('.') && comp.endsWith('__c') && act === 'metadata-create' && !comp.includes('MR_') && !comp.includes('DR_'))) {
+              // Campo: verificar via Tooling query (sem cache, ao contrário do describe)
               const [objName, fieldName] = comp.split('.');
-              const d = await sfMulti.describeObject(org, objName);
-              const found = d.fields && d.fields.find(f => f.name === fieldName);
-              ok = !!found;
-              check = found ? `Campo existe (${found.type})` : 'Campo NÃO encontrado';
+              const devName = fieldName.replace(/__c$/, '');
+              const q = await sfMulti.runToolingQuery(org, `SELECT Id, DataType FROM CustomField WHERE TableEnumOrId = '${objName}' AND DeveloperName = '${devName}'`);
+              ok = q.records && q.records.length > 0;
+              check = ok ? `Campo existe (${q.records[0].DataType || 'OK'})` : 'Campo NÃO encontrado';
               status = ok ? '✅' : '❌';
             } else if (act === 'metadata-create' || act === 'metadata-update') {
               // Metadado: inferir tipo pelo nome e ler
