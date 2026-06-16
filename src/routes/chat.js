@@ -609,7 +609,7 @@ Regras:
 - Converta nomes como "teste_mcp_server" em "teste_mcp_server__c" e label "Teste Mcp Server"`;
 
         const parsed = await claude.call(parsePrompt, [{ role: 'user', content: input }], 1024);
-        let spec;
+        let spec;  // create-field stays on Sonnet — simple parsing
         try {
           const clean = parsed.replace(/```json\n?|```\n?/g, '').trim();
           spec = JSON.parse(clean);
@@ -673,6 +673,7 @@ Regras:
 
       try {
         let steps;
+        let parseModel = null;
         // Try JSON first
         try {
           const clean = input.replace(/```json\n?|```\n?/g, '').trim();
@@ -702,7 +703,9 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 
 Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
-          const parsed = await claude.call(parsePrompt, [{ role: 'user', content: input }], 4096);
+          const parsedResult = await claude.callRouted('runbook-parse', parsePrompt, [{ role: 'user', content: input }], 8192);
+          parseModel = parsedResult.model;
+          const parsed = parsedResult.text;
           const cleanParsed = parsed.replace(/```json\n?|```\n?/g, '').trim();
           steps = JSON.parse(cleanParsed);
           if (!Array.isArray(steps)) steps = [steps];
@@ -717,7 +720,11 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
         // Show FULL PLAN summary before starting
         let preview = `## Runbook — ${steps.length} passos\n\n`;
-        preview += `**Org:** [${orgLink}](${orgUrl})\n\n`;
+        preview += `**Org:** [${orgLink}](${orgUrl})\n`;
+        if (parseModel) {
+          preview += `**Gerado por:** ${parseModel.includes('opus') ? 'Claude Opus 4.6' : parseModel}\n`;
+        }
+        preview += `\n`;
         preview += `| # | Ação | Componente | Detalhes |\n|---|---|---|---|\n`;
         for (let i = 0; i < steps.length; i++) {
           const s = steps[i];
