@@ -283,6 +283,15 @@ async function executeRunbookStep(step, org) {
     const fname = step.fullName || (step.body && step.body.fullName);
     if (!mtype || !fname) return { ok: false, message: '❌ metadata-delete requer type e fullName' };
     try {
+      // Apex uses Tooling API delete
+      if (mtype === 'ApexClass') {
+        const r = await sfMulti.deleteApexClass(org, fname);
+        return { ok: r.success, message: r.success ? `✅ ApexClass deletada: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
+      }
+      if (mtype === 'ApexTrigger') {
+        const r = await sfMulti.deleteApexTrigger(org, fname);
+        return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
+      }
       const result = await sfMulti.metadataDelete(org, mtype, fname);
       const item = Array.isArray(result) ? result[0] : result;
       const ok = item?.success !== false;
