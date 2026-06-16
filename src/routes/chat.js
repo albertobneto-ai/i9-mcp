@@ -326,8 +326,8 @@ Regras:
         if (['Picklist','MultiselectPicklist'].includes(body.type) && spec.picklistValues) { body.picklist = spec.picklistValues; }
         if (spec.description) body.description = spec.description;
 
-        // Confirm what will be created
-        let preview = `**Criando campo na org...**\n\n`;
+        // Preview - do NOT execute yet
+        let preview = `### Confirma a criação?\n\n`;
         preview += `- **Objeto:** ${spec.object}\n`;
         preview += `- **Campo:** ${spec.fieldName}\n`;
         preview += `- **Label:** ${body.label}\n`;
@@ -336,19 +336,9 @@ Regras:
         preview += `\n`;
         if (body.picklist) preview += `- **Valores:** ${body.picklist.join(', ')}\n`;
         if (body.referenceTo) preview += `- **Referência:** ${body.referenceTo}\n`;
+        preview += `\n[[CONFIRM:create-field:${Buffer.from(JSON.stringify(body)).toString('base64')}]]`;
 
-        const result = await sfMulti.metadataCreate(org, 'CustomField', body);
-        const item = Array.isArray(result) ? result[0] : result;
-        const ok = item?.success !== false;
-        const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
-
-        if (ok) {
-          preview += `\n✅ **Campo criado com sucesso!**`;
-        } else {
-          preview += `\n❌ **Erro:** ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}`;
-        }
-
-        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'create-field' });
+        return res.json({ choices: [{ message: { content: preview } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', pendingAction: 'create-field' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
@@ -363,6 +353,33 @@ Regras:
         let text = `## Metadata: ${mtype} — ${fname}\n\`\`\`json\n${JSON.stringify(result, null, 2).substring(0, 5000)}\n\`\`\``;
         return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'metadata' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+        // ── /confirm:ACTION:PAYLOAD — executa ação pendente ──
+    if (lower.startsWith('/confirm:')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const parts = userMsg.trim().substring(9).split(':');
+      const action = parts[0];
+      const payload = parts.slice(1).join(':');
+      try {
+        const body = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+        if (action === 'create-field') {
+          const result = await sfMulti.metadataCreate(org, 'CustomField', body);
+          const item = Array.isArray(result) ? result[0] : result;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          const text = ok
+            ? `✅ **Campo criado com sucesso!**\n- **${body.fullName}** (${body.type})`
+            : `❌ **Erro:** ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}`;
+          return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
+        }
+        return res.json({ choices: [{ message: { content: '❌ Ação desconhecida: ' + action } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'error' });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ Erro: ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+    // ── /cancel — cancela ação pendente ──
+    if (lower === '/cancel') {
+      return res.json({ choices: [{ message: { content: '🚫 **Ação cancelada.**' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'cancelled' });
     }
 
         // ── AI Chat ──
