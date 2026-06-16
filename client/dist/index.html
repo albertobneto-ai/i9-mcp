@@ -245,7 +245,7 @@ async function sendMessage(){
       conversationId=d.conversationId||conversationId;
     }
     const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local';
-    appendMsg('assistant',content,d.modelo_label,isOrgCmd);
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData);
     if(!isOrgCmd) document.getElementById('modelBadge').textContent=d.modelo_label||'AI';
   }catch(e){
     typingEl.remove();
@@ -256,7 +256,7 @@ async function sendMessage(){
   input.focus();
 }
 
-function appendMsg(role,content,label,isOrg){
+function appendMsg(role,content,label,isOrg,confirmData){
   const el=document.createElement('div');
   el.className='msg '+role;
   if(role==='assistant'&&label){
@@ -264,6 +264,12 @@ function appendMsg(role,content,label,isOrg){
     el.innerHTML='<div class="'+cls+'">'+escHtml(label)+'</div>'+renderMd(content);
   } else {
     el.innerHTML=role==='user'?escHtml(content):renderMd(content);
+  }
+  if(confirmData){
+    const box=document.createElement('div');
+    box.className='confirm-box';
+    box.innerHTML='<button class="confirm-btn yes" onclick="doConfirm(\''+confirmData.action+'\',\''+confirmData.payload+'\')">\u2713 Confirmar</button><button class="confirm-btn no" onclick="doCancel()">\u2717 Cancelar</button>';
+    el.appendChild(box);
   }
   const w=document.querySelector('.welcome');if(w)w.remove();
   document.getElementById('messages').appendChild(el);
@@ -279,15 +285,22 @@ function renderMd(text){
   text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   text=text.replace(/^## (.+)$/gm,'<h2>$1</h2>');
   text=text.replace(/^### (.+)$/gm,'<h3>$1</h3>');
-  text=text.replace(/^\| (.+)$/gm,function(m){
-    const cells=m.split('|').filter(c=>c.trim());
-    if(cells.every(c=>c.trim().match(/^-+$/))) return '';
-    const isHeader=!document.querySelector('.building-table');
-    const tag=isHeader?'th':'td';
-    return '<tr>'+cells.map(c=>'<'+tag+'>'+c.trim()+'</'+tag+'>').join('')+'</tr>';
+  text=text.replace(/((?:^\|.+\|$\n?)+)/gm,function(block){
+    var rows=block.trim().split('\n');
+    if(rows.length<2) return block;
+    var html='<table>',first=true;
+    for(var i=0;i<rows.length;i++){
+      var cells=rows[i].split('|').slice(1);
+      if(cells.length&&cells[cells.length-1].trim()==='')cells.pop();
+      if(!cells.length)continue;
+      if(cells.every(function(c){return /^[-:]+$/.test(c.trim());}))continue;
+      var tag=first?'th':'td';
+      html+='<tr>'+cells.map(function(c){return '<'+tag+'>'+c.trim()+'</'+tag+'>';}).join('')+'</tr>';
+      first=false;
+    }
+    return html+'</table>';
   });
-  text=text.replace(/((?:<tr>.*<\/tr>\s*)+)/g,'<table>$1</table>');
-  text=text.replace(/^- (.+)$/gm,'• $1');
+  text=text.replace(/^- (.+)$/gm,'\u2022 $1');
   return text;
 }
 
