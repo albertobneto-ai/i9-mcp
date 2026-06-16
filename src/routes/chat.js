@@ -327,7 +327,16 @@ Regras:
         if (spec.description) body.description = spec.description;
 
         // Preview - do NOT execute yet
+        // Get org instance URL
+        let orgUrl = '';
+        try {
+          const conn = await sfMulti.testConnection(org);
+          orgUrl = conn.instanceUrl || '';
+        } catch {}
+        const orgLink = orgUrl ? orgUrl.replace('https://','') : org.username;
+
         let preview = `### Confirma a criação?\n\n`;
+        preview += `**Org:** [${orgLink}](${orgUrl})\n\n`;
         preview += `- **Objeto:** ${spec.object}\n`;
         preview += `- **Campo:** ${spec.fieldName}\n`;
         preview += `- **Label:** ${body.label}\n`;
