@@ -112,31 +112,31 @@ async function executeRunbookStep(step, org) {
       if (!body.operationsOnInsert && body.actionOnInsert) body.operationsOnInsert = [body.actionOnInsert];
       if (!body.operationsOnUpdate && body.actionOnUpdate) body.operationsOnUpdate = [body.actionOnUpdate];
       const objName = (body.fullName || '').split('.')[0] || 'Account';
-      // Step 1: delete this specific rule if it already exists (clean slate)
-      try {
-        const existing = await sfMulti.metadataRead(org, 'DuplicateRule', body.fullName);
-        if (existing && existing.masterLabel !== undefined) {
-          try { await sfMulti.metadataDelete(org, 'DuplicateRule', body.fullName); } catch {}
-        }
-      } catch {}
-      // Step 2: list ALL DuplicateRules for this object, find max sortOrder
+      // Compute correct sortOrder from ALL existing rules (excluding self)
+      let maxSort = 0;
+      let selfExists = false;
       try {
         const allRules = await sfMulti.listMetadata(org, 'DuplicateRule');
-        const objRules = allRules.filter(r => {
+        for (const r of allRules) {
           const fn = r.fullName || '';
-          return fn.startsWith(objName + '.') && fn !== body.fullName;
-        });
-        let maxSort = 0;
-        for (const r of objRules) {
+          if (!fn.startsWith(objName + '.')) continue;
+          if (fn === body.fullName) { selfExists = true; continue; }
           try {
-            const detail = await sfMulti.metadataRead(org, 'DuplicateRule', r.fullName);
+            const detail = await sfMulti.metadataRead(org, 'DuplicateRule', fn);
             const so = detail?.sortOrder || 0;
             if (so > maxSort) maxSort = so;
           } catch {}
         }
-        body.sortOrder = maxSort + 1;
-      } catch {
-        if (!body.sortOrder) body.sortOrder = 1;
+      } catch {}
+      body.sortOrder = maxSort + 1;
+      // If self exists (even corrupt), use UPDATE instead of CREATE
+      if (selfExists) {
+        const upd = await sfMulti.metadataUpdate(org, 'DuplicateRule', body);
+        const uitem = Array.isArray(upd) ? upd[0] : upd;
+        const uok = uitem?.success !== false;
+        const uerrs = uitem?.errors ? (Array.isArray(uitem.errors) ? uitem.errors : [uitem.errors]) : [];
+        if (uok) return { ok: true, message: `✅ DuplicateRule atualizada: ${body.fullName} (sortOrder ${body.sortOrder})` };
+        return { ok: false, message: `❌ Erro ao atualizar ${body.fullName}: ${uerrs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
       }
     }
 
