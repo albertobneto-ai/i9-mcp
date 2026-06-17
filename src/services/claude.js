@@ -127,3 +127,25 @@ export async function callRouted(task, systemPrompt, messages, maxTokens = 8192)
     throw err;
   }
 }
+
+// KB assistant with web search (Haiku + web_search tool)
+export async function callHaikuWithSearch(systemPrompt, messages, maxTokens = 2048) {
+  const apiKey = process.env.ANTHROPIC_KEY;
+  const body = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages,
+    tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+  };
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  // Extract text from content blocks (may include web search results)
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  return text;
+}
