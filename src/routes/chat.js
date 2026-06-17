@@ -1568,13 +1568,20 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             previousState: result.previousState || null
           });
           let text = `### Passo ${currentStep + 1} de ${steps.length}\n\n${result.message}\n`;
+          // Se falhou, incluir contexto para análise de erro via Opus
+          let errorAnalysis = null;
+          if (!result.ok) {
+            errorAnalysis = { step: JSON.parse(JSON.stringify(step)), error: result.message, orgName: org.name };
+          }
           const nextStep = currentStep + 1;
           if (nextStep < steps.length) {
             // Show next step preview
             text += `\n---\n### Próximo — Passo ${nextStep + 1} de ${steps.length}\n\n`;
             text += formatStepPreview(steps[nextStep]);
             const nextPayload = { steps, currentStep: nextStep, us };
-            return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } });
+            const respData = { choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } };
+            if (errorAnalysis) respData.errorAnalysis = errorAnalysis;
+            return res.json(respData);
           } else {
             text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
             const finalResp = { choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' };
