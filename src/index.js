@@ -124,6 +124,24 @@ Regras:
   }
 });
 
+// Analyze Error — Opus analisa erro de step e sugere correção
+app.post('/api/analyze-error', authMiddleware, async (req, res) => {
+  try {
+    const { step, error, orgName } = req.body;
+    if (!step || !error) return res.status(400).json({ error: 'step e error obrigatórios' });
+
+    const { callRouted } = await import('./services/claude.js');
+    const result = await callRouted('chat',
+      'Você é um arquiteto Salesforce especialista em troubleshooting. Analise o erro de deploy e sugira correção.\n\nRESPONDA:\n1. **Causa provável** (1-2 linhas)\n2. **Correção sugerida** — step corrigido em JSON\n3. **Alternativa manual** se não for automatizável\n\nSeja direto. Português do Brasil.',
+      [{ role: 'user', content: 'Org: ' + (orgName || 'N/A') + '\n\nStep: ' + JSON.stringify(step) + '\n\nErro: ' + error }],
+      2048
+    );
+    res.json({ choices: [{ message: { content: result.text } }], model: result.model });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Upload HF — lê .docx e retorna texto + resumo
 import mammoth from 'mammoth';
 app.post('/api/upload-hf', authMiddleware, async (req, res) => {
