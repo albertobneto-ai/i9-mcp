@@ -431,3 +431,107 @@ export async function readLWCBundleFiles(org, name) {
   }
   return { exists: true, files };
 }
+
+// === Grupo 2: Layout add field e Profile FLS (ADITIVO) ===
+
+/**
+ * Adiciona um campo a uma seção específica de um Page Layout.
+ * @param {Object} org - org connection
+ * @param {string} layoutName - ex: "Account-Account Layout Nacional PJ"
+ * @param {string} fieldName - API name do campo
+ * @param {string} sectionLabel - label da seção destino
+ * @param {string} behavior - 'Required'|'Edit'|'Readonly' (default: 'Edit')
+ */
+export async function addFieldToLayout(org, layoutName, fieldName, sectionLabel, behavior = 'Edit') {
+  const conn = org.connection;
+  const layout = await conn.metadata.read('Layout', layoutName);
+  if (!layout || !layout.fullName) return { status: 'error', message: 'Layout not found: ' + layoutName };
+
+  if (!Array.isArray(layout.layoutSections)) layout.layoutSections = [layout.layoutSections].filter(Boolean);
+
+  const section = layout.layoutSections.find(s => s.label === sectionLabel);
+  if (!section) {
+    return { status: 'error', message: 'Section not found: ' + sectionLabel + '. Available: ' + layout.layoutSections.map(s => s.label).join(', ') };
+  }
+
+  if (!Array.isArray(section.layoutColumns)) section.layoutColumns = [section.layoutColumns].filter(Boolean);
+  if (!section.layoutColumns.length) section.layoutColumns = [{ layoutItems: [] }];
+
+  // Verifica se o campo já está em alguma coluna desta seção
+  const exists = section.layoutColumns.some(col => {
+    if (!col.layoutItems) return false;
+    const items = Array.isArray(col.layoutItems) ? col.layoutItems : [col.layoutItems];
+    return items.some(it => it.field === fieldName);
+  });
+  if (exists) return { status: 'exists', message: 'Field already in section' };
+
+  // Adiciona à primeira coluna
+  const col0 = section.layoutColumns[0];
+  if (!col0.layoutItems) col0.layoutItems = [];
+  if (!Array.isArray(col0.layoutItems)) col0.layoutItems = [col0.layoutItems];
+  col0.layoutItems.push({ field: fieldName, behavior });
+
+  const result = await conn.metadata.update('Layout', layout);
+  return { status: 'success', result, message: 'Field added to layout section' };
+}
+
+/**
+ * Atualiza FLS de um Profile.
+ * @param {Object} org - org connection
+ * @param {string} profileName - ex: "Profile_Comercial_Base"
+ * @param {Array} fieldPermissions - [{ field: 'Object.Field__c', editable: true, readable: true }]
+ * @param {Array} objectPermissions - [{ object, allowCreate, allowRead, allowEdit, allowDelete, viewAllRecords, modifyAllRecords }]
+ */
+export async function updateProfileFLS(org, profileName, fieldPermissions = [], objectPermissions = []) {
+  const conn = org.connection;
+  const profile = await conn.metadata.read('Profile', profileName);
+  if (!profile || !profile.fullName) return { status: 'error', message: 'Profile not found: ' + profileName };
+
+  // FLS
+  if (fieldPermissions.length) {
+    let existingFP = profile.fieldPermissions || [];
+    if (!Array.isArray(existingFP)) existingFP = [existingFP].filter(Boolean);
+    const fpMap = new Map(existingFP.map(fp => [fp.field, fp]));
+    for (const fp of fieldPermissions) {
+      fpMap.set(fp.field, { field: fp.field, editable: fp.editable, readable: fp.readable });
+    }
+    profile.fieldPermissions = Array.from(fpMap.values());
+  }
+
+  // Object permissions
+  if (objectPermissions.length) {
+    let existingOP = profile.objectPermissions || [];
+    if (!Array.isArray(existingOP)) existingOP = [existingOP].filter(Boolean);
+    const opMap = new Map(existingOP.map(op => [op.object, op]));
+    for (const op of objectPermissions) {
+      opMap.set(op.object, op);
+    }
+    profile.objectPermissions = Array.from(opMap.values());
+  }
+
+  const result = await conn.metadata.update('Profile', profile);
+  return { status: 'success', result, fieldsUpdated: fieldPermissions.length, objectsUpdated: objectPermissions.length };
+}
+
+/**
+ * Ativa Matching Rule ou Duplicate Rule via Tooling API.
+ */
+export async function activateRule(org, ruleType, ruleName) {
+  const conn = org.connection;
+  if (ruleType === 'MatchingRule') {
+    const result = await conn.tooling.sobject('MatchingRule').find({ DeveloperName: ruleName });
+    if (!result.length) return { status: 'error', message: 'Matching Rule not found: ' + ruleName };
+    const rule = await conn.metadata.read('MatchingRule', `${result[0].SobjectType}.${ruleName}`);
+    rule.ruleStatus = 'Active';
+    const r = await conn.metadata.update('MatchingRule', rule);
+    return { status: 'success', result: r };
+  }
+  if (ruleType === 'DuplicateRule') {
+    const rule = await conn.metadata.read('DuplicateRule', ruleName);
+    if (!rule.fullName) return { status: 'error', message: 'Duplicate Rule not found: ' + ruleName };
+    rule.isActive = true;
+    const r = await conn.metadata.update('DuplicateRule', rule);
+    return { status: 'success', result: r };
+  }
+  return { status: 'error', message: 'Unknown rule type: ' + ruleType };
+}
