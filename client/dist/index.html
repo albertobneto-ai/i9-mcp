@@ -60,6 +60,8 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
 .cmd-btn.spec:hover{color:#93c5fd;border-color:#60a5fa66}
 .cmd-btn.qa{color:#34d399;border-color:#34d39933;font-weight:600}
 .cmd-btn.qa:hover{color:#6ee7b7;border-color:#34d39966}
+.cmd-btn.rollback{color:#f87171;border-color:#f8717133;font-weight:600}
+.cmd-btn.rollback:hover{color:#fca5a5;border-color:#f8717166}
 .download-box{margin-top:14px}
 .download-btn{padding:10px 20px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
 .download-btn:hover{opacity:.9}
@@ -147,9 +149,10 @@ body{font-family:Outfit,sans-serif;background:#0f0d1a;color:#e2e8f0;height:100vh
       <div class="cmd-btn dev" onclick="setCmd('/apex ')">/apex</div>
       <div class="cmd-btn dev" onclick="setCmd('/metadata-read ')">/metadata-read</div>
     </div>
-    <div class="cmd-group"><span class="cmd-label">Org</span>
+    <div class="cmd-group"><span class="cmd-label">Auditoria & Org</span>
+      <div class="cmd-btn" onclick="setCmd('/log ')">/log</div>
+      <div class="cmd-btn rollback" onclick="setCmd('/rollback ')">/rollback</div>
       <div class="cmd-btn" onclick="setCmd('/status')">/status</div>
-      <div class="cmd-btn" onclick="setCmd('/log')">/log</div>
       <div class="cmd-btn" onclick="setCmd('/help')">/help</div>
     </div>
   </div>
