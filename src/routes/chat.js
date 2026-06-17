@@ -1098,7 +1098,7 @@ FORMATO DA RESPOSTA:
       // Detecta se é JSON puro (rápido) ou texto livre (precisa Opus = async)
       // Remove US token no início (ex: "CRMB2B-90 [...]") antes de tentar parsear
       let jsonCandidate = input.replace(/```json\n?|```\n?/g, '').trim();
-      const leadingUs = jsonCandidate.match(/^([A-Z][A-Z0-9]*-[A-Z0-9]+)\s+(?=[\[{])/i);
+      const leadingUs = jsonCandidate.match(/^([A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+)\s+(?=[\[{])/i);
       if (leadingUs) jsonCandidate = jsonCandidate.substring(leadingUs[0].length).trim();
       let isJson = false;
       try { JSON.parse(jsonCandidate); isJson = true; } catch { isJson = false; }
