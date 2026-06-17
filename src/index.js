@@ -124,19 +124,48 @@ Regras:
   }
 });
 
-// Analyze Error — Opus analisa erro de step e sugere correção
+// Analyze Error — Opus analisa erro + retorna step corrigido para auto-fix
 app.post('/api/analyze-error', authMiddleware, async (req, res) => {
   try {
     const { step, error, orgName } = req.body;
     if (!step || !error) return res.status(400).json({ error: 'step e error obrigatórios' });
 
     const { callRouted } = await import('./services/claude.js');
-    const result = await callRouted('chat',
-      'Você é um arquiteto Salesforce especialista em troubleshooting. Analise o erro de deploy e sugira correção.\n\nRESPONDA:\n1. **Causa provável** (1-2 linhas)\n2. **Correção sugerida** — step corrigido em JSON\n3. **Alternativa manual** se não for automatizável\n\nSeja direto. Português do Brasil.',
-      [{ role: 'user', content: 'Org: ' + (orgName || 'N/A') + '\n\nStep: ' + JSON.stringify(step) + '\n\nErro: ' + error }],
+    const sysPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting de deploys automatizados.\n\n' +
+      'Analise o erro e sugira correção EXECUTÁVEL.\n\n' +
+      'RESPONDA neste formato:\n' +
+      '1. **Causa:** (1-2 linhas)\n' +
+      '2. **Correção:** (o que mudar)\n\n' +
+      'Depois, OBRIGATORIAMENTE inclua um bloco com o step corrigido:\n' +
+      '```json\n[{"action":"...", ...}]\n```\n\n' +
+      'Actions disponíveis: create-field, metadata-create, metadata-delete, soql, validate, apex, layout-add-field, profile-fls, activate-rule\n' +
+      'Se campo não existe → use create-field. Se objeto não existe → metadata-create CustomObject.\n' +
+      'Se SOQL referencia campo inexistente → corrija o nome ou remova o campo.\n' +
+      'Se NÃO for automatizável (Named Credential, Setup manual) → escreva MANUAL no JSON e explique.\n' +
+      'Português do Brasil. Seja direto.';
+
+    const result = await callRouted('chat', sysPrompt,
+      [{ role: 'user', content: 'Org: ' + (orgName || 'N/A') + '\nStep: ' + JSON.stringify(step) + '\nErro: ' + error }],
       2048
     );
-    res.json({ choices: [{ message: { content: result.text } }], model: result.model });
+
+    // Extrair JSON do step corrigido
+    let fixSteps = null;
+    const jsonMatch = result.text.match(/```json\n([\s\S]*?)```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].action) {
+          fixSteps = parsed;
+        }
+      } catch {}
+    }
+
+    res.json({
+      choices: [{ message: { content: result.text } }],
+      model: result.model,
+      fixSteps: fixSteps
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
