@@ -504,14 +504,24 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable,er
         if(fixSteps&&fixSteps.length>0){
           const fb=document.createElement('button');
           fb.className='fix-btn';
-          fb.innerHTML='🔧 Corrigir e Executar';
+          fb.innerHTML='🔧 Corrigir e Retomar Runbook';
           fb.onclick=function(){
-            fb.disabled=true;fb.textContent='⏳ Executando correção...';
+            fb.disabled=true;fb.textContent='⏳ Executando correção + retomando...';
+            // Combinar: fix steps + remaining steps do runbook original
+            const remaining=errorAnalysis.remainingSteps||[];
+            const combined=fixSteps.concat(remaining);
+            const usTag=errorAnalysis.us||'AUTOFIX';
             const ci=document.getElementById('chatInput');
-            ci.value='/runbook AUTOFIX '+JSON.stringify(fixSteps);
+            ci.value='/runbook '+usTag+' '+JSON.stringify(combined);
             sendMessage();
           };
           aEl.appendChild(fb);
+          if(errorAnalysis.remainingSteps&&errorAnalysis.remainingSteps.length>0){
+            const hint=document.createElement('div');
+            hint.style.cssText='font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px';
+            hint.textContent='Após a correção, o runbook retoma automaticamente os '+errorAnalysis.remainingSteps.length+' passos restantes.';
+            aEl.appendChild(hint);
+          }
         }
         document.getElementById('messages').appendChild(aEl);
         aEl.scrollIntoView({behavior:'smooth'});
