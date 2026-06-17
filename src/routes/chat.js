@@ -944,6 +944,47 @@ Regras:
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
+        // ── /scriptApex — gera script Apex para execução anônima na org ──
+    if (lower.startsWith('/scriptapex')) {
+      const desc = userMsg.trim().substring(11).trim();
+      if (!desc) return res.json({ choices: [{ message: { content: '⚠️ Descreva o que precisa em linguagem natural após /scriptApex.\n\nExemplo: `/scriptApex consultar Leads com Status Qualified e atualizar Rating para Hot`' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      try {
+        const scriptPrompt = `Você é um especialista Salesforce Apex. Gere um script para EXECUÇÃO ANÔNIMA (Developer Console → Execute Anonymous).
+
+REGRAS OBRIGATÓRIAS:
+- NÃO use "public class", "private", "static" — é execução anônima, código direto
+- SEMPRE envolva em try/catch com System.debug do erro
+- SEMPRE adicione System.debug para feedback (contagens, resultados)
+- Respeite governor limits: use LIMIT quando fizer SELECT, bulkifique DML
+- Para updates/deletes grandes (>200 registros), use Database.update com allOrNone=false
+- Adicione comentários explicativos em português
+- Formate o código limpo e legível
+- Se o script precisar de dados específicos (IDs, valores), use variáveis no topo para fácil customização
+- Para queries grandes, mostre o total encontrado antes de executar
+- NÃO execute DML destrutivo (delete) sem confirmação via debug primeiro — gere uma versão "dry run" que só mostra o que seria afetado, e comente a linha de DML para o usuário descomentar
+
+FORMATO DA RESPOSTA:
+1. Breve descrição do que o script faz (1-2 linhas)
+2. O código Apex em bloco \`\`\`apex
+3. Instruções de uso (onde colar, o que verificar no debug log)`;
+
+        const result = await claude.callRouted('apex-gen', scriptPrompt, [{ role: 'user', content: desc }], 4096);
+        const response = result.text;
+        const modelLabel = result.model.includes('opus') ? 'Claude Opus 4.6' : result.model;
+
+        return res.json({
+          choices: [{ message: { content: response } }],
+          modelo_usado: result.model,
+          modelo_label: modelLabel,
+          tipo: 'script',
+          copyable: true
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: `❌ Erro: ${e.message}` } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
         // ── /spec — gera Especificação Técnica (ASYNC job, Opus + gap analysis) ──
     if (lower.startsWith('/spec')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada para gap analysis.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
