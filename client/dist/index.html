@@ -219,6 +219,11 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
 .analyze-btn{padding:8px 18px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s;margin-top:8px;margin-right:8px}
 .analyze-btn:hover{background:rgba(167,139,250,.2);color:#c4b5fd}
 .analyze-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Fix button */
+.fix-btn{padding:8px 18px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s;margin-top:8px;margin-right:8px}
+.fix-btn:hover{opacity:.9;transform:translateY(-1px)}
+.fix-btn:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -477,7 +482,26 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable,er
         });
         const d=await r.json();
         const reply=d.choices?.[0]?.message?.content||d.error||'Sem resposta';
-        appendMsg('assistant',reply,'Opus 4.6 — Análise de Erro');
+        const fixSteps=d.fixSteps;
+        // Mostrar análise
+        const aEl=document.createElement('div');
+        aEl.className='msg assistant';
+        aEl.innerHTML='<div class="model-tag">Opus 4.6 — Análise de Erro</div>'+renderMd(reply);
+        // Se tem fixSteps, adicionar botão de correção automática
+        if(fixSteps&&fixSteps.length>0){
+          const fb=document.createElement('button');
+          fb.className='fix-btn';
+          fb.innerHTML='🔧 Corrigir e Executar';
+          fb.onclick=function(){
+            fb.disabled=true;fb.textContent='⏳ Executando correção...';
+            const ci=document.getElementById('chatInput');
+            ci.value='/runbook AUTOFIX '+JSON.stringify(fixSteps);
+            sendMessage();
+          };
+          aEl.appendChild(fb);
+        }
+        document.getElementById('messages').appendChild(aEl);
+        aEl.scrollIntoView({behavior:'smooth'});
         abtn.textContent='✅ Análise enviada';
       }catch(e){
         appendMsg('assistant','❌ Erro na análise: '+e.message,'Erro');
