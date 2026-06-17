@@ -224,6 +224,10 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
 .fix-btn{padding:8px 18px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:10px;color:#fff;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s;margin-top:8px;margin-right:8px}
 .fix-btn:hover{opacity:.9;transform:translateY(-1px)}
 .fix-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Spec Adjust */
+.adjust-btn{padding:8px 18px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;color:#f59e0b;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s;margin-top:8px;margin-right:8px}
+.adjust-btn:hover{background:rgba(245,158,11,.2);color:#fbbf24}
 </style>
 </head>
 <body>
@@ -388,8 +392,16 @@ function showApp(){
 async function sendMessage(){
   if(sending)return;
   const input=document.getElementById('chatInput');
-  const text=input.value.trim();
+  let text=input.value.trim();
   if(!text)return;
+  // Intercept: modo ajuste de spec
+  if(pendingSpecJobId&&!text.startsWith('/')){
+    text='/spec-adjust '+pendingSpecJobId+': '+text;
+    input.value=text;
+    pendingSpecJobId=null;
+    input.placeholder='Digite sua mensagem ou comando...';
+    input.style.borderColor='';
+  }
   input.value='';input.style.height='auto';
 
   const isCmd=text.startsWith('/');
@@ -585,8 +597,20 @@ async function pollJob(jobId){
             } catch {}
           }
         } else {
-          // Spec ready — show with download button
+          // Spec ready — show with download + adjust button
           appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
+          // Botão ajustar spec
+          (function(){
+            var ms=document.getElementById('messages');
+            var lm=ms.lastElementChild;
+            if(lm){
+              var ab=document.createElement('button');
+              ab.className='adjust-btn';
+              ab.innerHTML='✏️ Ajustar Spec';
+              ab.onclick=function(){startSpecAdjust(j.id)};
+              lm.appendChild(ab);
+            }
+          })();
         }
         return;
       }
@@ -837,6 +861,19 @@ function generateSpecFromHF(btn) {
   input.value = '/spec ' + hfFullText;
   sendMessage();
   hfFullText = null;
+}
+
+
+
+// ═══ Spec Adjust (ADDITIVE) ═══
+var pendingSpecJobId=null;
+function startSpecAdjust(jobId){
+  pendingSpecJobId=jobId;
+  var ci=document.getElementById('chatInput');
+  ci.placeholder='✏️ Descreva o ajuste na spec...';
+  ci.focus();
+  ci.style.borderColor='rgba(245,158,11,0.5)';
+  appendMsg('assistant','✏️ **Modo de ajuste ativado.**\n\nDescreva o que quer alterar na spec. O Opus aplicará o ajuste e gerará uma nova versão.\n\nExemplos:\n- "Adicione o campo Rating__c na seção 04"\n- "Troque a VR por Flow na seção 05"\n- "Remova a integração MuleSoft do escopo"','SF Agent');
 }
 
 </script>
