@@ -1298,10 +1298,16 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
               status = ok ? '✅' : '❌';
             } else if (act === 'metadata-create' || act === 'metadata-update') {
               // Metadado: inferir tipo pelo nome e ler
-              let mtype = 'CustomField';
-              if (comp.includes('MR_') || comp.toLowerCase().includes('match')) mtype = 'MatchingRule';
-              else if (comp.includes('DR_') || comp.toLowerCase().includes('dup')) mtype = 'DuplicateRule';
+              // Detectar tipo pelo nome/prefixo do componente
+              let mtype = null;
+              const cl = comp.toLowerCase();
+              if (comp.includes('MR_') || cl.includes('match')) mtype = 'MatchingRule';
+              else if (comp.includes('DR_') || cl.includes('dup')) mtype = 'DuplicateRule';
+              else if (comp.includes('VR_') || cl.includes('valid')) mtype = 'ValidationRule';
+              else if (cl.includes('customperm') || comp.includes('CP_')) mtype = 'CustomPermission';
+              else if (cl.includes('permissionsetgroup') || comp.includes('PSG_')) mtype = 'PermissionSetGroup';
               else if (comp.includes('.') && comp.endsWith('__c')) mtype = 'CustomField';
+              else mtype = row.description ? row.description.split(' ')[0] : 'CustomField';
               const meta = await sfMulti.metadataRead(org, mtype, comp);
               if (mtype === 'DuplicateRule') {
                 ok = meta && meta.masterLabel && meta.masterLabel.length > 0;
@@ -1309,6 +1315,15 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
               } else if (mtype === 'MatchingRule') {
                 ok = meta && (meta.ruleStatus === 'Active' || meta.masterLabel);
                 check = ok ? `Status: ${meta.ruleStatus || 'OK'}` : 'Regra não encontrada';
+              } else if (mtype === 'ValidationRule') {
+                ok = meta && (meta.active !== undefined || meta.errorConditionFormula);
+                check = ok ? `Ativa: ${meta.active}, fórmula OK` : 'VR não encontrada';
+              } else if (mtype === 'CustomPermission') {
+                ok = meta && meta.label;
+                check = ok ? `Label: ${meta.label}` : 'CP não encontrada';
+              } else if (mtype === 'PermissionSetGroup') {
+                ok = meta && meta.label;
+                check = ok ? `Label: ${meta.label}` : 'PSG não encontrado';
               } else {
                 ok = meta && Object.keys(meta).length > 0;
                 check = ok ? 'Existe' : 'Não encontrado';
