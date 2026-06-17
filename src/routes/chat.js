@@ -1743,7 +1743,8 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           // Se falhou, incluir contexto para análise de erro via Opus
           let errorAnalysis = null;
           if (!result.ok) {
-            errorAnalysis = { step: JSON.parse(JSON.stringify(step)), error: result.message, orgName: org.name };
+            const remainingSteps = steps.slice(currentStep + 1);
+            errorAnalysis = { step: JSON.parse(JSON.stringify(step)), error: result.message, orgName: org.name, remainingSteps, us: us || null };
           }
           const nextStep = currentStep + 1;
           if (nextStep < steps.length) {
