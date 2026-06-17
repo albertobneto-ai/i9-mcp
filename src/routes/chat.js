@@ -1577,7 +1577,9 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } });
           } else {
             text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
-            return res.json({ choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' });
+            const finalResp = { choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' };
+            if (errorAnalysis) finalResp.errorAnalysis = errorAnalysis;
+            return res.json(finalResp);
           }
         }
         if (action === 'delete-field') {
