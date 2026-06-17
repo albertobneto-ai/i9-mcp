@@ -98,7 +98,7 @@ app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
 
 // KB Assistant (Haiku) — floating agent endpoint
 import { knowledgeBase } from './config/knowledge-base.js';
-import { callHaiku } from './services/claude.js';
+import { callHaikuWithSearch } from './services/claude.js';
 app.post('/api/kb-chat', authMiddleware, async (req, res) => {
   try {
     const { messages } = req.body;
@@ -112,10 +112,12 @@ Regras:
 - Responda em português do Brasil
 - Seja objetivo (2-4 parágrafos no máximo)
 - Use formatação markdown quando útil
-- Se a pergunta não for sobre Salesforce ou o projeto, diga educadamente que você é especializado em Salesforce`;
+- Se a pergunta não for sobre Salesforce ou o projeto, diga educadamente que você é especializado em Salesforce
+- Você tem acesso a pesquisa web. Use-a para complementar respostas quando a base de conhecimento não tiver a informação completa
+- Ao usar informações da web, mencione brevemente a fonte`;
 
     const userMsgs = messages.slice(-6); // últimas 6 mensagens para contexto
-    const response = await callHaiku(systemPrompt, userMsgs, 2048);
+    const response = await callHaikuWithSearch(systemPrompt, userMsgs, 2048);
     res.json({ choices: [{ message: { content: response } }], model: 'haiku' });
   } catch (e) {
     res.status(500).json({ error: e.message });
