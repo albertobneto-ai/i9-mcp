@@ -739,6 +739,7 @@ router.post('/', async (req, res) => {
         `### Auditoria & Org\n` +
         `| Comando | Descrição |\n|---|---|\n` +
         `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
+        `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
         `**Runbook suporta:** CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
@@ -1160,6 +1161,91 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
 
         return res.json({ choices: [{ message: { content: report } }], modelo_usado: 'mcp-server', modelo_label: 'QA Agent — ' + org.name, tipo: 'qa' });
       } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' }); }
+    }
+
+        // ── /rollback [US] — visualiza componentes e permite rollback ──
+    if (lower === '/rollback' || lower.startsWith('/rollback ')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const filter = userMsg.trim().substring(9).trim().toUpperCase();
+      try {
+        let rows;
+        if (filter) {
+          rows = (await pool.query(
+            `SELECT DISTINCT ON (component, action) * FROM deploy_log
+             WHERE UPPER(us_number) = $1 AND result IN ('success','exists')
+             ORDER BY component, action, created_at DESC`,
+            [filter]
+          )).rows;
+        } else {
+          rows = (await pool.query(
+            `SELECT DISTINCT ON (component, action) * FROM deploy_log
+             WHERE result IN ('success','exists')
+             ORDER BY component, action, created_at DESC
+             LIMIT 50`
+          )).rows;
+        }
+        if (!rows.length) return res.json({ choices: [{ message: { content: filter ? `📭 Nenhum componente deployado para "${filter}".` : '📭 Nenhum deploy registrado.' } }], modelo_usado: 'local', modelo_label: 'Rollback', tipo: 'rollback' });
+
+        // Build rollback steps for each component
+        const rollbackSteps = [];
+        for (const r of rows) {
+          const comp = r.component;
+          const act = r.action;
+          // Determine delete type
+          let deleteType = null;
+          if (act === 'create-field') deleteType = 'CustomField';
+          else if (act === 'metadata-create' || act === 'metadata-update') {
+            if (comp.includes('MR_')) deleteType = 'MatchingRule';
+            else if (comp.includes('DR_')) deleteType = 'DuplicateRule';
+            else if (comp.endsWith('__c') && comp.includes('.')) deleteType = 'CustomField';
+            else deleteType = 'CustomField'; // generic fallback
+          }
+          else if (act === 'apex-class') deleteType = 'ApexClass';
+          else if (act === 'apex-trigger') deleteType = 'ApexTrigger';
+          else if (act === 'lwc') deleteType = 'LightningComponentBundle';
+          else if (act === 'flow') deleteType = 'Flow';
+          // Skip non-deletable (soql, validate, manual-step)
+          if (!deleteType) continue;
+          rollbackSteps.push({
+            action: 'metadata-delete',
+            type: deleteType,
+            fullName: comp,
+            description: `Rollback: ${act} → ${comp}`,
+            _original: { us: r.us_number, action: act, date: r.created_at }
+          });
+        }
+        if (!rollbackSteps.length) return res.json({ choices: [{ message: { content: '📭 Nenhum componente reversível encontrado.' } }], modelo_usado: 'local', modelo_label: 'Rollback', tipo: 'rollback' });
+
+        // Reverse order: triggers/apex before fields, DRs before MRs (reverse dependency)
+        const typeOrder = { 'ApexTrigger': 0, 'Flow': 1, 'LightningComponentBundle': 2, 'ApexClass': 3, 'DuplicateRule': 4, 'MatchingRule': 5, 'CustomField': 6 };
+        rollbackSteps.sort((a, b) => (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9));
+
+        // Show table
+        let orgUrl = '';
+        try { const c = await sfMulti.testConnection(org); orgUrl = c.instanceUrl || ''; } catch {}
+        const orgLink = orgUrl ? orgUrl.replace('https://','') : org.username;
+        let text = `## ⏪ Rollback${filter ? ' — ' + filter : ''} — ${rollbackSteps.length} componente(s)\n\n`;
+        text += `**Org:** [${orgLink}](${orgUrl})\n\n`;
+        text += `| # | Tipo | Componente | Ação original | Rollback |\n|---|---|---|---|---|\n`;
+        rollbackSteps.forEach((s, i) => {
+          const orig = s._original || {};
+          text += `| ${i + 1} | ${s.type} | ${s.fullName} | ${orig.action || '-'} | 🗑️ delete |\n`;
+        });
+        text += `\n⚠️ **Atenção:** esta ação vai **deletar** todos os componentes acima da org. Esta operação é irreversível.\n\n`;
+        text += `**Confirme para iniciar o rollback passo a passo.**`;
+
+        // Clean steps for payload (remove _original)
+        const cleanSteps = rollbackSteps.map(({ _original, ...rest }) => rest);
+        const payload = Buffer.from(JSON.stringify({ steps: cleanSteps, currentStep: 0, us: filter || null })).toString('base64');
+
+        return res.json({
+          choices: [{ message: { content: text } }],
+          modelo_usado: 'mcp-server',
+          modelo_label: 'Rollback — ' + org.name,
+          tipo: 'confirm',
+          confirmData: { action: 'runbook', payload }
+        });
+      } catch (e) { return res.json({ choices: [{ message: { content: `❌ ${e.message}` } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' }); }
     }
 
         // ── /log [US] — histórico de auditoria de deploys ──
