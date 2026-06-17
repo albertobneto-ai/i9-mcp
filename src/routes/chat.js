@@ -415,6 +415,41 @@ async function executeRunbookStep(step, org) {
   if (step.action === 'manual-step') {
     return { ok: true, message: `✅ Passo manual registrado — prosseguindo.` };
   }
+  // === Grupo 2 — handlers novos (ADITIVO) ===
+  if (step.action === 'layout-add-field') {
+    const { layoutName, fieldName, sectionLabel, behavior } = step;
+    if (!layoutName || !fieldName || !sectionLabel) return { ok: false, message: '❌ layout-add-field requer layoutName, fieldName, sectionLabel' };
+    try {
+      const r = await sfMulti.addFieldToLayout(org, layoutName, fieldName, sectionLabel, behavior || 'Edit');
+      if (r.status === 'exists') return { ok: true, alreadyExists: true, message: `ℹ️ Campo ${fieldName} já está em ${sectionLabel}` };
+      if (r.status === 'success') return { ok: true, message: `✅ Campo ${fieldName} adicionado a ${sectionLabel} no layout ${layoutName}` };
+      return { ok: false, message: `❌ ${r.message}` };
+    } catch (e) { return { ok: false, message: `❌ Layout: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'profile-fls') {
+    const { profileName, fieldPermissions, objectPermissions } = step;
+    if (!profileName) return { ok: false, message: '❌ profile-fls requer profileName' };
+    try {
+      let previousState = null;
+      try {
+        const conn = org.connection;
+        const existing = await conn.metadata.read('Profile', profileName);
+        previousState = JSON.stringify({ type: 'Profile', name: profileName, fieldPermissions: existing.fieldPermissions, objectPermissions: existing.objectPermissions });
+      } catch {}
+      const r = await sfMulti.updateProfileFLS(org, profileName, fieldPermissions || [], objectPermissions || []);
+      if (r.status === 'success') return { ok: true, message: `✅ Profile ${profileName} atualizado (${r.fieldsUpdated} FLS, ${r.objectsUpdated} objects)`, previousState };
+      return { ok: false, message: `❌ ${r.message}` };
+    } catch (e) { return { ok: false, message: `❌ Profile: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'activate-rule') {
+    const { ruleType, ruleName } = step;
+    if (!ruleType || !ruleName) return { ok: false, message: '❌ activate-rule requer ruleType e ruleName' };
+    try {
+      const r = await sfMulti.activateRule(org, ruleType, ruleName);
+      if (r.status === 'success') return { ok: true, message: `✅ ${ruleType} ${ruleName} ativada` };
+      return { ok: false, message: `❌ ${r.message}` };
+    } catch (e) { return { ok: false, message: `❌ Ativação: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
   return { ok: false, message: '❌ Ação não suportada: ' + step.action };
 }
 
@@ -633,6 +668,9 @@ const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as ações de 
 Ações disponíveis:
 - "action": "create-field" — criar campo custom
 - "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
+- "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
+- "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
+- "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
 - "action": "metadata-update" — atualizar metadado existente
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -801,7 +839,7 @@ router.post('/', async (req, res) => {
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
-        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
+        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (add field), Profile FLS, Activate MR/DR, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
         `Qualquer outra mensagem → **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
@@ -1068,6 +1106,9 @@ FORMATO DA RESPOSTA:
 Ações disponíveis:
 - "action": "create-field" — criar campo custom
 - "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
+- "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
+- "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
+- "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
