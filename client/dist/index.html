@@ -298,6 +298,7 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
     <div class="cmd-group"><span class="cmd-label">Auditoria & Org</span>
       <div class="cmd-btn" onclick="setCmd('/log ')">/log</div>
       <div class="cmd-btn" onclick="setCmd('/checklist ')">/checklist</div>
+      <div class="cmd-btn rollback" onclick="setCmd('/bugfix ')">/bugfix</div>
       <div class="cmd-btn rollback" onclick="setCmd('/rollback ')">/rollback</div>
       <div class="cmd-btn" onclick="setCmd('/status')">/status</div>
       <div class="cmd-btn" onclick="setCmd('/help')">/help</div>
@@ -557,6 +558,32 @@ async function pollJob(jobId){
         if(j.kind==='runbook-parse'&&meta.confirmAction){
           // Runbook plan ready — show with confirm/cancel buttons
           appendMsg('assistant',j.result,'Org: ORG ARQUITETURA',true,{action:meta.confirmAction,payload:meta.confirmPayload});
+        } else if (j.kind === 'bugfix') {
+          // Bugfix ready — show with download + fix button
+          appendMsg('assistant',j.result,modelLabel+' — Bug Fix',false,null,{type:'spec',title:'BugFix_'+(meta.us||'correcao'),content:j.result});
+          // Extrair fixSteps do resultado
+          const fxMatch = j.result.match(/```json\n([\s\S]*?)```/);
+          if (fxMatch) {
+            try {
+              const fxSteps = JSON.parse(fxMatch[1].trim());
+              if (Array.isArray(fxSteps) && fxSteps.length > 0) {
+                const msgs = document.getElementById('messages');
+                const lastMsg = msgs.lastElementChild;
+                if (lastMsg) {
+                  const fb = document.createElement('button');
+                  fb.className = 'fix-btn';
+                  fb.innerHTML = '🔧 Executar Runbook Corretivo';
+                  fb.onclick = function() {
+                    fb.disabled = true; fb.textContent = '⏳ Enviando...';
+                    const ci = document.getElementById('chatInput');
+                    ci.value = '/runbook BUGFIX-' + (meta.us||'FIX') + ' ' + JSON.stringify(fxSteps);
+                    sendMessage();
+                  };
+                  lastMsg.appendChild(fb);
+                }
+              }
+            } catch {}
+          }
         } else {
           // Spec ready — show with download button
           appendMsg('assistant',j.result,modelLabel,false,null,{type:'spec',title:meta.docTitle||'Especificacao_Tecnica',content:j.result});
