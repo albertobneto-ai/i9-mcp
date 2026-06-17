@@ -197,6 +197,11 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
 .kb-input input::placeholder{color:rgba(255,255,255,.2)}
 .kb-input button{width:34px;height:34px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+
+/* Copy button for scripts */
+.copy-box{margin-top:10px}
+.copy-btn{padding:8px 18px;background:rgba(120,80,200,.15);border:1px solid rgba(120,80,200,.3);border-radius:10px;color:#a78bfa;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.copy-btn:hover{background:rgba(120,80,200,.25);color:#c4b5fd}
 </style>
 </head>
 <body>
@@ -264,6 +269,7 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
     </div>
     <div class="cmd-group"><span class="cmd-label">Dev</span>
       <div class="cmd-btn dev" onclick="setCmd('/create-field ')">/create-field</div>
+      <div class="cmd-btn dev" onclick="setCmd('/scriptApex ')">/scriptApex</div>
       <div class="cmd-btn dev" onclick="setCmd('/apex ')">/apex</div>
       <div class="cmd-btn dev" onclick="setCmd('/metadata-read ')">/metadata-read</div>
     </div>
@@ -390,7 +396,7 @@ async function sendMessage(){
       conversationId=d.conversationId||conversationId;
     }
     const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
-    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData);
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable);
     if(!isOrgCmd) document.getElementById('modelBadge').textContent=d.modelo_label||'AI';
     // If a job was started, poll for result
     if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
@@ -403,7 +409,7 @@ async function sendMessage(){
   input.focus();
 }
 
-function appendMsg(role,content,label,isOrg,confirmData,downloadData){
+function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable){
   const el=document.createElement('div');
   el.className='msg '+role;
   if(role==='assistant'&&label){
@@ -417,6 +423,25 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData){
     box.className='confirm-box';
     box.innerHTML='<button class="confirm-btn yes" onclick="doConfirm(\''+confirmData.action+'\',\''+confirmData.payload+'\')">\u2713 Confirmar</button><button class="confirm-btn no" onclick="doCancel()">\u2717 Cancelar</button>';
     el.appendChild(box);
+  }
+  if(copyable){
+    // Extract code block and add copy button
+    const codeMatch=content.match(/```(?:apex)?\n([\s\S]*?)```/);
+    if(codeMatch){
+      const box=document.createElement('div');
+      box.className='copy-box';
+      const btn=document.createElement('button');
+      btn.className='copy-btn';
+      btn.innerHTML='📋 Copiar Script';
+      btn.onclick=function(){
+        navigator.clipboard.writeText(codeMatch[1].trim()).then(()=>{btn.innerHTML='✅ Copiado!';setTimeout(()=>{btn.innerHTML='📋 Copiar Script'},2000)}).catch(()=>{
+          // Fallback
+          const ta=document.createElement('textarea');ta.value=codeMatch[1].trim();document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();btn.innerHTML='✅ Copiado!';setTimeout(()=>{btn.innerHTML='📋 Copiar Script'},2000);
+        });
+      };
+      box.appendChild(btn);
+      el.appendChild(box);
+    }
   }
   if(downloadData){
     const box=document.createElement('div');
@@ -501,7 +526,7 @@ async function generateRunbookFromSpec(specContent, btn){
     const d=await r.json();
     const content=d.choices[0].message.content;
     const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
-    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData);
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable);
     if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
     btn.innerHTML='\u2713 Runbook gerado';
   }catch(e){
