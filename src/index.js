@@ -124,6 +124,49 @@ Regras:
   }
 });
 
+// Upload HF — lê .docx e retorna texto + resumo
+import mammoth from 'mammoth';
+app.post('/api/upload-hf', authMiddleware, async (req, res) => {
+  try {
+    const { fileBase64, fileName } = req.body;
+    if (!fileBase64) return res.status(400).json({ error: 'fileBase64 obrigatório' });
+
+    // Decodifica base64 para buffer
+    const buffer = Buffer.from(fileBase64, 'base64');
+
+    // Extrai texto com mammoth
+    const result = await mammoth.extractRawText({ buffer });
+    const fullText = result.value.trim();
+
+    if (!fullText || fullText.length < 50) {
+      return res.json({ error: 'Documento vazio ou muito curto. Verifique o arquivo.' });
+    }
+
+    // Resumo rápido com Sonnet
+    let summary = '';
+    try {
+      const { callRouted } = await import('./services/claude.js');
+      const sumResult = await callRouted('chat',
+        'Você é um analista Salesforce. Resuma a História Funcional abaixo em no máximo 5 linhas. Identifique: título/ID da US, escopo principal, objetos Salesforce envolvidos, e tipo de solução (OOTB, Flow, Apex). Responda em português do Brasil, formato markdown.',
+        [{ role: 'user', content: fullText.substring(0, 6000) }],
+        512
+      );
+      summary = sumResult.text;
+    } catch (e) {
+      summary = '⚠️ Resumo indisponível: ' + e.message;
+    }
+
+    res.json({
+      text: fullText,
+      summary,
+      fileName: fileName || 'documento.docx',
+      charCount: fullText.length
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao processar documento: ' + e.message });
+  }
+});
+
 // Chat route (lazy load)
 let chatRouter = null;
 app.use('/api/chat', authMiddleware, async (req, res, next) => {
