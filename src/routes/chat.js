@@ -76,6 +76,11 @@ function formatStepPreview(step) {
     const b = step.body || {};
     if (b.label) text += `- **Label:** ${b.label}\n`;
     if (b.processType) text += `- **Tipo:** ${b.processType}\n`;
+  } else if (step.action === 'rollback-restore') {
+    text += `**⏪ Restaurar versão anterior**\n`;
+    text += `- **Tipo:** ${step.type}\n`;
+    text += `- **Componente:** ${step.fullName}\n`;
+    if (step.description) text += `- **Descrição:** ${step.description}\n`;
   } else if (step.action === 'manual-step') {
     text += `**⚠️ Ação Manual Necessária**\n\n`;
     text += `${step.description || 'Passo manual — verifique na org.'}\n`;
@@ -89,11 +94,11 @@ function formatStepPreview(step) {
 async function logDeployAction(entry) {
   try {
     await pool.query(
-      `INSERT INTO deploy_log (us_number, component, action, description, result, result_message, org_id, org_name, user_id, user_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      `INSERT INTO deploy_log (us_number, component, action, description, result, result_message, org_id, org_name, user_id, user_name, previous_state)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [entry.us || null, entry.component || null, entry.action || null, entry.description || null,
        entry.result || null, entry.resultMessage || null, entry.orgId || null, entry.orgName || null,
-       entry.userId || null, entry.userName || null]
+       entry.userId || null, entry.userName || null, entry.previousState || null]
     );
   } catch (e) { console.error('logDeployAction fail:', e.message); }
 }
@@ -143,15 +148,17 @@ async function executeRunbookStep(step, org) {
     const name = step.name || step.className;
     const body = step.body || step.code;
     if (!name || !body) return { ok: false, message: '❌ apex-class requer name e body' };
+    // Snapshot: read current state before deploy (for rollback)
+    let previousState = null;
+    try { const snap = await sfMulti.readApexBody(org, name, 'ApexClass'); if (snap.exists) previousState = JSON.stringify({ type: 'ApexClass', name, body: snap.body }); } catch {}
     try {
       const r = await sfMulti.deployApexClass(org, name, body);
       const ok = r.success !== false;
-      if (ok) return { ok: true, message: `✅ Apex Class criada: ${name}` };
+      if (ok) return { ok: true, message: `✅ Apex Class criada: ${name}`, previousState };
       const errs = r.errors ? (Array.isArray(r.errors) ? r.errors : [r.errors]) : [];
       return { ok: false, message: `❌ Erro na classe ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
     } catch (e) {
       const msg = e.message || String(e);
-      // Tooling API returns compile errors in the exception
       return { ok: false, message: `❌ ${name}: ${msg.substring(0, 300)}` };
     }
   }
@@ -159,10 +166,12 @@ async function executeRunbookStep(step, org) {
     const name = step.name || step.triggerName;
     const body = step.body || step.code;
     if (!name || !body) return { ok: false, message: '❌ apex-trigger requer name e body' };
+    let previousState = null;
+    try { const snap = await sfMulti.readApexBody(org, name, 'ApexTrigger'); if (snap.exists) previousState = JSON.stringify({ type: 'ApexTrigger', name, body: snap.body }); } catch {}
     try {
       const r = await sfMulti.deployApexTrigger(org, name, body, step.object || step.sobjectType);
       const ok = r.success !== false;
-      if (ok) return { ok: true, message: `✅ Apex Trigger criado: ${name}` };
+      if (ok) return { ok: true, message: `✅ Apex Trigger criado: ${name}`, previousState };
       const errs = r.errors ? (Array.isArray(r.errors) ? r.errors : [r.errors]) : [];
       return { ok: false, message: `❌ Erro no trigger ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
     } catch (e) { return { ok: false, message: `❌ ${name}: ${(e.message || String(e)).substring(0, 300)}` }; }
@@ -171,10 +180,12 @@ async function executeRunbookStep(step, org) {
     const name = step.name;
     const files = step.files;
     if (!name || !files) return { ok: false, message: '❌ lwc requer name e files (html, js, meta)' };
+    let previousState = null;
+    try { const snap = await sfMulti.readLWCBundleFiles(org, name); if (snap.exists) previousState = JSON.stringify({ type: 'LWC', name, files: snap.files }); } catch {}
     try {
       const r = await sfMulti.deployLWC(org, name, files);
       const ok = r.success === true || r.status === 'Succeeded';
-      if (ok) return { ok: true, message: `✅ LWC deployado: ${name}` };
+      if (ok) return { ok: true, message: `✅ LWC deployado: ${name}`, previousState };
       const details = r.details?.componentFailures || [];
       const errMsg = Array.isArray(details) ? details.map(d => d.problem).join('; ') : (r.errorMessage || JSON.stringify(r).substring(0, 200));
       return { ok: false, message: `❌ LWC ${name}: ${errMsg}` };
@@ -253,11 +264,17 @@ async function executeRunbookStep(step, org) {
       body.sortOrder = maxSort + 1;
       // Only UPDATE if listMetadata confirmed it exists; otherwise CREATE
       if (selfExists) {
+        // Snapshot before update (for rollback)
+        let drPreviousState = null;
+        try {
+          const snap = await sfMulti.metadataRead(org, 'DuplicateRule', body.fullName);
+          if (snap && snap.masterLabel) drPreviousState = JSON.stringify({ type: 'DuplicateRule', fullName: body.fullName, body: snap });
+        } catch {}
         const upd = await sfMulti.metadataUpdate(org, 'DuplicateRule', body);
         const uitem = Array.isArray(upd) ? upd[0] : upd;
         const uok = uitem?.success !== false;
         const uerrs = uitem?.errors ? (Array.isArray(uitem.errors) ? uitem.errors : [uitem.errors]) : [];
-        if (uok) return { ok: true, message: `✅ DuplicateRule atualizada: ${body.fullName} (sortOrder ${body.sortOrder})` };
+        if (uok) return { ok: true, message: `✅ DuplicateRule atualizada: ${body.fullName} (sortOrder ${body.sortOrder})`, previousState: drPreviousState };
         return { ok: false, message: `❌ Erro ao atualizar ${body.fullName}: ${uerrs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
       }
       // Falls through to CREATE below
@@ -305,6 +322,33 @@ async function executeRunbookStep(step, org) {
     const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
     const name = body.fullName || body.label || mtype;
     return { ok, message: ok ? `✅ ${mtype} atualizado: ${name}` : `❌ Erro em ${name}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+  }
+  if (step.action === 'rollback-restore') {
+    // Restore component to previous state from snapshot
+    const snapshot = step.snapshot;
+    if (!snapshot) return { ok: false, message: '❌ Sem snapshot para restaurar' };
+    try {
+      const snap = JSON.parse(snapshot);
+      if (snap.type === 'ApexClass' || snap.type === 'ApexTrigger') {
+        // Redeploy original Apex body
+        const deployFn = snap.type === 'ApexClass' ? sfMulti.deployApexClass : sfMulti.deployApexTrigger;
+        const r = await deployFn(org, snap.name, snap.body);
+        const ok = r.success !== false;
+        return { ok, message: ok ? `⏪ ${snap.type} restaurado: ${snap.name}` : `❌ Erro ao restaurar ${snap.name}` };
+      }
+      if (snap.type === 'LWC') {
+        const r = await sfMulti.deployLWC(org, snap.name, snap.files);
+        const ok = r.success === true || r.status === 'Succeeded';
+        return { ok, message: ok ? `⏪ LWC restaurado: ${snap.name}` : `❌ Erro ao restaurar LWC ${snap.name}` };
+      }
+      if (snap.type === 'DuplicateRule') {
+        const r = await sfMulti.metadataUpdate(org, 'DuplicateRule', snap.body);
+        const item = Array.isArray(r) ? r[0] : r;
+        const ok = item?.success !== false;
+        return { ok, message: ok ? `⏪ DuplicateRule restaurada: ${snap.fullName}` : `❌ Erro ao restaurar ${snap.fullName}` };
+      }
+      return { ok: false, message: `❌ Tipo ${snap.type} não suporta restore` };
+    } catch (e) { return { ok: false, message: `❌ Erro no restore: ${(e.message || '').substring(0, 200)}` }; }
   }
   if (step.action === 'metadata-delete') {
     const mtype = step.type;
@@ -1176,6 +1220,7 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
              ORDER BY component, action, created_at DESC`,
             [filter]
           )).rows;
+          // Also check for updates with snapshots (for restore option)
         } else {
           rows = (await pool.query(
             `SELECT DISTINCT ON (component, action) * FROM deploy_log
@@ -1186,33 +1231,48 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         }
         if (!rows.length) return res.json({ choices: [{ message: { content: filter ? `📭 Nenhum componente deployado para "${filter}".` : '📭 Nenhum deploy registrado.' } }], modelo_usado: 'local', modelo_label: 'Rollback', tipo: 'rollback' });
 
-        // Build rollback steps for each component
+        // Build rollback steps: restore (if snapshot) or delete (if created new)
         const rollbackSteps = [];
         for (const r of rows) {
           const comp = r.component;
           const act = r.action;
-          // Determine delete type
+          const hasPrevState = r.previous_state && r.previous_state.length > 2;
+
+          // Determine component type
           let deleteType = null;
           if (act === 'create-field') deleteType = 'CustomField';
           else if (act === 'metadata-create' || act === 'metadata-update') {
             if (comp.includes('MR_')) deleteType = 'MatchingRule';
             else if (comp.includes('DR_')) deleteType = 'DuplicateRule';
             else if (comp.endsWith('__c') && comp.includes('.')) deleteType = 'CustomField';
-            else deleteType = 'CustomField'; // generic fallback
+            else deleteType = 'CustomField';
           }
           else if (act === 'apex-class') deleteType = 'ApexClass';
           else if (act === 'apex-trigger') deleteType = 'ApexTrigger';
           else if (act === 'lwc') deleteType = 'LightningComponentBundle';
           else if (act === 'flow') deleteType = 'Flow';
-          // Skip non-deletable (soql, validate, manual-step)
           if (!deleteType) continue;
-          rollbackSteps.push({
-            action: 'metadata-delete',
-            type: deleteType,
-            fullName: comp,
-            description: `Rollback: ${act} → ${comp}`,
-            _original: { us: r.us_number, action: act, date: r.created_at }
-          });
+
+          if (hasPrevState) {
+            // Has snapshot → RESTORE to previous version
+            rollbackSteps.push({
+              action: 'rollback-restore',
+              type: deleteType,
+              fullName: comp,
+              snapshot: r.previous_state,
+              description: `Restaurar versão anterior: ${comp}`,
+              _original: { us: r.us_number, action: act, date: r.created_at }
+            });
+          } else {
+            // No snapshot → DELETE (was a new creation)
+            rollbackSteps.push({
+              action: 'metadata-delete',
+              type: deleteType,
+              fullName: comp,
+              description: `Deletar: ${comp}`,
+              _original: { us: r.us_number, action: act, date: r.created_at }
+            });
+          }
         }
         if (!rollbackSteps.length) return res.json({ choices: [{ message: { content: '📭 Nenhum componente reversível encontrado.' } }], modelo_usado: 'local', modelo_label: 'Rollback', tipo: 'rollback' });
 
@@ -1229,7 +1289,8 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         text += `| # | Tipo | Componente | Ação original | Rollback |\n|---|---|---|---|---|\n`;
         rollbackSteps.forEach((s, i) => {
           const orig = s._original || {};
-          text += `| ${i + 1} | ${s.type} | ${s.fullName} | ${orig.action || '-'} | 🗑️ delete |\n`;
+          const rollbackAction = s.action === 'rollback-restore' ? '⏪ restaurar' : '🗑️ delete';
+          text += `| ${i + 1} | ${s.type} | ${s.fullName} | ${orig.action || '-'} | ${rollbackAction} |\n`;
         });
         text += `\n⚠️ **Atenção:** esta ação vai **deletar** todos os componentes acima da org. Esta operação é irreversível.\n\n`;
         text += `**Confirme para iniciar o rollback passo a passo.**`;
@@ -1327,7 +1388,7 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           const step = steps[currentStep];
           // Execute current step
           const result = await executeRunbookStep(step, org);
-          // Log to deploy_log
+          // Log to deploy_log (with snapshot for rollback if component was updated)
           await logDeployAction({
             us: us,
             component: extractComponent(step),
@@ -1338,7 +1399,8 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             orgId: org.id,
             orgName: org.name,
             userId: req.user.id,
-            userName: req.user.name
+            userName: req.user.name,
+            previousState: result.previousState || null
           });
           let text = `### Passo ${currentStep + 1} de ${steps.length}\n\n${result.message}\n`;
           const nextStep = currentStep + 1;
