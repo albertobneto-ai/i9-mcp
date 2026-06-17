@@ -70,6 +70,8 @@ app.get('/api/init-db', async (req, res) => {
     )`);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_deploylog_us ON deploy_log(us_number)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_deploylog_created ON deploy_log(created_at DESC)');
+    // Additive: snapshot column for rollback
+    try { await pool.query('ALTER TABLE deploy_log ADD COLUMN IF NOT EXISTS previous_state TEXT'); } catch {}
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
