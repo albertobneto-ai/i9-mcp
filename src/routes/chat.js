@@ -632,7 +632,7 @@ const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as ações de 
 
 Ações disponíveis:
 - "action": "create-field" — criar campo custom
-- "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType)
+- "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
 - "action": "metadata-update" — atualizar metadado existente
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -653,6 +653,13 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 - RecordType: { fullName:"Obj.Name", label, active:true }
 - PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}] }
 - CustomObject: { fullName:"MeuObj__c", label:"Meu Objeto", pluralLabel:"Meus Objetos", nameField:{ type:"Text"|"AutoNumber", label:"Name", displayFormat:"OBJ-{0000}" }, deploymentStatus:"Deployed", sharingModel:"ReadWrite"|"Private"|"Read" }
+- CustomPermission: { fullName:"MinhaPerm", label:"Minha Permissao", description:"Descricao" }. Usado em VRs via $CustomPermission ou em PSs.
+- PermissionSetGroup: { fullName:"PSG_Nome", label, description, permissionSets:["PS_1","PS_2"] }. Agrupa PSs para atribuicao em bloco.
+- CustomMetadata: { fullName:"TipoMetadata__mdt.RecordName", label:"Label do Registro", protected:false, values:[{field:"Campo__c",value:{string:"valor"}}] }. Para registros de Custom Metadata Type ja existente. Para criar o TIPO use CustomObject com fullName terminado em __mdt.
+- SharingRules: { fullName:"Account.SR_Nome", sharingCriteriaRules:[{fullName:"SR_Nome",label,accessLevel:"Read"|"Edit"|"All",booleanFilter,criteriaItems:[{field:"Status__c",operation:"equals",value:"Ativo"}],sharedTo:{group:"MeuGrupo"}|{role:"MinhaRole"}|{publicGroup:"Grupo"}}] }
+- QuickAction: { fullName:"Objeto.MinhaAction", label, type:"Create"|"Update"|"Flow"|"LightningComponent", targetObject:"Account", flowDefinition:"MeuFlow", optionsCreateFeedItem:false }
+- Group: { fullName:"MeuPublicGroup", name:"MeuPublicGroup", doesIncludeBosses:true, doesSendEmailToMembers:false }. Public Group para Sharing Rules e Queue.
+- Queue: { fullName:"MinhaQueue", name:"MinhaQueue", doesSendEmailToMembers:false, queueRoutingConfig:null, queueMembers:{publicGroups:["GrupoX"],users:["user@example.com"]}, queueSobject:[{sobjectType:"Lead"}] }
 - ListView: { fullName:"Obj.ViewName", label, filterScope:"Everything"|"Mine", columns:["Name","CreatedDate","Owner.Alias"], filters:[{field:"Status__c",operation:"equals",value:"Ativo"}] }
 - CustomTab: { fullName:"MeuObj__c", customObject:true, motif:"Custom68__Tab" }
 - BusinessProcess: { fullName:"Obj.ProcessName", isActive:true, values:[{fullName:"Qualification"},{fullName:"Proposal"},{fullName:"Closed Won"}] }. Obj = Lead|Opportunity|Case.
@@ -794,7 +801,7 @@ router.post('/', async (req, res) => {
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
-        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
+        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
         `Qualquer outra mensagem → **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
@@ -1060,7 +1067,7 @@ FORMATO DA RESPOSTA:
 
 Ações disponíveis:
 - "action": "create-field" — criar campo custom
-- "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType)
+- "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -1080,6 +1087,13 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 - RecordType: { fullName:"Obj.Name", label, active:true }
 - PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}] }
 - CustomObject: { fullName:"MeuObj__c", label:"Meu Objeto", pluralLabel:"Meus Objetos", nameField:{ type:"Text"|"AutoNumber", label:"Name", displayFormat:"OBJ-{0000}" }, deploymentStatus:"Deployed", sharingModel:"ReadWrite"|"Private"|"Read" }
+- CustomPermission: { fullName:"MinhaPerm", label:"Minha Permissao", description:"Descricao" }. Usado em VRs via $CustomPermission ou em PSs.
+- PermissionSetGroup: { fullName:"PSG_Nome", label, description, permissionSets:["PS_1","PS_2"] }. Agrupa PSs para atribuicao em bloco.
+- CustomMetadata: { fullName:"TipoMetadata__mdt.RecordName", label:"Label do Registro", protected:false, values:[{field:"Campo__c",value:{string:"valor"}}] }. Para registros de Custom Metadata Type ja existente. Para criar o TIPO use CustomObject com fullName terminado em __mdt.
+- SharingRules: { fullName:"Account.SR_Nome", sharingCriteriaRules:[{fullName:"SR_Nome",label,accessLevel:"Read"|"Edit"|"All",booleanFilter,criteriaItems:[{field:"Status__c",operation:"equals",value:"Ativo"}],sharedTo:{group:"MeuGrupo"}|{role:"MinhaRole"}|{publicGroup:"Grupo"}}] }
+- QuickAction: { fullName:"Objeto.MinhaAction", label, type:"Create"|"Update"|"Flow"|"LightningComponent", targetObject:"Account", flowDefinition:"MeuFlow", optionsCreateFeedItem:false }
+- Group: { fullName:"MeuPublicGroup", name:"MeuPublicGroup", doesIncludeBosses:true, doesSendEmailToMembers:false }. Public Group para Sharing Rules e Queue.
+- Queue: { fullName:"MinhaQueue", name:"MinhaQueue", doesSendEmailToMembers:false, queueRoutingConfig:null, queueMembers:{publicGroups:["GrupoX"],users:["user@example.com"]}, queueSobject:[{sobjectType:"Lead"}] }
 - ListView: { fullName:"Obj.ViewName", label, filterScope:"Everything"|"Mine", columns:["Name","CreatedDate","Owner.Alias"], filters:[{field:"Status__c",operation:"equals",value:"Ativo"}] }
 - CustomTab: { fullName:"MeuObj__c", customObject:true, motif:"Custom68__Tab" }
 - BusinessProcess: { fullName:"Obj.ProcessName", isActive:true, values:[{fullName:"Qualification"},{fullName:"Proposal"},{fullName:"Closed Won"}] }. Obj = Lead|Opportunity|Case.
