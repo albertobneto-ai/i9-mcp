@@ -406,3 +406,28 @@ export async function deleteApexTrigger(org, name) {
   }
   return { success: false, message: 'não encontrado' };
 }
+
+// ── Snapshot readers (for rollback) — read current state before update ──
+export async function readApexBody(org, name, type = 'ApexClass') {
+  const conn = await connectToOrg(org);
+  const q = await conn.tooling.query(`SELECT Id, Body FROM ${type} WHERE Name = '${name}'`);
+  if (q.records && q.records.length > 0) return { exists: true, body: q.records[0].Body, id: q.records[0].Id };
+  return { exists: false };
+}
+
+export async function readLWCBundleFiles(org, name) {
+  const conn = await connectToOrg(org);
+  const bundle = await conn.tooling.query(`SELECT Id FROM LightningComponentBundle WHERE DeveloperName = '${name}'`);
+  if (!bundle.records || !bundle.records.length) return { exists: false };
+  const bundleId = bundle.records[0].Id;
+  const resources = await conn.tooling.query(`SELECT FilePath, Source FROM LightningComponentResource WHERE LightningComponentBundleId = '${bundleId}'`);
+  const files = {};
+  for (const r of (resources.records || [])) {
+    const path = r.FilePath || '';
+    if (path.endsWith('.html')) files.html = r.Source;
+    else if (path.endsWith('.js') && !path.endsWith('-meta.xml')) files.js = r.Source;
+    else if (path.endsWith('.js-meta.xml')) files.meta = r.Source;
+    else if (path.endsWith('.css')) files.css = r.Source;
+  }
+  return { exists: true, files };
+}
