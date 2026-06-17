@@ -165,10 +165,70 @@ Procedimento para desfazer tudo em caso de problema:
 - Componentes não deletáveis (Record Types → só desativar)
 - Impacto em dados existentes
 
+## 19. Configurações Manuais Pós-Deploy
+Liste TODAS as configurações que precisam ser feitas manualmente no Setup APÓS o runbook executar.
+Para cada item:
+- **Caminho exato no Setup** (ex: Setup → Duplicate Management → Matching Rules)
+- **Configuração específica** (campos, valores, opções)
+- **Como validar** (o que verificar para confirmar que está OK)
+- **Link de documentação Salesforce** quando aplicável
+
+Categorias típicas que vão nesta seção (use o que for relevante):
+
+### 19.1 Ativação de regras (Matching Rules, Duplicate Rules)
+Estas regras NÃO são ativadas automaticamente após o deploy. Listar cada uma:
+- Nome da regra
+- Caminho: Setup → Duplicate Management → [Matching Rules | Duplicate Rules]
+- Ação: clicar em Activate
+- Validar: Status = Active
+
+### 19.2 Named Credentials / External Credentials
+NÃO automatizar (dados sensíveis — tokens OAuth, certificados):
+- Setup → Named Credentials → New
+- URL, autenticação, escopo
+- Validar via Test Connection
+
+### 19.3 OWD (Sharing Settings)
+Decisão arquitetural única. Configurar via Setup → Sharing Settings:
+- Objeto, Internal Access, External Access
+- Grant Access Using Hierarchies (se aplicável)
+
+### 19.4 Tab Settings e Lightning Apps
+- Profile → Tab Settings (Default On/Off por Profile)
+- Setup → App Manager → editar app → adicionar/remover Tabs
+
+### 19.5 Dynamic Forms / Dynamic Actions
+Configurar via Lightning App Builder:
+- Editar Record Page → adicionar componente Dynamic Forms / Field Section / Actions Bar
+- Configurar Visibility Rules por Record Type, Profile, Permission
+
+### 19.6 Assignment Rules
+- Setup → [Lead | Case] Assignment Rules → New
+- Definir critérios de roteamento por fila/usuário
+
+### 19.7 Queue Setup (caso não criado via runbook)
+- Setup → Queues → New
+- Objetos suportados, Queue Members, Routing Configuration
+
+### 19.8 Data Loading (carga inicial)
+- Ferramenta: Data Loader (Bulk API para volumes grandes)
+- CSV template com colunas obrigatórias
+- Validar: registros criados, Duplicate Rules rejeitam duplicatas
+
+### 19.9 Schedulable Apex (agendamento)
+- Setup → Apex Classes → Schedule Apex
+- Ou via /apex anonymous: System.schedule()
+
+### 19.10 Activation de Field History Tracking
+- Setup → Object Manager → [Objeto] → Fields & Relationships → Set History Tracking
+- Selecionar campos a auditar
+
+NÃO inventar itens — só liste o que REALMENTE precisa ser feito manualmente para esta US específica.
+
 ---
 REGRAS FINAIS OBRIGATÓRIAS:
 - Este documento é uma ESPECIFICAÇÃO TÉCNICA, NÃO uma História Funcional
-- TODAS as 18 seções são obrigatórias
+- TODAS as 19 seções são obrigatórias (18 técnica + 19 manual pós-deploy)
 - API Names corretos (Object__c, Field__c)
 - Pseudo-código para Apex, step-by-step para Flows
 - Seção 05.1 (OOTB) SEMPRE antes de 05.2 (Flows) e 05.3 (Apex)
