@@ -96,6 +96,32 @@ app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// KB Assistant (Haiku) — floating agent endpoint
+import { knowledgeBase } from './config/knowledge-base.js';
+import { callHaiku } from './services/claude.js';
+app.post('/api/kb-chat', authMiddleware, async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!messages || !messages.length) return res.status(400).json({ error: 'messages required' });
+
+    const systemPrompt = `Você é o assistente de conhecimento do projeto Salesforce Algar Telecom B2B. Responda perguntas com base na documentação abaixo. Seja conciso e direto. Se não souber, diga que não tem essa informação na base.
+
+${knowledgeBase}
+
+Regras:
+- Responda em português do Brasil
+- Seja objetivo (2-4 parágrafos no máximo)
+- Use formatação markdown quando útil
+- Se a pergunta não for sobre Salesforce ou o projeto, diga educadamente que você é especializado em Salesforce`;
+
+    const userMsgs = messages.slice(-6); // últimas 6 mensagens para contexto
+    const response = await callHaiku(systemPrompt, userMsgs, 2048);
+    res.json({ choices: [{ message: { content: response } }], model: 'haiku' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Chat route (lazy load)
 let chatRouter = null;
 app.use('/api/chat', authMiddleware, async (req, res, next) => {
