@@ -835,6 +835,7 @@ router.post('/', async (req, res) => {
         `| \`/apex CÓDIGO\` | Executa Apex anônimo |\n\n` +
         `### Auditoria & Org\n` +
         `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/checklist [US]\` | Configurações manuais pós-deploy da US (Seção 19 da spec) |\n` +
         `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
@@ -1030,7 +1031,37 @@ FORMATO DA RESPOSTA:
       }
     }
 
-        // ── /spec — gera Especificação Técnica (ASYNC job, Opus + gap analysis) ──
+        // ── /checklist — exibe configurações manuais pós-deploy de uma US ──
+    if (lower.startsWith('/checklist')) {
+      const us = userMsg.trim().substring(10).trim();
+      if (!us) return res.json({ choices: [{ message: { content: '⚠️ Use: `/checklist US-XXX`\n\nMostra o checklist de configurações manuais pós-deploy da US (extraído da Seção 19 da spec mais recente da US).' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        // Buscar última spec da US no banco (kind=spec)
+        const specQuery = await pool.query(
+          `SELECT id, result FROM jobs WHERE kind = 'spec' AND status = 'done' AND (input ILIKE $1 OR meta::text ILIKE $1) ORDER BY id DESC LIMIT 1`,
+          [`%${us}%`]
+        );
+        if (!specQuery.rows.length) {
+          return res.json({ choices: [{ message: { content: `⚠️ Nenhuma spec encontrada para ${us}.\n\nGere a spec primeiro com \`/spec\` + a HF.` } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+        }
+        const spec = specQuery.rows[0].result;
+        // Extrair Seção 19
+        const sec19Match = spec.match(/##\s*19\.?\s*Configura(ç|c)\u00f5es Manuais P(ó|o)s-Deploy[\s\S]*?(?=\n##\s+[0-9]|\n---|$)/i);
+        if (!sec19Match) {
+          return res.json({ choices: [{ message: { content: `⚠️ A spec da ${us} não contém a Seção 19 (Configurações Manuais Pós-Deploy).\n\nIsso pode acontecer se a spec foi gerada antes da feature de checklist. Regere com /spec.` } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+        }
+        return res.json({
+          choices: [{ message: { content: `# 📋 Checklist Pós-Deploy — ${us}\n\n${sec19Match[0].replace(/^##\s*19\.?\s*/, '## ')}\n\n---\n\n💡 *Após executar cada item manualmente, marque como concluído nas suas anotações. As ativações automatizáveis (MR/DR, Queue) já podem entrar no runbook via \`activate-rule\` e \`metadata-create\` Group/Queue.*` } }],
+          modelo_usado: 'local',
+          modelo_label: 'SF Agent',
+          tipo: 'checklist'
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: `❌ Erro ao buscar checklist: ${e.message}` } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /spec — gera Especificação Técnica (ASYNC job, Opus + gap analysis) ──
     if (lower.startsWith('/spec')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada para gap analysis.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
       const hf = userMsg.trim().substring(5).trim();
