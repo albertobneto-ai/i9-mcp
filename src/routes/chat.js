@@ -1034,7 +1034,76 @@ FORMATO DA RESPOSTA:
       }
     }
 
-        // ── /bugfix — diagnóstico + runbook corretivo pós-deploy ──
+        // ── /spec-adjust — refina spec existente com Opus ──
+    if (lower.startsWith('/spec-adjust')) {
+      const input = userMsg.trim().substring(12).trim();
+      // Formato: JOB_ID: texto do ajuste
+      const match = input.match(/^(\d+):\s*(.+)/s);
+      if (!match) return res.json({ choices: [{ message: { content: '⚠️ Formato inválido. Use o botão "✏️ Ajustar Spec" após gerar uma spec.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      const origJobId = parseInt(match[1]);
+      const adjustment = match[2].trim();
+
+      try {
+        // Ler spec original do banco
+        const origJob = await pool.query('SELECT result, meta FROM jobs WHERE id = $1', [origJobId]);
+        if (!origJob.rows.length || !origJob.rows[0].result) {
+          return res.json({ choices: [{ message: { content: '❌ Spec original não encontrada (job ' + origJobId + ').' } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+        }
+        const origSpec = origJob.rows[0].result;
+        const origMeta = origJob.rows[0].meta || {};
+
+        // Job assíncrono
+        const jobRes = await pool.query(
+          'INSERT INTO jobs (user_id, kind, status, input, meta) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+          [req.user.id, 'spec', 'processing', adjustment, JSON.stringify({ ...origMeta, origJobId, adjustment: true })]
+        );
+        const jobId = jobRes.rows[0].id;
+
+        // Background: Opus aplica ajuste
+        (async () => {
+          try {
+            const adjustPrompt = 'Você é um arquiteto Salesforce. Recebeu uma especificação técnica completa e um pedido de ajuste do revisor.\n\n' +
+              'REGRAS:\n' +
+              '- Aplique EXATAMENTE o ajuste solicitado na spec\n' +
+              '- Mantenha TODAS as seções e estrutura original\n' +
+              '- Só modifique o que foi pedido — não altere seções não afetadas\n' +
+              '- Se o ajuste impactar o Runbook (seção 18), atualize-o também\n' +
+              '- Se o ajuste impactar a Seção 19 (Pós-Deploy), atualize-a também\n' +
+              '- Retorne a spec COMPLETA atualizada (todas as seções)\n' +
+              '- Adicione no topo: "⚡ SPEC AJUSTADA — v' + (origMeta.version ? (parseFloat(origMeta.version) + 0.1).toFixed(1) : '1.1') + '"\n' +
+              '- Marque as seções alteradas com [AJUSTADO] no título\n' +
+              '- Português do Brasil';
+
+            const result = await claude.callRouted('spec', adjustPrompt,
+              [{ role: 'user', content: '--- SPEC ORIGINAL ---\n\n' + origSpec + '\n\n--- AJUSTE SOLICITADO ---\n\n' + adjustment }],
+              16384
+            );
+
+            await pool.query(
+              'UPDATE jobs SET status = $1, result = $2, meta = meta || $3, updated_at = NOW() WHERE id = $4',
+              ['done', result.text, JSON.stringify({ model: result.model, version: origMeta.version ? (parseFloat(origMeta.version) + 0.1).toFixed(1) : '1.1' }), jobId]
+            );
+          } catch (e) {
+            await pool.query('UPDATE jobs SET status = $1, error = $2, updated_at = NOW() WHERE id = $3', ['error', e.message, jobId]).catch(() => {});
+          }
+        })();
+
+        return res.json({
+          choices: [{ message: { content: '⏳ **Ajustando spec com Claude Opus 4.6...**\n\n' +
+            'O Opus está aplicando seu ajuste na spec original. Aguarde (~30-60s).\n\n' +
+            '**Ajuste:** ' + adjustment.substring(0, 200) } }],
+          modelo_usado: 'job',
+          modelo_label: 'Opus 4.6 (ajustando)',
+          tipo: 'job-started',
+          jobId
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: '❌ Erro: ' + e.message } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /bugfix — diagnóstico + runbook corretivo pós-deploy ──
     if (lower.startsWith('/bugfix')) {
       if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
       const input = userMsg.trim().substring(7).trim();
