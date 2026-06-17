@@ -837,6 +837,7 @@ router.post('/', async (req, res) => {
         `| \`/apex CÓDIGO\` | Executa Apex anônimo |\n\n` +
         `### Auditoria & Org\n` +
         `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/bugfix [US] [descrição]\` | Diagnóstico + runbook corretivo pós-deploy |\n` +
         `| \`/checklist [US]\` | Configurações manuais pós-deploy da US (Seção 19 da spec) |\n` +
         `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
@@ -1033,7 +1034,109 @@ FORMATO DA RESPOSTA:
       }
     }
 
-        // ── /checklist — exibe configurações manuais pós-deploy de uma US ──
+        // ── /bugfix — diagnóstico + runbook corretivo pós-deploy ──
+    if (lower.startsWith('/bugfix')) {
+      if (!org) return res.json({ choices: [{ message: { content: '❌ Nenhuma org conectada.' } }], modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error' });
+      const input = userMsg.trim().substring(7).trim();
+      if (!input) return res.json({ choices: [{ message: { content: '⚠️ Use: `/bugfix CRMB2B-90 A Duplicate Rule não está bloqueando via API`\n\nDescreva a US + o problema encontrado. O Opus analisa a spec original + deploy log + sua descrição e gera um runbook corretivo.' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+
+      // Extrair US
+      const usMatch = input.match(/\b([A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+)\b/i);
+      const us = usMatch ? usMatch[1].toUpperCase() : null;
+      const bugDesc = us ? input.substring(usMatch.index + usMatch[0].length).trim() : input;
+
+      try {
+        // 1. Buscar spec original
+        let specContext = 'Nenhuma spec encontrada para esta US.';
+        if (us) {
+          const specQuery = await pool.query(
+            "SELECT result FROM jobs WHERE kind = 'spec' AND status = 'done' AND (input ILIKE $1 OR result ILIKE $1 OR meta::text ILIKE $1) ORDER BY id DESC LIMIT 1",
+            ['%' + us + '%']
+          );
+          if (specQuery.rows.length) {
+            const specText = specQuery.rows[0].result;
+            // Pegar resumo da spec (primeiros 3000 chars + seção de runbook)
+            const runbookMatch = specText.match(/##\s*18[\s\S]{0,3000}/);
+            specContext = specText.substring(0, 3000) + (runbookMatch ? '\n\n[...]\n\n' + runbookMatch[0] : '');
+          }
+        }
+
+        // 2. Buscar deploy_log
+        let deployContext = 'Nenhum deploy registrado para esta US.';
+        if (us) {
+          const logQuery = await pool.query(
+            "SELECT component, action, result, result_message, created_at FROM deploy_log WHERE us_number ILIKE $1 ORDER BY created_at DESC LIMIT 30",
+            ['%' + us + '%']
+          );
+          if (logQuery.rows.length) {
+            deployContext = logQuery.rows.map(r =>
+              r.created_at.toISOString().substring(0,16) + ' | ' + r.result + ' | ' + r.action + ' | ' + r.component + (r.result_message ? ' — ' + r.result_message.substring(0, 80) : '')
+            ).join('\n');
+          }
+        }
+
+        // 3. Enviar tudo pro Opus como job assíncrono
+        const bugfixPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting pós-deploy.\n\n' +
+          'Analise o bug reportado com base na spec original e no log de deploy.\n\n' +
+          'RESPONDA COM:\n\n' +
+          '## 1. Diagnóstico\n' +
+          'O que a spec pedia vs o que foi deployado vs o que o usuário reportou.\n\n' +
+          '## 2. Causa Raiz\n' +
+          'Classifique: Gap de Spec | Gap de Desenvolvimento | Gap Funcional | Bug de Código\n\n' +
+          '## 3. Runbook Corretivo\n' +
+          'JSON array com steps para corrigir (mesmo formato do runbook normal).\n' +
+          'Actions: create-field, metadata-create, metadata-update, metadata-delete, apex-class, apex-trigger, ' +
+          'layout-add-field, profile-fls, activate-rule, validate, soql, manual-step\n\n' +
+          'O JSON DEVE estar em bloco:\n```json\n[...]\n```\n\n' +
+          '## 4. Recomendações\n' +
+          'Ações preventivas para evitar o mesmo tipo de problema.\n\n' +
+          'Seja direto. Português do Brasil.';
+
+        const userContent = 'US: ' + (us || 'N/A') + '\n\n' +
+          '--- BUG REPORTADO ---\n' + bugDesc + '\n\n' +
+          '--- SPEC ORIGINAL (resumo) ---\n' + specContext + '\n\n' +
+          '--- DEPLOY LOG ---\n' + deployContext;
+
+        // Job assíncrono (Opus pode demorar)
+        const jobRes = await pool.query(
+          'INSERT INTO jobs (user_id, kind, status, input, meta) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+          [req.user.id, 'bugfix', 'processing', bugDesc, JSON.stringify({ us, orgId: org.id, orgName: org.name })]
+        );
+        const jobId = jobRes.rows[0].id;
+
+        // Process in background
+        (async () => {
+          try {
+            const result = await claude.callRouted('spec', bugfixPrompt, [{ role: 'user', content: userContent }], 8192);
+            await pool.query(
+              'UPDATE jobs SET status = $1, result = $2, meta = meta || $3, updated_at = NOW() WHERE id = $4',
+              ['done', result.text, JSON.stringify({ model: result.model }), jobId]
+            );
+          } catch (e) {
+            await pool.query(
+              'UPDATE jobs SET status = $1, error = $2, updated_at = NOW() WHERE id = $3',
+              ['error', e.message, jobId]
+            ).catch(() => {});
+          }
+        })();
+
+        return res.json({
+          choices: [{ message: { content: '⏳ **Analisando bug com Claude Opus 4.6...**\n\n' +
+            'O Opus está cruzando a spec original + deploy log + seu relato para gerar o diagnóstico e runbook corretivo. Aguarde (~30-60s).' +
+            (us ? '\n\n**US:** ' + us : '') +
+            '\n**Bug:** ' + bugDesc.substring(0, 200) } }],
+          modelo_usado: 'job',
+          modelo_label: 'Opus 4.6 (processando)',
+          tipo: 'job-started',
+          jobId,
+          jobKind: 'bugfix'
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: '❌ Erro: ' + e.message } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /checklist — exibe configurações manuais pós-deploy de uma US ──
     if (lower.startsWith('/checklist')) {
       const us = userMsg.trim().substring(10).trim();
       if (!us) return res.json({ choices: [{ message: { content: '⚠️ Use: `/checklist US-XXX`\n\nMostra o checklist de configurações manuais pós-deploy da US (extraído da Seção 19 da spec mais recente da US).' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
