@@ -214,6 +214,11 @@ body{font-family:Inter,sans-serif;color:#e2e8f0;height:100vh;display:flex;flex-d
 .gen-spec-btn{padding:10px 20px;margin-top:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(124,58,237,.3);transition:all .15s}
 .gen-spec-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.4)}
 .gen-spec-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Analyze Error button */
+.analyze-btn{padding:8px 18px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:all .15s;margin-top:8px;margin-right:8px}
+.analyze-btn:hover{background:rgba(167,139,250,.2);color:#c4b5fd}
+.analyze-btn:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -411,7 +416,7 @@ async function sendMessage(){
       conversationId=d.conversationId||conversationId;
     }
     const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
-    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable);
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable,d.errorAnalysis);
     if(!isOrgCmd) document.getElementById('modelBadge').textContent=d.modelo_label||'AI';
     // If a job was started, poll for result
     if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
@@ -424,7 +429,7 @@ async function sendMessage(){
   input.focus();
 }
 
-function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable){
+function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable,errorAnalysis){
   const el=document.createElement('div');
   el.className='msg '+role;
   if(role==='assistant'&&label){
@@ -457,6 +462,29 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable){
       box.appendChild(btn);
       el.appendChild(box);
     }
+  }
+  if(errorAnalysis){
+    const abtn=document.createElement('button');
+    abtn.className='analyze-btn';
+    abtn.innerHTML='🤖 Analisar Erro (Opus)';
+    abtn.onclick=async function(){
+      abtn.disabled=true;abtn.textContent='⏳ Analisando...';
+      try{
+        const r=await fetch(API+'/api/analyze-error',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+          body:JSON.stringify(errorAnalysis)
+        });
+        const d=await r.json();
+        const reply=d.choices?.[0]?.message?.content||d.error||'Sem resposta';
+        appendMsg('assistant',reply,'Opus 4.6 — Análise de Erro');
+        abtn.textContent='✅ Análise enviada';
+      }catch(e){
+        appendMsg('assistant','❌ Erro na análise: '+e.message,'Erro');
+        abtn.disabled=false;abtn.innerHTML='🤖 Analisar Erro (Opus)';
+      }
+    };
+    el.appendChild(abtn);
   }
   if(downloadData){
     const box=document.createElement('div');
@@ -541,7 +569,7 @@ async function generateRunbookFromSpec(specContent, btn){
     const d=await r.json();
     const content=d.choices[0].message.content;
     const isOrgCmd=d.modelo_usado==='mcp-server'||d.modelo_usado==='local'||d.modelo_usado==='job';
-    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable);
+    appendMsg('assistant',content,d.modelo_label,isOrgCmd,d.confirmData,d.downloadData,d.copyable,d.errorAnalysis);
     if(d.tipo==='job-started'&&d.jobId){ pollJob(d.jobId); }
     btn.innerHTML='\u2713 Runbook gerado';
   }catch(e){
