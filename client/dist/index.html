@@ -556,9 +556,10 @@ function appendMsg(role,content,label,isOrg,confirmData,downloadData,copyable,er
   el.scrollIntoView({behavior:'smooth'});
 }
 
-async function pollJob(jobId){
-  const maxTries=90; // ~4.5 min
+async function pollJob(jobId, startTime){
+  const maxTries=200; // ~10 min
   let progressEl=null;
+  startTime = startTime || Date.now();
   for(let i=0;i<maxTries;i++){
     await new Promise(r=>setTimeout(r,3000));
     // Update progress indicator
@@ -567,7 +568,8 @@ async function pollJob(jobId){
       progressEl.className='typing';
       document.getElementById('messages').appendChild(progressEl);
     }
-    progressEl.textContent='⏳ Opus processando... '+((i+1)*3)+'s';
+    const elapsed = Math.floor((Date.now()-startTime)/1000);
+    progressEl.textContent='⏳ Opus processando... '+elapsed+'s (specs grandes podem levar 2-5min)';
     progressEl.scrollIntoView({behavior:'smooth'});
     try{
       const r=await fetch(API+'/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+token}});
@@ -632,7 +634,15 @@ async function pollJob(jobId){
     }catch(e){}
   }
   if(progressEl) progressEl.remove();
-  appendMsg('assistant','⚠️ A geração está demorando mais que o esperado. O documento pode ainda estar processando — recarregue em 1 min.','Timeout',true);
+  // Em vez de desistir, criar botão "Continuar Esperando"
+  const tEl=document.createElement('div');
+  tEl.className='msg assistant';
+  tEl.innerHTML='<div class="model-tag">Timeout</div>'+
+    '<div style="color:#f59e0b">⚠️ Job ainda processando após 10 minutos. O Opus pode estar gerando uma spec muito grande.</div>'+
+    '<button class="adjust-btn" style="margin-top:10px" onclick="this.disabled=true;this.textContent=\'\u23F3 Continuando...\';pollJob('+jobId+',Date.now())">\u23F3 Continuar Esperando</button>'+
+    ' <button class="adjust-btn" style="margin-top:10px;border-color:rgba(239,68,68,0.3);color:#ef4444" onclick="this.parentElement.remove()">\u2715 Cancelar</button>';
+  document.getElementById('messages').appendChild(tEl);
+  tEl.scrollIntoView({behavior:'smooth'});
 }
 
 async function generateRunbookFromSpec(specContent, btn){
