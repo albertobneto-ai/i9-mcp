@@ -205,6 +205,7 @@ async function executeRunbookStep(step, org) {
     } catch (e) { return { ok: false, message: `❌ Flow ${fullName}: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
   if (step.action === 'soql') {
+    try {
     const r = await sfMulti.runSoql(org, step.query);
     if (r.error) return { ok: false, message: `❌ SOQL: ${r.error}` };
     const records = r.records || [];
@@ -218,6 +219,7 @@ async function executeRunbookStep(step, org) {
     }
     if (step.description) msg += `\n${step.description}`;
     return { ok: true, message: msg };
+    } catch (e) { return { ok: false, message: `❌ Erro na SOQL:\n${step.query}\n\n${(e.message || String(e)).substring(0, 300)}` }; }
   }
   if (step.action === 'metadata-create') {
     const mtype = step.type;
@@ -1545,7 +1547,12 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           const { steps, currentStep, us } = body;
           const step = steps[currentStep];
           // Execute current step
-          const result = await executeRunbookStep(step, org);
+          let result;
+          try {
+            result = await executeRunbookStep(step, org);
+          } catch (stepErr) {
+            result = { ok: false, message: '❌ Erro no passo: ' + (stepErr.message || String(stepErr)).substring(0, 300) };
+          }
           // Log to deploy_log (with snapshot for rollback if component was updated)
           await logDeployAction({
             us: us,
