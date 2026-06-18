@@ -4,21 +4,13 @@ import jsforce from 'jsforce';
 // Cache de conexões ativas (evita re-login a cada request)
 const connections = {};
 
-// Timeout helper (evita hang infinito no Heroku 30s)
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ' + ms + 'ms: ' + label)), ms))
-  ]);
-}
-
 export async function connectToOrg(org) {
   const key = org.id || org.username;
   
-  // Usar cache se conexão ainda válida (check rápido com timeout)
+  // Usar cache se conexão ainda válida
   if (connections[key]) {
     try {
-      await withTimeout(connections[key].identity(), 12000, 'identity check');
+      await connections[key].identity();
       return connections[key];
     } catch {
       delete connections[key];
@@ -30,7 +22,7 @@ export async function connectToOrg(org) {
     version: '62.0',
   });
 
-  await withTimeout(conn.login(org.username, org.password + (org.security_token || '')), 25000, 'login');
+  await conn.login(org.username, org.password + (org.security_token || ''));
   connections[key] = conn;
   return conn;
 }
