@@ -128,11 +128,22 @@ async function executeRunbookStep(step, org) {
     if (body.type === 'LongTextArea') { body.length = step.length || 32768; body.visibleLines = 4; }
     if (['Number','Currency','Percent'].includes(body.type)) { body.precision = step.precision || 18; body.scale = step.scale ?? 2; }
     if (body.type === 'Lookup' && step.referenceTo) { body.referenceTo = step.referenceTo; body.relationshipLabel = body.label; }
-    // Picklist — aceita step.picklist OU step.values OU step.picklistValues
+    // Picklist — aceita step.picklist OU step.values OU step.picklistValues; converte array → valueSet (formato API 62.0+)
     if (['Picklist','MultiselectPicklist'].includes(body.type)) {
       const pickValues = step.picklist || step.values || step.picklistValues;
       if (Array.isArray(pickValues) && pickValues.length > 0) {
-        body.picklist = pickValues;
+        // jsforce API 62.0 exige formato valueSet → valueSetDefinition → value[]
+        body.valueSet = {
+          restricted: true,
+          valueSetDefinition: {
+            sorted: false,
+            value: pickValues.map(v => {
+              if (typeof v === 'string') return { fullName: v, default: false, label: v };
+              return { fullName: v.fullName || v.value || v.label, default: v.default || false, label: v.label || v.fullName || v.value };
+            })
+          }
+        };
+        if (body.type === 'MultiselectPicklist') body.visibleLines = step.visibleLines || 4;
       } else {
         return { ok: false, message: '❌ Campo Picklist sem valores. O step precisa de "picklist":["v1","v2"] ou "values":["v1","v2"]. Step: ' + JSON.stringify(step).substring(0, 300) };
       }
