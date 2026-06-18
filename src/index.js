@@ -131,17 +131,44 @@ app.post('/api/analyze-error', authMiddleware, async (req, res) => {
     if (!step || !error) return res.status(400).json({ error: 'step e error obrigatórios' });
 
     const { callRouted } = await import('./services/claude.js');
-    const sysPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting de deploys automatizados.\n\n' +
-      'Analise o erro e sugira correção EXECUTÁVEL.\n\n' +
+    const sysPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting de deploys automatizados via jsforce/Node.js.\n\n' +
+      'Analise o erro e sugira correção EXECUTÁVEL no formato que NOSSO orquestrador aceita.\n\n' +
       'RESPONDA neste formato:\n' +
       '1. **Causa:** (1-2 linhas)\n' +
       '2. **Correção:** (o que mudar)\n\n' +
       'Depois, OBRIGATORIAMENTE inclua um bloco com o step corrigido:\n' +
       '```json\n[{"action":"...", ...}]\n```\n\n' +
-      'Actions disponíveis: create-field, metadata-create, metadata-delete, soql, validate, apex, layout-add-field, profile-fls, activate-rule\n' +
-      'Se campo não existe → use create-field. Se objeto não existe → metadata-create CustomObject.\n' +
-      'Se SOQL referencia campo inexistente → corrija o nome ou remova o campo.\n' +
-      'Se NÃO for automatizável (Named Credential, Setup manual) → escreva MANUAL no JSON e explique.\n' +
+      '═══ ACTIONS VÁLIDAS (uma destas em cada step) ═══\n' +
+      '• create-field — criar CustomField. Params: object, field, label, type, length?, picklist?, description?, required?\n' +
+      '• metadata-create — criar metadado complexo. Params: metadataType, body (objeto com a config)\n' +
+      '• metadata-update — atualizar metadado. Params: type, fullName, body\n' +
+      '• metadata-delete — deletar metadado. Params: type, fullName\n' +
+      '• apex-class — criar/atualizar Apex Class. Params: name, body\n' +
+      '• apex-trigger — criar/atualizar Trigger. Params: name, body, objectName, events\n' +
+      '• layout-add-field — adicionar campo a layout. Params: layoutName, fieldName, sectionLabel, behavior\n' +
+      '• profile-fls — atualizar FLS de Profile. Params: profileName, fieldPermissions\n' +
+      '• activate-rule — ativar MR/DR. Params: ruleType, ruleName\n' +
+      '• soql — executar SOQL. Params: query, description?\n' +
+      '• validate — validar (Tooling/metadata-read). Params: type, fullName, expectedActive?\n' +
+      '• apex — Apex anônimo. Params: code\n' +
+      '• manual-step — passo manual descritivo. Params: description, instructions?\n\n' +
+      '═══ FORMATOS ESPECIAIS (ATENÇÃO) ═══\n\n' +
+      '🔸 Picklist no create-field — use APENAS array de strings:\n' +
+      '   { "action":"create-field", "object":"Account", "field":"Origem__c", "label":"Origem", "type":"Picklist", "picklist":["Edição Manual","SERASA","Neoway","MuleSoft","Data Cloud"] }\n' +
+      '   NUNCA usar valueSet, valueSetDefinition, fullName/default/label — isso é XML, NÃO funciona via jsforce!\n\n' +
+      '🔸 Lookup no create-field:\n' +
+      '   { "action":"create-field", "object":"Account", "field":"Parent__c", "label":"Conta Pai", "type":"Lookup", "referenceTo":"Account", "relationshipLabel":"Filhas" }\n\n' +
+      '🔸 Number/Currency:\n' +
+      '   { "action":"create-field", "object":"Lead", "field":"Score__c", "label":"Score", "type":"Number", "precision":10, "scale":2 }\n\n' +
+      '🔸 ValidationRule (via metadata-create):\n' +
+      '   { "action":"metadata-create", "metadataType":"ValidationRule", "body":{ "fullName":"Account.NomeRegra", "active":true, "errorConditionFormula":"...", "errorMessage":"..." } }\n\n' +
+      '═══ REGRAS ═══\n' +
+      '• Se campo não existe → create-field (cria o campo faltante)\n' +
+      '• Se SOQL falha por campo inexistente → primeiro create-field, depois soql\n' +
+      '• Se objeto não existe → metadata-create CustomObject\n' +
+      '• Se Picklist falhou com erro XML/valueSet → REESCREVA com formato array simples acima\n' +
+      '• Se NÃO for automatizável (Named Credential, OWD Settings) → escreva "MANUAL" e explique\n' +
+      '• Sempre retorne array JSON: [{"action":"..."}], mesmo que seja 1 step só\n' +
       'Português do Brasil. Seja direto.';
 
     const result = await callRouted('chat', sysPrompt,
