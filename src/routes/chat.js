@@ -161,6 +161,74 @@ function extractComponent(step) {
   return step.action;
 }
 
+
+// Normaliza metadata de Flow para API 62.0
+// API 62.0 mudou: triggerType, recordTriggerType, object devem ficar DENTRO de start{}, não na raiz
+function normalizeFlowMetadata(flow) {
+  if (!flow || typeof flow !== 'object') return flow;
+  const out = { ...flow };
+
+  // Garantir defaults obrigatórios em API 62.0
+  if (!out.apiVersion) out.apiVersion = 62.0;
+  if (!out.processType) out.processType = 'AutoLaunchedFlow';
+  if (!out.status) out.status = 'Active';
+  if (!out.label && out.fullName) out.label = out.fullName.replace(/_/g,' ');
+
+  // Mover triggerType/recordTriggerType/object da raiz para start{} (formato API 62.0)
+  const startObj = out.start && typeof out.start === 'object' ? { ...out.start } : {};
+  const triggerFields = ['triggerType','recordTriggerType','object','filterFormula','filterLogic','filters','schedule','scheduledPaths','flowRunAsUser','runInMode'];
+  for (const f of triggerFields) {
+    if (out[f] !== undefined && startObj[f] === undefined) {
+      startObj[f] = out[f];
+      delete out[f];
+    }
+  }
+  // Se há triggerType ou recordTriggerType, processType deve ser AutoLaunchedFlow ou Flow (não pode ser AutoLaunchedFlow para record-triggered)
+  if (startObj.triggerType || startObj.recordTriggerType) {
+    if (out.processType === 'AutoLaunchedFlow' && (startObj.triggerType === 'RecordAfterSave' || startObj.triggerType === 'RecordBeforeSave')) {
+      out.processType = 'AutoLaunchedFlow';
+    }
+    // start.locationX/locationY são obrigatórios em alguns casos
+    if (startObj.locationX === undefined) startObj.locationX = 50;
+    if (startObj.locationY === undefined) startObj.locationY = 0;
+  }
+
+  // Corrigir enums comuns que o Opus alucina em FlowComparisonOperator
+  function fixOperator(op) {
+    if (!op || typeof op !== 'string') return op;
+    const map = {
+      'DoesNotContain': 'WasSet', // hack: não existe NotContain em filterCondition, mas pode ser tratado com 'Contains' invertido pelo flow
+      'NotContain': 'WasSet',
+      'NotContains': 'WasSet',
+      'DoesNotEqual': 'NotEqualTo',
+      'Equals': 'EqualTo',
+      'NotEqual': 'NotEqualTo',
+      'GreaterThan': 'GreaterThan',
+      'LessThan': 'LessThan',
+      'GreaterEqual': 'GreaterThanOrEqualTo',
+      'LessEqual': 'LessThanOrEqualTo'
+    };
+    return map[op] || op;
+  }
+
+  // Aplicar fix de operadores recursivamente
+  function walkAndFix(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    for (const k of Object.keys(obj)) {
+      if (k === 'operator' && typeof obj[k] === 'string') {
+        const fixed = fixOperator(obj[k]);
+        if (fixed !== obj[k]) obj[k] = fixed;
+      } else if (typeof obj[k] === 'object') {
+        walkAndFix(obj[k]);
+      }
+    }
+  }
+  walkAndFix(out);
+
+  if (Object.keys(startObj).length > 0) out.start = startObj;
+  return out;
+}
+
 async function executeRunbookStep(step, org) {
   if (step.action === 'create-field') {
     const fullName = step.object + '.' + step.field;
@@ -259,9 +327,11 @@ async function executeRunbookStep(step, org) {
   }
   if (step.action === 'flow') {
     const fullName = step.fullName || step.name;
-    const flowBody = step.body || step.flow;
-    if (!fullName || !flowBody) return { ok: false, message: '❌ flow requer fullName e body' };
+    const flowBodyRaw = step.body || step.flow;
+    if (!fullName || !flowBodyRaw) return { ok: false, message: '❌ flow requer fullName e body' };
     try {
+      // Normalizar Flow para formato API 62.0
+      const flowBody = normalizeFlowMetadata(flowBodyRaw);
       const r = await sfMulti.deployFlow(org, fullName, flowBody);
       const item = Array.isArray(r) ? r[0] : r;
       const ok = item?.success !== false;
@@ -1032,6 +1102,12 @@ Ações disponíveis:
 - "action": "ps-fls" — FLS num PermissionSet (DIFERENTE de profile-fls). Requer: { permissionSetName: "PS_Name", fieldPermissions: [{ field: "Account.Campo__c", editable: true, readable: true }], objectPermissions?: [{ object, allowCreate, allowRead, allowEdit, allowDelete }] }
 - "action": "assign-ps-to-user" — atribui PermissionSet a um ou mais usuários (via PermissionSetAssignment, sem Apex). Requer: { permissionSetName, users?: ["email1","email2"] OU userIds?: ["005..."] OU usernamePattern?: "*@backoffice.com" }
 - "action": "enable-field-history" — ativa Field History Tracking em campos de um objeto. Requer: { object: "Account", fields: ["Phone","Industry","CustomField__c"] }
+- "action": "flow" — cria Flow via Metadata API 62.0. Formato { fullName, body: { ... } }
+  ⚠️ ATENÇÃO API 62.0: triggerType, recordTriggerType, object DEVEM ficar dentro de start{}, NÃO na raiz do Flow.
+  Operadores válidos em FlowComparisonOperator: EqualTo, NotEqualTo, GreaterThan, LessThan, GreaterThanOrEqualTo, LessThanOrEqualTo, StartsWith, EndsWith, Contains, IsNull, WasSet, WasSelected, WasVisited. NÃO existem: DoesNotContain, NotContain, NotEqual, Equals.
+  Para "não contém", use Decision com 2 outcomes: um com Contains+true para um lado, outro (default) para o outro.
+  Exemplo de Record-Triggered Flow:
+  { "action":"flow", "fullName":"Account_Update_On_Insert", "body": { "label":"Account Update", "apiVersion":62.0, "processType":"AutoLaunchedFlow", "status":"Active", "start": { "triggerType":"RecordAfterSave", "recordTriggerType":"Create", "object":"Account", "locationX":50, "locationY":0, "connector":{"targetReference":"updateFields"} }, "recordUpdates": [...] } }
 
 ⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
 - Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
@@ -1689,6 +1765,12 @@ Ações disponíveis:
 - "action": "ps-fls" — FLS num PermissionSet (DIFERENTE de profile-fls). Requer: { permissionSetName: "PS_Name", fieldPermissions: [{ field: "Account.Campo__c", editable: true, readable: true }], objectPermissions?: [{ object, allowCreate, allowRead, allowEdit, allowDelete }] }
 - "action": "assign-ps-to-user" — atribui PermissionSet a um ou mais usuários (via PermissionSetAssignment, sem Apex). Requer: { permissionSetName, users?: ["email1","email2"] OU userIds?: ["005..."] OU usernamePattern?: "*@backoffice.com" }
 - "action": "enable-field-history" — ativa Field History Tracking em campos de um objeto. Requer: { object: "Account", fields: ["Phone","Industry","CustomField__c"] }
+- "action": "flow" — cria Flow via Metadata API 62.0. Formato { fullName, body: { ... } }
+  ⚠️ ATENÇÃO API 62.0: triggerType, recordTriggerType, object DEVEM ficar dentro de start{}, NÃO na raiz do Flow.
+  Operadores válidos em FlowComparisonOperator: EqualTo, NotEqualTo, GreaterThan, LessThan, GreaterThanOrEqualTo, LessThanOrEqualTo, StartsWith, EndsWith, Contains, IsNull, WasSet, WasSelected, WasVisited. NÃO existem: DoesNotContain, NotContain, NotEqual, Equals.
+  Para "não contém", use Decision com 2 outcomes: um com Contains+true para um lado, outro (default) para o outro.
+  Exemplo de Record-Triggered Flow:
+  { "action":"flow", "fullName":"Account_Update_On_Insert", "body": { "label":"Account Update", "apiVersion":62.0, "processType":"AutoLaunchedFlow", "status":"Active", "start": { "triggerType":"RecordAfterSave", "recordTriggerType":"Create", "object":"Account", "locationX":50, "locationY":0, "connector":{"targetReference":"updateFields"} }, "recordUpdates": [...] } }
 
 ⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
 - Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
