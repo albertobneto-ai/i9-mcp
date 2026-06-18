@@ -532,11 +532,14 @@ async function executeRunbookStep(step, org) {
       // Apex uses Tooling API delete
       if (mtype === 'ApexClass') {
         const r = await sfMulti.deleteApexClass(org, fname);
-        return { ok: r.success, message: r.success ? `✅ ApexClass deletada: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
+        if (r.success) { try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [fname]); } catch {} }
+        else if ((r.message || '').includes('não encontrado')) { try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [fname]); } catch {} }
+        return { ok: r.success || (r.message || '').includes('não encontrado'), message: r.success ? `✅ ApexClass deletada: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'} — removido do histórico` };
       }
       if (mtype === 'ApexTrigger') {
         const r = await sfMulti.deleteApexTrigger(org, fname);
-        return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
+        if (r.success || (r.message || '').includes('não encontrado')) { try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [fname]); } catch {} }
+        return { ok: r.success || (r.message || '').includes('não encontrado'), message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: não encontrado — removido do histórico` };
       }
       // DuplicateRule: fullName usa Object.RuleName (igual MatchingRule)
       let deleteName = fname;
@@ -607,7 +610,10 @@ async function executeRunbookStep(step, org) {
         const errText = errs.map(e => e.message || JSON.stringify(e)).join(', ');
         // "not found" / "does not exist" / "no X named Y found" = já foi deletado → sucesso
         if (errText.toLowerCase().includes('not found') || errText.toLowerCase().includes('does not exist') || errText.match(/no \w+ named .+ found/i)) {
-          return { ok: true, message: `ℹ️ ${mtype} ${deleteName} já não existe — prosseguindo`, alreadyExists: true };
+          // Limpar do deploy_log para não aparecer em rollbacks futuros
+          try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [deleteName]); } catch {}
+          try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [fname]); } catch {}
+          return { ok: true, message: `ℹ️ ${mtype} ${deleteName} já não existe — removido do histórico`, alreadyExists: true };
         }
         // Se campo referenciado por VR/Flow/etc → tentar deletar a referência primeiro
         if (mtype === 'CustomField' && errText.includes('referenced elsewhere')) {
@@ -631,6 +637,9 @@ async function executeRunbookStep(step, org) {
         }
         return { ok: false, message: `❌ Erro ao deletar ${mtype} ${deleteName}: ${errText}` };
       }
+      // Limpar do deploy_log após delete bem-sucedido
+      try { await pool.query('DELETE FROM deploy_log WHERE component = $1', [deleteName]); } catch {}
+      try { if (deleteName !== fname) await pool.query('DELETE FROM deploy_log WHERE component = $1', [fname]); } catch {}
       return { ok: true, message: `✅ ${mtype} deletado: ${deleteName}` };
     } catch (e) { return { ok: false, message: `❌ ${e.message}` }; }
   }
