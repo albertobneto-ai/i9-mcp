@@ -602,10 +602,31 @@ async function executeRunbookStep(step, org) {
       const ok = item?.success !== false;
       if (!ok) {
         const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
-        return { ok: false, message: `❌ Erro ao deletar ${mtype} ${fname}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+        const errText = errs.map(e => e.message || JSON.stringify(e)).join(', ');
+        // "not found" = já foi deletado → tratar como sucesso (idempotente)
+        if (errText.toLowerCase().includes('not found') || errText.toLowerCase().includes('does not exist')) {
+          return { ok: true, message: `ℹ️ ${mtype} ${deleteName} já não existe — prosseguindo`, alreadyExists: true };
+        }
+        return { ok: false, message: `❌ Erro ao deletar ${mtype} ${deleteName}: ${errText}` };
       }
-      return { ok: true, message: `✅ ${mtype} deletado: ${fname}` };
+      return { ok: true, message: `✅ ${mtype} deletado: ${deleteName}` };
     } catch (e) { return { ok: false, message: `❌ ${e.message}` }; }
+  }
+  if (step.action === 'rollback-restore') {
+    // Restaura um componente ao estado anterior (snapshot)
+    const { type, fullName, snapshot } = step;
+    if (!type || !fullName || !snapshot) return { ok: false, message: `ℹ️ Restauração ignorada: ${fullName || 'componente desconhecido'} — sem snapshot completo` };
+    try {
+      const prev = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+      // Dependendo do tipo, fazer metadataUpdate com o snapshot
+      if (prev.fullName || prev.name) {
+        await sfMulti.metadataUpdate(org, type, prev.fullName ? prev : { fullName, ...prev });
+        return { ok: true, message: `⏪ ${type} ${fullName} restaurado à versão anterior` };
+      }
+      return { ok: true, message: `ℹ️ ${type} ${fullName} — snapshot sem dados restauráveis, prosseguindo` };
+    } catch (e) {
+      return { ok: false, message: `⚠️ Erro ao restaurar ${fullName}: ${(e.message || String(e)).substring(0, 200)}` };
+    }
   }
   if (step.action === 'validate') {
     // Run SOQL and evaluate condition
@@ -2355,6 +2376,8 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             }
           }
           if (!deleteType) continue;
+          // Skip se o fullName é claramente um action name (não um componente real)
+          if (['create-layout','assign-layout','ps-fls','profile-fls','assign-custom-permission','layout-add-field','activate-rule','enable-field-history','assign-ps-to-user'].includes(comp)) continue;
 
           if (hasPrevState) {
             // Has snapshot → RESTORE to previous version
