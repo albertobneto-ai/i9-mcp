@@ -538,11 +538,8 @@ async function executeRunbookStep(step, org) {
         const r = await sfMulti.deleteApexTrigger(org, fname);
         return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
       }
-      // DuplicateRule: fullName é só o DeveloperName (sem prefixo Object)
+      // DuplicateRule: fullName usa Object.RuleName (igual MatchingRule)
       let deleteName = fname;
-      if (mtype === 'DuplicateRule' && fname.includes('.')) {
-        deleteName = fname.split('.').pop(); // Account.DR_X → DR_X
-      }
       // MatchingRule/DuplicateRule: desativar via metadata read+update antes de deletar
       if (mtype === 'MatchingRule' || mtype === 'DuplicateRule') {
         try {
@@ -569,13 +566,23 @@ async function executeRunbookStep(step, org) {
           const errMsg = chk?.errors ? JSON.stringify(chk.errors) : '';
           // Se MR falha por DR associada ativa → desativar+deletar a DR primeiro
           if (mtype === 'MatchingRule' && errMsg.includes('associated to an active duplicate rule')) {
-            const drMatch = errMsg.match(/:\s*([A-Za-z0-9_]+)/);
-            if (drMatch) {
-              const drName = drMatch[1].trim().replace(/ /g, '_');
+            // Extrair nome da DR do erro: "... : DR Nacional PJ CNPJ."
+            const drLabelMatch = errMsg.match(/:\s*([^"\]{}]+?)\s*\.?$/m);
+            if (drLabelMatch) {
+              // Converter label para DeveloperName e prefixar com objeto
+              const drDevName = drLabelMatch[1].trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+              const objPrefix = deleteName.includes('.') ? deleteName.split('.')[0] : 'Account';
+              const drFullName = objPrefix + '.' + drDevName;
               try {
-                const dr = await sfMulti.metadataRead(org, 'DuplicateRule', drName);
-                if (dr && dr.fullName) { dr.isActive = false; await sfMulti.metadataUpdate(org, 'DuplicateRule', dr); await new Promise(r => setTimeout(r, 6000)); }
-                await sfMulti.metadataDelete(org, 'DuplicateRule', drName);
+                // Desativar DR
+                const dr = await sfMulti.metadataRead(org, 'DuplicateRule', drFullName);
+                if (dr && dr.fullName) {
+                  dr.isActive = false;
+                  await sfMulti.metadataUpdate(org, 'DuplicateRule', dr);
+                  await new Promise(r => setTimeout(r, 6000));
+                }
+                // Deletar DR
+                await sfMulti.metadataDelete(org, 'DuplicateRule', drFullName);
                 await new Promise(r => setTimeout(r, 3000));
               } catch {}
             }
