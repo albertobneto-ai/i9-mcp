@@ -127,6 +127,46 @@ Termos técnicos efetivamente usados no documento (15-40 termos).
 ## 17. Controle de Versão e Aprovação
 Instruções de versionamento e fluxo de aprovação.
 
+⚡ ATENCAO — ACTIONS AUTOMATIZAVEIS NO RUNBOOK
+
+O orquestrador SF Agent SUPORTA as actions abaixo. NUNCA marque como 'manual-step' o que pode ser automatizado:
+
+| Tarefa | Action correta | NAO usar |
+|---|---|---|
+| Criar Page Layout (secoes + campos) | create-layout | manual-step |
+| Atribuir Layout a Profile + RecordType | assign-layout | manual-step |
+| Atribuir Custom Permission a PS | assign-custom-permission | manual-step |
+| Atualizar FLS de um Profile | profile-fls | manual-step |
+| Adicionar campo a Layout existente | layout-add-field | manual-step |
+| Ativar Matching/Duplicate Rule | activate-rule | manual-step |
+| Criar campo customizado | create-field | manual-step |
+| Criar MR/DR/VR/RT/PS/CP/CustomObject/Queue/SharingRules/QuickAction | metadata-create | manual-step |
+| Criar Apex Class/Trigger | apex-class / apex-trigger | manual-step |
+| Criar LWC | lwc | manual-step |
+| Criar Flow | flow ou metadata-create | manual-step |
+| Atualizar registro Custom Metadata | metadata-create (type:CustomMetadata) | manual-step |
+
+Use 'manual-step' APENAS para:
+- Named Credentials / External Credentials (dados sensiveis)
+- OWD / Sharing Settings (decisao arquitetural inicial)
+- Dynamic Forms / Dynamic Actions (Lightning App Builder UI)
+- Lightning App tabs / navegacao (App Manager UI)
+- Data Loading via Data Loader (CSV manual)
+- Lead/Case Assignment Rules (Setup UI)
+- Field History Tracking ativacao (Setup UI)
+
+EXEMPLOS automaticos (preferir sempre):
+
+create-layout: action=create-layout, object=Account, layoutName=Acc_Backoffice, sections=[{label:Identificacao, columns:[[{field:Name,behavior:Edit},{field:CNPJ__c,behavior:Readonly}]]}]
+
+assign-layout: action=assign-layout, profileName=Backoffice, layoutName=Account-Acc_Backoffice, recordType=Account.Cliente_Encarteirado
+
+assign-custom-permission: action=assign-custom-permission, permissionSetName=PS_Backoffice, customPermissions=[Account_Backoffice_Edit]
+
+profile-fls: action=profile-fls, profileName=Backoffice, fieldPermissions=[{field:Account.CNPJ__c,editable:false,readable:true}]
+
+NA SECAO 18 (Runbook), gere TODOS os steps usando as actions automatizaveis. SO use manual-step para a lista restritiva acima.
+
 ## 18. Runbook de Implementação
 Guia DETALHADO passo a passo para implementar TUDO desta spec. Um consultor que nunca viu este projeto deve conseguir implementar seguindo APENAS este Runbook.
 
