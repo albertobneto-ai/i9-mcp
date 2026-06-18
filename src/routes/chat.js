@@ -555,7 +555,7 @@ async function executeRunbookStep(step, org) {
           label: sec.label,
           editHeading: sec.editHeading !== false,
           detailHeading: sec.detailHeading !== false,
-          style: sec.style || (cols.length === 1 ? 'OneColumn' : 'TwoColumns'),
+          style: sec.style || (cols.length === 1 ? 'OneColumn' : 'TwoColumnsTopToBottom'),
           layoutColumns: cols.map(col => ({
             layoutItems: (col || []).map(item => {
               if (typeof item === 'string') return { field: item, behavior: 'Edit' };
