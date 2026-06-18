@@ -181,13 +181,116 @@ Tabela numerada com a sequência EXATA. Dependências respeitadas.
 Sequência típica:
 1. Custom Objects → 2. Custom Fields (lookups por último) → 3. Record Types → 4. Page Layouts → 5. Validation Rules → 6. Flows → 7. Apex → 8. Permission Sets → 9. Sharing Rules → 10. Reports/Dashboards → 11. Lightning App/Tabs → 12. Testes
 
-### 18.3 Instruções Detalhadas por Componente
-Para CADA item da seção 12.1 (Componentes do Package):
-- **Caminho no Setup**: Setup → [caminho exato] (ex: Setup → Object Manager → Lead → Fields & Relationships → New)
-- **Valores exatos**: API Name, Label, Tipo, Length, Required, Description, Default Value
-- **Fórmulas completas**: para Validation Rules e Formula Fields
-- **Configuração de Flows**: cada elemento (Start → Get Records → Decision → Assignment → Update → End) com filtros, condições e valores
-- **Código Apex**: código completo ou pseudo-código funcional com nome da classe e método
+### 18.3 Instruções Detalhadas por Componente (FORMATO OBRIGATORIO)
+
+Para CADA componente, escreva um bloco estruturado usando EXATAMENTE os nomes de parametros abaixo. O orquestrador vai converter automaticamente para JSON.
+
+SCHEMA DE REFERENCIA POR ACTION:
+
+1. create-field (criar campo):
+   - action: create-field
+   - object: Account
+   - field: CNPJ__c (sempre com __c)
+   - label: CNPJ
+   - type: Text|Number|Currency|Picklist|MultiselectPicklist|Checkbox|Date|DateTime|Email|Phone|Url|TextArea|LongTextArea|Lookup
+   - length: 18 (obrigatorio para Text)
+   - precision: 10, scale: 2 (obrigatorio para Number/Currency)
+   - picklist: ["Valor1","Valor2","Valor3"] (obrigatorio para Picklist — SEMPRE array de strings simples)
+   - referenceTo: Account, relationshipLabel: Filhas (obrigatorio para Lookup)
+   - defaultValue: false (obrigatorio para Checkbox)
+   - required: false
+   - description: Descricao do campo
+
+2. metadata-create (criar metadado complexo — NAO usar para CustomField, usar create-field):
+   - action: metadata-create
+   - type: MatchingRule|DuplicateRule|ValidationRule|RecordType|PermissionSet|CustomPermission|PermissionSetGroup|CustomObject|ListView|CustomTab|Queue|SharingRules|QuickAction|GlobalValueSet|CustomMetadata
+   - body: (objeto completo com fullName + todos os campos do metadado)
+   Exemplos:
+   - ValidationRule: body.fullName=Account.VR_Nome, body.active=true, body.errorConditionFormula=AND(ISBLANK(Campo__c),NOT(ISBLANK(Outro__c))), body.errorMessage=Mensagem
+   - MatchingRule: body.fullName=Account.MR_Nome, body.ruleStatus=Active, body.matchingRuleItems=[{fieldName,matchingMethod:Exact|Fuzzy,blankValueBehavior}]
+   - RecordType: body.fullName=Account.Cliente_PJ, body.label=Cliente PJ, body.active=true
+   - PermissionSet: body.fullName=PS_Nome, body.label=Nome, body.fieldPermissions=[...], body.objectPermissions=[...]
+
+3. create-layout (criar Page Layout do zero):
+   - action: create-layout
+   - object: Account
+   - layoutName: Account_Backoffice_Layout (sem prefixo de objeto)
+   - sections: array de secoes, cada uma com label e columns (array de colunas, cada coluna array de campos)
+   - Cada campo: {field: "Name", behavior: "Edit"|"Required"|"Readonly"}
+   - IMPORTANTE: Lead exige Name+Status+Email+Company no layout. Account exige Name.
+
+4. assign-layout (atribuir layout a profile):
+   - action: assign-layout
+   - profileName: Standard|Admin|Custom_Profile
+   - layoutName: Account-Account_Backoffice_Layout (formato: Objeto-NomeLayout)
+   - recordType: Account.Cliente_PJ (opcional)
+
+5. ps-fls (FLS no PermissionSet):
+   - action: ps-fls
+   - permissionSetName: PS_Nome
+   - fieldPermissions: [{field:"Account.Campo__c", editable:true, readable:true}]
+
+6. assign-custom-permission (CP a PS):
+   - action: assign-custom-permission
+   - permissionSetName: PS_Nome
+   - customPermissions: ["CP_Nome1","CP_Nome2"]
+
+7. activate-rule (ativar MR/DR):
+   - action: activate-rule
+   - ruleType: MatchingRule|DuplicateRule
+   - ruleName: Account.MR_Nome
+
+8. flow (criar Flow — API 62.0):
+   - action: flow
+   - fullName: Nome_Do_Flow
+   - body: objeto Flow completo
+   - REGRA API 62.0: triggerType, recordTriggerType, object DEVEM estar dentro de start{}, NAO na raiz
+   - Operadores validos: EqualTo, NotEqualTo, GreaterThan, LessThan, GreaterThanOrEqualTo, LessThanOrEqualTo, StartsWith, EndsWith, Contains, IsNull, WasSet
+   - NAO EXISTEM: DoesNotContain, NotContain, Equals, NotEqual
+   - start DEVE ter locationX:50, locationY:0
+
+9. apex-class / apex-trigger:
+   - action: apex-class ou apex-trigger
+   - name: NomeClasse
+   - body: codigo Apex completo
+
+10. profile-fls / layout-add-field / assign-ps-to-user / enable-field-history:
+    - Seguir schema documentado nas actions acima
+
+11. manual-step (SOMENTE para items da lista restritiva):
+    - action: manual-step
+    - description: Descricao clara do que fazer manualmente
+    - instructions: Passo a passo detalhado
+
+REGRA: na secao 18.3, escreva cada step como um bloco estruturado com os parametros EXATOS acima. Exemplo:
+
+#### Step 1: create-field — Campo CNPJ no Account
+- action: create-field
+- object: Account
+- field: CNPJ__c
+- label: CNPJ
+- type: Text
+- length: 18
+- description: Documento de identificacao fiscal
+
+#### Step 2: metadata-create — Matching Rule CNPJ
+- action: metadata-create
+- type: MatchingRule
+- body:
+  - fullName: Account.MR_CNPJ_Exact
+  - label: MR CNPJ Exact
+  - ruleStatus: Active
+  - matchingRuleItems: [{fieldName: CNPJ__c, matchingMethod: Exact, blankValueBehavior: NullNotAllowed}]
+
+#### Step 3: create-layout — Layout Backoffice
+- action: create-layout
+- object: Account
+- layoutName: Account_Backoffice
+- sections:
+  - label: Identificacao, columns: [[{field:Name,behavior:Edit},{field:CNPJ__c,behavior:Readonly}]]
+  - label: Dados Comerciais, columns: [[{field:Industry,behavior:Edit}]]
+
+SIGA ESTE FORMATO EXATO PARA CADA STEP.
 
 ### 18.4 Dados Iniciais
 - Picklist values a inserir
