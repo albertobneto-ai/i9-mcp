@@ -101,7 +101,7 @@ function escapeXml(s) {
 // Describe objeto em qualquer org
 export async function describeObject(org, objectName) {
   const conn = await connectToOrg(org);
-  const meta = await conn.describe(objectName);
+  const meta = await httpsGetJson(`${conn.instanceUrl}/services/data/v62.0/sobjects/${encodeURIComponent(objectName)}/describe`, conn.accessToken);
   return {
     name: meta.name,
     label: meta.label,
@@ -138,7 +138,7 @@ export async function describeObject(org, objectName) {
 // Executar SOQL em qualquer org
 export async function runSoql(org, query) {
   const conn = await connectToOrg(org);
-  return await conn.query(query);
+  return await httpsGetJson(`${conn.instanceUrl}/services/data/v62.0/query?q=${encodeURIComponent(query)}`, conn.accessToken);
 }
 
 // Criar metadado em qualquer org
@@ -290,7 +290,7 @@ export async function moveFieldInLayout(org, layoutName, fieldName, toSectionLab
 // Executar Tooling API SOQL em qualquer org (read-only)
 export async function runToolingQuery(org, query) {
   const conn = await connectToOrg(org);
-  return await conn.tooling.query(query);
+  return await httpsGetJson(`${conn.instanceUrl}/services/data/v62.0/tooling/query?q=${encodeURIComponent(query)}`, conn.accessToken);
 }
 
 // Ler layout metadata (read-only)
