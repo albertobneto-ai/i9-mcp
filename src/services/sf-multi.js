@@ -8,7 +8,7 @@ const connections = {};
 
 export async function connectToOrg(org) {
   const key = org.id || org.username;
-  
+
   // Usar cache se conexão ainda válida
   if (connections[key]) {
     try {
@@ -19,54 +19,11 @@ export async function connectToOrg(org) {
     }
   }
 
-  // Tentar OAuth2 via https (garantido funcionar)
-  try {
-    const postData = querystring.stringify({
-      grant_type: 'password',
-      client_id: 'SalesforceDevelopmentExperience',
-      client_secret: '1384510088588713504',
-      username: org.username,
-      password: org.password + (org.security_token || '')
-    });
-    const loginHost = new URL(org.login_url).hostname;
-    const oauthData = await new Promise((resolve, reject) => {
-      const req = https.request({
-        hostname: loginHost,
-        path: '/services/oauth2/token',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) },
-        timeout: 20000
-      }, (res) => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => { try { resolve(JSON.parse(body)); } catch { reject(new Error('Invalid JSON')); } });
-      });
-      req.on('error', reject);
-      req.on('timeout', () => { req.destroy(); reject(new Error('OAuth timeout')); });
-      req.write(postData);
-      req.end();
-    });
-    if (oauthData.access_token) {
-      const conn = new jsforce.Connection({
-        instanceUrl: oauthData.instance_url,
-        accessToken: oauthData.access_token,
-        version: '62.0'
-      });
-      connections[key] = conn;
-      return conn;
-    }
-  } catch (oauthErr) {
-    console.log('[connectToOrg] OAuth2 falhou:', oauthErr.message);
-  }
-
-  // Fallback: jsforce SOAP login
-  console.log('[connectToOrg] Tentando SOAP login para', org.username, 'em', org.login_url);
   const conn = new jsforce.Connection({
     loginUrl: org.login_url,
     version: '62.0',
   });
   await conn.login(org.username, org.password + (org.security_token || ''));
-  console.log('[connectToOrg] SOAP login OK para', org.username);
   connections[key] = conn;
   return conn;
 }
@@ -598,4 +555,15 @@ export async function insertRecords(org, objectName, records) {
   } catch (e) {
     return { error: e.message || String(e) };
   }
+}
+
+// Diagnóstico: IP de saída do dyno
+export async function getOutboundIP() {
+  return new Promise((resolve) => {
+    https.get('https://api.ipify.org?format=json', (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => { try { resolve(JSON.parse(body).ip); } catch { resolve('unknown'); } });
+    }).on('error', () => resolve('error'));
+  });
 }
