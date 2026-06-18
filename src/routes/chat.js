@@ -603,8 +603,8 @@ async function executeRunbookStep(step, org) {
       if (!ok) {
         const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
         const errText = errs.map(e => e.message || JSON.stringify(e)).join(', ');
-        // "not found" = já foi deletado → tratar como sucesso (idempotente)
-        if (errText.toLowerCase().includes('not found') || errText.toLowerCase().includes('does not exist')) {
+        // "not found" / "does not exist" / "no X named Y found" = já foi deletado → sucesso
+        if (errText.toLowerCase().includes('not found') || errText.toLowerCase().includes('does not exist') || errText.match(/no \w+ named .+ found/i)) {
           return { ok: true, message: `ℹ️ ${mtype} ${deleteName} já não existe — prosseguindo`, alreadyExists: true };
         }
         return { ok: false, message: `❌ Erro ao deletar ${mtype} ${deleteName}: ${errText}` };
