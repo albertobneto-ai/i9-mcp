@@ -270,6 +270,31 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.get('/api/debug/sf-test', async (req, res) => {
+  const https = await import('https');
+  const start = Date.now();
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const r = https.default.request({
+        hostname: 'test.salesforce.com',
+        path: '/services/oauth2/token',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 15000
+      }, (response) => {
+        let body = '';
+        response.on('data', c => body += c);
+        response.on('end', () => resolve({ status: response.statusCode, body: body.substring(0, 300), ms: Date.now() - start }));
+      });
+      r.on('error', e => reject(e));
+      r.on('timeout', () => { r.destroy(); reject(new Error('timeout 15s')); });
+      r.write('grant_type=password&client_id=SalesforceDevelopmentExperience&client_secret=1384510088588713504&username=alberto.bottaro%40aircompany.ai.arqevery&password=Nicework%400001bpQwYa7Yk0LdA6VVtkvEI5WBJ');
+      r.end();
+    });
+    res.json(result);
+  } catch (e) { res.json({ error: e.message, ms: Date.now() - start }); }
+});
+
 app.get('/api/debug/ip', async (req, res) => {
   try { const ip = await getOutboundIP(); res.json({ ip }); }
   catch (e) { res.json({ error: e.message }); }
