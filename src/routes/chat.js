@@ -87,6 +87,26 @@ function formatStepPreview(step) {
     text += `- **Tipo:** ${step.type}\n`;
     text += `- **Componente:** ${step.fullName}\n`;
     if (step.description) text += `- **Descrição:** ${step.description}\n`;
+  } else if (step.action === 'ps-fls') {
+    text += `**Ação:** FLS no PermissionSet\n`;
+    text += `- **Permission Set:** ${step.permissionSetName}\n`;
+    const fps = step.fieldPermissions || [];
+    text += `- **Campos:** ${fps.length}\n`;
+    if (fps.length <= 10) {
+      for (const fp of fps) {
+        text += `  - ${fp.field}: read=${fp.readable !== false ? '✓' : '✗'} edit=${fp.editable ? '✓' : '✗'}\n`;
+      }
+    }
+  } else if (step.action === 'assign-ps-to-user') {
+    text += `**Ação:** Atribuir PermissionSet a usuários\n`;
+    text += `- **Permission Set:** ${step.permissionSetName}\n`;
+    if (step.users) text += `- **Users (emails):** ${step.users.join(', ')}\n`;
+    if (step.userIds) text += `- **User IDs:** ${step.userIds.length}\n`;
+    if (step.usernamePattern) text += `- **Pattern:** ${step.usernamePattern}\n`;
+  } else if (step.action === 'enable-field-history') {
+    text += `**Ação:** Ativar Field History Tracking\n`;
+    text += `- **Objeto:** ${step.object}\n`;
+    text += `- **Campos:** ${(step.fields || []).join(', ')}\n`;
   } else if (step.action === 'create-layout') {
     text += `**Ação:** Criar Page Layout\n`;
     text += `- **Objeto:** ${step.object}\n`;
@@ -615,6 +635,143 @@ async function executeRunbookStep(step, org) {
       return { ok: false, message: `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
     } catch (e) { return { ok: false, message: `❌ assign-layout: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
+  if (step.action === 'ps-fls') {
+    // FLS para PermissionSet (diferente do profile-fls que atua em Profile)
+    // Aceita: { permissionSetName, fieldPermissions:[{field:"Object.Field__c", editable, readable}], objectPermissions?:[{object, allowCreate, allowRead, allowEdit, allowDelete, viewAllRecords?, modifyAllRecords?}] }
+    const { permissionSetName, fieldPermissions, objectPermissions } = step;
+    if (!permissionSetName) return { ok: false, message: '❌ ps-fls requer permissionSetName' };
+    const fps = Array.isArray(fieldPermissions) ? fieldPermissions : [];
+    const ops = Array.isArray(objectPermissions) ? objectPermissions : [];
+    if (!fps.length && !ops.length) return { ok: false, message: '❌ ps-fls requer fieldPermissions[] ou objectPermissions[]' };
+    try {
+      const ps = await sfMulti.metadataRead(org, 'PermissionSet', permissionSetName);
+      if (!ps || !ps.fullName) return { ok: false, message: '❌ PermissionSet não encontrado: ' + permissionSetName };
+      // Snapshot rollback
+      let previousState = null;
+      try { previousState = JSON.stringify({ type: 'PermissionSet', name: permissionSetName, fieldPermissions: ps.fieldPermissions, objectPermissions: ps.objectPermissions }); } catch {}
+      // Merge FLS
+      let existingFP = ps.fieldPermissions || [];
+      if (!Array.isArray(existingFP)) existingFP = [existingFP].filter(Boolean);
+      const fpMap = new Map(existingFP.map(fp => [fp.field, fp]));
+      for (const fp of fps) {
+        fpMap.set(fp.field, { field: fp.field, editable: !!fp.editable, readable: fp.readable !== false });
+      }
+      ps.fieldPermissions = Array.from(fpMap.values());
+      // Merge Object Perms
+      if (ops.length) {
+        let existingOP = ps.objectPermissions || [];
+        if (!Array.isArray(existingOP)) existingOP = [existingOP].filter(Boolean);
+        const opMap = new Map(existingOP.map(op => [op.object, op]));
+        for (const op of ops) {
+          opMap.set(op.object, op);
+        }
+        ps.objectPermissions = Array.from(opMap.values());
+      }
+      const result = await sfMulti.metadataUpdate(org, 'PermissionSet', ps);
+      const item = Array.isArray(result) ? result[0] : result;
+      const ok = item?.success !== false;
+      if (ok) return { ok: true, message: `✅ PS ${permissionSetName}: ${fps.length} FLS + ${ops.length} object perms aplicados`, previousState };
+      const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+      return { ok: false, message: `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ ps-fls: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'assign-ps-to-user') {
+    // Atribui PermissionSet a usuários via PermissionSetAssignment SObject
+    // Aceita: { permissionSetName, users: ["email1@x.com","email2@x.com"] OU userIds: ["005..."] OU usernamePattern: "*@backoffice.com" }
+    const { permissionSetName, users, userIds, usernamePattern } = step;
+    if (!permissionSetName) return { ok: false, message: '❌ assign-ps-to-user requer permissionSetName' };
+    try {
+      const conn = await (await import('../services/sf-multi.js')).default ? null : null;
+      // Usar runSoql + composite via sfMulti
+      // Buscar Id do PermissionSet
+      const psQuery = await sfMulti.runSoql(org, `SELECT Id FROM PermissionSet WHERE Name = '${permissionSetName.replace(/'/g,"\\'")}' LIMIT 1`);
+      if (psQuery.error) return { ok: false, message: '❌ Erro buscando PS: ' + psQuery.error };
+      if (!psQuery.records || !psQuery.records.length) return { ok: false, message: '❌ PermissionSet não encontrado: ' + permissionSetName };
+      const psId = psQuery.records[0].Id;
+      // Resolver UserIds
+      let resolvedIds = [];
+      if (Array.isArray(userIds) && userIds.length) {
+        resolvedIds = userIds.slice();
+      } else if (Array.isArray(users) && users.length) {
+        const emails = users.map(u => "'" + u.replace(/'/g, "\\'") + "'").join(',');
+        const uq = await sfMulti.runSoql(org, `SELECT Id, Username FROM User WHERE Username IN (${emails}) AND IsActive = true`);
+        if (uq.error) return { ok: false, message: '❌ Erro buscando users: ' + uq.error };
+        resolvedIds = (uq.records || []).map(u => u.Id);
+        if (!resolvedIds.length) return { ok: false, message: '❌ Nenhum usuário ativo encontrado para: ' + users.join(', ') };
+      } else if (usernamePattern) {
+        // LIKE pattern
+        const pat = usernamePattern.replace(/\*/g,'%').replace(/'/g,"\\'");
+        const uq = await sfMulti.runSoql(org, `SELECT Id FROM User WHERE Username LIKE '${pat}' AND IsActive = true`);
+        if (uq.error) return { ok: false, message: '❌ Erro pattern: ' + uq.error };
+        resolvedIds = (uq.records || []).map(u => u.Id);
+        if (!resolvedIds.length) return { ok: false, message: '❌ Nenhum usuário ativo casa com pattern: ' + usernamePattern };
+      } else {
+        return { ok: false, message: '❌ Forneça users[] OU userIds[] OU usernamePattern' };
+      }
+      // Verificar quais já têm o PS (não duplicar)
+      const idsList = resolvedIds.map(i => "'" + i + "'").join(',');
+      const existing = await sfMulti.runSoql(org, `SELECT AssigneeId FROM PermissionSetAssignment WHERE PermissionSetId = '${psId}' AND AssigneeId IN (${idsList})`);
+      const alreadyAssigned = new Set((existing.records || []).map(r => r.AssigneeId));
+      const toAssign = resolvedIds.filter(uid => !alreadyAssigned.has(uid));
+      if (!toAssign.length) return { ok: true, message: `ℹ️ Todos os ${resolvedIds.length} usuários já têm o PS ${permissionSetName} — prosseguindo`, alreadyExists: true };
+      // Criar PermissionSetAssignment para cada
+      const records = toAssign.map(uid => ({ attributes: { type: 'PermissionSetAssignment' }, PermissionSetId: psId, AssigneeId: uid }));
+      const insertResult = await sfMulti.insertRecords(org, 'PermissionSetAssignment', records.map(r => ({ PermissionSetId: r.PermissionSetId, AssigneeId: r.AssigneeId })));
+      const successCount = (insertResult.results || []).filter(r => r.success !== false).length;
+      const errors = (insertResult.results || []).filter(r => r.success === false);
+      if (errors.length === 0) {
+        return { ok: true, message: `✅ ${successCount} usuário(s) recebeu(ram) o PS ${permissionSetName} (${alreadyAssigned.size} já tinha(m))` };
+      }
+      return { ok: false, message: `⚠️ ${successCount} OK, ${errors.length} falharam: ${errors.slice(0,3).map(e => JSON.stringify(e.errors||e)).join('; ')}` };
+    } catch (e) { return { ok: false, message: `❌ assign-ps-to-user: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'enable-field-history') {
+    // Ativa Field History Tracking em campos de um objeto
+    // Aceita: { object: "Account", fields: ["Phone","Industry","Custom_Field__c"] }
+    const { object, fields } = step;
+    if (!object) return { ok: false, message: '❌ enable-field-history requer object' };
+    const flds = Array.isArray(fields) ? fields : [];
+    if (!flds.length) return { ok: false, message: '❌ enable-field-history requer fields[] (lista de API names)' };
+    try {
+      // 1. Ativar History Tracking no objeto (se não estiver ativo)
+      // Para objetos standard, não precisa — já vem com enableHistory; para custom (__c), precisa via metadata.update
+      const isCustom = object.endsWith('__c');
+      if (isCustom) {
+        try {
+          const obj = await sfMulti.metadataRead(org, 'CustomObject', object);
+          if (obj && obj.fullName && !obj.enableHistory) {
+            obj.enableHistory = true;
+            await sfMulti.metadataUpdate(org, 'CustomObject', obj);
+          }
+        } catch {}
+      }
+      // 2. Ativar trackHistory em cada campo
+      const updates = [];
+      for (const f of flds) {
+        const fullName = `${object}.${f}`;
+        try {
+          const field = await sfMulti.metadataRead(org, 'CustomField', fullName);
+          if (!field || !field.fullName) {
+            // Campo standard — usar trackHistory direto via update (jsforce gerencia)
+            updates.push({ fullName, trackHistory: true });
+          } else {
+            field.trackHistory = true;
+            updates.push(field);
+          }
+        } catch {
+          updates.push({ fullName, trackHistory: true });
+        }
+      }
+      const result = await sfMulti.metadataUpdate(org, 'CustomField', updates);
+      const items = Array.isArray(result) ? result : [result];
+      const okCount = items.filter(r => r.success !== false).length;
+      const errs = items.filter(r => r.success === false);
+      if (errs.length === 0) {
+        return { ok: true, message: `✅ Field History ativado em ${okCount}/${flds.length} campos de ${object}: ${flds.join(', ')}` };
+      }
+      return { ok: false, message: `⚠️ ${okCount}/${flds.length} ativados. Erros: ${errs.slice(0,3).map(e => JSON.stringify(e.errors||e)).join('; ')}` };
+    } catch (e) { return { ok: false, message: `❌ enable-field-history: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
   if (step.action === 'assign-custom-permission') {
     const { permissionSetName, customPermissions } = step;
     const enabled = step.enabled !== false; // default true
@@ -868,6 +1025,9 @@ Ações disponíveis:
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
 - "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
+- "action": "ps-fls" — FLS num PermissionSet (DIFERENTE de profile-fls). Requer: { permissionSetName: "PS_Name", fieldPermissions: [{ field: "Account.Campo__c", editable: true, readable: true }], objectPermissions?: [{ object, allowCreate, allowRead, allowEdit, allowDelete }] }
+- "action": "assign-ps-to-user" — atribui PermissionSet a um ou mais usuários (via PermissionSetAssignment, sem Apex). Requer: { permissionSetName, users?: ["email1","email2"] OU userIds?: ["005..."] OU usernamePattern?: "*@backoffice.com" }
+- "action": "enable-field-history" — ativa Field History Tracking em campos de um objeto. Requer: { object: "Account", fields: ["Phone","Industry","CustomField__c"] }
 
 ⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
 - Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
@@ -1522,6 +1682,9 @@ Ações disponíveis:
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
 - "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
+- "action": "ps-fls" — FLS num PermissionSet (DIFERENTE de profile-fls). Requer: { permissionSetName: "PS_Name", fieldPermissions: [{ field: "Account.Campo__c", editable: true, readable: true }], objectPermissions?: [{ object, allowCreate, allowRead, allowEdit, allowDelete }] }
+- "action": "assign-ps-to-user" — atribui PermissionSet a um ou mais usuários (via PermissionSetAssignment, sem Apex). Requer: { permissionSetName, users?: ["email1","email2"] OU userIds?: ["005..."] OU usernamePattern?: "*@backoffice.com" }
+- "action": "enable-field-history" — ativa Field History Tracking em campos de um objeto. Requer: { object: "Account", fields: ["Phone","Industry","CustomField__c"] }
 
 ⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
 - Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
