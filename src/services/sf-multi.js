@@ -516,22 +516,28 @@ export async function updateProfileFLS(org, profileName, fieldPermissions = [], 
 /**
  * Ativa Matching Rule ou Duplicate Rule via Tooling API.
  */
-export async function activateRule(org, ruleType, ruleName) {
-  const conn = org.connection;
+export async function activateRule(org, ruleType, ruleName, activate = true) {
+  const conn = await connectToOrg(org);
   if (ruleType === 'MatchingRule') {
-    const result = await conn.tooling.sobject('MatchingRule').find({ DeveloperName: ruleName });
-    if (!result.length) return { status: 'error', message: 'Matching Rule not found: ' + ruleName };
-    const rule = await conn.metadata.read('MatchingRule', `${result[0].SobjectType}.${ruleName}`);
-    rule.ruleStatus = 'Active';
+    // Se ruleName contém '.', usar direto; senão buscar via Tooling
+    let fullName = ruleName;
+    if (!ruleName.includes('.')) {
+      const result = await conn.tooling.sobject('MatchingRule').find({ DeveloperName: ruleName });
+      if (!result.length) return { status: 'error', message: 'Matching Rule not found: ' + ruleName };
+      fullName = `${result[0].SobjectType}.${ruleName}`;
+    }
+    const rule = await conn.metadata.read('MatchingRule', fullName);
+    if (!rule || !rule.fullName) return { status: 'error', message: 'Matching Rule metadata not found: ' + fullName };
+    rule.ruleStatus = activate ? 'Active' : 'Inactive';
     const r = await conn.metadata.update('MatchingRule', rule);
-    return { status: 'success', result: r };
+    return { status: 'success', result: r, message: `${activate ? 'Ativada' : 'Desativada'}: ${fullName}` };
   }
   if (ruleType === 'DuplicateRule') {
     const rule = await conn.metadata.read('DuplicateRule', ruleName);
-    if (!rule.fullName) return { status: 'error', message: 'Duplicate Rule not found: ' + ruleName };
-    rule.isActive = true;
+    if (!rule || !rule.fullName) return { status: 'error', message: 'Duplicate Rule not found: ' + ruleName };
+    rule.isActive = activate;
     const r = await conn.metadata.update('DuplicateRule', rule);
-    return { status: 'success', result: r };
+    return { status: 'success', result: r, message: `${activate ? 'Ativada' : 'Desativada'}: ${ruleName}` };
   }
   return { status: 'error', message: 'Unknown rule type: ' + ruleType };
 }
