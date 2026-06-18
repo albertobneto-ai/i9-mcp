@@ -1348,7 +1348,7 @@ async function generateSpecJob(jobId, hf, org, userId) {
 
   // Gerar com Opus
   const fullSystem = specInstructions + gapContext;
-  const result = await claude.callRouted('spec', fullSystem, [{ role: 'user', content: hf }], 16384);
+  const result = await claude.callRouted('spec', fullSystem, [{ role: 'user', content: hf }], 32000);
   const specMarkdown = result.text;
 
   const titleMatch = specMarkdown.match(/(?:User Story ID|ID)[:\s|]*([A-Z]+-?\d+)/i);
