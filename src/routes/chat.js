@@ -87,6 +87,12 @@ function formatStepPreview(step) {
     text += `- **Tipo:** ${step.type}\n`;
     text += `- **Componente:** ${step.fullName}\n`;
     if (step.description) text += `- **Descrição:** ${step.description}\n`;
+  } else if (step.action === 'assign-custom-permission') {
+    text += `**Ação:** Atribuir Custom Permission(s) a PermissionSet\n`;
+    text += `- **PermissionSet:** ${step.permissionSetName}\n`;
+    const cps = Array.isArray(step.customPermissions) ? step.customPermissions : [step.customPermissions];
+    text += `- **Custom Permissions:** ${cps.filter(Boolean).join(', ')}\n`;
+    text += `- **Enabled:** ${step.enabled !== false ? 'true' : 'false'}\n`;
   } else if (step.action === 'manual-step') {
     text += `**⚠️ Ação Manual Necessária**\n\n`;
     text += `${step.description || 'Passo manual — verifique na org.'}\n`;
@@ -513,6 +519,36 @@ async function executeRunbookStep(step, org) {
       return { ok: false, message: `❌ ${r.message}` };
     } catch (e) { return { ok: false, message: `❌ Ativação: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
+  if (step.action === 'assign-custom-permission') {
+    const { permissionSetName, customPermissions } = step;
+    const enabled = step.enabled !== false; // default true
+    if (!permissionSetName) return { ok: false, message: '❌ assign-custom-permission requer permissionSetName' };
+    const cps = Array.isArray(customPermissions) ? customPermissions : (customPermissions ? [customPermissions] : []);
+    if (!cps.length) return { ok: false, message: '❌ assign-custom-permission requer customPermissions (array de nomes)' };
+    try {
+      const conn = org.connection;
+      // Ler PermissionSet atual
+      const ps = await conn.metadata.read('PermissionSet', permissionSetName);
+      if (!ps || !ps.fullName) return { ok: false, message: '❌ PermissionSet não encontrado: ' + permissionSetName };
+      // Snapshot para rollback
+      let previousState = null;
+      try { previousState = JSON.stringify({ type: 'PermissionSet', name: permissionSetName, customPermissions: ps.customPermissions }); } catch {}
+      // Mesclar customPermissions existentes com as novas
+      let existing = ps.customPermissions || [];
+      if (!Array.isArray(existing)) existing = [existing].filter(Boolean);
+      const cpMap = new Map(existing.map(cp => [cp.name, cp]));
+      for (const cpName of cps) {
+        cpMap.set(cpName, { name: cpName, enabled });
+      }
+      ps.customPermissions = Array.from(cpMap.values());
+      const result = await conn.metadata.update('PermissionSet', ps);
+      const item = Array.isArray(result) ? result[0] : result;
+      const ok = item?.success !== false;
+      if (ok) return { ok: true, message: `✅ ${cps.length} Custom Permission(s) atribuída(s) a ${permissionSetName}: ${cps.join(', ')}`, previousState };
+      const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+      return { ok: false, message: `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ assign-custom-permission: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
   return { ok: false, message: '❌ Ação não suportada: ' + step.action };
 }
 
@@ -734,6 +770,7 @@ Ações disponíveis:
 - "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
 - "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
+- "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "metadata-update" — atualizar metadado existente
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -752,7 +789,7 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 - DuplicateRule: { fullName, masterLabel (NÃO label!), isActive, actionOnInsert:"Block"|"Allow", actionOnUpdate, alertText, duplicateRuleMatchRules:[{matchRuleSObjectType, matchingRule}] }. NÃO incluir sortOrder nem operationsOnInsert (resolvidos automaticamente). NÃO usar objectMapping.
 - ValidationRule: { fullName:"Obj.Name", active:true, errorConditionFormula, errorMessage, errorDisplayField }
 - RecordType: { fullName:"Obj.Name", label, active:true }
-- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}] }
+- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}], customPermissions:[{name:"CustomPermName",enabled:true}], applicationVisibilities:[{application:"AppName",visible:true}], userPermissions:[{name:"PermName",enabled:true}] }
 - CustomObject: { fullName:"MeuObj__c", label:"Meu Objeto", pluralLabel:"Meus Objetos", nameField:{ type:"Text"|"AutoNumber", label:"Name", displayFormat:"OBJ-{0000}" }, deploymentStatus:"Deployed", sharingModel:"ReadWrite"|"Private"|"Read" }
 - CustomPermission: { fullName:"MinhaPerm", label:"Minha Permissao", description:"Descricao" }. Usado em VRs via $CustomPermission ou em PSs.
 - PermissionSetGroup: { fullName:"PSG_Nome", label, description, permissionSets:["PS_1","PS_2"] }. Agrupa PSs para atribuicao em bloco.
@@ -904,7 +941,7 @@ router.post('/', async (req, res) => {
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
-        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (add field), Profile FLS, Activate MR/DR, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
+        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet (com customPermissions), PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (add field), Profile FLS, Activate MR/DR, Assign Custom Permission to PS, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
         `Qualquer outra mensagem → **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
@@ -1375,6 +1412,7 @@ Ações disponíveis:
 - "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
 - "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
+- "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -1392,7 +1430,7 @@ FORMATOS METADATA API OBRIGATÓRIOS:
 - DuplicateRule: { fullName, masterLabel (NÃO label!), isActive, sortOrder (sequencial de 1), actionOnInsert:"Block"|"Allow", actionOnUpdate, alertText, duplicateRuleMatchRules:[{matchRuleSObjectType, matchingRule}] }. NÃO usar objectMapping — usar matchRuleSObjectType.
 - ValidationRule: { fullName:"Obj.Name", active:true, errorConditionFormula, errorMessage, errorDisplayField }
 - RecordType: { fullName:"Obj.Name", label, active:true }
-- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}] }
+- PermissionSet: { fullName, label, fieldPermissions:[{field,editable,readable}], objectPermissions:[{object,allowCreate,allowRead,allowEdit,allowDelete}], customPermissions:[{name:"CustomPermName",enabled:true}], applicationVisibilities:[{application:"AppName",visible:true}], userPermissions:[{name:"PermName",enabled:true}] }
 - CustomObject: { fullName:"MeuObj__c", label:"Meu Objeto", pluralLabel:"Meus Objetos", nameField:{ type:"Text"|"AutoNumber", label:"Name", displayFormat:"OBJ-{0000}" }, deploymentStatus:"Deployed", sharingModel:"ReadWrite"|"Private"|"Read" }
 - CustomPermission: { fullName:"MinhaPerm", label:"Minha Permissao", description:"Descricao" }. Usado em VRs via $CustomPermission ou em PSs.
 - PermissionSetGroup: { fullName:"PSG_Nome", label, description, permissionSets:["PS_1","PS_2"] }. Agrupa PSs para atribuicao em bloco.
