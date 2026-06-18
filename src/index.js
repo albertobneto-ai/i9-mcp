@@ -1,4 +1,5 @@
 import express from 'express';
+import { getOutboundIP } from './services/sf-multi.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
@@ -269,4 +270,9 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.get('/api/debug/ip', async (req, res) => {
+  try { const ip = await getOutboundIP(); res.json({ ip }); }
+  catch (e) { res.json({ error: e.message }); }
+});
+
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
