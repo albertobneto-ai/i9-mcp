@@ -87,6 +87,21 @@ function formatStepPreview(step) {
     text += `- **Tipo:** ${step.type}\n`;
     text += `- **Componente:** ${step.fullName}\n`;
     if (step.description) text += `- **Descrição:** ${step.description}\n`;
+  } else if (step.action === 'create-layout') {
+    text += `**Ação:** Criar Page Layout\n`;
+    text += `- **Objeto:** ${step.object}\n`;
+    text += `- **Layout:** ${step.layoutName || step.name}\n`;
+    const secs = step.sections || [];
+    text += `- **Seções (${secs.length}):**\n`;
+    for (const s of secs.slice(0, 5)) {
+      const fieldCount = (s.columns || []).reduce((acc, col) => acc + (col || []).length, 0);
+      text += `  - ${s.label} (${fieldCount} campos)\n`;
+    }
+  } else if (step.action === 'assign-layout') {
+    text += `**Ação:** Atribuir Page Layout a Profile\n`;
+    text += `- **Profile:** ${step.profileName}\n`;
+    text += `- **Layout:** ${step.layoutName}\n`;
+    if (step.recordType) text += `- **Record Type:** ${step.recordType}\n`;
   } else if (step.action === 'assign-custom-permission') {
     text += `**Ação:** Atribuir Custom Permission(s) a PermissionSet\n`;
     text += `- **PermissionSet:** ${step.permissionSetName}\n`;
@@ -519,6 +534,86 @@ async function executeRunbookStep(step, org) {
       return { ok: false, message: `❌ ${r.message}` };
     } catch (e) { return { ok: false, message: `❌ Ativação: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
+  if (step.action === 'create-layout') {
+    // Cria um Page Layout do zero com seções e campos. Auto-converte formato simplificado em Metadata API XML.
+    // Aceita: { object, layoutName, sections:[{label, columns:[[{field, behavior, required?}]]}], relatedLists?, summaryLayout? }
+    const objName = step.object;
+    const layoutName = step.layoutName || step.name;
+    if (!objName || !layoutName) return { ok: false, message: '❌ create-layout requer object e layoutName' };
+    try {
+      const fullName = `${objName}-${layoutName}`;
+      // Verificar se já existe
+      let exists = false;
+      try {
+        const check = await sfMulti.metadataRead(org, 'Layout', fullName);
+        if (check && check.fullName) exists = true;
+      } catch {}
+      // Montar layoutSections
+      const layoutSections = (step.sections || []).map((sec, idx) => {
+        const cols = sec.columns || [[]];
+        return {
+          label: sec.label,
+          editHeading: sec.editHeading !== false,
+          detailHeading: sec.detailHeading !== false,
+          style: sec.style || (cols.length === 1 ? 'OneColumn' : 'TwoColumns'),
+          layoutColumns: cols.map(col => ({
+            layoutItems: (col || []).map(item => {
+              if (typeof item === 'string') return { field: item, behavior: 'Edit' };
+              return {
+                field: item.field,
+                behavior: item.behavior || (item.required ? 'Required' : (item.readOnly ? 'Readonly' : 'Edit'))
+              };
+            })
+          }))
+        };
+      });
+      const body = {
+        fullName,
+        layoutSections,
+        showInheritedRelatedLists: step.showInheritedRelatedLists !== false
+      };
+      // Related Lists opcionais
+      if (Array.isArray(step.relatedLists) && step.relatedLists.length) {
+        body.relatedLists = step.relatedLists.map(rl => {
+          if (typeof rl === 'string') return { relatedList: rl, fields: [] };
+          return { relatedList: rl.relatedList || rl.name, fields: rl.fields || [], sortField: rl.sortField, sortOrder: rl.sortOrder };
+        });
+      }
+      // Summary Layout (compact layout dentro do page layout)
+      if (step.summaryLayout) body.summaryLayout = step.summaryLayout;
+      // Multiline layout fields
+      if (step.multilineLayoutFields) body.multilineLayoutFields = step.multilineLayoutFields;
+      const result = exists
+        ? await sfMulti.metadataUpdate(org, 'Layout', body)
+        : await sfMulti.metadataCreate(org, 'Layout', body);
+      const item = Array.isArray(result) ? result[0] : result;
+      const ok = item?.success !== false;
+      if (ok) return { ok: true, message: `✅ Page Layout ${exists ? 'atualizado' : 'criado'}: ${fullName} (${layoutSections.length} seções)`, alreadyExists: exists };
+      const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+      return { ok: false, message: `❌ Erro Layout: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ create-layout: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
+  if (step.action === 'assign-layout') {
+    // Atribui Page Layout a um Profile + RecordType
+    const { profileName, layoutName, recordType } = step;
+    if (!profileName || !layoutName) return { ok: false, message: '❌ assign-layout requer profileName e layoutName' };
+    try {
+      const profile = await sfMulti.metadataRead(org, 'Profile', profileName);
+      if (!profile || !profile.fullName) return { ok: false, message: '❌ Profile não encontrado: ' + profileName };
+      let assignments = profile.layoutAssignments || [];
+      if (!Array.isArray(assignments)) assignments = [assignments].filter(Boolean);
+      // Remove existing assignment for same recordType (or no RT)
+      assignments = assignments.filter(a => a.recordType !== recordType);
+      assignments.push({ layout: layoutName, recordType: recordType || undefined });
+      profile.layoutAssignments = assignments;
+      const result = await sfMulti.metadataUpdate(org, 'Profile', profile);
+      const item = Array.isArray(result) ? result[0] : result;
+      const ok = item?.success !== false;
+      if (ok) return { ok: true, message: `✅ Layout ${layoutName} atribuído ao Profile ${profileName}${recordType ? ' (RT: '+recordType+')' : ''}` };
+      const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+      return { ok: false, message: `❌ Erro: ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` };
+    } catch (e) { return { ok: false, message: `❌ assign-layout: ${(e.message || String(e)).substring(0, 300)}` }; }
+  }
   if (step.action === 'assign-custom-permission') {
     const { permissionSetName, customPermissions } = step;
     const enabled = step.enabled !== false; // default true
@@ -770,6 +865,8 @@ Ações disponíveis:
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
 - "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
+- "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
+- "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
 - "action": "metadata-update" — atualizar metadado existente
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -940,7 +1037,7 @@ router.post('/', async (req, res) => {
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
-        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet (com customPermissions), PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (add field), Profile FLS, Activate MR/DR, Assign Custom Permission to PS, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
+        `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet (com customPermissions), PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (create + add field + assign), Profile FLS, Activate MR/DR, Assign Custom Permission to PS, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
         `Qualquer outra mensagem → **Claude Sonnet 4.6**.`;
       return res.json({ choices: [{ message: { content: help } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
     }
@@ -1412,6 +1509,8 @@ Ações disponíveis:
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
 - "action": "activate-rule" — ativa Matching Rule ou Duplicate Rule (pós-deploy). Requer: { ruleType: "MatchingRule"|"DuplicateRule", ruleName: "Object.RuleName" }
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
+- "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
+- "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
