@@ -769,6 +769,10 @@ async function executeRunbookStep(step, org) {
       if (errs.length === 0) {
         return { ok: true, message: `✅ Field History ativado em ${okCount}/${flds.length} campos de ${object}: ${flds.join(', ')}` };
       }
+      // Se 0 ativados e erro de history tracking não habilitado — objeto standard precisa enable manual antes
+      if (okCount === 0 && errs.some(e => JSON.stringify(e).toLowerCase().includes('history tracking enabled'))) {
+        return { ok: false, message: `⚠️ Objeto standard '${object}' precisa ter History Tracking habilitado primeiro: Setup → Object Manager → ${object} → Edit → "Track Field History" → Save. Depois rode este step novamente.` };
+      }
       return { ok: false, message: `⚠️ ${okCount}/${flds.length} ativados. Erros: ${errs.slice(0,3).map(e => JSON.stringify(e.errors||e)).join('; ')}` };
     } catch (e) { return { ok: false, message: `❌ enable-field-history: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
