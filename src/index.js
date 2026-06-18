@@ -270,6 +270,32 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.get('/api/debug/soap-test', async (req, res) => {
+  const https = await import('https');
+  const start = Date.now();
+  const soapBody = '<?xml version="1.0" encoding="utf-8" ?><env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"><env:Body><n1:login xmlns:n1="urn:partner.soap.sforce.com"><n1:username>alberto.bottaro@aircompany.ai.arqevery</n1:username><n1:password>Nicework@0001bpQwYa7Yk0LdA6VVtkvEI5WBJ</n1:password></n1:login></env:Body></env:Envelope>';
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const r = https.default.request({
+        hostname: 'test.salesforce.com',
+        path: '/services/Soap/u/62.0',
+        method: 'POST',
+        headers: { 'Content-Type': 'text/xml', 'SOAPAction': '""', 'Content-Length': Buffer.byteLength(soapBody) },
+        timeout: 20000
+      }, (response) => {
+        let body = '';
+        response.on('data', c => body += c);
+        response.on('end', () => resolve({ status: response.statusCode, hasServerUrl: body.includes('serverUrl'), hasSessionId: body.includes('sessionId'), hasFault: body.includes('Fault'), faultSnippet: body.includes('Fault') ? body.substring(body.indexOf('faultstring'), body.indexOf('faultstring') + 200) : '', ms: Date.now() - start }));
+      });
+      r.on('error', e => reject(e));
+      r.on('timeout', () => { r.destroy(); reject(new Error('SOAP timeout 20s')); });
+      r.write(soapBody);
+      r.end();
+    });
+    res.json(result);
+  } catch (e) { res.json({ error: e.message, ms: Date.now() - start }); }
+});
+
 app.get('/api/debug/sf-test', async (req, res) => {
   const https = await import('https');
   const start = Date.now();
