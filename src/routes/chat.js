@@ -17,7 +17,13 @@ function formatStepPreview(step) {
     text += `- **Tipo:** ${step.type || 'Text'}`;
     if (step.length) text += ` (${step.length})`;
     text += `\n`;
-    if (step.values) text += `- **Valores:** ${step.values.join(', ')}\n`;
+    // Picklist values — aceita picklist, values ou picklistValues
+    const previewValues = step.picklist || step.values || step.picklistValues;
+    if (Array.isArray(previewValues) && previewValues.length > 0) {
+      text += `- **Valores:** ${previewValues.join(', ')}\n`;
+    } else if (['Picklist','MultiselectPicklist'].includes(step.type)) {
+      text += `- **Valores:** ⚠️ NÃO INFORMADOS (campo Picklist precisa de valores)\n`;
+    }
     if (step.referenceTo) text += `- **Referência:** ${step.referenceTo}\n`;
   } else if (step.action === 'create-object') {
     text += `**Ação:** Criar Objeto\n`;
@@ -683,7 +689,7 @@ Ações disponíveis:
 - "action": "validate" — validação (query + condition: "empty"|"has-results"|"no-modify-all-data")
 - "action": "manual-step" — passo manual (description obrigatória). Use para coisas que não dá pra automatizar via API (ex: importar CSV via Data Loader, configurar em Setup UI).
 
-Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false)
+Para create-field: "object", "field" (__c), "label", "type", "length", "picklist" (array de strings para Picklist/MultiselectPicklist — OBRIGATÓRIO se type=Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false). IMPORTANTE: Picklist sem array de valores no campo "picklist" vai FALHAR no deploy. Exemplo correto: {"action":"create-field","object":"Account","field":"Origem__c","label":"Origem","type":"Picklist","picklist":["Manual","SERASA","Neoway"]}
 Para metadata-create/update: "type", "body" (JSON exato da Metadata API), "description"
 
 FORMATOS METADATA API OBRIGATÓRIOS:
@@ -1323,7 +1329,7 @@ Ações disponíveis:
 - "action": "soql" — executar SOQL
 - "action": "validate" — validação automática (query + condition: "empty"|"has-results"|"no-modify-all-data")
 
-Para create-field: "object", "field" (__c), "label", "type", "length", "values" (Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false)
+Para create-field: "object", "field" (__c), "label", "type", "length", "picklist" (array de strings para Picklist/MultiselectPicklist — OBRIGATÓRIO se type=Picklist), "referenceTo" (Lookup), "defaultValue" (obrigatório para Checkbox: true/false). IMPORTANTE: Picklist sem array de valores no campo "picklist" vai FALHAR no deploy. Exemplo correto: {"action":"create-field","object":"Account","field":"Origem__c","label":"Origem","type":"Picklist","picklist":["Manual","SERASA","Neoway"]}
 Para metadata-create/update: "type" (tipo do metadado), "body" (JSON exato da Metadata API), "description"
 
 FORMATOS METADATA API OBRIGATÓRIOS:
