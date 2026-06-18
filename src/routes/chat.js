@@ -538,14 +538,36 @@ async function executeRunbookStep(step, org) {
         const r = await sfMulti.deleteApexTrigger(org, fname);
         return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
       }
-      // MatchingRule/DuplicateRule: desativar antes de deletar
+      // MatchingRule/DuplicateRule: desativar antes de deletar (com retry — SF processa async)
       if (mtype === 'MatchingRule' || mtype === 'DuplicateRule') {
         try {
           await sfMulti.activateRule(org, mtype, fname, false); // deactivate
+          // Aguardar SF processar a desativação (pode levar alguns segundos)
+          await new Promise(r => setTimeout(r, 5000));
         } catch {} // ignore if already inactive
       }
-      const result = await sfMulti.metadataDelete(org, mtype, fname);
-      const item = Array.isArray(result) ? result[0] : result;
+      // Tentar deletar com retry (MR/DR às vezes precisa mais tempo)
+      let result;
+      let retries = mtype === 'MatchingRule' || mtype === 'DuplicateRule' ? 3 : 1;
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          result = await sfMulti.metadataDelete(org, mtype, fname);
+          const item = Array.isArray(result) ? result[0] : result;
+          if (item?.success !== false) break; // success
+          // Se falhou por "activation/deactivation in progress", aguardar e retry
+          const errMsg = item?.errors ? JSON.stringify(item.errors) : '';
+          if (errMsg.includes('activation') || errMsg.includes('deactivation')) {
+            await new Promise(r => setTimeout(r, 5000));
+            continue;
+          }
+          break; // outro erro, não adianta retry
+        } catch (e) {
+          if (attempt < retries - 1) await new Promise(r => setTimeout(r, 5000));
+          else throw e;
+        }
+      }
+      const delResult = result;
+      const item = Array.isArray(delResult) ? delResult[0] : delResult;
       const ok = item?.success !== false;
       if (!ok) {
         const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
