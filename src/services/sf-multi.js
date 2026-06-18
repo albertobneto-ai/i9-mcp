@@ -13,24 +13,89 @@ const connections = {};
 
 export async function connectToOrg(org) {
   const key = org.id || org.username;
+  const t0 = Date.now();
+  console.log(`[connectToOrg] start org=${key} user=${org.username}`);
 
   // Usar cache se conexão ainda válida
   if (connections[key]) {
     try {
       await connections[key].identity();
+      console.log(`[connectToOrg] cache hit org=${key} (${Date.now()-t0}ms)`);
       return connections[key];
     } catch {
+      console.log(`[connectToOrg] cache invalid, re-login org=${key}`);
       delete connections[key];
     }
   }
 
+  // SOAP login direto via HTTPS — contorna jsforce SOAP que trava no web dyno
+  // Constrói envelope SOAP, faz POST e parseia sessionId/serverUrl manualmente
+  console.log(`[connectToOrg] direct SOAP login org=${key}`);
+  const session = await soapLoginDirect(org);
+  console.log(`[connectToOrg] SOAP login OK org=${key} instance=${session.instanceUrl} (${Date.now()-t0}ms)`);
+
+  // Cria jsforce.Connection já autenticada (sem chamar .login())
   const conn = new jsforce.Connection({
-    loginUrl: org.login_url,
+    instanceUrl: session.instanceUrl,
+    accessToken: session.sessionId,
     version: '62.0',
   });
-  await conn.login(org.username, org.password + (org.security_token || ''));
   connections[key] = conn;
+  console.log(`[connectToOrg] done org=${key} (${Date.now()-t0}ms)`);
   return conn;
+}
+
+// SOAP login direto via HTTPS — sem jsforce no caminho crítico
+function soapLoginDirect(org) {
+  return new Promise((resolve, reject) => {
+    const loginUrl = new URL(org.login_url);
+    const password = org.password + (org.security_token || '');
+    const body =
+`<?xml version="1.0" encoding="utf-8" ?>
+<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
+  <env:Body>
+    <n1:login xmlns:n1="urn:partner.soap.sforce.com">
+      <n1:username>${escapeXml(org.username)}</n1:username>
+      <n1:password>${escapeXml(password)}</n1:password>
+    </n1:login>
+  </env:Body>
+</env:Envelope>`;
+
+    const req = https.request({
+      hostname: loginUrl.hostname,
+      port: 443,
+      path: '/services/Soap/u/62.0',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=UTF-8',
+        'SOAPAction': 'login',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', (c) => data += c);
+      res.on('end', () => {
+        const sessionId = (data.match(/<sessionId>([^<]+)<\/sessionId>/) || [])[1];
+        const serverUrl = (data.match(/<serverUrl>([^<]+)<\/serverUrl>/) || [])[1];
+        if (sessionId && serverUrl) {
+          const u = new URL(serverUrl);
+          resolve({ sessionId, instanceUrl: `${u.protocol}//${u.host}` });
+        } else {
+          const fault = (data.match(/<faultstring>([^<]+)<\/faultstring>/) || [])[1] || 'unknown SOAP fault';
+          reject(new Error(`SOAP login failed: ${fault}`));
+        }
+      });
+    });
+    req.on('error', (e) => reject(new Error(`SOAP request error: ${e.message}`)));
+    req.write(body);
+    req.end();
+  });
+}
+
+function escapeXml(s) {
+  return String(s).replace(/[<>&'"]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
 }
 
 // Describe objeto em qualquer org
