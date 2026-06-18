@@ -569,9 +569,10 @@ async function executeRunbookStep(step, org) {
       });
       const body = {
         fullName,
-        layoutSections,
-        showInheritedRelatedLists: step.showInheritedRelatedLists !== false
+        layoutSections
       };
+      // showInheritedRelatedLists só é válido em objetos filhos (não no objeto base) — só incluir se explicitamente pedido
+      if (step.showInheritedRelatedLists === true) body.showInheritedRelatedLists = true;
       // Related Lists opcionais
       if (Array.isArray(step.relatedLists) && step.relatedLists.length) {
         body.relatedLists = step.relatedLists.map(rl => {
