@@ -868,6 +868,16 @@ Ações disponíveis:
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
 - "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
+
+⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
+- Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
+- Se o texto diz "Criar Page Layout" ou "configurar layout com seções" → use create-layout
+- Se o texto diz "Atribuir Custom Permission X ao PS Y" → use assign-custom-permission
+- Se o texto diz "Configurar FLS no Profile X" → use profile-fls
+- Se o texto diz "Ativar Matching/Duplicate Rule" → use activate-rule
+- NUNCA gere manual-step para: layouts, layout assignments, FLS, custom permissions, MR/DR ativação. Sempre tem action automatizada.
+- Para layout assignment matriz: expanda em VÁRIOS steps assign-layout (um por combinação)
+  Ex: "Atribuir Layout A ao Profile X para RT Y e RT Z, e Layout B ao Profile X para RT Y" gera 3 steps assign-layout
 - "action": "metadata-update" — atualizar metadado existente
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
@@ -1512,6 +1522,16 @@ Ações disponíveis:
 - "action": "assign-custom-permission" — atribui uma ou mais Custom Permissions a um PermissionSet existente (mescla com o que já existe). Requer: { permissionSetName: "PS_Name", customPermissions: ["CP_Name1","CP_Name2"], enabled?: true (default) }
 - "action": "create-layout" — cria/atualiza Page Layout com seções e campos. Requer: { object: "Account", layoutName: "MyLayout", sections: [{ label: "Identificação", columns: [[{field:"Name", behavior:"Edit"}, {field:"CNPJ__c", behavior:"Readonly"}], [{field:"Status__c", behavior:"Required"}]] }], relatedLists?: ["ContactList","OpportunityList"] }. Behavior: "Edit"|"Required"|"Readonly". Cada seção tem array de colunas, cada coluna tem array de items.
 - "action": "assign-layout" — atribui Page Layout a um Profile (opcionalmente por RecordType). Requer: { profileName: "MyProfile", layoutName: "Account-MyLayout", recordType?: "Account.Cliente_Encarteirado" }
+
+⚠️ REGRAS CRÍTICAS para conversão TEXTO → JSON:
+- Se o texto diz "Configurar Page Layout Assignment" ou "matriz Profile x RecordType" ou "atribuir layout X ao profile Y" → use assign-layout (UMA action por combinação Profile+RecordType+Layout)
+- Se o texto diz "Criar Page Layout" ou "configurar layout com seções" → use create-layout
+- Se o texto diz "Atribuir Custom Permission X ao PS Y" → use assign-custom-permission
+- Se o texto diz "Configurar FLS no Profile X" → use profile-fls
+- Se o texto diz "Ativar Matching/Duplicate Rule" → use activate-rule
+- NUNCA gere manual-step para: layouts, layout assignments, FLS, custom permissions, MR/DR ativação. Sempre tem action automatizada.
+- Para layout assignment matriz: expanda em VÁRIOS steps assign-layout (um por combinação)
+  Ex: "Atribuir Layout A ao Profile X para RT Y e RT Z, e Layout B ao Profile X para RT Y" gera 3 steps assign-layout
 - "action": "metadata-update" — atualizar metadado existente (Profile FLS, etc)
 - "action": "apex-class" — criar Apex Class (gerar código completo)
 - "action": "apex-trigger" — criar Apex Trigger (gerar código completo)
