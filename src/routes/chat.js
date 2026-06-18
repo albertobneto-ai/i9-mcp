@@ -128,7 +128,15 @@ async function executeRunbookStep(step, org) {
     if (body.type === 'LongTextArea') { body.length = step.length || 32768; body.visibleLines = 4; }
     if (['Number','Currency','Percent'].includes(body.type)) { body.precision = step.precision || 18; body.scale = step.scale ?? 2; }
     if (body.type === 'Lookup' && step.referenceTo) { body.referenceTo = step.referenceTo; body.relationshipLabel = body.label; }
-    if (['Picklist','MultiselectPicklist'].includes(body.type) && step.values) { body.picklist = step.values; }
+    // Picklist — aceita step.picklist OU step.values OU step.picklistValues
+    if (['Picklist','MultiselectPicklist'].includes(body.type)) {
+      const pickValues = step.picklist || step.values || step.picklistValues;
+      if (Array.isArray(pickValues) && pickValues.length > 0) {
+        body.picklist = pickValues;
+      } else {
+        return { ok: false, message: '❌ Campo Picklist sem valores. O step precisa de "picklist":["v1","v2"] ou "values":["v1","v2"]. Step: ' + JSON.stringify(step).substring(0, 300) };
+      }
+    }
     // Checkbox requires defaultValue
     if (body.type === 'Checkbox') { body.defaultValue = (step.defaultValue === true || step.defaultValue === 'true'); }
     // LongTextArea visibleLines default
