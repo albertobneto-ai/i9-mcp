@@ -34,14 +34,8 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'name, login_url, username, password obrigatorios' });
     }
 
-    // Testar conexão (com fallback se timeout)
+    // Salvar sem testar conexão (conexão lazy na primeira chamada)
     let orgId = null;
-    try {
-      const test = await testConnection({ login_url, username, password, security_token });
-      if (test.status === 'connected') orgId = test.orgId;
-    } catch (e) {
-      // Se timeout, salva sem orgId (pode testar depois via /status)
-    }
 
     const result = await pool.query(
       'INSERT INTO orgs (name, login_url, username, password, security_token, org_type, org_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, name, login_url, username, org_type',
