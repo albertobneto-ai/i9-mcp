@@ -192,6 +192,7 @@ REGRAS CRÍTICAS:
 - Picklist: picklist:["V1","V2"] (array de strings simples, NUNCA picklistValues)
 - Flow API 62.0: triggerType/object dentro de start{}, operadores válidos: EqualTo,NotEqualTo,Contains,IsNull,WasSet (NÃO existem DoesNotContain/NotContain)
 - Lead layout exige Name+Status+Email+Company. Account exige Name.
+- NUNCA usar campos compostos individuais em layouts (Street, City, State, PostalCode, Country). Usar o campo composto: Address (Lead/Account), MailingAddress/OtherAddress (Contact).
 - MatchingRule/DuplicateRule fullName = Object.RuleName
 
 Na seção 18.3, escreva cada step como bloco estruturado:
