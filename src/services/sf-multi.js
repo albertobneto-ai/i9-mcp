@@ -1,5 +1,10 @@
 // src/services/sf-multi.js — Conexão multi-org Salesforce via jsforce
-import jsforce from 'jsforce';
+// IMPORTANTE: jsforce carregado via createRequire (CommonJS) para evitar
+// trava do SOAP login no web dyno do Heroku quando carregado como ES module.
+// Diagnóstico: one-off dyno (require) conecta em 2s; web dyno (import) trava.
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const jsforce = require('jsforce');
 import https from 'https';
 import querystring from 'querystring';
 
