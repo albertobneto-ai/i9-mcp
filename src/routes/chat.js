@@ -538,35 +538,40 @@ async function executeRunbookStep(step, org) {
         const r = await sfMulti.deleteApexTrigger(org, fname);
         return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
       }
-      // MatchingRule/DuplicateRule: desativar antes de deletar (com retry — SF processa async)
+      // MatchingRule/DuplicateRule: desativar via metadata read+update (sem Tooling API)
       if (mtype === 'MatchingRule' || mtype === 'DuplicateRule') {
         try {
-          await sfMulti.activateRule(org, mtype, fname, false); // deactivate
-          // Aguardar SF processar a desativação (pode levar alguns segundos)
-          await new Promise(r => setTimeout(r, 5000));
-        } catch {} // ignore if already inactive
+          const rule = await sfMulti.metadataRead(org, mtype, fname);
+          if (rule && rule.fullName) {
+            const isActive = mtype === 'MatchingRule' ? (rule.ruleStatus === 'Active') : (rule.isActive === true || rule.isActive === 'true');
+            if (isActive) {
+              if (mtype === 'MatchingRule') rule.ruleStatus = 'Inactive';
+              else rule.isActive = false;
+              await sfMulti.metadataUpdate(org, mtype, rule);
+              await new Promise(r => setTimeout(r, 8000)); // SF processa async
+            }
+          }
+        } catch {} // ignore — pode já estar Inactive
       }
       // Tentar deletar com retry (MR/DR às vezes precisa mais tempo)
-      let result;
-      let retries = mtype === 'MatchingRule' || mtype === 'DuplicateRule' ? 3 : 1;
-      for (let attempt = 0; attempt < retries; attempt++) {
+      let delResult;
+      const maxRetries = (mtype === 'MatchingRule' || mtype === 'DuplicateRule') ? 4 : 1;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          result = await sfMulti.metadataDelete(org, mtype, fname);
-          const item = Array.isArray(result) ? result[0] : result;
-          if (item?.success !== false) break; // success
-          // Se falhou por "activation/deactivation in progress", aguardar e retry
-          const errMsg = item?.errors ? JSON.stringify(item.errors) : '';
-          if (errMsg.includes('activation') || errMsg.includes('deactivation')) {
-            await new Promise(r => setTimeout(r, 5000));
+          delResult = await sfMulti.metadataDelete(org, mtype, fname);
+          const chk = Array.isArray(delResult) ? delResult[0] : delResult;
+          if (chk?.success !== false) break;
+          const errMsg = chk?.errors ? JSON.stringify(chk.errors) : '';
+          if (errMsg.includes('activation') || errMsg.includes('deactivation') || errMsg.includes('must be active or inactive')) {
+            await new Promise(r => setTimeout(r, 6000));
             continue;
           }
-          break; // outro erro, não adianta retry
+          break;
         } catch (e) {
-          if (attempt < retries - 1) await new Promise(r => setTimeout(r, 5000));
+          if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 6000)); }
           else throw e;
         }
       }
-      const delResult = result;
       const item = Array.isArray(delResult) ? delResult[0] : delResult;
       const ok = item?.success !== false;
       if (!ok) {
