@@ -247,9 +247,45 @@ async function executeRunbookStep(step, org) {
     } catch (e) { return { ok: false, message: `❌ Erro na SOQL:\n${step.query}\n\n${(e.message || String(e)).substring(0, 300)}` }; }
   }
   if (step.action === 'metadata-create') {
-    const mtype = step.type;
-    const body = { ...step.body };
-    if (!mtype || !body) return { ok: false, message: '❌ metadata-create requer type e body' };
+    // Aceitar 2 formatos do Opus: step.type OU step.metadataType
+    const mtype = step.type || step.metadataType;
+    const body = step.body ? { ...step.body } : null;
+    if (!mtype) return { ok: false, message: '❌ metadata-create requer type (ou metadataType). Recebido: ' + JSON.stringify(step).substring(0, 200) };
+    
+    // ═══ AUTO-CONVERSÃO ═══ Se for CustomField, redirecionar para handler create-field (que sabe lidar com Picklist/valueSet/etc)
+    if (mtype === 'CustomField') {
+      const fullName = (body && body.fullName) || (step.object + '.' + step.field);
+      const [objName, fieldName] = fullName.split('.');
+      // Construir step no formato create-field
+      const cfStep = {
+        action: 'create-field',
+        object: objName,
+        field: fieldName,
+        label: (body && body.label) || step.label || fieldName.replace('__c','').replace(/_/g,' '),
+        type: (body && body.type) || step.fieldType || step.type,
+        length: (body && body.length) || step.length,
+        precision: (body && body.precision) || step.precision,
+        scale: (body && body.scale) || step.scale,
+        picklist: (body && (body.picklist || body.values || body.picklistValues)) || step.picklist || step.values || step.picklistValues,
+        referenceTo: (body && body.referenceTo) || step.referenceTo,
+        defaultValue: (body && body.defaultValue !== undefined) ? body.defaultValue : step.defaultValue,
+        description: (body && body.description) || step.description,
+        required: (body && body.required) || step.required
+      };
+      // Se valueSet veio do prompt do Opus (formato XML), extrair valores
+      if (body && body.valueSet) {
+        const vs = body.valueSet;
+        const vsd = vs.valueSetDefinition || vs;
+        const values = vsd.value || vsd.values || [];
+        if (Array.isArray(values)) {
+          cfStep.picklist = values.map(v => typeof v === 'string' ? v : (v.fullName || v.label || v.value));
+        }
+      }
+      // Recursão controlada — executa o handler create-field
+      return await executeRunbookStep(cfStep, org);
+    }
+    
+    if (!body) return { ok: false, message: '❌ metadata-create requer body para tipo ' + mtype };
 
     // Auto-resolve DuplicateRule: delete this rule if exists, compute correct sortOrder from ALL rules
     if (mtype === 'DuplicateRule' && body.fullName) {
