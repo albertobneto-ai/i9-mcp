@@ -1282,6 +1282,8 @@ router.post('/', async (req, res) => {
         `| \`/apex CÓDIGO\` | Executa Apex anônimo |\n\n` +
         `### Auditoria & Org\n` +
         `| Comando | Descrição |\n|---|---|\n` +
+        `| \`/relatorio [US]\` | Relatório completo do deploy (download .docx) |\n` +
+        `| \`/promover [US]\` | Guia de promoção ORG ARQUITETURA → Dev/Prod (Change Set + SFDX) |\n` +
         `| \`/bugfix [US] [descrição]\` | Diagnóstico + runbook corretivo pós-deploy |\n` +
         `| \`/checklist [US]\` | Configurações manuais pós-deploy da US (Seção 19 da spec) |\n` +
         `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
@@ -1644,6 +1646,220 @@ FORMATO DA RESPOSTA:
           tipo: 'job-started',
           jobId,
           jobKind: 'bugfix'
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: '❌ Erro: ' + e.message } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /relatorio — relatório final do deploy de uma US ──
+    if (lower.startsWith('/relatorio') || lower.startsWith('/relatório')) {
+      const us = userMsg.trim().replace(/^\/relat[óo]rio/, '').trim();
+      if (!us) return res.json({ choices: [{ message: { content: '⚠️ Use: `/relatorio US-XXX`\n\nGera relatório completo do que foi deployado para a US (auditoria + snapshots + steps manuais + erros).' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        // Buscar tudo do deploy_log da US
+        const logQuery = await pool.query(
+          'SELECT us_number, component, action, description, result, result_message, previous_state, created_at FROM deploy_log WHERE us_number ILIKE $1 ORDER BY created_at ASC',
+          ['%' + us + '%']
+        );
+        if (!logQuery.rows.length) {
+          return res.json({ choices: [{ message: { content: `⚠️ Nenhum registro de deploy encontrado para ${us}.` } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+        }
+        const rows = logQuery.rows;
+        const succeeded = rows.filter(r => r.result === 'success').length;
+        const failed = rows.filter(r => r.result === 'error').length;
+        const existed = rows.filter(r => r.result === 'exists').length;
+        const manuals = rows.filter(r => r.action === 'manual-step').length;
+
+        const firstTime = rows[0].created_at;
+        const lastTime = rows[rows.length - 1].created_at;
+        const durationMin = Math.round((new Date(lastTime) - new Date(firstTime)) / 60000);
+
+        // Agrupar por tipo de componente
+        const byType = {};
+        for (const r of rows) {
+          const type = r.action || 'outro';
+          if (!byType[type]) byType[type] = [];
+          byType[type].push(r);
+        }
+
+        let report = `# 📋 Relatório de Implementação — ${us}\n\n`;
+        report += `**Org:** ${org ? org.name : 'N/A'}\n`;
+        report += `**Início:** ${new Date(firstTime).toLocaleString('pt-BR')}\n`;
+        report += `**Conclusão:** ${new Date(lastTime).toLocaleString('pt-BR')}\n`;
+        report += `**Duração:** ${durationMin} minuto(s)\n\n`;
+        report += `## 📊 Resumo\n\n`;
+        report += `| Métrica | Quantidade |\n|---|---|\n`;
+        report += `| Total de passos | ${rows.length} |\n`;
+        report += `| ✅ Sucesso | ${succeeded} |\n`;
+        report += `| ℹ️ Já existia | ${existed} |\n`;
+        report += `| ❌ Erro | ${failed} |\n`;
+        report += `| ⚠️ Passos manuais | ${manuals} |\n\n`;
+
+        report += `## 🛠️ Componentes Deployados por Tipo\n\n`;
+        for (const type of Object.keys(byType).sort()) {
+          report += `### ${type} (${byType[type].length})\n\n`;
+          report += `| Componente | Status | Mensagem |\n|---|---|---|\n`;
+          for (const r of byType[type]) {
+            const icon = r.result === 'success' ? '✅' : (r.result === 'exists' ? 'ℹ️' : (r.result === 'error' ? '❌' : '⚠️'));
+            const msg = (r.result_message || r.description || '').substring(0, 80).replace(/\|/g,'│').replace(/\n/g,' ');
+            report += `| ${r.component} | ${icon} | ${msg} |\n`;
+          }
+          report += `\n`;
+        }
+
+        if (failed > 0) {
+          report += `## ❌ Erros Encontrados\n\n`;
+          for (const r of rows.filter(x => x.result === 'error')) {
+            report += `### ${r.component} (${r.action})\n`;
+            report += `- **Quando:** ${new Date(r.created_at).toLocaleString('pt-BR')}\n`;
+            report += `- **Erro:** ${(r.result_message || 'N/A').substring(0, 300)}\n\n`;
+          }
+        }
+
+        const hasSnapshots = rows.filter(r => r.previous_state).length;
+        report += `## 🔄 Rollback\n\n`;
+        report += `${hasSnapshots} componente(s) com snapshot — execute \`/rollback ${us}\` se necessário.\n\n`;
+
+        report += `## ⏭️ Próximos Passos\n\n`;
+        report += `1. \`/qa ${us}\` — Smoke test dos componentes deployados\n`;
+        report += `2. \`/checklist ${us}\` — Lista de configurações manuais pendentes\n`;
+        report += `3. \`/promover ${us}\` — Guia para promover de ORG ARQUITETURA para Dev/Prod\n`;
+
+        return res.json({
+          choices: [{ message: { content: report } }],
+          modelo_usado: 'local',
+          modelo_label: 'Relatório SF Agent',
+          tipo: 'spec',
+          downloadData: { type: 'spec', title: 'Relatorio_' + us, content: report }
+        });
+      } catch (e) {
+        return res.json({ choices: [{ message: { content: '❌ Erro: ' + e.message } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
+      }
+    }
+
+    // ── /promover — guia de promoção da US para outra org (ARQ → Dev/Prod) ──
+    if (lower.startsWith('/promover')) {
+      const us = userMsg.trim().substring(9).trim();
+      if (!us) return res.json({ choices: [{ message: { content: '⚠️ Use: `/promover US-XXX`\n\nGera guia de promoção do que foi deployado na ORG ARQUITETURA para outra org (Dev, QA, Prod).' } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+      try {
+        const logQuery = await pool.query(
+          "SELECT component, action, description, result FROM deploy_log WHERE us_number ILIKE $1 AND result IN ('success','exists') ORDER BY created_at ASC",
+          ['%' + us + '%']
+        );
+        if (!logQuery.rows.length) {
+          return res.json({ choices: [{ message: { content: `⚠️ Nenhum deploy bem-sucedido encontrado para ${us}.` } }], modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help' });
+        }
+        const rows = logQuery.rows;
+
+        // Agrupar por tipo de metadado SFDX
+        const sfdxTypeMap = {
+          'create-field': 'CustomField',
+          'create-layout': 'Layout',
+          'metadata-create': null, // depende do tipo
+          'apex-class': 'ApexClass',
+          'apex-trigger': 'ApexTrigger',
+          'lwc': 'LightningComponentBundle',
+          'flow': 'Flow',
+          'ps-fls': 'PermissionSet',
+          'profile-fls': 'Profile',
+          'assign-layout': 'Profile',
+          'assign-custom-permission': 'PermissionSet',
+          'layout-add-field': 'Layout',
+          'activate-rule': null
+        };
+
+        const components = {};
+        for (const r of rows) {
+          if (r.action === 'manual-step' || r.action === 'soql' || r.action === 'validate' || r.action === 'apex' || r.action === 'assign-ps-to-user' || r.action === 'enable-field-history') continue; // data steps, não migração
+          let mtype = sfdxTypeMap[r.action];
+          if (!mtype && r.action === 'metadata-create') {
+            // Extrair tipo da description: "MatchingRule criado: ...", "ValidationRule criado: ..."
+            const m = (r.description || '').match(/^(\w+)/);
+            if (m) mtype = m[1];
+          }
+          if (!mtype) mtype = 'Other';
+          if (!components[mtype]) components[mtype] = new Set();
+          components[mtype].add(r.component);
+        }
+
+        let guide = `# 🚀 Guia de Promoção — ${us}\n\n`;
+        guide += `**De:** ORG ARQUITETURA (sandbox arqevery)\n`;
+        guide += `**Para:** Dev Org / QA / Produção\n`;
+        guide += `**Total de componentes:** ${Object.values(components).reduce((a,s) => a+s.size, 0)}\n\n`;
+
+        guide += `## 📦 Componentes a Promover (por tipo)\n\n`;
+        for (const t of Object.keys(components).sort()) {
+          guide += `### ${t} (${components[t].size})\n\n`;
+          for (const c of Array.from(components[t]).sort()) {
+            guide += `- \`${c}\`\n`;
+          }
+          guide += `\n`;
+        }
+
+        guide += `## ⚙️ Opção 1 — Change Set (Setup UI, sem código)\n\n`;
+        guide += `1. Na ORG ARQUITETURA: **Setup → Outbound Change Sets → New**\n`;
+        guide += `2. Adicionar componentes acima\n`;
+        guide += `3. Click **Add Profiles** se houver assign-layout/profile-fls\n`;
+        guide += `4. Upload para a Dev Org\n`;
+        guide += `5. Na Dev Org: **Setup → Inbound Change Sets → Deploy**\n`;
+        guide += `6. Após deploy: rodar testes na Dev Org\n\n`;
+
+        guide += `## ⚙️ Opção 2 — SFDX (CLI)\n\n`;
+        guide += `\`\`\`bash\n`;
+        guide += `# 1. Autorizar as orgs\n`;
+        guide += `sf org login web -a ARQ\n`;
+        guide += `sf org login web -a DEV\n\n`;
+        guide += `# 2. Criar package.xml na pasta src/\n`;
+        guide += `cat > package.xml <<EOF\n`;
+        guide += `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        guide += `<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n`;
+        for (const t of Object.keys(components).sort()) {
+          guide += `  <types>\n`;
+          for (const c of Array.from(components[t]).sort()) {
+            guide += `    <members>${c}</members>\n`;
+          }
+          guide += `    <name>${t}</name>\n`;
+          guide += `  </types>\n`;
+        }
+        guide += `  <version>62.0</version>\n`;
+        guide += `</Package>\n`;
+        guide += `EOF\n\n`;
+        guide += `# 3. Recuperar da ORG ARQUITETURA\n`;
+        guide += `sf project retrieve start --manifest package.xml --target-org ARQ\n\n`;
+        guide += `# 4. Validar deploy na DEV (--dry-run)\n`;
+        guide += `sf project deploy validate --manifest package.xml --target-org DEV --test-level RunLocalTests\n\n`;
+        guide += `# 5. Deploy real (após validação OK)\n`;
+        guide += `sf project deploy start --manifest package.xml --target-org DEV --test-level RunLocalTests\n`;
+        guide += `\`\`\`\n\n`;
+
+        guide += `## ✅ Checklist Pré-Promoção\n\n`;
+        guide += `- [ ] Rodar \`/qa ${us}\` na ORG ARQUITETURA e validar 100% verde\n`;
+        guide += `- [ ] Rodar \`/checklist ${us}\` e completar configs manuais na ORG ARQUITETURA\n`;
+        guide += `- [ ] Stakeholders aprovaram o resultado funcional na ORG ARQUITETURA\n`;
+        guide += `- [ ] Backup/snapshot da Dev Org (caso de rollback)\n`;
+        guide += `- [ ] Janela de manutenção definida\n`;
+        guide += `- [ ] Comunicação com squad e PO\n\n`;
+
+        guide += `## ⚠️ Atenção — Componentes que NÃO migram via Change Set/SFDX\n\n`;
+        guide += `Os items abaixo precisam ser **recriados manualmente** na org destino:\n\n`;
+        guide += `- Atribuição de PS a usuários (\`assign-ps-to-user\`) — usuários da Dev/Prod são diferentes\n`;
+        guide += `- Named Credentials com tokens — recriar por questões de segurança\n`;
+        guide += `- Dados (registros de Custom Metadata só vão se incluídos no Change Set explicitamente)\n`;
+        guide += `- Field History Tracking activation no objeto standard (precisa ser ativado na Setup UI da Dev/Prod)\n\n`;
+
+        guide += `## 🔙 Plano de Rollback na Dev/Prod\n\n`;
+        guide += `Se algo der errado após promover:\n`;
+        guide += `1. **Quick Deploy do Change Set anterior** (se feito por Change Set, fica disponível por 4 dias)\n`;
+        guide += `2. **SFDX**: \`sf project deploy quick --job-id <ID_DO_DEPLOY_ANTERIOR>\` (válido por 10 dias)\n`;
+        guide += `3. **Último recurso**: usar o ARQ → desfazer aqui e re-promover\n`;
+
+        return res.json({
+          choices: [{ message: { content: guide } }],
+          modelo_usado: 'local',
+          modelo_label: 'Guia de Promoção',
+          tipo: 'spec',
+          downloadData: { type: 'spec', title: 'Guia_Promocao_' + us, content: guide }
         });
       } catch (e) {
         return res.json({ choices: [{ message: { content: '❌ Erro: ' + e.message } }], modelo_usado: 'local', modelo_label: 'Erro', tipo: 'error' });
