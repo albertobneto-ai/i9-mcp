@@ -555,3 +555,15 @@ export async function insertRecords(org, objectName, records) {
     return { error: e.message || String(e) };
   }
 }
+
+// Diagnóstico: IP de saída do dyno
+import https from 'https';
+export async function getOutboundIP() {
+  return new Promise((resolve) => {
+    https.get('https://api.ipify.org?format=json', (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => { try { resolve(JSON.parse(body).ip); } catch { resolve('unknown'); } });
+    }).on('error', () => resolve('error'));
+  });
+}
