@@ -2565,23 +2565,61 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
             previousState: result.previousState || null
           });
           let text = `### Passo ${currentStep + 1} de ${steps.length}\n\n${result.message}\n`;
-          // Se falhou, incluir contexto para análise de erro via Opus
+          const remainingSteps = steps.slice(currentStep + 1);
           let errorAnalysis = null;
+
+          // ═══ AUTO-FIX: quando step falha, Opus analisa e gera fix automaticamente ═══
           if (!result.ok) {
-            const remainingSteps = steps.slice(currentStep + 1);
             errorAnalysis = { step: JSON.parse(JSON.stringify(step)), error: result.message, orgName: org.name, remainingSteps, us: us || null };
+            try {
+              // Chamar Opus para analisar o erro e gerar fix inline
+              const afPrompt = 'Voce e um arquiteto Salesforce. Analise o erro e gere APENAS um bloco JSON com os steps corretivos.\n' +
+                'Actions: create-field, metadata-create, metadata-update, metadata-delete, apex-class, apex-trigger, layout-add-field, profile-fls, ps-fls, assign-custom-permission, assign-layout, create-layout, activate-rule, soql, validate, manual-step\n' +
+                'Para Picklist: use create-field com picklist:["v1","v2"] (array simples).\n' +
+                'Para Flow: triggerType/object dentro de start{} (API 62.0).\n' +
+                'Operadores validos: EqualTo, NotEqualTo, GreaterThan, LessThan, Contains, IsNull, WasSet. NAO usar DoesNotContain/NotContain.\n' +
+                'Responda: 1 linha de diagnostico + bloco ```json\n[...]\n``` com fix steps. Seja direto.';
+              const afContent = 'Step que falhou: ' + JSON.stringify(step) + '\nErro: ' + result.message + '\nOrg: ' + org.name;
+              const afResult = await claude.callRouted('spec', afPrompt, [{ role: 'user', content: afContent }], 2048);
+              // Extrair fixSteps do resultado
+              const jsonMatch = (afResult.text || '').match(/```json\n([\s\S]*?)```/);
+              if (jsonMatch) {
+                const fixSteps = JSON.parse(jsonMatch[1].trim());
+                if (Array.isArray(fixSteps) && fixSteps.length > 0) {
+                  // Combinar: fixSteps + remainingSteps (incluindo retry do step original)
+                  const combinedSteps = [...fixSteps, ...remainingSteps];
+                  const combinedPayload = { steps: combinedSteps, currentStep: 0, us };
+                  const diagLine = (afResult.text || '').split('\n').find(l => l.trim() && !l.startsWith('```')) || 'Correcao identificada';
+                  text += '\n\n⚡ **Auto-fix:** ' + diagLine.substring(0, 200);
+                  text += '\n\n---\n### Fix — Passo 1 de ' + combinedSteps.length + '\n\n';
+                  text += formatStepPreview(combinedSteps[0]);
+                  if (remainingSteps.length > 0) {
+                    text += '\n_Apos a correcao, o runbook retoma os ' + remainingSteps.length + ' passos restantes._';
+                  }
+                  return res.json({
+                    choices: [{ message: { content: text } }],
+                    modelo_usado: 'mcp-server',
+                    modelo_label: 'Auto-fix (Opus) — ' + org.name,
+                    tipo: 'confirm',
+                    confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(combinedPayload)).toString('base64') }
+                  });
+                }
+              }
+            } catch (afErr) {
+              // Se o auto-fix falhar, continua com o fluxo normal (mostra erro + botão manual)
+            }
           }
+
           const nextStep = currentStep + 1;
           if (nextStep < steps.length) {
-            // Show next step preview
-            text += `\n---\n### Próximo — Passo ${nextStep + 1} de ${steps.length}\n\n`;
+            text += '\n---\n### Proximo — Passo ' + (nextStep + 1) + ' de ' + steps.length + '\n\n';
             text += formatStepPreview(steps[nextStep]);
             const nextPayload = { steps, currentStep: nextStep, us };
             const respData = { choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'confirm', confirmData: { action: 'runbook', payload: Buffer.from(JSON.stringify(nextPayload)).toString('base64') } };
             if (errorAnalysis) respData.errorAnalysis = errorAnalysis;
             return res.json(respData);
           } else {
-            text += `\n---\n🏁 **Runbook completo!** ${steps.length} passo(s) executado(s).`;
+            text += '\n---\n' + String.fromCodePoint(0x1F3C1) + ' **Runbook completo!** ' + steps.length + ' passo(s) executado(s).';
             const finalResp = { choices: [{ message: { content: text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + org.name, tipo: 'executed' };
             if (errorAnalysis) finalResp.errorAnalysis = errorAnalysis;
             return res.json(finalResp);
