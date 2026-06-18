@@ -19,7 +19,7 @@ export async function connectToOrg(org) {
   // Usar cache se conexão ainda válida
   if (connections[key]) {
     try {
-      await connections[key].identity();
+      await httpsGetJson(connections[key].instanceUrl + '/services/oauth2/userinfo', connections[key].accessToken);
       console.log(`[connectToOrg] cache hit org=${key} (${Date.now()-t0}ms)`);
       return connections[key];
     } catch {
@@ -157,17 +157,50 @@ export async function metadataRead(org, type, fullName) {
 export async function testConnection(org) {
   try {
     const conn = await connectToOrg(org);
-    const identity = await conn.identity();
+    // Chama /services/oauth2/userinfo via HTTPS direto — jsforce trava no web dyno
+    const identity = await httpsGetJson(conn.instanceUrl + '/services/oauth2/userinfo', conn.accessToken);
     return {
       status: 'connected',
       orgId: identity.organization_id,
-      username: identity.username,
-      displayName: identity.display_name,
+      username: identity.preferred_username || identity.username,
+      displayName: identity.name,
       instanceUrl: conn.instanceUrl,
     };
   } catch (err) {
+    console.error('[testConnection] erro:', err.message);
     return { status: 'error', message: err.message };
   }
+}
+
+// HTTPS GET com Bearer token, parseando JSON
+function httpsGetJson(url, accessToken) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = https.request({
+      hostname: u.hostname,
+      port: 443,
+      path: u.pathname + u.search,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', (c) => data += c);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 400) reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+          else resolve(parsed);
+        } catch (e) {
+          reject(new Error(`Parse error: ${e.message} body=${data.slice(0,200)}`));
+        }
+      });
+    });
+    req.on('error', (e) => reject(new Error(`HTTPS error: ${e.message}`)));
+    req.end();
+  });
 }
 
 // Deploy campo via metadata.create
