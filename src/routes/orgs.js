@@ -34,17 +34,42 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'name, login_url, username, password obrigatorios' });
     }
 
-    // Testar conexão antes de salvar
-    const test = await testConnection({ login_url, username, password, security_token });
-    if (test.status !== 'connected') {
-      return res.status(400).json({ error: 'Falha na conexao: ' + test.message });
+    // Testar conexão (com fallback se timeout)
+    let orgId = null;
+    try {
+      const test = await testConnection({ login_url, username, password, security_token });
+      if (test.status === 'connected') orgId = test.orgId;
+    } catch (e) {
+      // Se timeout, salva sem orgId (pode testar depois via /status)
     }
 
     const result = await pool.query(
       'INSERT INTO orgs (name, login_url, username, password, security_token, org_type, org_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, name, login_url, username, org_type',
-      [name, login_url, username, password, security_token || '', org_type || 'sandbox', test.orgId]
+      [name, login_url, username, password, security_token || '', org_type || 'sandbox', orgId]
     );
     res.status(201).json({ status: 'created', org: result.rows[0], connection: test });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT /api/orgs/:id — Atualizar credenciais (admin, sem test connection)
+router.put('/:id', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Apenas admin' });
+  try {
+    const { name, login_url, username, password, security_token, org_type } = req.body;
+    const sets = [];
+    const vals = [];
+    let n = 1;
+    if (name) { sets.push('name=$'+n); vals.push(name); n++; }
+    if (login_url) { sets.push('login_url=$'+n); vals.push(login_url); n++; }
+    if (username) { sets.push('username=$'+n); vals.push(username); n++; }
+    if (password) { sets.push('password=$'+n); vals.push(password); n++; }
+    if (security_token !== undefined) { sets.push('security_token=$'+n); vals.push(security_token); n++; }
+    if (org_type) { sets.push('org_type=$'+n); vals.push(org_type); n++; }
+    if (!sets.length) return res.status(400).json({ error: 'Nada para atualizar' });
+    vals.push(req.params.id);
+    const r = await pool.query('UPDATE orgs SET ' + sets.join(',') + ' WHERE id=$' + n + ' RETURNING id, name, username', vals);
+    if (!r.rows.length) return res.status(404).json({ error: 'Org nao encontrada' });
+    res.json(r.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
