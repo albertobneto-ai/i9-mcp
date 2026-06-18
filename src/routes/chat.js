@@ -553,7 +553,7 @@ async function executeRunbookStep(step, org) {
               if (mtype === 'MatchingRule') rule.ruleStatus = 'Inactive';
               else rule.isActive = false;
               await sfMulti.metadataUpdate(org, mtype, rule);
-              await new Promise(r => setTimeout(r, 8000));
+              await new Promise(r => setTimeout(r, 4000));
             }
           }
         } catch {} // ignore
@@ -584,7 +584,7 @@ async function executeRunbookStep(step, org) {
                 if (dr && dr.fullName) {
                   dr.isActive = false;
                   await sfMulti.metadataUpdate(org, 'DuplicateRule', dr);
-                  await new Promise(r => setTimeout(r, 6000));
+                  await new Promise(r => setTimeout(r, 3000));
                 }
                 // Deletar DR
                 await sfMulti.metadataDelete(org, 'DuplicateRule', drFullName);
@@ -594,12 +594,12 @@ async function executeRunbookStep(step, org) {
             continue; // retry MR delete
           }
           if (errMsg.includes('activation') || errMsg.includes('deactivation') || errMsg.includes('must be active or inactive')) {
-            await new Promise(r => setTimeout(r, 6000));
+            await new Promise(r => setTimeout(r, 3000));
             continue;
           }
           break;
         } catch (e) {
-          if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 6000)); }
+          if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 3000)); }
           else throw e;
         }
       }
