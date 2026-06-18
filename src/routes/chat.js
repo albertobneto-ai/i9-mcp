@@ -538,30 +538,49 @@ async function executeRunbookStep(step, org) {
         const r = await sfMulti.deleteApexTrigger(org, fname);
         return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
       }
-      // MatchingRule/DuplicateRule: desativar via metadata read+update (sem Tooling API)
+      // DuplicateRule: fullName é só o DeveloperName (sem prefixo Object)
+      let deleteName = fname;
+      if (mtype === 'DuplicateRule' && fname.includes('.')) {
+        deleteName = fname.split('.').pop(); // Account.DR_X → DR_X
+      }
+      // MatchingRule/DuplicateRule: desativar via metadata read+update antes de deletar
       if (mtype === 'MatchingRule' || mtype === 'DuplicateRule') {
         try {
-          const rule = await sfMulti.metadataRead(org, mtype, fname);
+          const rule = await sfMulti.metadataRead(org, mtype, deleteName);
           if (rule && rule.fullName) {
             const isActive = mtype === 'MatchingRule' ? (rule.ruleStatus === 'Active') : (rule.isActive === true || rule.isActive === 'true');
             if (isActive) {
               if (mtype === 'MatchingRule') rule.ruleStatus = 'Inactive';
               else rule.isActive = false;
               await sfMulti.metadataUpdate(org, mtype, rule);
-              await new Promise(r => setTimeout(r, 8000)); // SF processa async
+              await new Promise(r => setTimeout(r, 8000));
             }
           }
-        } catch {} // ignore — pode já estar Inactive
+        } catch {} // ignore
       }
-      // Tentar deletar com retry (MR/DR às vezes precisa mais tempo)
+      // Tentar deletar com retry
       let delResult;
       const maxRetries = (mtype === 'MatchingRule' || mtype === 'DuplicateRule') ? 4 : 1;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          delResult = await sfMulti.metadataDelete(org, mtype, fname);
+          delResult = await sfMulti.metadataDelete(org, mtype, deleteName);
           const chk = Array.isArray(delResult) ? delResult[0] : delResult;
           if (chk?.success !== false) break;
           const errMsg = chk?.errors ? JSON.stringify(chk.errors) : '';
+          // Se MR falha por DR associada ativa → desativar+deletar a DR primeiro
+          if (mtype === 'MatchingRule' && errMsg.includes('associated to an active duplicate rule')) {
+            const drMatch = errMsg.match(/:\s*([A-Za-z0-9_]+)/);
+            if (drMatch) {
+              const drName = drMatch[1].trim().replace(/ /g, '_');
+              try {
+                const dr = await sfMulti.metadataRead(org, 'DuplicateRule', drName);
+                if (dr && dr.fullName) { dr.isActive = false; await sfMulti.metadataUpdate(org, 'DuplicateRule', dr); await new Promise(r => setTimeout(r, 6000)); }
+                await sfMulti.metadataDelete(org, 'DuplicateRule', drName);
+                await new Promise(r => setTimeout(r, 3000));
+              } catch {}
+            }
+            continue; // retry MR delete
+          }
           if (errMsg.includes('activation') || errMsg.includes('deactivation') || errMsg.includes('must be active or inactive')) {
             await new Promise(r => setTimeout(r, 6000));
             continue;
