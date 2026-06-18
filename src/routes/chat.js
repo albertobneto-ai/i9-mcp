@@ -526,9 +526,8 @@ async function executeRunbookStep(step, org) {
     const cps = Array.isArray(customPermissions) ? customPermissions : (customPermissions ? [customPermissions] : []);
     if (!cps.length) return { ok: false, message: '❌ assign-custom-permission requer customPermissions (array de nomes)' };
     try {
-      const conn = org.connection;
-      // Ler PermissionSet atual
-      const ps = await conn.metadata.read('PermissionSet', permissionSetName);
+      // Ler PermissionSet atual via sfMulti (gerencia a conexão)
+      const ps = await sfMulti.metadataRead(org, 'PermissionSet', permissionSetName);
       if (!ps || !ps.fullName) return { ok: false, message: '❌ PermissionSet não encontrado: ' + permissionSetName };
       // Snapshot para rollback
       let previousState = null;
@@ -541,7 +540,7 @@ async function executeRunbookStep(step, org) {
         cpMap.set(cpName, { name: cpName, enabled });
       }
       ps.customPermissions = Array.from(cpMap.values());
-      const result = await conn.metadata.update('PermissionSet', ps);
+      const result = await sfMulti.metadataUpdate(org, 'PermissionSet', ps);
       const item = Array.isArray(result) ? result[0] : result;
       const ok = item?.success !== false;
       if (ok) return { ok: true, message: `✅ ${cps.length} Custom Permission(s) atribuída(s) a ${permissionSetName}: ${cps.join(', ')}`, previousState };
