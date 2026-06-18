@@ -41,7 +41,7 @@ router.post('/', authMiddleware, async (req, res) => {
       'INSERT INTO orgs (name, login_url, username, password, security_token, org_type, org_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, name, login_url, username, org_type',
       [name, login_url, username, password, security_token || '', org_type || 'sandbox', orgId]
     );
-    res.status(201).json({ status: 'created', org: result.rows[0], connection: test });
+    res.status(201).json({ status: 'created', org: result.rows[0], id: result.rows[0].id });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
