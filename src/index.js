@@ -139,8 +139,8 @@ app.post('/api/analyze-error', authMiddleware, async (req, res) => {
       'Depois, OBRIGATORIAMENTE inclua um bloco com o step corrigido:\n' +
       '```json\n[{"action":"...", ...}]\n```\n\n' +
       '═══ ACTIONS VÁLIDAS (uma destas em cada step) ═══\n' +
-      '• create-field — criar CustomField. Params: object, field, label, type, length?, picklist?, description?, required?\n' +
-      '• metadata-create — criar metadado complexo. Params: metadataType, body (objeto com a config)\n' +
+      '• create-field — criar CustomField (USAR SEMPRE para campos, não metadata-create). Params: object, field, label, type, length?, picklist?, description?, required?\n' +
+      '• metadata-create — criar metadado complexo (NÃO use para CustomField, use create-field). Params: type, body (config completa). Use para: ValidationRule, MatchingRule, DuplicateRule, RecordType, PermissionSet, etc.\n' +
       '• metadata-update — atualizar metadado. Params: type, fullName, body\n' +
       '• metadata-delete — deletar metadado. Params: type, fullName\n' +
       '• apex-class — criar/atualizar Apex Class. Params: name, body\n' +
