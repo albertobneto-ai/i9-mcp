@@ -538,10 +538,20 @@ async function executeRunbookStep(step, org) {
         const r = await sfMulti.deleteApexTrigger(org, fname);
         return { ok: r.success, message: r.success ? `✅ ApexTrigger deletado: ${fname}` : `ℹ️ ${fname}: ${r.message || 'não encontrado'}` };
       }
+      // MatchingRule/DuplicateRule: desativar antes de deletar
+      if (mtype === 'MatchingRule' || mtype === 'DuplicateRule') {
+        try {
+          await sfMulti.activateRule(org, mtype, fname, false); // deactivate
+        } catch {} // ignore if already inactive
+      }
       const result = await sfMulti.metadataDelete(org, mtype, fname);
       const item = Array.isArray(result) ? result[0] : result;
       const ok = item?.success !== false;
-      return { ok, message: ok ? `✅ ${mtype} deletado: ${fname}` : `❌ Erro ao deletar ${fname}` };
+      if (!ok) {
+        const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+        return { ok: false, message: `❌ Erro ao deletar ${mtype} ${fname}: ${errs.map(e => e.message || JSON.stringify(e)).join(', ')}` };
+      }
+      return { ok: true, message: `✅ ${mtype} deletado: ${fname}` };
     } catch (e) { return { ok: false, message: `❌ ${e.message}` }; }
   }
   if (step.action === 'validate') {
@@ -2253,19 +2263,44 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
           const act = r.action;
           const hasPrevState = r.previous_state && r.previous_state.length > 2;
 
-          // Determine component type
+          // Determine component type from action + component name + description
           let deleteType = null;
+          const desc = (r.description || '').toLowerCase();
           if (act === 'create-field') deleteType = 'CustomField';
-          else if (act === 'metadata-create' || act === 'metadata-update') {
-            if (comp.includes('MR_')) deleteType = 'MatchingRule';
-            else if (comp.includes('DR_')) deleteType = 'DuplicateRule';
-            else if (comp.endsWith('__c') && comp.includes('.')) deleteType = 'CustomField';
-            else deleteType = 'CustomField';
-          }
+          else if (act === 'create-layout') deleteType = 'Layout';
           else if (act === 'apex-class') deleteType = 'ApexClass';
           else if (act === 'apex-trigger') deleteType = 'ApexTrigger';
           else if (act === 'lwc') deleteType = 'LightningComponentBundle';
           else if (act === 'flow') deleteType = 'Flow';
+          else if (act === 'metadata-create' || act === 'metadata-update') {
+            // Detectar tipo pelo prefixo do componente ou pela description
+            if (comp.includes('MR_') || desc.includes('matchingrule')) deleteType = 'MatchingRule';
+            else if (comp.includes('DR_') || desc.includes('duplicaterule')) deleteType = 'DuplicateRule';
+            else if (comp.includes('VR_') || desc.includes('validationrule')) deleteType = 'ValidationRule';
+            else if (desc.includes('permissionset') && !desc.includes('group')) deleteType = 'PermissionSet';
+            else if (desc.includes('permissionsetgroup')) deleteType = 'PermissionSetGroup';
+            else if (desc.includes('custompermission')) deleteType = 'CustomPermission';
+            else if (desc.includes('recordtype')) deleteType = 'RecordType';
+            else if (desc.includes('customobject')) deleteType = 'CustomObject';
+            else if (desc.includes('listview')) deleteType = 'ListView';
+            else if (desc.includes('quickaction')) deleteType = 'QuickAction';
+            else if (desc.includes('queue') || desc.includes('group')) deleteType = 'Queue';
+            else if (desc.includes('flow')) deleteType = 'Flow';
+            else if (desc.includes('layout')) deleteType = 'Layout';
+            else if (comp.endsWith('__c') && comp.includes('.')) deleteType = 'CustomField';
+            else if (comp.endsWith('__c')) deleteType = 'CustomObject';
+            else deleteType = null; // skip if we can't determine type
+          }
+          // Skip non-deletable actions (assign-layout, ps-fls, assign-custom-permission, assign-ps-to-user, enable-field-history, profile-fls, activate-rule, soql, validate, apex, manual-step)
+          // These are configuration changes, not new components — use snapshot restore if available
+          else if (['assign-layout','ps-fls','assign-custom-permission','profile-fls','layout-add-field'].includes(act)) {
+            if (hasPrevState) {
+              // Has snapshot → can restore
+              deleteType = act === 'ps-fls' || act === 'assign-custom-permission' ? 'PermissionSet' : (act === 'profile-fls' ? 'Profile' : 'Layout');
+            } else {
+              continue; // No way to rollback a config change without snapshot
+            }
+          }
           if (!deleteType) continue;
 
           if (hasPrevState) {
@@ -2292,7 +2327,7 @@ Se o campo não tem __c, adicione. Converta nomes para API format.`;
         if (!rollbackSteps.length) return res.json({ choices: [{ message: { content: '📭 Nenhum componente reversível encontrado.' } }], modelo_usado: 'local', modelo_label: 'Rollback', tipo: 'rollback' });
 
         // Reverse order: triggers/apex before fields, DRs before MRs (reverse dependency)
-        const typeOrder = { 'ApexTrigger': 0, 'Flow': 1, 'LightningComponentBundle': 2, 'ApexClass': 3, 'DuplicateRule': 4, 'MatchingRule': 5, 'CustomField': 6 };
+        const typeOrder = { 'ApexTrigger': 0, 'Flow': 1, 'LightningComponentBundle': 2, 'ApexClass': 3, 'DuplicateRule': 4, 'MatchingRule': 5, 'ValidationRule': 6, 'PermissionSet': 7, 'PermissionSetGroup': 8, 'CustomPermission': 9, 'RecordType': 10, 'Layout': 11, 'ListView': 12, 'QuickAction': 13, 'CustomField': 14, 'CustomObject': 15 };
         rollbackSteps.sort((a, b) => (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9));
 
         // Show table
