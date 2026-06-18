@@ -1,5 +1,7 @@
 // src/services/sf-multi.js — Conexão multi-org Salesforce via jsforce
 import jsforce from 'jsforce';
+import https from 'https';
+import querystring from 'querystring';
 
 // Cache de conexões ativas (evita re-login a cada request)
 const connections = {};
@@ -19,9 +21,7 @@ export async function connectToOrg(org) {
 
   // Tentar OAuth2 via https (garantido funcionar)
   try {
-    const https = await import('https');
-    const querystring = await import('querystring');
-    const postData = querystring.default.stringify({
+    const postData = querystring.stringify({
       grant_type: 'password',
       client_id: 'SalesforceDevelopmentExperience',
       client_secret: '1384510088588713504',
@@ -30,7 +30,7 @@ export async function connectToOrg(org) {
     });
     const loginHost = new URL(org.login_url).hostname;
     const oauthData = await new Promise((resolve, reject) => {
-      const req = https.default.request({
+      const req = https.request({
         hostname: loginHost,
         path: '/services/oauth2/token',
         method: 'POST',
