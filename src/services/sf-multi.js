@@ -535,3 +535,17 @@ export async function activateRule(org, ruleType, ruleName) {
   }
   return { status: 'error', message: 'Unknown rule type: ' + ruleType };
 }
+
+// Insert múltiplos registros via REST sobjects/composite
+export async function insertRecords(org, objectName, records) {
+  const conn = await connectToOrg(org);
+  if (!Array.isArray(records) || !records.length) return { results: [] };
+  // Usar conn.sobject().create() que aceita array
+  try {
+    const results = await conn.sobject(objectName).create(records, { allOrNone: false });
+    const arr = Array.isArray(results) ? results : [results];
+    return { results: arr };
+  } catch (e) {
+    return { error: e.message || String(e) };
+  }
+}
