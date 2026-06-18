@@ -56,15 +56,17 @@ export async function connectToOrg(org) {
       return conn;
     }
   } catch (oauthErr) {
-    // OAuth falhou — fallback para SOAP
+    console.log('[connectToOrg] OAuth2 falhou:', oauthErr.message);
   }
 
   // Fallback: jsforce SOAP login
+  console.log('[connectToOrg] Tentando SOAP login para', org.username, 'em', org.login_url);
   const conn = new jsforce.Connection({
     loginUrl: org.login_url,
     version: '62.0',
   });
   await conn.login(org.username, org.password + (org.security_token || ''));
+  console.log('[connectToOrg] SOAP login OK para', org.username);
   connections[key] = conn;
   return conn;
 }
