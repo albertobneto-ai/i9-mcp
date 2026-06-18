@@ -740,6 +740,31 @@ async function executeRunbookStep(step, org) {
     } catch (e) { return { ok: false, message: `❌ Ativação: ${(e.message || String(e)).substring(0, 300)}` }; }
   }
   if (step.action === 'create-layout') {
+    // Normalizar campos compostos — componentes individuais → campo composto
+    const compoundMap = { 'Street': 'Address', 'City': 'Address', 'State': 'Address', 'PostalCode': 'Address', 'Country': 'Address',
+      'MailingStreet': 'MailingAddress', 'MailingCity': 'MailingAddress', 'MailingState': 'MailingAddress', 'MailingPostalCode': 'MailingAddress', 'MailingCountry': 'MailingAddress',
+      'OtherStreet': 'OtherAddress', 'OtherCity': 'OtherAddress', 'OtherState': 'OtherAddress', 'OtherPostalCode': 'OtherAddress', 'OtherCountry': 'OtherAddress',
+      'BillingStreet': 'BillingAddress', 'BillingCity': 'BillingAddress', 'BillingState': 'BillingAddress', 'BillingPostalCode': 'BillingAddress', 'BillingCountry': 'BillingAddress',
+      'ShippingStreet': 'ShippingAddress', 'ShippingCity': 'ShippingAddress', 'ShippingState': 'ShippingAddress', 'ShippingPostalCode': 'ShippingAddress', 'ShippingCountry': 'ShippingAddress' };
+    if (step.sections) {
+      for (const sec of step.sections) {
+        if (sec.columns) {
+          for (let ci = 0; ci < sec.columns.length; ci++) {
+            const seen = new Set();
+            sec.columns[ci] = (sec.columns[ci] || []).map(item => {
+              const f = item.field || item;
+              const compound = compoundMap[f];
+              if (compound) {
+                if (seen.has(compound)) return null;
+                seen.add(compound);
+                return typeof item === 'string' ? compound : { ...item, field: compound };
+              }
+              return item;
+            }).filter(Boolean);
+          }
+        }
+      }
+    }
     // Cria um Page Layout do zero com seções e campos. Auto-converte formato simplificado em Metadata API XML.
     // Aceita: { object, layoutName, sections:[{label, columns:[[{field, behavior, required?}]]}], relatedLists?, summaryLayout? }
     const objName = step.object;
