@@ -729,7 +729,7 @@ async function handleStatus(org) {
 const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
 
 Ações disponíveis:
-- "action": "create-field" — criar campo custom
+- "action": "create-field" — criar campo custom (USE SEMPRE para CustomField. NÃO use metadata-create com type:CustomField)
 - "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
 - "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
@@ -992,7 +992,7 @@ Regras:
 - Se o tipo for Text, length padrão 255 (a menos que especificado)
 - Se Number/Currency/Percent, precision=18 scale=2
 - Se LongTextArea, length=32768
-- Se Picklist, extraia os valores em picklistValues como array de strings
+- Se Picklist, extraia os valores em picklist como array de strings (formato canônico)
 - Se Lookup, coloque o objeto referenciado em referenceTo
 - Se o usuário não especificou __c, adicione automaticamente
 - Converta nomes como "teste_mcp_server" em "teste_mcp_server__c" e label "Teste Mcp Server"`;
@@ -1013,7 +1013,7 @@ Regras:
         if (body.type === 'LongTextArea') { body.length = spec.length || 32768; body.visibleLines = 4; }
         if (['Number','Currency','Percent'].includes(body.type)) { body.precision = spec.precision || 18; body.scale = spec.scale ?? 2; }
         if (body.type === 'Lookup' && spec.referenceTo) { body.referenceTo = spec.referenceTo; body.relationshipLabel = spec.label || spec.fieldName.replace('__c',''); }
-        if (['Picklist','MultiselectPicklist'].includes(body.type) && spec.picklistValues) { body.picklist = spec.picklistValues; }
+        if (['Picklist','MultiselectPicklist'].includes(body.type)) { body.picklist = spec.picklist || spec.picklistValues || spec.values; }
         if (spec.description) body.description = spec.description;
 
         // Preview - do NOT execute yet
@@ -1370,7 +1370,7 @@ FORMATO DA RESPOSTA:
           const parsePrompt = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
 
 Ações disponíveis:
-- "action": "create-field" — criar campo custom
+- "action": "create-field" — criar campo custom (USE SEMPRE para CustomField. NÃO use metadata-create com type:CustomField)
 - "action": "metadata-create" — criar qualquer metadado (CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet, PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue)
 - "action": "layout-add-field" — adiciona campo a uma seção de Page Layout. Requer: { layoutName: "Object-Layout Name", fieldName: "Field__c", sectionLabel: "Identificação", behavior: "Edit"|"Required"|"Readonly" }
 - "action": "profile-fls" — atualiza FLS de um Profile. Requer: { profileName: "Profile_Name", fieldPermissions: [{ field: "Object.Field__c", editable: true, readable: true }], objectPermissions: [{ object: "Account", allowCreate: true, allowRead: true, allowEdit: false, allowDelete: false }] }
