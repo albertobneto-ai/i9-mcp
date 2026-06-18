@@ -18,7 +18,7 @@ export async function connectToOrg(org) {
   // Usar cache se conexão ainda válida (check rápido com timeout)
   if (connections[key]) {
     try {
-      await withTimeout(connections[key].identity(), 8000, 'identity check');
+      await withTimeout(connections[key].identity(), 12000, 'identity check');
       return connections[key];
     } catch {
       delete connections[key];
@@ -30,7 +30,7 @@ export async function connectToOrg(org) {
     version: '62.0',
   });
 
-  await withTimeout(conn.login(org.username, org.password + (org.security_token || '')), 15000, 'login');
+  await withTimeout(conn.login(org.username, org.password + (org.security_token || '')), 25000, 'login');
   connections[key] = conn;
   return conn;
 }
