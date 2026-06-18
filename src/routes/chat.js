@@ -566,8 +566,10 @@ async function executeRunbookStep(step, org) {
           const errMsg = chk?.errors ? JSON.stringify(chk.errors) : '';
           // Se MR falha por DR associada ativa → desativar+deletar a DR primeiro
           if (mtype === 'MatchingRule' && errMsg.includes('associated to an active duplicate rule')) {
-            // Extrair nome da DR do erro: "... : DR Nacional PJ CNPJ."
-            const drLabelMatch = errMsg.match(/:\s*([^"\]{}]+?)\s*\.?$/m);
+            // Extrair texto do erro (pode estar em JSON) e depois extrair DR label
+            let errTextClean = errMsg;
+            try { const parsed = JSON.parse(errMsg); errTextClean = (Array.isArray(parsed) ? parsed.map(e=>e.message||'').join(' ') : (parsed.message || errMsg)); } catch {}
+            const drLabelMatch = errTextClean.match(/:\s*([A-Za-z0-9_ ]+)\.?\s*$/);
             if (drLabelMatch) {
               // Converter label para DeveloperName e prefixar com objeto
               const drDevName = drLabelMatch[1].trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
@@ -606,6 +608,26 @@ async function executeRunbookStep(step, org) {
         // "not found" / "does not exist" / "no X named Y found" = já foi deletado → sucesso
         if (errText.toLowerCase().includes('not found') || errText.toLowerCase().includes('does not exist') || errText.match(/no \w+ named .+ found/i)) {
           return { ok: true, message: `ℹ️ ${mtype} ${deleteName} já não existe — prosseguindo`, alreadyExists: true };
+        }
+        // Se campo referenciado por VR/Flow/etc → tentar deletar a referência primeiro
+        if (mtype === 'CustomField' && errText.includes('referenced elsewhere')) {
+          const refMatch = errText.match(/(?:Validation Rule|Flow|Trigger)\s*[-–]\s*([A-Za-z0-9_]+)/i);
+          if (refMatch) {
+            const refName = refMatch[1];
+            const objName = deleteName.includes('.') ? deleteName.split('.')[0] : '';
+            // Tentar deletar VR que referencia este campo
+            try {
+              const vrFullName = objName ? objName + '.' + refName : refName;
+              await sfMulti.metadataDelete(org, 'ValidationRule', vrFullName);
+              await new Promise(r => setTimeout(r, 2000));
+              // Retry delete do campo
+              const retryResult = await sfMulti.metadataDelete(org, mtype, deleteName);
+              const retryItem = Array.isArray(retryResult) ? retryResult[0] : retryResult;
+              if (retryItem?.success !== false) {
+                return { ok: true, message: `✅ VR ${refName} auto-removida → ${mtype} deletado: ${deleteName}` };
+              }
+            } catch {}
+          }
         }
         return { ok: false, message: `❌ Erro ao deletar ${mtype} ${deleteName}: ${errText}` };
       }
