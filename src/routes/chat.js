@@ -1203,7 +1203,22 @@ async function handleStatus(org) {
   } catch (e) { return { text: `❌ Erro: ${e.message}`, tipo: 'error' }; }
 }
 
-const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as ações de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
+const RUNBOOK_PARSE_PROMPT = `Analise este runbook/spec e extraia as acoes de deployment Salesforce. Responda SOMENTE com um JSON array (sem markdown, sem backticks).
+
+CONVERSAO DIRETA: Se o input contem blocos estruturados com "Step N: action" e parametros como "- action: create-field", "- object: Account", etc., EXTRAIA DIRETAMENTE os valores para JSON sem interpretar. Cada bloco vira um objeto no array.
+
+Exemplo de input estruturado:
+#### Step 1: create-field — Campo CNPJ
+- action: create-field
+- object: Account
+- field: CNPJ__c
+- label: CNPJ
+- type: Text
+- length: 18
+
+Converte para: {"action":"create-field","object":"Account","field":"CNPJ__c","label":"CNPJ","type":"Text","length":18}
+
+Se o input NAO for estruturado (texto livre/prosa), interprete e converta usando as regras abaixo.
 
 Ações disponíveis:
 - "action": "create-field" — criar campo custom (USE SEMPRE para CustomField. NÃO use metadata-create com type:CustomField)
