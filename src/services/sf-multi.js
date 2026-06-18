@@ -17,11 +17,37 @@ export async function connectToOrg(org) {
     }
   }
 
+  // Tentar OAuth2 username-password flow primeiro (mais rápido que SOAP)
+  try {
+    const params = new URLSearchParams({
+      grant_type: 'password',
+      client_id: 'SalesforceDevelopmentExperience',
+      client_secret: '1384510088588713504',
+      username: org.username,
+      password: org.password + (org.security_token || '')
+    });
+    const oauthRes = await fetch(org.login_url + '/services/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+    const oauthData = await oauthRes.json();
+    if (oauthData.access_token) {
+      const conn = new jsforce.Connection({
+        instanceUrl: oauthData.instance_url,
+        accessToken: oauthData.access_token,
+        version: '62.0'
+      });
+      connections[key] = conn;
+      return conn;
+    }
+  } catch {}
+
+  // Fallback: jsforce SOAP login
   const conn = new jsforce.Connection({
     loginUrl: org.login_url,
     version: '62.0',
   });
-
   await conn.login(org.username, org.password + (org.security_token || ''));
   connections[key] = conn;
   return conn;
