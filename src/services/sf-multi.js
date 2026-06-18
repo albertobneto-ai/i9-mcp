@@ -17,21 +17,35 @@ export async function connectToOrg(org) {
     }
   }
 
-  // Tentar OAuth2 username-password flow primeiro (mais rápido que SOAP)
+  // Tentar OAuth2 via https (garantido funcionar)
   try {
-    const params = new URLSearchParams({
+    const https = await import('https');
+    const querystring = await import('querystring');
+    const postData = querystring.default.stringify({
       grant_type: 'password',
       client_id: 'SalesforceDevelopmentExperience',
       client_secret: '1384510088588713504',
       username: org.username,
       password: org.password + (org.security_token || '')
     });
-    const oauthRes = await fetch(org.login_url + '/services/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+    const loginHost = new URL(org.login_url).hostname;
+    const oauthData = await new Promise((resolve, reject) => {
+      const req = https.default.request({
+        hostname: loginHost,
+        path: '/services/oauth2/token',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) },
+        timeout: 20000
+      }, (res) => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => { try { resolve(JSON.parse(body)); } catch { reject(new Error('Invalid JSON')); } });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('OAuth timeout')); });
+      req.write(postData);
+      req.end();
     });
-    const oauthData = await oauthRes.json();
     if (oauthData.access_token) {
       const conn = new jsforce.Connection({
         instanceUrl: oauthData.instance_url,
@@ -41,7 +55,9 @@ export async function connectToOrg(org) {
       connections[key] = conn;
       return conn;
     }
-  } catch {}
+  } catch (oauthErr) {
+    // OAuth falhou — fallback para SOAP
+  }
 
   // Fallback: jsforce SOAP login
   const conn = new jsforce.Connection({
