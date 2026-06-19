@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass, deployFlow } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass, deployFlow, updateProfileFLS } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -180,6 +180,12 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const ok = item?.success !== false;
           const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
           results.push({ step: step.fullName || step.name, ok, message: ok ? `✅ Flow: ${step.fullName || step.name}` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ').substring(0,400)}` });
+        } else if (step.action === 'profile-fls') {
+          const fieldPerms = (step.fieldPermissions || []).map(fp => typeof fp === 'string' ? { field: fp, readable: true, editable: true } : fp);
+          const r = await updateProfileFLS(org, step.profileName, fieldPerms, step.objectPermissions || []);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          results.push({ step: `${step.profileName}`, ok, message: ok ? `✅ FLS: ${step.profileName}` : `❌ FLS ${step.profileName}: ${JSON.stringify(item?.errors||item).substring(0,200)}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
