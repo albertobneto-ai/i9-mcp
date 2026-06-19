@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass, deployFlow } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -173,6 +173,13 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const r = await deployApexClass(org, step.name, step.body);
           const ok = r.success !== false;
           results.push({ step: step.name, ok, message: ok ? `✅ ${step.name}` : `❌ ${JSON.stringify(r.errors||r).substring(0,300)}` });
+        } else if (step.action === 'flow') {
+          const flowBody = step.body || {};
+          const r = await deployFlow(org, step.fullName || step.name, flowBody);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          results.push({ step: step.fullName || step.name, ok, message: ok ? `✅ Flow: ${step.fullName || step.name}` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ').substring(0,400)}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
