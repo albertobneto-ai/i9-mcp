@@ -1415,6 +1415,56 @@ router.post('/', async (req, res) => {
       const result = await handleStatus(org);
       return res.json({ choices: [{ message: { content: result.text } }], modelo_usado: 'mcp-server', modelo_label: 'Org: ' + (org?.name || 'N/A'), tipo: result.tipo });
     }
+    // ── /export US — gera pacote SFDX (package.xml + sfdx-project.json + README) ──
+    if (lower.startsWith('/export ') || lower === '/export') {
+      const us = (userMsg.trim().substring(7) || '').trim().toUpperCase();
+      if (!us) {
+        return res.json({
+          choices: [{ message: { content: '⚠️ Use: `/export ALGAR-CRM-90`\n\nGera um ZIP com `manifest/package.xml` + `sfdx-project.json` + README pronto pra importar no VS Code via SFDX CLI.' } }],
+          modelo_usado: 'local', modelo_label: 'SF Agent', tipo: 'help'
+        });
+      }
+      try {
+        const previewUrl = `/api/exports/preview/${encodeURIComponent(us)}`;
+        const downloadUrl = `/api/exports/package/${encodeURIComponent(us)}`;
+        // Buscar preview rápido
+        const previewRes = await fetch(`http://localhost:${process.env.PORT || 3000}${previewUrl}`, {
+          headers: { Authorization: req.headers.authorization || '' }
+        });
+        let summary = '';
+        let exportableCount = 0;
+        if (previewRes.ok) {
+          const prev = await previewRes.json();
+          exportableCount = prev.exportable || 0;
+          if (prev.groups && prev.groups.length) {
+            summary = prev.groups.map(g => `- **${g.type}**: ${g.count} componente(s)`).join('\n');
+          }
+        }
+        if (exportableCount === 0) {
+          return res.json({
+            choices: [{ message: { content: `📭 Nenhum componente exportável encontrado para **${us}**.\n\nVerifique se o runbook foi executado e os componentes foram registrados no deploy_log com sucesso.` } }],
+            modelo_usado: 'mcp-server', modelo_label: 'SF Agent', tipo: 'info'
+          });
+        }
+        const text = `📦 **Export ${us}** — ${exportableCount} componente(s) prontos pra VS Code\n\n` +
+          summary + '\n\n' +
+          `**Como usar:**\n` +
+          `1. Baixe o ZIP no botão abaixo\n` +
+          `2. Extraia e abra a pasta no VS Code (com extensão Salesforce instalada)\n` +
+          `3. Rode no terminal: \`sf project retrieve start --manifest manifest/package.xml --target-org arqevery\``;
+        return res.json({
+          choices: [{ message: { content: text } }],
+          modelo_usado: 'mcp-server', modelo_label: 'Org: ' + (org?.name || 'N/A'),
+          tipo: 'download',
+          downloadData: { url: downloadUrl, filename: `${us}.zip`, label: `📦 Baixar ${us}.zip` }
+        });
+      } catch (err) {
+        return res.json({
+          choices: [{ message: { content: '❌ Erro ao gerar export: ' + err.message } }],
+          modelo_usado: 'mcp-server', modelo_label: 'Erro', tipo: 'error'
+        });
+      }
+    }
     if (lower === '/help') {
       const help = `## Comandos Disponíveis\n\n` +
         `### Gerar (Opus 4.6)\n` +
@@ -1443,6 +1493,7 @@ router.post('/', async (req, res) => {
         `| \`/checklist [US]\` | Configurações manuais pós-deploy da US (Seção 19 da spec) |\n` +
         `| \`/log [US]\` | Histórico de deploys (auditoria) |\n` +
         `| \`/rollback [US]\` | Lista componentes e permite desfazer (delete) |\n` +
+        `| \`/export US\` | Pacote SFDX (package.xml) pra importar no VS Code |\n` +
         `| \`/status\` | Status da conexão |\n` +
         `| \`/help\` | Este menu |\n\n` +
         `**Runbook suporta:** CustomObject, CustomField, MatchingRule, DuplicateRule, ValidationRule, RecordType, PermissionSet (com customPermissions), PermissionSetGroup, CustomPermission, ListView, CustomTab, BusinessProcess, CompactLayout, CustomLabel, GlobalValueSet, ReportType, CustomMetadata, SharingRules, QuickAction, Group, Queue, Page Layout (create + add field + assign), Profile FLS, Activate MR/DR, Assign Custom Permission to PS, Apex Class, Apex Trigger, LWC, Flow.\n\n` +
