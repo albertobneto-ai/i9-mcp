@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Deploys — SF Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+  :root {
+    --bg: #050308;
+    --violet: #7c3aed;
+    --violet-soft: #a78bfa;
+    --cyan: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: rgba(255,255,255,0.92);
+    --text-dim: rgba(255,255,255,0.55);
+    --text-mute: rgba(255,255,255,0.35);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --surface: rgba(255,255,255,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', -apple-system, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .layout {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 60px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: conic-gradient(from 0deg, var(--violet), var(--cyan), var(--violet));
+    position: relative;
+  }
+  .brand-mark::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    background: var(--bg);
+    border-radius: 4px;
+  }
+  .back-btn {
+    padding: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 100px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--border-strong);
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+
+  /* Filters */
+  .filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-input, .filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-input { min-width: 240px; }
+  .filter-input:focus, .filter-select:focus { border-color: var(--violet-soft); }
+  .filter-input::placeholder { color: var(--text-mute); }
+  .btn-clear {
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 10px;
+    font-family: inherit;
+  }
+  .btn-clear:hover { color: var(--text); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead {
+    background: rgba(255,255,255,0.03);
+  }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody tr.expanded { background: rgba(124,58,237,0.06); }
+  td { padding: 14px 16px; font-size: 13px; vertical-align: middle; }
+  .us-link {
+    font-family: 'Geist Mono', monospace;
+    font-weight: 500;
+    color: var(--violet-soft);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .us-link:hover { color: #fff; }
+  .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    color: var(--text-mute);
+  }
+  tr.expanded .chevron { transform: rotate(90deg); color: var(--violet-soft); }
+
+  .org-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.05);
+    padding: 3px 8px;
+    border-radius: 5px;
+    color: var(--text-dim);
+  }
+  .metrics {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+  }
+  .metric-pill {
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+  .metric-pill.success { background: rgba(16,185,129,0.12); color: var(--success); }
+  .metric-pill.error { background: rgba(239,68,68,0.12); color: var(--danger); }
+  .metric-pill.total { color: var(--text-dim); }
+  .timestamp {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .status-badge.ok { background: rgba(16,185,129,0.12); color: var(--success); }
+  .status-badge.err { background: rgba(239,68,68,0.12); color: var(--danger); }
+  .status-badge.mix { background: rgba(245,158,11,0.12); color: var(--warning); }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .icon-btn:hover {
+    color: var(--violet-soft);
+    border-color: rgba(167,139,250,0.4);
+    background: rgba(124,58,237,0.08);
+  }
+  .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .icon-btn.busy { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Expanded detail */
+  tr.detail-row { background: rgba(124,58,237,0.04); }
+  tr.detail-row td { padding: 0; }
+  .detail-wrap {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .detail-title {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    font-family: 'Geist Mono', monospace;
+  }
+  .step-list { display: flex; flex-direction: column; gap: 6px; }
+  .step {
+    display: grid;
+    grid-template-columns: 24px 1fr 140px 100px;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .step-num {
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-mute);
+  }
+  .step-name {
+    font-family: 'Geist Mono', monospace;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .step-action {
+    font-family: 'Geist Mono', monospace;
+    color: var(--violet-soft);
+    font-size: 11px;
+  }
+  .step-result {
+    font-size: 11px;
+    text-align: right;
+    font-family: 'Geist Mono', monospace;
+  }
+  .step-result.success { color: var(--success); }
+  .step-result.error { color: var(--danger); }
+  .step-result.exists { color: var(--cyan); }
+
+  .empty {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .empty-icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+  .loading {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .footer-info {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-mute);
+    text-align: center;
+    font-family: 'Geist Mono', monospace;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 13px;
+    display: none;
+    z-index: 100;
+  }
+  .toast.show { display: block; }
+  .toast.error { border-color: rgba(239,68,68,0.5); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>SF Agent · Deploys</span>
+    </div>
+    <a href="/" class="back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar ao chat
+    </a>
+  </div>
+
+  <h1>Auditoria de Deploys</h1>
+  <p class="subtitle">Histórico de User Stories executadas, componentes deployados e ações realizadas pelo SF Agent.</p>
+
+  <div class="filters">
+    <input type="text" id="search" class="filter-input" placeholder="Buscar US (ex: ALGAR-CRM-90)" />
+    <select id="org" class="filter-select">
+      <option value="">Todas as orgs</option>
+    </select>
+    <select id="result" class="filter-select">
+      <option value="">Todos os resultados</option>
+      <option value="success">Sucesso</option>
+      <option value="error">Erro</option>
+      <option value="exists">Já existia</option>
+    </select>
+    <input type="date" id="from" class="filter-select" />
+    <input type="date" id="to" class="filter-select" />
+    <button class="btn-clear" onclick="clearFilters()">Limpar</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>User Story</th>
+          <th>Org</th>
+          <th>Componentes</th>
+          <th>Início</th>
+          <th>Última ação</th>
+          <th>Status</th>
+          <th style="text-align:right">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="7" class="loading">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer-info" id="footer">—</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const TOKEN = localStorage.getItem('i9mcp_token');
+  if (!TOKEN) { window.location.href = '/'; }
+
+  const tbody = document.getElementById('tbody');
+  const footer = document.getElementById('footer');
+  const elSearch = document.getElementById('search');
+  const elOrg = document.getElementById('org');
+  const elResult = document.getElementById('result');
+  const elFrom = document.getElementById('from');
+  const elTo = document.getElementById('to');
+  const toast = document.getElementById('toast');
+
+  let debounce;
+  function onFilterChange() {
+    clearTimeout(debounce);
+    debounce = setTimeout(load, 250);
+  }
+  elSearch.addEventListener('input', onFilterChange);
+  elOrg.addEventListener('change', onFilterChange);
+  elResult.addEventListener('change', onFilterChange);
+  elFrom.addEventListener('change', onFilterChange);
+  elTo.addEventListener('change', onFilterChange);
+
+  function clearFilters() {
+    elSearch.value = '';
+    elOrg.value = '';
+    elResult.value = '';
+    elFrom.value = '';
+    elTo.value = '';
+    load();
+  }
+
+  function showToast(msg, type = 'info') {
+    toast.textContent = msg;
+    toast.className = 'toast show ' + (type === 'error' ? 'error' : '');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function statusOf(item) {
+    if (item.errors > 0 && item.success > 0) return { label: 'Misto', cls: 'mix' };
+    if (item.errors > 0) return { label: 'Erro', cls: 'err' };
+    return { label: 'OK', cls: 'ok' };
+  }
+
+  async function load() {
+    const params = new URLSearchParams();
+    if (elSearch.value.trim()) params.set('search', elSearch.value.trim());
+    if (elOrg.value) params.set('org', elOrg.value);
+    if (elResult.value) params.set('result', elResult.value);
+    if (elFrom.value) params.set('from', elFrom.value + 'T00:00:00');
+    if (elTo.value) params.set('to', elTo.value + 'T23:59:59');
+
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+
+    try {
+      const r = await fetch('/api/deploys/list?' + params.toString(), {
+        headers: { Authorization: 'Bearer ' + TOKEN }
+      });
+      if (r.status === 401) { window.location.href = '/'; return; }
+      const data = await r.json();
+
+      // Atualiza dropdown de orgs (primeira carga)
+      if (elOrg.options.length === 1 && data.orgs) {
+        for (const o of data.orgs) {
+          const opt = document.createElement('option');
+          opt.value = o; opt.textContent = o;
+          elOrg.appendChild(opt);
+        }
+      }
+
+      if (!data.items || !data.items.length) {
+        tbody.innerHTML = `
+          <tr><td colspan="7">
+            <div class="empty">
+              <div class="empty-icon">📭</div>
+              Nenhuma User Story encontrada com esses filtros.
+            </div>
+          </td></tr>`;
+        footer.textContent = '—';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      for (const item of data.items) renderRow(item);
+      footer.textContent = `${data.items.length} de ${data.total} User Stories`;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">Erro: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderRow(item) {
+    const st = statusOf(item);
+    const tr = document.createElement('tr');
+    tr.dataset.us = item.us_number;
+    tr.innerHTML = `
+      <td>
+        <span class="us-link" onclick="toggleDetail('${item.us_number}', this)">
+          <span class="chevron">▶</span>${item.us_number}
+        </span>
+      </td>
+      <td><span class="org-tag">${item.org_name || '—'}</span></td>
+      <td>
+        <div class="metrics">
+          <span class="metric-pill total">${item.total}</span>
+          ${item.success > 0 ? `<span class="metric-pill success">✓ ${item.success}</span>` : ''}
+          ${item.errors > 0 ? `<span class="metric-pill error">✗ ${item.errors}</span>` : ''}
+        </div>
+      </td>
+      <td class="timestamp">${formatDate(item.first_at)}</td>
+      <td class="timestamp">${formatDate(item.last_at)}</td>
+      <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
+      <td>
+        <div class="actions">
+          <button class="icon-btn" title="Baixar pra VS Code (SFDX)" onclick="exportZip('${item.us_number}', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="icon-btn" title="Copiar nome da US" onclick="copyUs('${item.us_number}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  async function toggleDetail(us, anchor) {
+    const tr = anchor.closest('tr');
+    const next = tr.nextElementSibling;
+    if (next && next.classList.contains('detail-row') && next.dataset.us === us) {
+      next.remove();
+      tr.classList.remove('expanded');
+      return;
+    }
+    // Remove qualquer outra detail-row aberta
+    document.querySelectorAll('tr.detail-row').forEach(r => r.remove());
+    document.querySelectorAll('tr.expanded').forEach(r => r.classList.remove('expanded'));
+
+    tr.classList.add('expanded');
+    const detail = document.createElement('tr');
+    detail.className = 'detail-row';
+    detail.dataset.us = us;
+    detail.innerHTML = `<td colspan="7"><div class="detail-wrap"><div class="detail-title">Carregando componentes...</div></div></td>`;
+    tr.parentNode.insertBefore(detail, tr.nextSibling);
+
+    try {
+      const r = await fetch('/api/deploys/' + encodeURIComponent(us), {
+        headers: { Authorization: 'Bearer ' + TOKEN }
+      });
+      const data = await r.json();
+      const steps = data.components || [];
+      if (!steps.length) {
+        detail.querySelector('.detail-wrap').innerHTML = '<div class="detail-title">Sem componentes.</div>';
+        return;
+      }
+      const list = steps.map((s, i) => {
+        const resClass = s.result === 'success' ? 'success' : s.result === 'error' ? 'error' : 'exists';
+        return `
+          <div class="step">
+            <span class="step-num">${String(i+1).padStart(2,'0')}</span>
+            <span class="step-name" title="${s.component || ''}">${s.component || '—'}</span>
+            <span class="step-action">${s.action || '—'}</span>
+            <span class="step-result ${resClass}">${s.result || '—'}</span>
+          </div>
+        `;
+      }).join('');
+      detail.querySelector('.detail-wrap').innerHTML = `
+        <div class="detail-title">${steps.length} passos · ${data.org_name || ''}</div>
+        <div class="step-list">${list}</div>
+      `;
+    } catch (err) {
+      detail.querySelector('.detail-wrap').innerHTML = `<div class="detail-title" style="color:var(--danger)">Erro: ${err.message}</div>`;
+    }
+  }
+
+  async function exportZip(us, btn) {
+    const original = btn.innerHTML;
+    btn.classList.add('busy');
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/exports/package/' + encodeURIComponent(us), {
+        headers: { Authorization: 'Bearer ' + TOKEN }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = us + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('📦 ' + us + '.zip baixado');
+    } catch (err) {
+      showToast('Erro ao gerar export: ' + err.message, 'error');
+    } finally {
+      btn.classList.remove('busy');
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  }
+
+  function copyUs(us) {
+    navigator.clipboard.writeText(us).then(
+      () => showToast('Copiado: ' + us),
+      () => showToast('Falha ao copiar', 'error')
+    );
+  }
+
+  load();
+</script>
+
+</body>
+</html>
