@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -128,6 +128,61 @@ router.get('/:id/metadata-read/:type/:fullName', authMiddleware, async (req, res
     if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
     const data = await metadataRead(org, req.params.type, req.params.fullName);
     res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── POST /api/orgs/:id/batch-deploy — Deploy batch de fields/apex/metadata ──
+// Endpoint aditivo para deploy em lote. Cada step é executado sequencialmente.
+router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
+  try {
+    const org = await getOrgById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Org não encontrada' });
+    const { steps = [] } = req.body;
+    if (!steps.length) return res.status(400).json({ error: 'steps[] obrigatório' });
+
+    const results = [];
+    for (const step of steps) {
+      try {
+        if (step.action === 'create-field') {
+          const fullName = step.object + '.' + step.field;
+          const body = { fullName, label: step.label || step.field.replace('__c','').replace(/_/g,' '), type: step.type || 'Text' };
+          if (['Text'].includes(body.type)) body.length = step.length || 255;
+          if (body.type === 'LongTextArea') { body.length = step.length || 32768; body.visibleLines = 4; }
+          if (['Number','Currency','Percent'].includes(body.type)) { body.precision = step.precision || 18; body.scale = step.scale ?? 2; }
+          if (body.type === 'Lookup' && step.referenceTo) { body.referenceTo = step.referenceTo; body.relationshipLabel = step.relationshipLabel || body.label; body.relationshipName = step.relationshipName || step.field.replace('__c',''); }
+          if (['Picklist','MultiselectPicklist'].includes(body.type)) {
+            const vals = step.picklist || step.values || [];
+            body.valueSet = { restricted: true, valueSetDefinition: { sorted: false, value: vals.map(v => typeof v === 'string' ? { fullName: v, default: false, label: v } : v) }};
+            if (body.type === 'MultiselectPicklist') body.visibleLines = step.visibleLines || 4;
+          }
+          if (body.type === 'Checkbox') body.defaultValue = step.defaultValue === true || step.defaultValue === 'true';
+          const r = await metadataCreate(org, 'CustomField', body);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          const exists = errs.some(e => ((e.message||e.statusCode||'')+'').toLowerCase().includes('already') || ((e.message||e.statusCode||'')+'').toLowerCase().includes('duplicate'));
+          results.push({ step: step.field || step.name, ok: ok || exists, exists, message: ok ? `✅ ${fullName}` : exists ? `ℹ️ já existe: ${fullName}` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` });
+        } else if (step.action === 'metadata-create') {
+          const r = await metadataCreate(org, step.type, step.body);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          const exists = errs.some(e => ((e.message||e.statusCode||'')+'').toLowerCase().includes('already') || ((e.message||e.statusCode||'')+'').toLowerCase().includes('duplicate'));
+          results.push({ step: step.body?.fullName || step.type, ok: ok || exists, exists, message: ok ? `✅ ${step.type}: ${step.body?.fullName}` : exists ? `ℹ️ já existe` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` });
+        } else if (step.action === 'apex-class') {
+          const r = await deployApexClass(org, step.name, step.body);
+          const ok = r.success !== false;
+          results.push({ step: step.name, ok, message: ok ? `✅ ${step.name}` : `❌ ${JSON.stringify(r.errors||r).substring(0,300)}` });
+        } else {
+          results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
+        }
+      } catch (err) {
+        results.push({ step: step.field || step.name || step.action, ok: false, message: '❌ ' + err.message });
+      }
+    }
+    const ok = results.filter(r => r.ok).length;
+    const fail = results.filter(r => !r.ok).length;
+    res.json({ total: results.length, ok, fail, results });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
