@@ -2,8 +2,23 @@
 import { pushUsage } from './usage-context.js';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
+// Retry com backoff para fetch transiente (Eco dyno rede instável)
+async function fetchWithRetry(url, options, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      return res;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      const delay = attempt * 2000; // 2s, 4s
+      console.error(`[claude] fetch attempt ${attempt}/${retries} failed: ${err.message}. Retry in ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 export async function call(systemPrompt, messages, maxTokens = 16384) {
-  const res = await fetch(API_URL, {
+  const res = await fetchWithRetry(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,7 +45,7 @@ export async function call(systemPrompt, messages, maxTokens = 16384) {
 }
 
 export async function stream(systemPrompt, messages, maxTokens = 16384) {
-  const res = await fetch(API_URL, {
+  const res = await fetchWithRetry(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -57,7 +72,7 @@ export async function stream(systemPrompt, messages, maxTokens = 16384) {
 
 // Claude Haiku 4.5 — fallback quando modelos grátis estão indisponíveis (/hf, /ata)
 export async function callHaiku(systemPrompt, messages, maxTokens = 8192) {
-  const res = await fetch(API_URL, {
+  const res = await fetchWithRetry(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +94,7 @@ export async function callHaiku(systemPrompt, messages, maxTokens = 8192) {
 
 // Chamada genérica para qualquer modelo Claude (Opus, Sonnet, Haiku)
 export async function callAny(model, systemPrompt, messages, maxTokens = 8192) {
-  const res = await fetch(API_URL, {
+  const res = await fetchWithRetry(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -138,7 +153,7 @@ export async function callHaikuWithSearch(systemPrompt, messages, maxTokens = 20
     messages,
     tools: [{ type: 'web_search_20250305', name: 'web_search' }],
   };
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify(body),
