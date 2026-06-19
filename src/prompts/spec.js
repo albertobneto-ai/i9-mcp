@@ -195,6 +195,44 @@ REGRAS CRÍTICAS:
 - NUNCA usar campos compostos individuais em layouts (Street, City, State, PostalCode, Country). Usar o campo composto: Address (Lead/Account), MailingAddress/OtherAddress (Contact).
 - MatchingRule/DuplicateRule fullName = Object.RuleName
 
+FLOW METADATA — REGRAS PARA GERAR STEPS DE FLOW:
+Ao gerar steps com action "flow", o body DEVE ser JSON válido no formato Salesforce Metadata API. Regras obrigatórias:
+
+1. ESTRUTURA BASE (Record-Triggered Before Save):
+   flow (fullName, body: { label, processType: "AutoLaunchedFlow", status: "Draft", apiVersion: 62.0, start: { triggerType: "RecordBeforeSave", object: "Account", recordTriggerType: "CreateAndUpdate", connector: { targetReference: "primeiroElemento" }, locationX: 50, locationY: 0 }, decisions: [...], assignments: [...], recordLookups: [...] })
+
+2. ESTRUTURA BASE (Record-Triggered After Save):
+   Mesmo acima mas start.triggerType = "RecordAfterSave". Pode conter actionCalls (Apex Actions).
+
+3. ESTRUTURA BASE (Screen Flow):
+   processType: "Flow" (NÃO AutoLaunchedFlow). Sem triggerType no start. Variável recordId com isInput: true. Contém screens, actionCalls, decisions, assignments, recordUpdates.
+
+4. RESTRIÇÕES CRÍTICAS:
+   - Before Save Flow NÃO PODE conter actionCalls (Apex Actions). Converter lógica Apex em Decisions + Assignments inline.
+   - FlowFormula e FlowVariable NÃO aceitam campo "label". Usar apenas: name, dataType, expression (formula) ou name, dataType, isInput, isOutput (variable).
+   - Sempre incluir conditionLogic: "and" nas rules de Decision, mesmo com uma só condition.
+   - Sempre deploy como status: "Draft" — dev ativa depois de revisar no Flow Builder.
+   - Se o fullName já existir na org (deploy anterior falhou), usar nome novo (ex: adicionar sufixo _v2).
+
+5. ELEMENTOS DO FLOW:
+   - decisions: [{ name, label, locationX, locationY, defaultConnector: { targetReference }, defaultConnectorLabel, rules: [{ name, label, conditionLogic: "and", conditions: [{ leftValueReference, operator, rightValue: { stringValue/booleanValue } }], connector: { targetReference } }] }]
+   - assignments: [{ name, label, locationX, locationY, assignmentItems: [{ assignToReference: "$Record.Campo__c", operator: "Assign", value: { stringValue/booleanValue/elementReference } }], connector: { targetReference } }]
+   - recordLookups: [{ name, label, locationX, locationY, object, filterLogic: "and", filters: [{ field, operator, value: { elementReference } }], getFirstRecordOnly: true, storeOutputAutomatically: true, connector: { targetReference } }]
+   - actionCalls: [{ name, label, locationX, locationY, actionName: "ApexClassName", actionType: "apex", inputParameters: [{ name, value: { elementReference } }], outputParameters: [{ assignToReference, name }], connector: { targetReference }, faultConnector: { targetReference } }]
+   - screens: [{ name, label, locationX, locationY, allowBack, allowFinish, allowPause, connector: { targetReference }, fields: [{ name, fieldType: "DisplayText", fieldText: "<p>HTML</p>" }] }]
+   - recordUpdates: [{ name, label, locationX, locationY, object, filterLogic: "and", filters: [{ field, operator, value: { elementReference } }], inputAssignments: [{ field, value: { stringValue/elementReference } }], connector: { targetReference } }]
+   - variables: [{ name, dataType: "String"/"Boolean", isInput: true/false, isOutput: false }]
+
+6. OPERADORES VÁLIDOS EM CONDITIONS:
+   EqualTo, NotEqualTo, Contains, IsNull, IsChanged, WasSet, GreaterThan, LessThan, GreaterThanOrEqualTo, LessThanOrEqualTo
+   NÃO existem: DoesNotContain, NotContain, NotContains, DoesNotEqual, Equals
+
+7. EXEMPLO COMPLETO (Before Save com Decision + Assignment):
+   #### Step N: flow — Derivações Before Save
+   - action: flow
+   - fullName: Account_BeforeSave_Derivations
+   - body: { "label": "Account BeforeSave Derivations", "processType": "AutoLaunchedFlow", "status": "Draft", "apiVersion": 62.0, "start": { "triggerType": "RecordBeforeSave", "object": "Account", "recordTriggerType": "CreateAndUpdate", "connector": { "targetReference": "Dec1" }, "locationX": 50, "locationY": 0 }, "decisions": [{ "name": "Dec1", "label": "Nacional PJ?", "locationX": 176, "locationY": 200, "defaultConnectorLabel": "Outro RT", "rules": [{ "name": "R1", "label": "Sim", "conditionLogic": "and", "conditions": [{ "leftValueReference": "$Record.RecordType.DeveloperName", "operator": "EqualTo", "rightValue": { "stringValue": "Nacional_PJ" } }], "connector": { "targetReference": "A1" } }] }], "assignments": [{ "name": "A1", "label": "Segmento CORPORATIVO", "locationX": 50, "locationY": 400, "assignmentItems": [{ "assignToReference": "$Record.Segmento__c", "operator": "Assign", "value": { "stringValue": "CORPORATIVO" } }] }] }
+
 Na seção 18.3, escreva cada step como bloco estruturado:
 #### Step N: action — descrição
 - param1: valor1
