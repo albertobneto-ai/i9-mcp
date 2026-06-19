@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import orgRoutes from './routes/orgs.js';
 import downloadRoutes from './routes/download.js';
 import exportRoutes from './routes/exports.js';
+import deploysRoutes from './routes/deploys.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,6 +90,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/orgs', orgRoutes);
 app.use('/api/download', downloadRoutes);
 app.use('/api/exports', exportRoutes);
+app.use('/api/deploys', deploysRoutes);
 
 // Job status polling
 app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
