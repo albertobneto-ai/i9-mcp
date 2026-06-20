@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -187,6 +187,22 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const r = await updateProfileFLS(org, step.profileName, fieldPerms, step.objectPermissions || []);
           const ok = r?.success !== false && r?.status !== 'error';
           results.push({ step: step.profileName, ok, message: ok ? `✅ FLS: ${step.profileName}` : `❌ FLS ${step.profileName}: ${r?.message || JSON.stringify(r).substring(0,200)}` });
+        } else if (step.action === 'metadata-update') {
+          const r = await metadataUpdate(org, step.type, step.body);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          results.push({ step: step.body?.fullName || step.type, ok, message: ok ? `✅ ${step.type}: ${step.body?.fullName} updated` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` });
+        } else if (step.action === 'metadata-read') {
+          const r = await metadataRead(org, step.type, step.fullName);
+          const ok = r && r.fullName;
+          results.push({ step: step.fullName, ok: !!ok, data: r, message: ok ? `✅ ${step.type}: ${step.fullName}` : `❌ não encontrado: ${step.fullName}` });
+        } else if (step.action === 'activate-rule') {
+          const r = await activateRule(org, step.ruleType, step.ruleName, step.activate !== false);
+          const item = Array.isArray(r) ? r[0] : r;
+          const ok = item?.success !== false;
+          const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
+          results.push({ step: step.ruleName, ok, message: ok ? `✅ ${step.ruleType} ${step.activate !== false ? 'ativada' : 'desativada'}: ${step.ruleName}` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
