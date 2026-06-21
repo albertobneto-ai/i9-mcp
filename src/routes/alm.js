@@ -278,6 +278,37 @@ router.get('/dashboard', async (req, res) => {
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
+
+/* ═══ DELETE ═══ */
+router.delete('/stories/:us', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM alm_trace WHERE story_id=$1', [req.params.us]);
+    await pool.query('DELETE FROM alm_files WHERE story_id=$1', [req.params.us]);
+    await pool.query('DELETE FROM alm_artifacts WHERE story_id=$1', [req.params.us]);
+    await pool.query('DELETE FROM alm_stories WHERE id=$1', [req.params.us]);
+    res.json({status:'deleted', us:req.params.us});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+router.delete('/epics/:id', async (req, res) => {
+  try {
+    // Check if epic has stories
+    const check = await pool.query('SELECT COUNT(*) as cnt FROM alm_stories WHERE epic_id=$1', [req.params.id]);
+    if (parseInt(check.rows[0].cnt) > 0) {
+      return res.status(400).json({error:'Épico possui histórias vinculadas. Remova as histórias primeiro.'});
+    }
+    await pool.query('DELETE FROM alm_epics WHERE id=$1', [req.params.id]);
+    res.json({status:'deleted', id:req.params.id});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+router.delete('/stories/:us/files/:fileId', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM alm_files WHERE id=$1 AND story_id=$2', [req.params.fileId, req.params.us]);
+    res.json({status:'deleted'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
 /* ═══ SEED (populate from mock data) ═══ */
 router.post('/seed', async (req, res) => {
   try {
