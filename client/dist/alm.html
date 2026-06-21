@@ -12,7 +12,6 @@
   ::-webkit-scrollbar{width:5px;height:5px}
   ::-webkit-scrollbar-track{background:#F0F2F6;border-radius:3px}
   ::-webkit-scrollbar-thumb{background:#CDD3DE;border-radius:3px}
-  ::-webkit-scrollbar-thumb:hover{background:#A8B0BC}
   button,input,select{font-family:inherit}
 </style>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -338,7 +337,7 @@ function GPDash(props) {
     React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}},
       React.createElement(MetricCard,{label:'Total',value:total,sub:epics.length+' épicos',color:C.teal}),
       React.createElement(MetricCard,{label:'Andamento',value:active,color:'#2563EB'}),
-      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:Math.round(hom/total*100)+'%',color:'#16A34A'}),
+      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:total>0?Math.round(hom/total*100):0+'%',color:'#16A34A'}),
       React.createElement(MetricCard,{label:'Bugfix',value:bugs,sub:bugs>0?'Em correção':'Nenhum',color:'#DC3545'}),
       React.createElement(MetricCard,{label:'Atrasadas',value:late,sub:late>0?'Atenção':'OK',color:late>0?'#DC3545':'#94A3B8'})
     ),
@@ -480,7 +479,7 @@ function ArchDash(props) {
     React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}},
       React.createElement(MetricCard,{label:'Total',value:total,color:C.teal}),
       React.createElement(MetricCard,{label:'Andamento',value:active.length,color:'#2563EB'}),
-      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:Math.round(hom/total*100)+'%',color:'#16A34A'}),
+      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:total>0?Math.round(hom/total*100):0+'%',color:'#16A34A'}),
       React.createElement(MetricCard,{label:'Bugfix',value:bugs,color:'#DC3545'}),
       React.createElement(MetricCard,{label:'Deploy',value:'87%',sub:'success',color:'#EA580C'})
     ),
@@ -738,11 +737,15 @@ function App() {
   // Load data from API
   React.useEffect(function(){
     async function load(){
-      await apiLogin();
-      var ep = await apiGet('/epics');
-      var st = await apiGet('/stories');
-      setEpics(ep);
-      setStories(st);
+      try {
+        await apiLogin();
+        var ep = await apiGet('/epics');
+        var st = await apiGet('/stories');
+        setEpics(Array.isArray(ep)?ep:[]);
+        setStories(Array.isArray(st)?st:[]);
+      } catch(err) {
+        console.error('ALM load error:', err);
+      }
       setLoading(false);
     }
     load();
@@ -806,6 +809,11 @@ function App() {
       )
     ),
     React.createElement('div',{style:{maxWidth:1440,margin:'0 auto',padding:'20px 24px'}},
+      loading?React.createElement('div',{style:{textAlign:'center',padding:80,color:C.textSec}},
+        React.createElement('div',{style:{fontSize:36,marginBottom:16}},'⏳'),
+        React.createElement('div',{style:{fontSize:16,fontWeight:600}},'Carregando ALM...'),
+        React.createElement('div',{style:{fontSize:12,marginTop:8,color:C.textMuted}},'Conectando ao servidor...')
+      ):null,
       !loading&&panel==='gp'&&gpV==='dash'?React.createElement(GPDash,{stories:stories,epics:epics,onStory:goStory,onEpic:function(id){setSelEp(id);setGpV('epic')},onNewE:function(){setShowNE(true)},onNewS:function(){setShowNS(true)}}):null,
       panel==='gp'&&gpV==='epic'&&selEp?React.createElement(GPEpicDetail,{epic:epics.find(function(e){return e.id===selEp}),stories:stories,onBack:function(){setGpV('dash')},onStory:goStory}):null,
       panel==='arch'&&archV==='dash'?React.createElement(ArchDash,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
