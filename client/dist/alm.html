@@ -230,7 +230,7 @@ function FileList(props) {
         React.createElement('span',{style:{color:C.text,fontSize:12,flex:1}}, f.name),
         f.version ? React.createElement(Badge,{text:f.version,color:C.textMuted,s:true}) : null,
         React.createElement('span',{style:{color:C.textMuted,fontSize:11}}, f.date),
-        React.createElement(Btn,{s:true,color:C.teal}, '↓')
+        React.createElement(Btn,{s:true,color:C.teal}, '↓'),props.onDelete?React.createElement('button',{onClick:function(e){e.stopPropagation();props.onDelete(f.id)},style:{background:'none',border:'none',color:'#DC3545',cursor:'pointer',fontSize:13,padding:'2px 6px'}},'✕'):null
       );
     })
   );
@@ -549,7 +549,7 @@ function ArchBoard(props) {
 
 /* ═══ ARCHITECT DETAIL ═══ */
 function ArchDetail(props) {
-  var item=props.item, epics=props.epics;
+  var item=props.item, epics=props.epics, onDeleteFile=props.onDeleteFile;
   var _t=useState('stage'),tab=_t[0],setTab=_t[1];
   var sg=stg(item.stage);
   var ep=(epics.find(function(e){return e.id===item.epicId})||{});
@@ -573,7 +573,10 @@ function ArchDetail(props) {
             React.createElement('span',null,'Prevista: ',React.createElement('span',{style:{color:C.teal}},item.plannedDate||'–'))
           )
         ),
-        !bug?React.createElement(Btn,{s:true,color:'#DC3545',onClick:function(){props.onBugfix(item.us)}},'🐛 Bug'):null
+        !bug?React.createElement('div',{style:{display:'flex',gap:6}},
+            React.createElement(Btn,{s:true,color:C.textSec,onClick:function(){props.onEdit(item)}},'✏️ Editar'),
+            React.createElement(Btn,{s:true,color:'#DC3545',onClick:function(){props.onBugfix(item.us)}},'🐛 Bug')
+          ):React.createElement(Btn,{s:true,color:C.textSec,onClick:function(){props.onEdit(item)}},'✏️ Editar')
       ),
       React.createElement('div',{style:{marginTop:16}},React.createElement(StageProgress,{cur:item.stage}))
     ),
@@ -599,7 +602,7 @@ function ArchDetail(props) {
       ):null,
       item.files.length>0?React.createElement('div',{style:{marginTop:14}},
         React.createElement('div',{style:{color:C.textMuted,fontSize:10,fontWeight:600,textTransform:'uppercase',marginBottom:6}},'Arquivos'),
-        React.createElement(FileList,{files:item.files})
+        React.createElement(FileList,{files:item.files,onDelete:function(fid){onDeleteFile(item.us,fid)}})
       ):null,
       React.createElement('div',{style:{display:'flex',gap:10,justifyContent:'flex-end',marginTop:16}},
         bug?React.createElement(Btn,{color:'#16A34A',onClick:function(){props.onBugfixResolve(item.us)}},'✓ Concluir Bugfix'):null,
@@ -652,7 +655,7 @@ function ArchDetail(props) {
     ):null,
     tab==='files'?React.createElement(Card,{title:'Documentos'},
       React.createElement(UploadZone,{label:'Upload adicional',onUpload:function(){props.onUpload(item.us,'other')}}),
-      React.createElement('div',{style:{marginTop:12}},React.createElement(FileList,{files:item.files}))
+      React.createElement('div',{style:{marginTop:12}},React.createElement(FileList,{files:item.files,onDelete:function(fid){onDeleteFile(item.us,fid)}}))
     ):null
   );
 }
@@ -712,6 +715,11 @@ async function apiPost(path, body) {
   return res.json();
 }
 
+async function apiDelete(path) {
+  var res = await fetch(API_BASE + path, {method:'DELETE', headers:apiHeaders()});
+  return res.json();
+}
+
 async function apiPut(path, body) {
   var res = await fetch(API_BASE + path, {method:'PUT', headers:apiHeaders(), body:JSON.stringify(body)});
   return res.json();
@@ -728,6 +736,9 @@ function App() {
   var _epi=useState([]),epics=_epi[0],setEpics=_epi[1];
   var _loading=useState(true),loading=_loading[0],setLoading=_loading[1];
   var _ne=useState(false),showNE=_ne[0],setShowNE=_ne[1];
+  var _edit=useState(null),editStory=_edit[0],setEditStory=_edit[1];
+  var _del=useState(null),delConfirm=_del[0],setDelConfirm=_del[1];
+  var _editEp=useState(null),editEpic=_editEp[0],setEditEpic=_editEp[1];
   var _ns=useState(false),showNS=_ns[0],setShowNS=_ns[1];
   var _to=useState(null),toast=_to[0],setToast=_to[1];
   var _fe=useState({name:'',desc:'',owner:'Alberto',s:'',e:''}),fe=_fe[0],setFe=_fe[1];
@@ -775,6 +786,39 @@ function App() {
   }
   async function setBug(us){await apiPost('/stories/'+us+'/bugfix',{});await refreshStories();tt(us+' → Bugfix 🐛','#DC3545')}
   async function resBug(us){await apiPost('/stories/'+us+'/bugfix-resolve',{});await refreshStories();tt(us+' → Resolvido ✓','#16A34A')}
+
+  async function saveStoryEdit(data){
+    await apiPut('/stories/'+data.us,{title:data.title,epicId:data.epicId,priority:data.priority,assignee:data.assignee,sprint:data.sprint,plannedDate:data.plannedDate||null});
+    await refreshStories();
+    setEditStory(null);
+    tt('Salvo: '+data.us,'#16A34A');
+  }
+
+  async function deleteStory(us){
+    await apiDelete('/stories/'+us);
+    await refreshStories();
+    setDelConfirm(null);
+    setSelUs(null);
+    setArchV('board');
+    tt('Excluído: '+us,'#DC3545');
+  }
+
+  async function deleteFile(us,fileId){
+    await apiDelete('/stories/'+us+'/files/'+fileId);
+    await refreshStories();
+    tt('Arquivo excluído','#DC3545');
+  }
+
+  async function saveEpicEdit(data){
+    await apiPut('/epics/'+data.id,{name:data.name,desc:data.desc,owner:data.owner,startDate:data.startDate,endDate:data.endDate});
+    var ep=await apiGet('/epics');setEpics(Array.isArray(ep)?ep:[]);
+    setEditEpic(null);
+    tt('Épico salvo','#16A34A');
+  }
+
+  function openEditStory(st){
+    setEditStory({us:st.us,title:st.title,epicId:st.epicId,priority:st.priority,assignee:st.assignee||'',sprint:st.sprint||'',plannedDate:st.plannedDate||''});
+  }
   function goStory(us){setSelUs(us);setArchV('detail');setPanel('arch')}
 
   var aN=[{k:'dash',l:'Dashboard',i:'◉'},{k:'board',l:'Board',i:'▦'},{k:'matrix',l:'Matriz',i:'▤'}];
@@ -818,7 +862,7 @@ function App() {
       panel==='gp'&&gpV==='epic'&&selEp?React.createElement(GPEpicDetail,{epic:epics.find(function(e){return e.id===selEp}),stories:stories,onBack:function(){setGpV('dash')},onStory:goStory}):null,
       panel==='arch'&&archV==='dash'?React.createElement(ArchDash,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
       panel==='arch'&&archV==='board'?React.createElement(ArchBoard,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
-      panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onBugfix:setBug,onBugfixResolve:resBug}):null,
+      panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onBugfix:setBug,onBugfixResolve:resBug,onEdit:openEditStory,onDeleteFile:deleteFile}):null,
       panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null
     ),
     showNE?React.createElement(Modal,{title:'Novo Épico',onClose:function(){setShowNE(false)}},
@@ -849,6 +893,36 @@ function App() {
       React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:10}},
         React.createElement(Btn,{outline:true,onClick:function(){setShowNS(false)}},'Cancelar'),
         React.createElement(Btn,{onClick:function(){setShowNS(false);apiPost('/stories',{us:fs.us,title:fs.title,epicId:fs.epicId,priority:fs.priority,assignee:fs.assignee,sprint:fs.sprint,plannedDate:fs.planned}).then(refreshStories);tt('História criada!',C.teal)}},'Criar')
+      )
+    ):null,
+    editStory?React.createElement(Modal,{title:'Editar '+editStory.us,onClose:function(){setEditStory(null)}},
+      React.createElement(FormField,{label:'Título'},React.createElement(Input,{value:editStory.title,onChange:function(v){setEditStory(Object.assign({},editStory,{title:v}))}})),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+        React.createElement(FormField,{label:'Épico'},React.createElement(Sel,{value:editStory.epicId||'',onChange:function(v){setEditStory(Object.assign({},editStory,{epicId:v}))},options:epics.map(function(e){return{v:e.id,l:e.name}})})),
+        React.createElement(FormField,{label:'Prioridade'},React.createElement(Sel,{value:editStory.priority,onChange:function(v){setEditStory(Object.assign({},editStory,{priority:v}))},options:[{v:'critical',l:'Critical'},{v:'high',l:'High'},{v:'medium',l:'Medium'},{v:'low',l:'Low'}]}))
+      ),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+        React.createElement(FormField,{label:'Responsável'},React.createElement(Input,{value:editStory.assignee,onChange:function(v){setEditStory(Object.assign({},editStory,{assignee:v}))}})),
+        React.createElement(FormField,{label:'Sprint'},React.createElement(Input,{value:editStory.sprint,onChange:function(v){setEditStory(Object.assign({},editStory,{sprint:v}))}}))
+      ),
+      React.createElement(FormField,{label:'Data Prevista'},React.createElement(Input,{type:'date',value:editStory.plannedDate,onChange:function(v){setEditStory(Object.assign({},editStory,{plannedDate:v}))}})),
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between',marginTop:14}},
+        React.createElement(Btn,{color:'#DC3545',s:true,onClick:function(){setEditStory(null);setDelConfirm(editStory.us)}},'🗑 Excluir'),
+        React.createElement('div',{style:{display:'flex',gap:8}},
+          React.createElement(Btn,{outline:true,onClick:function(){setEditStory(null)}},'Cancelar'),
+          React.createElement(Btn,{onClick:function(){saveStoryEdit(editStory)}},'Salvar')
+        )
+      )
+    ):null,
+    delConfirm?React.createElement(Modal,{title:'Confirmar Exclusão',onClose:function(){setDelConfirm(null)}},
+      React.createElement('div',{style:{textAlign:'center',padding:'10px 0'}},
+        React.createElement('div',{style:{fontSize:36,marginBottom:12}},'⚠️'),
+        React.createElement('div',{style:{color:C.text,fontSize:15,fontWeight:600}},'Excluir '+delConfirm+'?'),
+        React.createElement('div',{style:{color:C.textSec,fontSize:13,marginTop:8}},'Todos os artefatos, arquivos e histórico serão removidos permanentemente.'),
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:12,marginTop:20}},
+          React.createElement(Btn,{outline:true,onClick:function(){setDelConfirm(null)}},'Cancelar'),
+          React.createElement(Btn,{color:'#DC3545',onClick:function(){deleteStory(delConfirm)}},'Excluir Permanentemente')
+        )
       )
     ):null,
     React.createElement('div',{style:{background:'#111B2D',padding:'10px 24px',textAlign:'center',color:'rgba(255,255,255,.4)',fontSize:10,marginTop:24}},'EVER I9 ALM · CRM B2B Algar Telecom · Confidencial')
