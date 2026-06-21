@@ -215,9 +215,10 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const ok = item?.success !== false && item?.id;
           results.push({ step: step.type, ok: !!ok, id: item?.id, message: ok ? `✅ Tooling create ${step.type}: ${item.id}` : `❌ ${JSON.stringify(item?.errors || r).substring(0, 300)}` });
         } else if (step.action === 'flow-fix') {
-          // Retrieve Flow via Metadata API, string-replace values in XML, redeploy
+          // Retrieve Flow XML, string-replace values, rebuild ZIP with archiver, redeploy
           const conn = await connectToOrg(org);
           const AdmZip = (await import('adm-zip')).default;
+          const archiver = (await import('archiver')).default;
           try {
             const replacements = step.replacements || {};
             // Step 1: Retrieve
@@ -229,29 +230,36 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
               if (status.done === 'true' || status.done === true) { zipBuf = Buffer.from(status.zipFile, 'base64'); break; }
             }
             if (!zipBuf) throw new Error('Retrieve timeout');
-            // Step 2: Extract and fix XML
-            const zip = new AdmZip(zipBuf);
-            const entries = zip.getEntries();
-            let flowEntry = null;
+            // Step 2: Extract XML and fix
+            const readZip = new AdmZip(zipBuf);
+            const entries = readZip.getEntries();
+            let flowXml = null, flowPath = null, pkgXml = null;
             for (const e of entries) {
-              if (e.entryName.endsWith('.flow-meta.xml') || e.entryName.endsWith('.flow')) {
-                flowEntry = e;
-                break;
-              }
+              if (e.entryName.endsWith('.flow-meta.xml') || e.entryName.endsWith('.flow')) { flowXml = e.getData().toString('utf-8'); flowPath = e.entryName; }
+              if (e.entryName === 'unpackaged/package.xml' || e.entryName === 'package.xml') { pkgXml = e.getData().toString('utf-8'); }
             }
-            if (!flowEntry) throw new Error('Flow XML not found in retrieved ZIP');
-            let xml = flowEntry.getData().toString('utf-8');
+            if (!flowXml) throw new Error('Flow XML not found in ZIP');
             let fixCount = 0;
             for (const [oldVal, newVal] of Object.entries(replacements)) {
-              const regex = new RegExp(`<stringValue>${oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</stringValue>`, 'g');
-              const before = xml;
-              xml = xml.replace(regex, `<stringValue>${newVal}</stringValue>`);
-              if (xml !== before) fixCount++;
+              const escaped = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(`<stringValue>${escaped}</stringValue>`, 'g');
+              const before = flowXml;
+              flowXml = flowXml.replace(regex, `<stringValue>${newVal}</stringValue>`);
+              if (flowXml !== before) fixCount++;
             }
-            if (fixCount === 0) throw new Error('No replacements matched in Flow XML');
-            // Step 3: Rebuild ZIP and deploy
-            zip.updateFile(flowEntry.entryName, Buffer.from(xml, 'utf-8'));
-            const deployBuf = zip.toBuffer();
+            if (fixCount === 0) throw new Error('No replacements matched');
+            // Step 3: Build new ZIP with archiver and deploy
+            const chunks = [];
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            archive.on('data', chunk => chunks.push(chunk));
+            const done = new Promise((resolve, reject) => { archive.on('end', resolve); archive.on('error', reject); });
+            // Strip 'unpackaged/' prefix for deployment
+            const cleanFlowPath = flowPath.replace('unpackaged/', '');
+            archive.append(Buffer.from(pkgXml || `<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata"><types><members>${step.fullName}</members><name>Flow</name></types><version>62.0</version></Package>`, 'utf-8'), { name: 'package.xml' });
+            archive.append(Buffer.from(flowXml, 'utf-8'), { name: cleanFlowPath });
+            archive.finalize();
+            await done;
+            const deployBuf = Buffer.concat(chunks);
             const deployResult = await conn.metadata.deploy(deployBuf, { rollbackOnError: true, singlePackage: true });
             let deployStatus = null;
             for (let i = 0; i < 30; i++) {
@@ -260,7 +268,8 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
               if (deployStatus.done) break;
             }
             const ok = deployStatus?.success;
-            results.push({ step: step.fullName, ok: !!ok, message: ok ? `✅ Flow fixed and deployed: ${fixCount} replacements, deployId=${deployResult.id}` : `❌ Deploy failed: ${JSON.stringify(deployStatus?.details?.componentFailures || deployStatus?.errorMessage || '').substring(0, 300)}` });
+            const failures = deployStatus?.details?.componentFailures;
+            results.push({ step: step.fullName, ok: !!ok, message: ok ? `✅ Flow fixed: ${fixCount} replacements, deployId=${deployResult.id}` : `❌ ${JSON.stringify(failures || deployStatus?.errorMessage || '').substring(0, 300)}` });
           } catch(err) { results.push({ step: step.fullName, ok: false, message: `❌ ${err.message}` }); }
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
