@@ -285,6 +285,14 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const conn = await connectToOrg(org);
           const r = await conn.query(step.query);
           results.push({ step: 'query', ok: true, records: r.records, totalSize: r.totalSize, message: `✅ ${r.totalSize} records` });
+        } else if (step.action === 'sobject-delete') {
+          const conn = await connectToOrg(org);
+          const objectName = step.objectName || step.type;
+          const ids = step.ids || [];
+          const r = await conn.sobject(objectName).destroy(ids);
+          const items = Array.isArray(r) ? r : [r];
+          const okCount = items.filter(i => i.success).length;
+          results.push({ step: objectName, ok: okCount === items.length, message: okCount === items.length ? `✅ ${objectName}: ${okCount} deleted` : `❌ ${okCount}/${items.length} deleted` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
