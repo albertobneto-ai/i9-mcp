@@ -214,6 +214,54 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const item = Array.isArray(r) ? r[0] : r;
           const ok = item?.success !== false && item?.id;
           results.push({ step: step.type, ok: !!ok, id: item?.id, message: ok ? `✅ Tooling create ${step.type}: ${item.id}` : `❌ ${JSON.stringify(item?.errors || r).substring(0, 300)}` });
+        } else if (step.action === 'flow-fix') {
+          // Retrieve Flow via Metadata API, string-replace values in XML, redeploy
+          const conn = await connectToOrg(org);
+          const AdmZip = (await import('adm-zip')).default;
+          try {
+            const replacements = step.replacements || {};
+            // Step 1: Retrieve
+            const retrieveReq = await conn.metadata.retrieve({ apiVersion: '62.0', unpackaged: { types: [{ name: 'Flow', members: [step.fullName] }] } });
+            let zipBuf = null;
+            for (let i = 0; i < 15; i++) {
+              await new Promise(r => setTimeout(r, 2000));
+              const status = await conn.metadata.checkRetrieveStatus(retrieveReq.id);
+              if (status.done === 'true' || status.done === true) { zipBuf = Buffer.from(status.zipFile, 'base64'); break; }
+            }
+            if (!zipBuf) throw new Error('Retrieve timeout');
+            // Step 2: Extract and fix XML
+            const zip = new AdmZip(zipBuf);
+            const entries = zip.getEntries();
+            let flowEntry = null;
+            for (const e of entries) {
+              if (e.entryName.endsWith('.flow-meta.xml') || e.entryName.endsWith('.flow')) {
+                flowEntry = e;
+                break;
+              }
+            }
+            if (!flowEntry) throw new Error('Flow XML not found in retrieved ZIP');
+            let xml = flowEntry.getData().toString('utf-8');
+            let fixCount = 0;
+            for (const [oldVal, newVal] of Object.entries(replacements)) {
+              const regex = new RegExp(`<stringValue>${oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</stringValue>`, 'g');
+              const before = xml;
+              xml = xml.replace(regex, `<stringValue>${newVal}</stringValue>`);
+              if (xml !== before) fixCount++;
+            }
+            if (fixCount === 0) throw new Error('No replacements matched in Flow XML');
+            // Step 3: Rebuild ZIP and deploy
+            zip.updateFile(flowEntry.entryName, Buffer.from(xml, 'utf-8'));
+            const deployBuf = zip.toBuffer();
+            const deployResult = await conn.metadata.deploy(deployBuf, { rollbackOnError: true, singlePackage: true });
+            let deployStatus = null;
+            for (let i = 0; i < 30; i++) {
+              await new Promise(r => setTimeout(r, 2000));
+              deployStatus = await conn.metadata.checkDeployStatus(deployResult.id, true);
+              if (deployStatus.done) break;
+            }
+            const ok = deployStatus?.success;
+            results.push({ step: step.fullName, ok: !!ok, message: ok ? `✅ Flow fixed and deployed: ${fixCount} replacements, deployId=${deployResult.id}` : `❌ Deploy failed: ${JSON.stringify(deployStatus?.details?.componentFailures || deployStatus?.errorMessage || '').substring(0, 300)}` });
+          } catch(err) { results.push({ step: step.fullName, ok: false, message: `❌ ${err.message}` }); }
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
