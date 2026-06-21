@@ -203,6 +203,11 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const ok = item?.success !== false;
           const errs = item?.errors ? (Array.isArray(item.errors) ? item.errors : [item.errors]) : [];
           results.push({ step: step.ruleName, ok, message: ok ? `✅ ${step.ruleType} ${step.activate !== false ? 'ativada' : 'desativada'}: ${step.ruleName}` : `❌ ${errs.map(e=>e.message||JSON.stringify(e)).join(', ')}` });
+        } else if (step.action === 'tooling-update') {
+          const conn = await connectToOrg(org);
+          const r = await conn.tooling.update(step.type, step.body);
+          const ok = r?.success !== false;
+          results.push({ step: step.body?.Id || step.type, ok, message: ok ? `✅ Tooling update ${step.type}: ${step.body?.Id}` : `❌ ${JSON.stringify(r).substring(0, 300)}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
