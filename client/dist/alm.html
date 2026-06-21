@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ever i9 — ALM</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Inter",-apple-system,sans-serif;background:#F3F5F9;min-height:100vh;color:#1B2438}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:#F0F2F6;border-radius:3px}
+  ::-webkit-scrollbar-thumb{background:#CDD3DE;border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:#A8B0BC}
+  button,input,select{font-family:inherit}
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useMemo, useCallback } = React;
+
+/* ═══ DESIGN TOKENS — LIGHT THEME ═══ */
+const C = {
+  bg: '#F3F5F9',
+  card: '#FFFFFF',
+  cardHover: '#F7F8FB',
+  row: '#F8F9FC',
+  border: '#E3E7EE',
+  nav: '#111B2D',
+  navLight: '#1C2C44',
+  text: '#1B2438',
+  textSec: '#5A6680',
+  textMuted: '#8E99AB',
+  teal: '#00897B',
+  tealLight: '#E0F2F1',
+  shadow: '0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.03)',
+  shadowHover: '0 4px 12px rgba(0,0,0,.07)',
+};
+const PRI = { critical:'#DC3545', high:'#F59E0B', medium:'#3B82F6', low:'#94A3B8' };
+
+/* ═══ STAGES ═══ */
+const STAGES = [
+  {key:'backlog',label:'Backlog',color:'#94A3B8',icon:'📋',action:'Iniciar Refinamento',next:'refinamento'},
+  {key:'refinamento',label:'Refinamento Funcional',color:'#A855F7',icon:'🔍',action:'Concluir Refinamento',next:'hf',desc:'Analise e refine os requisitos funcionais'},
+  {key:'hf',label:'Escrita HF',color:'#7C3AED',icon:'📄',action:'Concluir HF',next:'spec',desc:'Escreva e anexe a História Funcional',uploadHint:'Upload da HF (.docx)'},
+  {key:'spec',label:'Escrita Spec',color:'#4F46E5',icon:'📐',action:'Concluir Spec',next:'dev',desc:'Use /devops {US} no chat — Claude busca a HF e executa',devops:true},
+  {key:'dev',label:'Desenvolvimento',color:'#2563EB',icon:'⚙️',action:'Concluir Dev',next:'testes',desc:'Desenvolvimento e deploy dos componentes'},
+  {key:'testes',label:'Testes',color:'#0891B2',icon:'🧪',action:'Concluir Testes',next:'deploy',desc:'Execução de testes e validação QA'},
+  {key:'deploy',label:'Deploy',color:'#EA580C',icon:'🚀',action:'Concluir Deploy',next:'homologacao',desc:'Deploy na org e validação técnica'},
+  {key:'homologacao',label:'Homologação',color:'#16A34A',icon:'✅',action:null,next:null,desc:'Validação final pelo negócio'},
+  {key:'bugfix',label:'Em Bugfix',color:'#DC3545',icon:'🐛',action:'Concluir Bugfix',next:null,desc:'Correção de bug reportado'},
+];
+const SM = {}; STAGES.forEach(function(s,i){ SM[s.key] = Object.assign({}, s, {idx:i}); });
+function stg(key){ return SM[key] || {}; }
+
+/* ═══ DATA ═══ */
+const EPICS = [
+  {id:'EP-01',name:'Conta Master',desc:'Gestão completa Account B2B',owner:'Alberto',s:'2026-05-01',e:'2026-07-31',color:'#4F46E5'},
+  {id:'EP-02',name:'Dupla Convivência',desc:'Integração CRM Legado ↔ Salesforce',owner:'Alberto',s:'2026-06-15',e:'2026-09-30',color:'#A855F7'},
+  {id:'EP-03',name:'Leads & SE',desc:'Captação e roteamento de leads B2B',owner:'Alberto',s:'2026-06-01',e:'2026-08-31',color:'#EA580C'},
+  {id:'EP-04',name:'Agentforce',desc:'Agentes IA para enrichment',owner:'Alberto',s:'2026-06-10',e:'2026-08-15',color:'#0891B2'},
+];
+var A1 = {hf:true,spec:true,deploy:true,qa:true,adr:true,cenario:true,zip:true};
+var A0 = {hf:false,spec:false,deploy:false,qa:false,adr:false,cenario:false,zip:false};
+var INIT = [
+  {us:'CRMB2B-50A',title:'Campos Account + RTs + CNAE + NJ + VRs',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'high',assignee:'Alberto',sprint:'Sprint 10',plannedDate:'2026-05-20',actualDate:'2026-05-18',created:'2026-05-10',files:[{name:'HF_50A.docx',type:'hf',date:'2026-05-11',version:'v1.0'}],artifacts:A1},
+  {us:'CRMB2B-50B',title:'Apex Serasa + Flows + QA + VRs',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'high',assignee:'Alberto',sprint:'Sprint 10',plannedDate:'2026-05-25',actualDate:'2026-05-22',created:'2026-05-15',files:[],artifacts:A1},
+  {us:'CRMB2B-83',title:'Flows ativação + QA + Flexipage',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'high',assignee:'Alberto',sprint:'Sprint 11',plannedDate:'2026-06-05',actualDate:'2026-06-02',created:'2026-05-25',files:[],artifacts:A1},
+  {us:'CRMB2B-84',title:'ListView BackOffice + PS + FLS',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'medium',assignee:'Alberto',sprint:'Sprint 11',plannedDate:'2026-06-08',actualDate:'2026-06-05',created:'2026-05-28',files:[],artifacts:A1},
+  {us:'CRMB2B-85',title:'SerasaRetryBatch + CMDT + CRON',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'medium',assignee:'Alberto',sprint:'Sprint 11',plannedDate:'2026-06-10',actualDate:'2026-06-08',created:'2026-06-01',files:[],artifacts:A1},
+  {us:'CRMB2B-90',title:'MatchingRules + DuplicateRules',epicId:'EP-01',stage:'homologacao',prevStage:null,priority:'high',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-18',actualDate:'2026-06-16',created:'2026-06-10',files:[],artifacts:A1},
+  {us:'CRMB2B-91',title:'Enriquecimento Automático Serasa',epicId:'EP-01',stage:'spec',prevStage:null,priority:'high',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-25',actualDate:null,created:'2026-06-17',files:[{name:'HF_CRMB2B-91.docx',type:'hf',date:'2026-06-18',version:'v1.0'}],artifacts:{hf:true,spec:false,deploy:false,qa:false,adr:false,cenario:false,zip:false}},
+  {us:'CRMB2B-92',title:'Account Scoring Model',epicId:'EP-01',stage:'hf',prevStage:null,priority:'medium',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-28',actualDate:null,created:'2026-06-18',files:[],artifacts:A0},
+  {us:'CRMB2B-93',title:'Dashboard Gerencial Contas',epicId:'EP-01',stage:'refinamento',prevStage:null,priority:'medium',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-30',actualDate:null,created:'2026-06-19',files:[],artifacts:A0},
+  {us:'CRMB2B-94',title:'Integração CDC MuleSoft Account',epicId:'EP-02',stage:'backlog',prevStage:null,priority:'high',assignee:'',sprint:'',plannedDate:'2026-07-15',actualDate:null,created:'2026-06-20',files:[],artifacts:A0},
+  {us:'CRMB2B-95',title:'Data Cloud Activation Target',epicId:'EP-02',stage:'backlog',prevStage:null,priority:'high',assignee:'',sprint:'',plannedDate:'2026-07-20',actualDate:null,created:'2026-06-20',files:[],artifacts:A0},
+  {us:'CRMB2B-96',title:'Lead Routing por Região',epicId:'EP-03',stage:'deploy',prevStage:null,priority:'critical',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-22',actualDate:null,created:'2026-06-14',files:[{name:'HF_96.docx',type:'hf',date:'2026-06-14',version:'v1.0'}],artifacts:{hf:true,spec:true,deploy:true,qa:false,adr:false,cenario:false,zip:false}},
+  {us:'CRMB2B-97',title:'Agentforce B2B Enrichment Fix',epicId:'EP-04',stage:'bugfix',prevStage:'spec',priority:'critical',assignee:'Alberto',sprint:'Sprint 12',plannedDate:'2026-06-20',actualDate:null,created:'2026-06-15',files:[{name:'HF_97.docx',type:'hf',date:'2026-06-15',version:'v1.0'},{name:'BugFix_97.docx',type:'bugfix',date:'2026-06-19',version:'v1.0'}],artifacts:{hf:true,spec:true,deploy:false,qa:false,adr:false,cenario:false,zip:false}},
+];
+
+/* ═══ BASE COMPONENTS ═══ */
+
+function Badge(props) {
+  var bg = props.color || C.teal;
+  return React.createElement('span', {style:{
+    background:bg, color:'#fff', padding:props.s?'3px 10px':'5px 14px',
+    borderRadius:20, fontSize:props.s?10:11, fontWeight:600, whiteSpace:'nowrap',
+    display:'inline-block', lineHeight:props.s?'14px':'16px',
+  }}, props.text);
+}
+
+function Card(props) {
+  return React.createElement('div', {style:{
+    background:C.card, borderRadius:12, overflow:'hidden',
+    border:'1px solid '+C.border, boxShadow:C.shadow,
+  }},
+    props.title ? React.createElement('div', {style:{
+      padding:'14px 20px', borderBottom:'1px solid '+C.border,
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+    }},
+      React.createElement('span', {style:{color:C.text, fontWeight:700, fontSize:14}}, props.title),
+      props.badge
+    ) : null,
+    React.createElement('div', {style:{padding:props.noPad?0:'16px 20px'}}, props.children)
+  );
+}
+
+function MetricCard(props) {
+  return React.createElement('div', {style:{
+    background:C.card, borderRadius:12, padding:'20px 22px',
+    borderLeft:'3px solid '+(props.color||C.teal),
+    border:'1px solid '+C.border, boxShadow:C.shadow,
+    display:'flex', flexDirection:'column', gap:4,
+  }},
+    React.createElement('span', {style:{color:C.textMuted, fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:1}}, props.label),
+    React.createElement('span', {style:{color:C.text, fontSize:34, fontWeight:800, lineHeight:1.1}}, props.value),
+    props.sub ? React.createElement('span', {style:{color:props.color||C.teal, fontSize:12, fontWeight:500}}, props.sub) : null
+  );
+}
+
+function Btn(props) {
+  var bg = props.disabled ? C.border : props.outline ? 'transparent' : (props.color || C.teal);
+  var fg = props.disabled ? C.textMuted : props.outline ? (props.color||C.teal) : '#fff';
+  return React.createElement('button', {onClick:props.disabled?undefined:props.onClick, style:{
+    background:bg, color:fg, border:props.outline?'1px solid '+(props.color||C.teal):'none',
+    borderRadius:8, padding:props.s?'6px 14px':'10px 20px',
+    cursor:props.disabled?'not-allowed':'pointer', fontSize:props.s?11:13, fontWeight:600,
+    display:'inline-flex', alignItems:'center', gap:6, opacity:props.disabled?0.5:1,
+  }}, props.children);
+}
+
+function ProgressBar(props) {
+  return React.createElement('div', {style:{background:C.border, borderRadius:4, height:props.h||6, flex:1, minWidth:30}},
+    React.createElement('div', {style:{background:props.color||C.teal, borderRadius:4, height:props.h||6,
+      width:Math.min((props.value/Math.max(props.max,1))*100,100)+'%', transition:'width .3s'}})
+  );
+}
+
+function Gauge(props) {
+  var pct = Math.min(props.value, 100) / 100;
+  var colors = ['#DC3545','#F59E0B','#F59E0B','#22C55E','#16A34A'];
+  var arcEls = colors.map(function(c, i) {
+    var sA = -90 + i*36, eA = sA+36, r=50, cx=60, cy=62;
+    var x1=cx+r*Math.cos(sA*Math.PI/180), y1=cy+r*Math.sin(sA*Math.PI/180);
+    var x2=cx+r*Math.cos(eA*Math.PI/180), y2=cy+r*Math.sin(eA*Math.PI/180);
+    return React.createElement('path', {key:i, d:'M '+x1+' '+y1+' A '+r+' '+r+' 0 0 1 '+x2+' '+y2,
+      stroke:c, strokeWidth:8, fill:'none', strokeLinecap:'round', opacity: i <= Math.floor(pct*5) ? 1 : 0.15});
+  });
+  var angle = -90 + pct * 180;
+  var nx = 60+36*Math.cos(angle*Math.PI/180), ny = 62+36*Math.sin(angle*Math.PI/180);
+  return React.createElement('div', {style:{display:'flex',flexDirection:'column',alignItems:'center',gap:8}},
+    React.createElement('svg', {viewBox:'0 0 120 75', width:140, height:88},
+      arcEls,
+      React.createElement('line', {x1:60,y1:62,x2:nx,y2:ny,stroke:C.text,strokeWidth:2.5,strokeLinecap:'round'}),
+      React.createElement('circle', {cx:60,cy:62,r:4,fill:C.card,stroke:C.text,strokeWidth:2})
+    ),
+    React.createElement('span', {style:{color:C.text,fontSize:28,fontWeight:800,marginTop:-4}}, props.value+'%'),
+    React.createElement('span', {style:{color:C.textMuted,fontSize:10,textTransform:'uppercase',letterSpacing:1}}, props.label)
+  );
+}
+
+function ArtifactDot(props) {
+  return React.createElement('div', {style:{
+    width:22, height:22, borderRadius:6,
+    background:props.has?'#DEF7EC':'#F3F4F6',
+    border:'1px solid '+(props.has?'#86EFAC':'#E3E7EE'),
+    display:'flex', alignItems:'center', justifyContent:'center',
+    fontSize:11, color:props.has?'#16A34A':'#C0C6D0', fontWeight:700,
+  }}, props.has?'✓':'–');
+}
+
+function Modal(props) {
+  return React.createElement('div', {style:{position:'fixed',inset:0,background:'rgba(0,0,0,.4)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000},onClick:props.onClose},
+    React.createElement('div', {style:{background:C.card,borderRadius:16,width:540,maxHeight:'85vh',overflow:'auto',boxShadow:'0 20px 60px rgba(0,0,0,.15)'},onClick:function(e){e.stopPropagation()}},
+      React.createElement('div', {style:{padding:'18px 22px',borderBottom:'1px solid '+C.border,display:'flex',justifyContent:'space-between',alignItems:'center'}},
+        React.createElement('span', {style:{color:C.text,fontWeight:700,fontSize:16}}, props.title),
+        React.createElement('button', {onClick:props.onClose,style:{background:'none',border:'none',color:C.textMuted,fontSize:20,cursor:'pointer'}}, '✕')
+      ),
+      React.createElement('div', {style:{padding:22}}, props.children)
+    )
+  );
+}
+
+function FormField(props) {
+  return React.createElement('div', {style:{marginBottom:14}},
+    React.createElement('label', {style:{color:C.textSec,fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:.5,display:'block',marginBottom:6}}, props.label),
+    props.children
+  );
+}
+
+function Input(props) {
+  return React.createElement('input', {type:props.type||'text',value:props.value,onChange:function(e){props.onChange(e.target.value)},placeholder:props.placeholder,style:{
+    width:'100%',background:C.row,border:'1px solid '+C.border,borderRadius:8,
+    padding:'10px 12px',color:C.text,fontSize:13,outline:'none',boxSizing:'border-box',
+  }});
+}
+
+function Sel(props) {
+  return React.createElement('select', {value:props.value,onChange:function(e){props.onChange(e.target.value)},style:{
+    width:'100%',background:C.row,border:'1px solid '+C.border,borderRadius:8,
+    padding:'10px 12px',color:C.text,fontSize:13,outline:'none',boxSizing:'border-box',
+  }}, props.options.map(function(o){return React.createElement('option',{key:o.v,value:o.v},o.l)}));
+}
+
+function UploadZone(props) {
+  return React.createElement('div', {style:{
+    border:'2px dashed '+C.border, borderRadius:10, padding:18, textAlign:'center',
+    cursor:'pointer', transition:'border-color .2s, background .2s',
+    background:C.row,
+  }, onClick:props.onUpload,
+    onMouseEnter:function(e){e.currentTarget.style.borderColor=C.teal;e.currentTarget.style.background=C.tealLight},
+    onMouseLeave:function(e){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.row},
+  },
+    React.createElement('div', {style:{fontSize:22,marginBottom:4}}, '📎'),
+    React.createElement('div', {style:{color:C.text,fontSize:12,fontWeight:600}}, props.label||'Upload de arquivo'),
+    React.createElement('div', {style:{color:C.textMuted,fontSize:11,marginTop:2}}, 'Arraste ou clique')
+  );
+}
+
+function FileList(props) {
+  var ic = {hf:'📄',spec:'📐',adr:'📑',cenario:'✅',zip:'📦',bugfix:'🐛',other:'📎'};
+  if (!props.files.length) return React.createElement('div',{style:{color:C.textMuted,fontSize:12,textAlign:'center',padding:16}},'Nenhum documento');
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:4}},
+    props.files.map(function(f,i) {
+      return React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:i%2===0?C.row:'transparent',borderRadius:8}},
+        React.createElement('span',{style:{fontSize:16}}, ic[f.type]||ic.other),
+        React.createElement('span',{style:{color:C.text,fontSize:12,flex:1}}, f.name),
+        f.version ? React.createElement(Badge,{text:f.version,color:C.textMuted,s:true}) : null,
+        React.createElement('span',{style:{color:C.textMuted,fontSize:11}}, f.date),
+        React.createElement(Btn,{s:true,color:C.teal}, '↓')
+      );
+    })
+  );
+}
+
+function StageProgress(props) {
+  var cur = props.cur;
+  var idx = stg(cur).idx || 0;
+  var main = STAGES.filter(function(s){return s.key!=='bugfix'});
+  var bug = cur==='bugfix';
+  var els = main.map(function(s,i) {
+    var done = !bug && i < idx;
+    var active = !bug && i === idx;
+    return React.createElement('div',{key:s.key,style:{display:'flex',alignItems:'center'}},
+      React.createElement('div',{style:{
+        width:active?32:22, height:active?32:22, borderRadius:'50%',
+        background:done?s.color:active?s.color:'#E3E7EE',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontSize:active?14:10, border:active?'3px solid #fff':'none',
+        boxShadow:active?'0 0 0 2px '+s.color+', 0 2px 8px '+s.color+'40':'none',
+        color:done||active?'#fff':C.textMuted,
+        fontWeight:800, transition:'all .2s',
+      },title:s.label},
+        done ? '✓' : s.icon
+      ),
+      i < main.length-1 ? React.createElement('div',{style:{width:18,height:2,background:done?main[i+1].color:'#E3E7EE',borderRadius:1}}) : null
+    );
+  });
+  if (bug) {
+    els.push(React.createElement('div',{key:'bug',style:{display:'flex',alignItems:'center'}},
+      React.createElement('div',{style:{width:18,height:2,background:'#DC3545',borderRadius:1}}),
+      React.createElement('div',{style:{width:32,height:32,borderRadius:'50%',background:'#DC3545',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,border:'3px solid #fff',boxShadow:'0 0 0 2px #DC3545'}}, '🐛')
+    ));
+  }
+  return React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:0}}, els);
+}
+
+/* ═══ GP CALENDAR ═══ */
+function GPCalendar(props) {
+  var _s = useState(props.year), cY=_s[0], sY=_s[1];
+  var _m = useState(props.month), cM=_m[0], sM=_m[1];
+  var dim = new Date(cY,cM+1,0).getDate();
+  var fd = new Date(cY,cM,1).getDay();
+  var mn = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var dn = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var sd = useMemo(function(){var m={};props.stories.forEach(function(st){if(!st.plannedDate)return;var p=st.plannedDate.split('-');var y=+p[0],mo=+p[1],da=+p[2];if(y===cY&&mo-1===cM){if(!m[da])m[da]=[];m[da].push(st)}});return m},[props.stories,cY,cM]);
+  function prev(){if(cM===0){sM(11);sY(cY-1)}else sM(cM-1)}
+  function next(){if(cM===11){sM(0);sY(cY+1)}else sM(cM+1)}
+  var cells=[];for(var i=0;i<fd;i++)cells.push(null);for(var d=1;d<=dim;d++)cells.push(d);
+  var td=new Date();
+  function isT(d){return d&&cY===td.getFullYear()&&cM===td.getMonth()&&d===td.getDate()}
+
+  return React.createElement(Card, {title:'Calendário'},
+    React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
+      React.createElement('button',{onClick:prev,style:{background:C.row,border:'1px solid '+C.border,color:C.text,borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:16,fontWeight:700}},'‹'),
+      React.createElement('span',{style:{color:C.text,fontSize:15,fontWeight:700}}, mn[cM]+' '+cY),
+      React.createElement('button',{onClick:next,style:{background:C.row,border:'1px solid '+C.border,color:C.text,borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:16,fontWeight:700}},'›')
+    ),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}},
+      dn.map(function(d){return React.createElement('div',{key:d,style:{textAlign:'center',color:C.textMuted,fontSize:10,fontWeight:700,padding:4}},d)}),
+      cells.map(function(d,i) {
+        var sts = d ? (sd[d]||[]) : [];
+        return React.createElement('div',{key:i,style:{
+          background:d?(isT(d)?C.tealLight:C.card):'transparent',
+          borderRadius:8, minHeight:60, padding:4,
+          border:isT(d)?'2px solid '+C.teal:'1px solid '+(d?C.border:'transparent'),
+        }},
+          d ? React.createElement('div',{style:{color:isT(d)?C.teal:C.textMuted,fontSize:11,fontWeight:600,marginBottom:2}},d) : null,
+          sts.slice(0,3).map(function(st) {
+            var sg = stg(st.stage);
+            return React.createElement('div',{key:st.us,onClick:function(){props.onStory(st.us)},style:{
+              display:'flex',alignItems:'center',gap:3,cursor:'pointer',
+              padding:'1px 4px',borderRadius:4,background:sg.color+'18',marginBottom:1,
+            },title:st.us+': '+st.title},
+              React.createElement('div',{style:{width:7,height:7,borderRadius:'50%',background:sg.color,flexShrink:0}}),
+              React.createElement('span',{style:{color:C.text,fontSize:8,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},st.us.replace('CRMB2B-',''))
+            );
+          }),
+          sts.length>3?React.createElement('span',{style:{color:C.textMuted,fontSize:8,textAlign:'center',display:'block'}},'+' +(sts.length-3)):null
+        );
+      })
+    ),
+    React.createElement('div',{style:{display:'flex',gap:10,marginTop:12,flexWrap:'wrap',justifyContent:'center'}},
+      STAGES.map(function(s){return React.createElement('div',{key:s.key,style:{display:'flex',alignItems:'center',gap:4}},
+        React.createElement('div',{style:{width:8,height:8,borderRadius:'50%',background:s.color}}),
+        React.createElement('span',{style:{color:C.textMuted,fontSize:9}},s.label)
+      )})
+    )
+  );
+}
+
+/* ═══ GP DASHBOARD ═══ */
+function GPDash(props) {
+  var stories=props.stories, epics=props.epics;
+  var total=stories.length;
+  var hom=stories.filter(function(s){return s.stage==='homologacao'}).length;
+  var late=stories.filter(function(s){return s.plannedDate&&!s.actualDate&&new Date(s.plannedDate)<new Date()}).length;
+  var active=stories.filter(function(s){return !(['backlog','homologacao'].indexOf(s.stage)>=0)}).length;
+  var bugs=stories.filter(function(s){return s.stage==='bugfix'}).length;
+  var byS=useMemo(function(){var m={};STAGES.forEach(function(s){m[s.key]=0});stories.forEach(function(s){m[s.stage]++});return m},[stories]);
+  var _t=useState('pipeline'),tab=_t[0],setTab=_t[1];
+
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:20}},
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}},
+      React.createElement(MetricCard,{label:'Total',value:total,sub:epics.length+' épicos',color:C.teal}),
+      React.createElement(MetricCard,{label:'Andamento',value:active,color:'#2563EB'}),
+      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:Math.round(hom/total*100)+'%',color:'#16A34A'}),
+      React.createElement(MetricCard,{label:'Bugfix',value:bugs,sub:bugs>0?'Em correção':'Nenhum',color:'#DC3545'}),
+      React.createElement(MetricCard,{label:'Atrasadas',value:late,sub:late>0?'Atenção':'OK',color:late>0?'#DC3545':'#94A3B8'})
+    ),
+    React.createElement('div',{style:{display:'flex',gap:4,background:C.card,borderRadius:10,padding:3,alignSelf:'flex-start',border:'1px solid '+C.border}},
+      [{k:'pipeline',l:'Pipeline',i:'▦'},{k:'calendar',l:'Calendário',i:'📅'}].map(function(t){
+        return React.createElement('button',{key:t.k,onClick:function(){setTab(t.k)},style:{
+          background:tab===t.k?C.teal:'transparent',color:tab===t.k?'#fff':C.textSec,
+          border:'none',borderRadius:8,padding:'7px 16px',cursor:'pointer',fontSize:12,fontWeight:600,
+        }},t.i+' '+t.l);
+      })
+    ),
+    tab==='pipeline' ? React.createElement(Card,{title:'Pipeline do Projeto'},
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat('+STAGES.length+',1fr)',gap:6}},
+        STAGES.map(function(s,i){
+          return React.createElement('div',{key:s.key,style:{background:C.row,borderRadius:10,padding:'12px 6px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,borderTop:'3px solid '+s.color,position:'relative'}},
+            React.createElement('span',{style:{fontSize:18}},s.icon),
+            React.createElement('span',{style:{color:C.textSec,fontSize:9,fontWeight:600,textAlign:'center',lineHeight:1.2,minHeight:22}},s.label),
+            React.createElement('span',{style:{background:s.color,color:'#fff',borderRadius:12,padding:'2px 10px',fontSize:18,fontWeight:800}},byS[s.key]),
+            i<STAGES.length-1&&s.key!=='homologacao'?React.createElement('div',{style:{position:'absolute',right:-7,top:'50%',transform:'translateY(-50%)',color:C.border,fontSize:12}},'›'):null
+          );
+        })
+      )
+    ) : React.createElement(GPCalendar,{stories:stories,year:2026,month:5,onStory:props.onStory}),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}},
+      React.createElement(Card,{title:'Épicos',badge:React.createElement(Btn,{s:true,onClick:props.onNewE},'+ Épico')},
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+          epics.map(function(ep){
+            var es=stories.filter(function(s){return s.epicId===ep.id});
+            var d=es.filter(function(s){return s.stage==='homologacao'}).length;
+            var pct=es.length>0?Math.round(d/es.length*100):0;
+            return React.createElement('div',{key:ep.id,onClick:function(){props.onEpic(ep.id)},style:{
+              background:C.row,borderRadius:10,padding:14,cursor:'pointer',borderLeft:'3px solid '+ep.color,transition:'background .15s',
+            },onMouseEnter:function(e){e.currentTarget.style.background=C.cardHover},onMouseLeave:function(e){e.currentTarget.style.background=C.row}},
+              React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+                React.createElement('div',null,
+                  React.createElement('span',{style:{color:C.textMuted,fontSize:10,fontWeight:700}},ep.id),
+                  React.createElement('div',{style:{color:C.text,fontSize:14,fontWeight:700,marginTop:2}},ep.name)
+                ),
+                React.createElement('span',{style:{color:C.text,fontSize:22,fontWeight:800}},pct+'%')
+              ),
+              React.createElement('div',{style:{display:'flex',gap:8,marginTop:10,alignItems:'center'}},
+                React.createElement(ProgressBar,{value:d,max:es.length,color:ep.color}),
+                React.createElement('span',{style:{color:C.textMuted,fontSize:11}},d+'/'+es.length)
+              )
+            );
+          })
+        )
+      ),
+      React.createElement(Card,{title:'Atrasadas & Bugfix'},
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+          stories.filter(function(s){return (s.plannedDate&&!s.actualDate&&new Date(s.plannedDate)<new Date())||s.stage==='bugfix'}).map(function(st){
+            var sg=stg(st.stage);
+            return React.createElement('div',{key:st.us,onClick:function(){props.onStory(st.us)},style:{
+              display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:C.row,borderRadius:8,cursor:'pointer',borderLeft:'3px solid '+(st.stage==='bugfix'?'#DC3545':'#F59E0B'),
+            },onMouseEnter:function(e){e.currentTarget.style.background=C.cardHover},onMouseLeave:function(e){e.currentTarget.style.background=C.row}},
+              React.createElement(Badge,{text:st.us,color:sg.color,s:true}),
+              React.createElement('span',{style:{color:C.text,fontSize:12,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},st.title),
+              st.stage==='bugfix'?React.createElement(Badge,{text:'BUG',color:'#DC3545',s:true}):React.createElement(Badge,{text:'ATRASO',color:'#F59E0B',s:true})
+            );
+          }),
+          stories.filter(function(s){return (s.plannedDate&&!s.actualDate&&new Date(s.plannedDate)<new Date())||s.stage==='bugfix'}).length===0?React.createElement('div',{style:{color:C.textMuted,fontSize:12,textAlign:'center',padding:20}},'Nenhum item'):null
+        )
+      )
+    ),
+    React.createElement(Card,{title:'Histórias',badge:React.createElement(Btn,{s:true,onClick:props.onNewS},'+ História')},
+      React.createElement('table',{style:{width:'100%',borderCollapse:'separate',borderSpacing:'0 3px'}},
+        React.createElement('thead',null,React.createElement('tr',null,
+          ['US','Título','Épico','Estágio','Prevista','Real','Pri'].map(function(h){return React.createElement('th',{key:h,style:{color:C.textMuted,fontSize:10,fontWeight:700,textTransform:'uppercase',padding:'8px 12px',textAlign:'left',borderBottom:'1px solid '+C.border}},h)})
+        )),
+        React.createElement('tbody',null, stories.map(function(st,i){
+          var sg=stg(st.stage); var ep=epics.find(function(e){return e.id===st.epicId})||{};
+          var isLate=st.plannedDate&&!st.actualDate&&new Date(st.plannedDate)<new Date();
+          return React.createElement('tr',{key:st.us,onClick:function(){props.onStory(st.us)},style:{background:i%2===0?C.row:'transparent',cursor:'pointer',transition:'background .1s'},
+            onMouseEnter:function(e){e.currentTarget.style.background=C.cardHover},onMouseLeave:function(e){e.currentTarget.style.background=i%2===0?C.row:'transparent'}},
+            React.createElement('td',{style:{padding:'9px 12px'}},React.createElement('span',{style:{color:C.teal,fontSize:12,fontWeight:700}},st.us)),
+            React.createElement('td',{style:{padding:'9px 12px',color:C.text,fontSize:12,maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},st.title),
+            React.createElement('td',{style:{padding:'9px 12px'}},React.createElement(Badge,{text:(ep.name||'–').split(' ')[0],color:ep.color||C.textMuted,s:true})),
+            React.createElement('td',{style:{padding:'9px 12px'}},React.createElement(Badge,{text:(sg.label||'–').split(' ').slice(0,2).join(' '),color:sg.color||C.textMuted,s:true})),
+            React.createElement('td',{style:{padding:'9px 12px',color:isLate?'#DC3545':C.textMuted,fontSize:12,fontWeight:isLate?700:400}},st.plannedDate||'–'),
+            React.createElement('td',{style:{padding:'9px 12px',color:st.actualDate?'#16A34A':C.textMuted,fontSize:12}},st.actualDate||'–'),
+            React.createElement('td',{style:{padding:'9px 12px'}},React.createElement(Badge,{text:st.priority[0].toUpperCase(),color:PRI[st.priority],s:true}))
+          );
+        }))
+      )
+    )
+  );
+}
+
+/* ═══ GP EPIC DETAIL ═══ */
+function GPEpicDetail(props) {
+  var epic=props.epic, stories=props.stories;
+  var es=stories.filter(function(s){return s.epicId===epic.id});
+  var byS={};STAGES.forEach(function(s){byS[s.key]=[]});es.forEach(function(s){if(byS[s.stage])byS[s.stage].push(s)});
+  var done=byS.homologacao.length;
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+    React.createElement(Btn,{s:true,color:C.textMuted,onClick:props.onBack},'← Voltar'),
+    React.createElement('div',{style:{background:C.card,borderRadius:12,padding:'22px 26px',borderLeft:'3px solid '+epic.color,border:'1px solid '+C.border,boxShadow:C.shadow}},
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between'}},
+        React.createElement('div',null,
+          React.createElement('span',{style:{color:C.textMuted,fontSize:12,fontWeight:700}},epic.id),
+          React.createElement('div',{style:{color:C.text,fontSize:20,fontWeight:800,marginTop:4}},epic.name),
+          React.createElement('div',{style:{color:C.textSec,fontSize:13,marginTop:6}},epic.desc)
+        ),
+        React.createElement('div',{style:{textAlign:'center'}},
+          React.createElement('div',{style:{color:C.text,fontSize:40,fontWeight:800}},es.length>0?Math.round(done/es.length*100):0),
+          React.createElement('div',{style:{color:C.textMuted,fontSize:11,marginTop:2}},'% CONCLUÍDO')
+        )
+      )
+    ),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat('+STAGES.length+',1fr)',gap:5,overflowX:'auto'}},
+      STAGES.map(function(s){
+        return React.createElement('div',{key:s.key,style:{minWidth:110}},
+          React.createElement('div',{style:{background:s.color,color:'#fff',padding:'6px 8px',borderRadius:'8px 8px 0 0',fontWeight:700,fontSize:9,display:'flex',justifyContent:'space-between',textTransform:'uppercase'}},
+            React.createElement('span',null,s.label.split(' ').slice(0,2).join(' ')),
+            React.createElement('span',{style:{background:'rgba(0,0,0,.2)',borderRadius:8,padding:'0 6px'}},byS[s.key].length)
+          ),
+          React.createElement('div',{style:{background:C.row,borderRadius:'0 0 8px 8px',padding:5,minHeight:60,border:'1px solid '+C.border,borderTop:'none',display:'flex',flexDirection:'column',gap:4}},
+            byS[s.key].map(function(st){
+              return React.createElement('div',{key:st.us,onClick:function(){props.onStory(st.us)},style:{background:C.card,borderRadius:6,padding:'6px 8px',borderLeft:'3px solid '+PRI[st.priority],cursor:'pointer',boxShadow:'0 1px 2px rgba(0,0,0,.04)'}},
+                React.createElement('div',{style:{color:C.teal,fontSize:9,fontWeight:700}},st.us),
+                React.createElement('div',{style:{color:C.text,fontSize:9,marginTop:2}},st.title)
+              );
+            })
+          )
+        );
+      })
+    )
+  );
+}
+
+/* ═══ ARCHITECT DASHBOARD ═══ */
+function ArchDash(props) {
+  var stories=props.stories;
+  var total=stories.length;
+  var hom=stories.filter(function(s){return s.stage==='homologacao'}).length;
+  var active=stories.filter(function(s){return ['backlog','homologacao'].indexOf(s.stage)<0});
+  var bugs=stories.filter(function(s){return s.stage==='bugfix'}).length;
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:20}},
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14}},
+      React.createElement(MetricCard,{label:'Total',value:total,color:C.teal}),
+      React.createElement(MetricCard,{label:'Andamento',value:active.length,color:'#2563EB'}),
+      React.createElement(MetricCard,{label:'Homologadas',value:hom,sub:Math.round(hom/total*100)+'%',color:'#16A34A'}),
+      React.createElement(MetricCard,{label:'Bugfix',value:bugs,color:'#DC3545'}),
+      React.createElement(MetricCard,{label:'Deploy',value:'87%',sub:'success',color:'#EA580C'})
+    ),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14}},
+      React.createElement(Card,{title:'Pipeline'},
+        React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+          STAGES.map(function(s){
+            var c=stories.filter(function(st){return st.stage===s.key}).length;
+            var mx=Math.max.apply(null,STAGES.map(function(ss){return stories.filter(function(st){return st.stage===ss.key}).length}))||1;
+            return React.createElement('div',{key:s.key,style:{display:'flex',alignItems:'center',gap:8}},
+              React.createElement('span',{style:{fontSize:13}},s.icon),
+              React.createElement('span',{style:{color:C.textSec,fontSize:10,width:65,flexShrink:0}},s.label.split(' ').slice(0,2).join(' ')),
+              React.createElement(ProgressBar,{value:c,max:mx,color:s.color,h:8}),
+              React.createElement('span',{style:{color:C.text,fontSize:13,fontWeight:700,width:20,textAlign:'right'}},c)
+            );
+          })
+        )
+      ),
+      React.createElement(Card,{title:'Deploy Success'},React.createElement('div',{style:{display:'flex',justifyContent:'center',paddingTop:8}},React.createElement(Gauge,{value:87,label:'First-Pass'}))),
+      React.createElement(Card,{title:'QA Pass Rate'},React.createElement('div',{style:{display:'flex',justifyContent:'center',paddingTop:8}},React.createElement(Gauge,{value:83,label:'Atendidos'})))
+    ),
+    React.createElement(Card,{title:'Itens Ativos'},
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+        active.map(function(st){
+          var sg=stg(st.stage);
+          return React.createElement('div',{key:st.us,onClick:function(){props.onSelect(st)},style:{
+            display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:C.row,borderRadius:10,cursor:'pointer',transition:'background .15s',
+          },onMouseEnter:function(e){e.currentTarget.style.background=C.cardHover},onMouseLeave:function(e){e.currentTarget.style.background=C.row}},
+            React.createElement(Badge,{text:st.us,color:sg.color,s:true}),
+            React.createElement('span',{style:{color:C.text,fontSize:12,flex:1}},st.title),
+            React.createElement(Badge,{text:(sg.label||'').split(' ').slice(0,2).join(' '),color:sg.color,s:true})
+          );
+        })
+      )
+    )
+  );
+}
+
+/* ═══ ARCHITECT BOARD ═══ */
+function ArchBoard(props) {
+  var gr={};STAGES.forEach(function(s){gr[s.key]=[]});props.stories.forEach(function(s){if(gr[s.stage])gr[s.stage].push(s)});
+  return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat('+STAGES.length+',1fr)',gap:6,overflowX:'auto'}},
+    STAGES.map(function(s){
+      return React.createElement('div',{key:s.key,style:{minWidth:120}},
+        React.createElement('div',{style:{background:s.color,color:'#fff',padding:'8px 10px',borderRadius:'10px 10px 0 0',fontWeight:700,fontSize:10,display:'flex',justifyContent:'space-between',textTransform:'uppercase'}},
+          React.createElement('span',null,s.label.split(' ').slice(0,2).join(' ')),
+          React.createElement('span',{style:{background:'rgba(0,0,0,.2)',borderRadius:10,padding:'0 7px'}},gr[s.key].length)
+        ),
+        React.createElement('div',{style:{background:C.row,borderRadius:'0 0 10px 10px',padding:6,minHeight:90,border:'1px solid '+C.border,borderTop:'none',display:'flex',flexDirection:'column',gap:5}},
+          gr[s.key].map(function(st){
+            return React.createElement('div',{key:st.us,onClick:function(){props.onSelect(st)},style:{
+              background:C.card,borderRadius:8,padding:'9px 10px',borderLeft:'3px solid '+PRI[st.priority],
+              cursor:'pointer',boxShadow:'0 1px 2px rgba(0,0,0,.04)',transition:'box-shadow .15s',
+            },onMouseEnter:function(e){e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'},onMouseLeave:function(e){e.currentTarget.style.boxShadow='0 1px 2px rgba(0,0,0,.04)'}},
+              React.createElement('div',{style:{color:C.teal,fontSize:10,fontWeight:700}},st.us),
+              React.createElement('div',{style:{color:C.text,fontSize:10,marginTop:3}},st.title),
+              React.createElement('div',{style:{display:'flex',gap:3,marginTop:6}},
+                ['hf','spec','deploy','qa'].map(function(a){return React.createElement(ArtifactDot,{key:a,has:st.artifacts[a]})})
+              )
+            );
+          })
+        )
+      );
+    })
+  );
+}
+
+/* ═══ ARCHITECT DETAIL ═══ */
+function ArchDetail(props) {
+  var item=props.item, epics=props.epics;
+  var _t=useState('stage'),tab=_t[0],setTab=_t[1];
+  var sg=stg(item.stage);
+  var ep=(epics.find(function(e){return e.id===item.epicId})||{});
+  var bug=item.stage==='bugfix';
+
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+    React.createElement(Btn,{s:true,color:C.textMuted,onClick:props.onBack},'← Voltar'),
+    React.createElement('div',{style:{background:C.card,borderRadius:12,padding:'22px 26px',borderLeft:'3px solid '+(sg.color||C.teal),border:'1px solid '+C.border,boxShadow:C.shadow}},
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}},
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:8,flexWrap:'wrap'}},
+            React.createElement('span',{style:{color:C.teal,fontSize:20,fontWeight:800}},item.us),
+            React.createElement(Badge,{text:sg.label||item.stage,color:sg.color}),
+            React.createElement(Badge,{text:item.priority,color:PRI[item.priority]}),
+            ep.name?React.createElement(Badge,{text:ep.name,color:ep.color,s:true}):null
+          ),
+          React.createElement('div',{style:{color:C.text,fontSize:15,fontWeight:600}},item.title),
+          React.createElement('div',{style:{color:C.textMuted,fontSize:12,marginTop:6,display:'flex',gap:14,flexWrap:'wrap'}},
+            React.createElement('span',null,'Sprint: ',React.createElement('span',{style:{color:C.teal}},item.sprint||'–')),
+            React.createElement('span',null,'Resp: ',React.createElement('span',{style:{color:C.teal}},item.assignee||'–')),
+            React.createElement('span',null,'Prevista: ',React.createElement('span',{style:{color:C.teal}},item.plannedDate||'–'))
+          )
+        ),
+        !bug?React.createElement(Btn,{s:true,color:'#DC3545',onClick:function(){props.onBugfix(item.us)}},'🐛 Bug'):null
+      ),
+      React.createElement('div',{style:{marginTop:16}},React.createElement(StageProgress,{cur:item.stage}))
+    ),
+    React.createElement('div',{style:{background:C.card,borderRadius:12,padding:'18px 22px',border:'1px solid '+(sg.color||C.border)+'40',boxShadow:C.shadow}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:14}},
+        React.createElement('span',{style:{fontSize:22}},sg.icon||'📋'),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{style:{color:C.text,fontSize:14,fontWeight:700}},'Etapa: '+(sg.label||'')),
+          sg.desc?React.createElement('div',{style:{color:C.textSec,fontSize:12,marginTop:2}},sg.desc):null
+        )
+      ),
+      React.createElement(UploadZone,{label:sg.uploadHint||'Upload — '+(sg.label||''),onUpload:function(){props.onUpload(item.us,item.stage==='hf'?'hf':item.stage==='spec'?'spec':item.stage==='bugfix'?'bugfix':'other')}}),
+      sg.devops?React.createElement('div',{style:{background:'#EEF2FF',borderRadius:10,padding:14,border:'1px solid #C7D2FE',marginTop:12}},
+        React.createElement('div',{style:{color:C.text,fontSize:13,fontWeight:700}},'💡 No chat do Claude, digite: ',React.createElement('code',{style:{color:'#4F46E5',background:'#E0E7FF',padding:'2px 8px',borderRadius:4}},'/devops '+item.us)),
+        (item.files.filter(function(f){return f.type==='hf'}).length>0)?React.createElement('div',{style:{marginTop:8,display:'flex',alignItems:'center',gap:6}},
+          React.createElement('span',{style:{color:'#16A34A',fontSize:13}},'✓'),
+          React.createElement('span',{style:{color:'#16A34A',fontSize:12,fontWeight:600}},'HF: '+(item.files.find(function(f){return f.type==='hf'})||{}).name)
+        ):null
+      ):null,
+      bug?React.createElement('div',{style:{background:'#FEF2F2',borderRadius:10,padding:14,border:'1px solid #FECACA',marginTop:12}},
+        React.createElement('div',{style:{color:C.text,fontSize:13,fontWeight:700}},'🐛 Bug Reportado'),
+        React.createElement('div',{style:{color:C.textSec,fontSize:12,marginTop:4}},'Suba o formulário de BugFix e evidências. Ao concluir, clique "Concluir Bugfix" para retornar.')
+      ):null,
+      item.files.length>0?React.createElement('div',{style:{marginTop:14}},
+        React.createElement('div',{style:{color:C.textMuted,fontSize:10,fontWeight:600,textTransform:'uppercase',marginBottom:6}},'Arquivos'),
+        React.createElement(FileList,{files:item.files})
+      ):null,
+      React.createElement('div',{style:{display:'flex',gap:10,justifyContent:'flex-end',marginTop:16}},
+        bug?React.createElement(Btn,{color:'#16A34A',onClick:function(){props.onBugfixResolve(item.us)}},'✓ Concluir Bugfix'):null,
+        !bug&&sg.action?React.createElement(Btn,{color:sg.color,onClick:function(){props.onAdvance(item.us)}},sg.action+' →'):null,
+        item.stage==='homologacao'?React.createElement(Badge,{text:'✅ Ciclo Completo',color:'#16A34A'}):null
+      )
+    ),
+    React.createElement('div',{style:{display:'flex',gap:3,background:C.row,borderRadius:10,padding:3,border:'1px solid '+C.border}},
+      [{k:'stage',l:'Histórico'},{k:'artifacts',l:'Artefatos'},{k:'files',l:'Docs ('+item.files.length+')'}].map(function(t){
+        return React.createElement('button',{key:t.k,onClick:function(){setTab(t.k)},style:{
+          flex:1,padding:'9px 0',border:'none',borderRadius:8,cursor:'pointer',
+          fontSize:12,fontWeight:600,background:tab===t.k?C.teal:'transparent',
+          color:tab===t.k?'#fff':C.textSec,
+        }},t.l);
+      })
+    ),
+    tab==='stage'?React.createElement(Card,{title:'Histórico',noPad:true},
+      React.createElement('div',{style:{padding:'10px 20px 16px'}},
+        STAGES.filter(function(s){return s.key!=='bugfix'}).slice(0,(stg(item.stage).idx||0)+1).map(function(s,i,arr){
+          var isLast=i===arr.length-1&&!bug;
+          return React.createElement('div',{key:s.key,style:{display:'flex',gap:14}},
+            React.createElement('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',width:24}},
+              React.createElement('div',{style:{width:26,height:26,borderRadius:'50%',background:isLast?s.color:'#E3E7EE',border:'2px solid '+(isLast?s.color:'#E3E7EE'),display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,color:isLast?'#fff':C.textMuted,zIndex:1}},s.icon),
+              i<arr.length-1?React.createElement('div',{style:{width:2,flex:1,background:'#E3E7EE',minHeight:12}}):null
+            ),
+            React.createElement('div',{style:{paddingBottom:12}},
+              React.createElement('div',{style:{color:C.text,fontSize:13,fontWeight:600}},s.label),
+              React.createElement('div',{style:{color:isLast?s.color:C.textMuted,fontSize:11}},isLast?'● Em andamento':'✓ Concluído')
+            )
+          );
+        }),
+        bug?React.createElement('div',{style:{display:'flex',gap:14}},
+          React.createElement('div',{style:{width:26,height:26,borderRadius:'50%',background:'#DC3545',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,color:'#fff'}},'🐛'),
+          React.createElement('div',null,
+            React.createElement('div',{style:{color:C.text,fontSize:13,fontWeight:600}},'Em Bugfix'),
+            React.createElement('div',{style:{color:'#DC3545',fontSize:11}},'● Correção em andamento')
+          )
+        ):null
+      )
+    ):null,
+    tab==='artifacts'?React.createElement(Card,{title:'Artefatos'},
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}},
+        ['hf','spec','deploy','qa','adr','cenario','zip'].map(function(a){
+          return React.createElement('div',{key:a,style:{background:C.row,borderRadius:10,padding:14,textAlign:'center',border:'1px solid '+(item.artifacts[a]?'#86EFAC':C.border)}},
+            React.createElement(ArtifactDot,{has:item.artifacts[a]}),
+            React.createElement('div',{style:{color:item.artifacts[a]?C.text:C.textMuted,fontSize:10,textTransform:'uppercase',marginTop:6,fontWeight:600}},a)
+          );
+        })
+      )
+    ):null,
+    tab==='files'?React.createElement(Card,{title:'Documentos'},
+      React.createElement(UploadZone,{label:'Upload adicional',onUpload:function(){props.onUpload(item.us,'other')}}),
+      React.createElement('div',{style:{marginTop:12}},React.createElement(FileList,{files:item.files}))
+    ):null
+  );
+}
+
+/* ═══ ARCHITECT MATRIX ═══ */
+function ArchMatrix(props) {
+  var arts=['hf','spec','deploy','qa','adr','cenario','zip'];
+  return React.createElement(Card,{title:'Matriz de Rastreabilidade'},
+    React.createElement('table',{style:{width:'100%',borderCollapse:'separate',borderSpacing:'0 3px'}},
+      React.createElement('thead',null,React.createElement('tr',null,
+        React.createElement('th',{style:{color:C.textMuted,fontSize:10,fontWeight:700,padding:'8px 10px',textAlign:'left',borderBottom:'1px solid '+C.border}},'US'),
+        React.createElement('th',{style:{color:C.textMuted,fontSize:10,fontWeight:700,padding:'8px 10px',textAlign:'left',borderBottom:'1px solid '+C.border}},'Estágio'),
+        arts.map(function(a){return React.createElement('th',{key:a,style:{color:C.textMuted,fontSize:9,fontWeight:700,padding:'8px 6px',textAlign:'center',textTransform:'uppercase',borderBottom:'1px solid '+C.border}},a)})
+      )),
+      React.createElement('tbody',null, props.stories.map(function(st,i){
+        var sg=stg(st.stage);
+        return React.createElement('tr',{key:st.us,style:{background:i%2===0?C.row:'transparent'}},
+          React.createElement('td',{style:{padding:'6px 10px'}},React.createElement('span',{style:{color:C.teal,fontSize:11,fontWeight:700}},st.us)),
+          React.createElement('td',{style:{padding:'6px 10px'}},React.createElement(Badge,{text:(sg.label||'').split(' ').slice(0,2).join(' '),color:sg.color,s:true})),
+          arts.map(function(a){return React.createElement('td',{key:a,style:{padding:'6px 6px',textAlign:'center'}},React.createElement(ArtifactDot,{has:st.artifacts[a]}))})
+        );
+      }))
+    )
+  );
+}
+
+
+/* ═══ API LAYER ═══ */
+var API_BASE = '/api/alm';
+var AUTH_TOKEN = null;
+
+async function apiLogin() {
+  try {
+    var res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:'admin@everi9.com',password:'admin2026'})
+    });
+    var data = await res.json();
+    AUTH_TOKEN = data.token;
+    return true;
+  } catch(e) { console.error('Login failed',e); return false; }
+}
+
+function apiHeaders() {
+  var h = {'Content-Type':'application/json'};
+  if (AUTH_TOKEN) h['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+  return h;
+}
+
+async function apiGet(path) {
+  var res = await fetch(API_BASE + path, {headers:apiHeaders()});
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  var res = await fetch(API_BASE + path, {method:'POST', headers:apiHeaders(), body:JSON.stringify(body)});
+  return res.json();
+}
+
+async function apiPut(path, body) {
+  var res = await fetch(API_BASE + path, {method:'PUT', headers:apiHeaders(), body:JSON.stringify(body)});
+  return res.json();
+}
+
+/* ═══ APP ═══ */
+function App() {
+  var _p=useState('gp'),panel=_p[0],setPanel=_p[1];
+  var _gv=useState('dash'),gpV=_gv[0],setGpV=_gv[1];
+  var _av=useState('dash'),archV=_av[0],setArchV=_av[1];
+  var _ep=useState(null),selEp=_ep[0],setSelEp=_ep[1];
+  var _us=useState(null),selUs=_us[0],setSelUs=_us[1];
+  var _st=useState([]),stories=_st[0],setStories=_st[1];
+  var _epi=useState([]),epics=_epi[0],setEpics=_epi[1];
+  var _loading=useState(true),loading=_loading[0],setLoading=_loading[1];
+  var _ne=useState(false),showNE=_ne[0],setShowNE=_ne[1];
+  var _ns=useState(false),showNS=_ns[0],setShowNS=_ns[1];
+  var _to=useState(null),toast=_to[0],setToast=_to[1];
+  var _fe=useState({name:'',desc:'',owner:'Alberto',s:'',e:''}),fe=_fe[0],setFe=_fe[1];
+  var _fs=useState({us:'',title:'',epicId:'EP-01',priority:'medium',assignee:'Alberto',planned:'',sprint:''}),fs=_fs[0],setFs=_fs[1];
+
+  
+  // Load data from API
+  React.useEffect(function(){
+    async function load(){
+      await apiLogin();
+      var ep = await apiGet('/epics');
+      var st = await apiGet('/stories');
+      setEpics(ep);
+      setStories(st);
+      setLoading(false);
+    }
+    load();
+  },[]);
+
+  async function refreshStories(){
+    var st = await apiGet('/stories');
+    setStories(st);
+  }
+
+  var selStory=useMemo(function(){return stories.find(function(s){return s.us===selUs})},[stories,selUs]);
+  var tt=useCallback(function(msg,c){setToast({msg:msg,c:c});setTimeout(function(){setToast(null)},3000)},[]);
+
+  async function advance(us){
+    var st=stories.find(function(s){return s.us===us})||{};
+    var cs=SM[st.stage]||{};var ns=SM[cs.next]||{};
+    await apiPost('/stories/'+us+'/advance',{});
+    await refreshStories();
+    tt(us+' → '+(ns.label||''),ns.color||C.teal);
+  }
+  async function upload(us,type){
+    var v='v'+(Math.random()*2+1).toFixed(1);
+    var name=type.toUpperCase()+'_'+us+'.docx';
+    await apiPost('/stories/'+us+'/files',{name:name,fileType:type,version:v});
+    await refreshStories();
+    tt('Upload: '+name+' ('+v+')','#16A34A');
+  }
+  async function setBug(us){await apiPost('/stories/'+us+'/bugfix',{});await refreshStories();tt(us+' → Bugfix 🐛','#DC3545')}
+  async function resBug(us){await apiPost('/stories/'+us+'/bugfix-resolve',{});await refreshStories();tt(us+' → Resolvido ✓','#16A34A')}
+  function goStory(us){setSelUs(us);setArchV('detail');setPanel('arch')}
+
+  var aN=[{k:'dash',l:'Dashboard',i:'◉'},{k:'board',l:'Board',i:'▦'},{k:'matrix',l:'Matriz',i:'▤'}];
+
+  return React.createElement('div',{style:{background:C.bg,minHeight:'100vh'}},
+    toast?React.createElement('div',{style:{position:'fixed',top:60,right:16,zIndex:2000,background:toast.c||C.teal,color:'#fff',padding:'12px 22px',borderRadius:10,fontWeight:600,fontSize:13,boxShadow:'0 4px 20px rgba(0,0,0,.15)'}},toast.msg):null,
+    React.createElement('div',{style:{background:'linear-gradient(135deg,#111B2D,#1C2C44)',padding:'0 20px',display:'flex',alignItems:'center',justifyContent:'space-between',height:52,boxShadow:'0 2px 8px rgba(0,0,0,.1)',position:'sticky',top:0,zIndex:100}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:12}},
+        React.createElement('div',{style:{background:C.teal,color:'#fff',padding:'4px 10px',borderRadius:6,fontWeight:800,fontSize:14}},'i9'),
+        React.createElement('span',{style:{color:'#fff',fontWeight:700,fontSize:15}},'ALM'),
+        React.createElement('div',{style:{display:'flex',gap:2,background:'rgba(255,255,255,.1)',borderRadius:8,padding:3,marginLeft:10}},
+          [{k:'gp',l:'GP',i:'📊'},{k:'arch',l:'Arquiteto',i:'⚙️'}].map(function(p){
+            return React.createElement('button',{key:p.k,onClick:function(){setPanel(p.k);if(p.k==='gp')setGpV('dash');else{setArchV('dash');setSelUs(null)}},style:{
+              background:panel===p.k?C.teal:'transparent',color:panel===p.k?'#fff':'rgba(255,255,255,.6)',
+              border:'none',borderRadius:6,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700,
+            }},p.i+' '+p.l);
+          })
+        )
+      ),
+      panel==='arch'?React.createElement('div',{style:{display:'flex',gap:2,background:'rgba(255,255,255,.08)',borderRadius:8,padding:3}},
+        aN.map(function(n){
+          var active=archV===n.k||(archV==='detail'&&n.k==='board');
+          return React.createElement('button',{key:n.k,onClick:function(){setArchV(n.k);setSelUs(null)},style:{
+            background:active?C.teal:'transparent',color:active?'#fff':'rgba(255,255,255,.6)',
+            border:'none',borderRadius:6,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:600,
+          }},n.i+' '+n.l);
+        })
+      ):null,
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:12}},
+        React.createElement('span',{style:{color:'rgba(255,255,255,.5)',fontSize:11}},'CRM B2B Algar'),
+        React.createElement('div',{style:{width:34,height:34,borderRadius:'50%',background:C.teal,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13}},'AB')
+      )
+    ),
+    React.createElement('div',{style:{maxWidth:1440,margin:'0 auto',padding:'20px 24px'}},
+      !loading&&panel==='gp'&&gpV==='dash'?React.createElement(GPDash,{stories:stories,epics:epics,onStory:goStory,onEpic:function(id){setSelEp(id);setGpV('epic')},onNewE:function(){setShowNE(true)},onNewS:function(){setShowNS(true)}}):null,
+      panel==='gp'&&gpV==='epic'&&selEp?React.createElement(GPEpicDetail,{epic:epics.find(function(e){return e.id===selEp}),stories:stories,onBack:function(){setGpV('dash')},onStory:goStory}):null,
+      panel==='arch'&&archV==='dash'?React.createElement(ArchDash,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
+      panel==='arch'&&archV==='board'?React.createElement(ArchBoard,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
+      panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onBugfix:setBug,onBugfixResolve:resBug}):null,
+      panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null
+    ),
+    showNE?React.createElement(Modal,{title:'Novo Épico',onClose:function(){setShowNE(false)}},
+      React.createElement(FormField,{label:'Nome'},React.createElement(Input,{value:fe.name,onChange:function(v){setFe(Object.assign({},fe,{name:v}))},placeholder:'Ex: Conta Master'})),
+      React.createElement(FormField,{label:'Descrição'},React.createElement(Input,{value:fe.desc,onChange:function(v){setFe(Object.assign({},fe,{desc:v}))}})),
+      React.createElement(FormField,{label:'Owner'},React.createElement(Input,{value:fe.owner,onChange:function(v){setFe(Object.assign({},fe,{owner:v}))}})),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+        React.createElement(FormField,{label:'Início'},React.createElement(Input,{type:'date',value:fe.s,onChange:function(v){setFe(Object.assign({},fe,{s:v}))}})),
+        React.createElement(FormField,{label:'Fim'},React.createElement(Input,{type:'date',value:fe.e,onChange:function(v){setFe(Object.assign({},fe,{e:v}))}}))
+      ),
+      React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:10}},
+        React.createElement(Btn,{outline:true,onClick:function(){setShowNE(false)}},'Cancelar'),
+        React.createElement(Btn,{onClick:function(){setShowNE(false);apiPost('/epics',{id:'EP-'+(epics.length+1).toString().padStart(2,'0'),name:fe.name,desc:fe.desc,owner:fe.owner,startDate:fe.s,endDate:fe.e}).then(function(){apiGet('/epics').then(setEpics)});tt('Épico criado!',C.teal)}},'Criar')
+      )
+    ):null,
+    showNS?React.createElement(Modal,{title:'Nova História',onClose:function(){setShowNS(false)}},
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 2fr',gap:10}},
+        React.createElement(FormField,{label:'US'},React.createElement(Input,{value:fs.us,onChange:function(v){setFs(Object.assign({},fs,{us:v}))},placeholder:'CRMB2B-XX'})),
+        React.createElement(FormField,{label:'Título'},React.createElement(Input,{value:fs.title,onChange:function(v){setFs(Object.assign({},fs,{title:v}))}}))
+      ),
+      React.createElement(FormField,{label:'Épico'},React.createElement(Sel,{value:fs.epicId,onChange:function(v){setFs(Object.assign({},fs,{epicId:v}))},options:epics.map(function(e){return{v:e.id,l:e.name}})})),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}},
+        React.createElement(FormField,{label:'Prioridade'},React.createElement(Sel,{value:fs.priority,onChange:function(v){setFs(Object.assign({},fs,{priority:v}))},options:[{v:'critical',l:'Critical'},{v:'high',l:'High'},{v:'medium',l:'Medium'},{v:'low',l:'Low'}]})),
+        React.createElement(FormField,{label:'Responsável'},React.createElement(Input,{value:fs.assignee,onChange:function(v){setFs(Object.assign({},fs,{assignee:v}))}})),
+        React.createElement(FormField,{label:'Prevista'},React.createElement(Input,{type:'date',value:fs.planned,onChange:function(v){setFs(Object.assign({},fs,{planned:v}))}}))
+      ),
+      React.createElement(FormField,{label:'Sprint'},React.createElement(Input,{value:fs.sprint,onChange:function(v){setFs(Object.assign({},fs,{sprint:v}))},placeholder:'Sprint 12'})),
+      React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:10}},
+        React.createElement(Btn,{outline:true,onClick:function(){setShowNS(false)}},'Cancelar'),
+        React.createElement(Btn,{onClick:function(){setShowNS(false);apiPost('/stories',{us:fs.us,title:fs.title,epicId:fs.epicId,priority:fs.priority,assignee:fs.assignee,sprint:fs.sprint,plannedDate:fs.planned}).then(refreshStories);tt('História criada!',C.teal)}},'Criar')
+      )
+    ):null,
+    React.createElement('div',{style:{background:'#111B2D',padding:'10px 24px',textAlign:'center',color:'rgba(255,255,255,.4)',fontSize:10,marginTop:24}},'EVER I9 ALM · CRM B2B Algar Telecom · Confidencial')
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
+</script>
+</body>
+</html>
