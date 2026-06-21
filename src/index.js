@@ -9,6 +9,7 @@ import orgRoutes from './routes/orgs.js';
 import downloadRoutes from './routes/download.js';
 import exportRoutes from './routes/exports.js';
 import deploysRoutes from './routes/deploys.js';
+import almRoutes, { initAlmTables } from './routes/alm.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -75,13 +76,15 @@ app.get('/api/init-db', async (req, res) => {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_deploylog_created ON deploy_log(created_at DESC)');
     // Additive: snapshot column for rollback
     try { await pool.query('ALTER TABLE deploy_log ADD COLUMN IF NOT EXISTS previous_state TEXT'); } catch {}
+    // ALM tables
+    await initAlmTables();
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
       await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
         ['Alberto Bottaro', 'admin@everi9.com', hash, 'admin']);
     }
-    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs', 'deploy_log'] });
+    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs', 'deploy_log', 'alm_epics', 'alm_stories', 'alm_artifacts', 'alm_files', 'alm_trace'] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -91,6 +94,7 @@ app.use('/api/orgs', orgRoutes);
 app.use('/api/download', downloadRoutes);
 app.use('/api/exports', exportRoutes);
 app.use('/api/deploys', deploysRoutes);
+app.use('/api/alm', almRoutes);
 
 // Job status polling
 app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
