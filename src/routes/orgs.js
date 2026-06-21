@@ -271,6 +271,20 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
             const failures = deployStatus?.details?.componentFailures;
             results.push({ step: step.fullName, ok: !!ok, message: ok ? `✅ Flow fixed: ${fixCount} replacements, deployId=${deployResult.id}` : `❌ ${JSON.stringify(failures || deployStatus?.errorMessage || '').substring(0, 300)}` });
           } catch(err) { results.push({ step: step.fullName, ok: false, message: `❌ ${err.message}` }); }
+        } else if (step.action === 'sobject-insert') {
+          const conn = await connectToOrg(org);
+          const objectName = step.objectName || step.type;
+          const records = step.records || [step.body];
+          const r = await conn.sobject(objectName).create(records);
+          const items = Array.isArray(r) ? r : [r];
+          const okCount = items.filter(i => i.success).length;
+          const ids = items.filter(i => i.id).map(i => i.id);
+          const errors = items.filter(i => !i.success).map(i => (i.errors || []).map(e => e.message).join(', '));
+          results.push({ step: objectName, ok: okCount === items.length, ids, okCount, totalCount: items.length, message: okCount === items.length ? `✅ ${objectName}: ${okCount} inserted [${ids.join(',')}]` : `❌ ${okCount}/${items.length} OK. Errors: ${errors.join('; ').substring(0,300)}` });
+        } else if (step.action === 'sobject-query') {
+          const conn = await connectToOrg(org);
+          const r = await conn.query(step.query);
+          results.push({ step: 'query', ok: true, records: r.records, totalSize: r.totalSize, message: `✅ ${r.totalSize} records` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
