@@ -206,29 +206,56 @@ function Sel(props) {
 }
 
 function UploadZone(props) {
+  var inputRef = React.useRef(null);
+  var _dr = React.useState(false), dragging = _dr[0], setDragging = _dr[1];
+  function handleClick() {
+    if (inputRef.current) inputRef.current.click();
+  }
+  function handleFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result.split(',')[1];
+      if (props.onFileSelected) props.onFileSelected(file, base64);
+      else if (props.onUpload) props.onUpload(file, base64);
+    };
+    reader.readAsDataURL(file);
+  }
+  function handleChange(e) { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; }
+  function handleDrop(e) { e.preventDefault(); setDragging(false); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }
+  function handleDragOver(e) { e.preventDefault(); setDragging(true); }
+  function handleDragLeave() { setDragging(false); }
+  var accept = props.accept || '.docx,.pdf,.xlsx,.txt';
   return React.createElement('div', {style:{
-    border:'2px dashed '+C.border, borderRadius:10, padding:18, textAlign:'center',
+    border:'2px dashed '+(dragging?C.teal:C.border), borderRadius:10, padding:18, textAlign:'center',
     cursor:'pointer', transition:'border-color .2s, background .2s',
-    background:C.row,
-  }, onClick:props.onUpload,
+    background:dragging?C.tealLight:C.row,
+  }, onClick:handleClick,
+    onDrop:handleDrop, onDragOver:handleDragOver, onDragLeave:handleDragLeave,
     onMouseEnter:function(e){e.currentTarget.style.borderColor=C.teal;e.currentTarget.style.background=C.tealLight},
-    onMouseLeave:function(e){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.row},
+    onMouseLeave:function(e){if(!dragging){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.row}},
   },
+    React.createElement('input', {ref:inputRef, type:'file', accept:accept, style:{display:'none'}, onChange:handleChange}),
     React.createElement('div', {style:{fontSize:22,marginBottom:4}}, '📎'),
     React.createElement('div', {style:{color:C.text,fontSize:12,fontWeight:600}}, props.label||'Upload de arquivo'),
-    React.createElement('div', {style:{color:C.textMuted,fontSize:11,marginTop:2}}, 'Arraste ou clique')
+    React.createElement('div', {style:{color:C.textMuted,fontSize:11,marginTop:2}}, props.hint||'Arraste ou clique'),
+    props.fileName ? React.createElement('div', {style:{color:C.teal,fontSize:11,marginTop:6,fontWeight:600}}, '✓ '+props.fileName) : null
   );
 }
 
 function FileList(props) {
   var ic = {hf:'📄',spec:'📐',adr:'📑',cenario:'✅',zip:'📦',bugfix:'🐛',other:'📎'};
+  var statusColors = {pendente:'#F59E0B',processando:'#3B82F6',concluido:'#16A34A',erro:'#DC3545'};
+  var statusLabels = {pendente:'PENDENTE',processando:'EM PROCESSAMENTO',concluido:'CONCLUÍDO',erro:'ERRO'};
   if (!props.files.length) return React.createElement('div',{style:{color:C.textMuted,fontSize:12,textAlign:'center',padding:16}},'Nenhum documento');
   return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:4}},
     props.files.map(function(f,i) {
+      var ps = f.processingStatus||'none';
       return React.createElement('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:i%2===0?C.row:'transparent',borderRadius:8}},
         React.createElement('span',{style:{fontSize:16}}, ic[f.type]||ic.other),
         React.createElement('span',{style:{color:C.text,fontSize:12,flex:1}}, f.name),
         f.version ? React.createElement(Badge,{text:f.version,color:C.textMuted,s:true}) : null,
+        ps!=='none' ? React.createElement('span',{style:{fontSize:9,fontWeight:700,color:'#fff',background:statusColors[ps]||C.textMuted,padding:'2px 6px',borderRadius:4,letterSpacing:.5}},statusLabels[ps]||ps.toUpperCase()) : null,
         React.createElement('span',{style:{color:C.textMuted,fontSize:11}}, f.date),
         React.createElement(Btn,{s:true,color:C.teal}, '↓'),props.onDelete?React.createElement('button',{onClick:function(e){e.stopPropagation();props.onDelete(f.id)},style:{background:'none',border:'none',color:'#DC3545',cursor:'pointer',fontSize:13,padding:'2px 6px'}},'✕'):null
       );
@@ -588,7 +615,7 @@ function ArchDetail(props) {
           sg.desc?React.createElement('div',{style:{color:C.textSec,fontSize:12,marginTop:2}},sg.desc):null
         )
       ),
-      React.createElement(UploadZone,{label:sg.uploadHint||'Upload — '+(sg.label||''),onUpload:function(){props.onUpload(item.us,item.stage==='hf'?'hf':item.stage==='spec'?'spec':item.stage==='bugfix'?'bugfix':'other')}}),
+      React.createElement(UploadZone,{label:sg.uploadHint||'Upload — '+(sg.label||''),onFileSelected:function(file,base64){var type=item.stage==='hf'?'hf':item.stage==='spec'?'spec':item.stage==='bugfix'?'bugfix':'other';props.onFileUpload(item.us,type,file,base64)}}),
       sg.devops?React.createElement('div',{style:{background:'#EEF2FF',borderRadius:10,padding:14,border:'1px solid #C7D2FE',marginTop:12}},
         React.createElement('div',{style:{color:C.text,fontSize:13,fontWeight:700}},'💡 No chat do Claude, digite: ',React.createElement('code',{style:{color:'#4F46E5',background:'#E0E7FF',padding:'2px 8px',borderRadius:4}},'/devops '+item.us)),
         (item.files.filter(function(f){return f.type==='hf'}).length>0)?React.createElement('div',{style:{marginTop:8,display:'flex',alignItems:'center',gap:6}},
@@ -654,7 +681,7 @@ function ArchDetail(props) {
       )
     ):null,
     tab==='files'?React.createElement(Card,{title:'Documentos'},
-      React.createElement(UploadZone,{label:'Upload adicional',onUpload:function(){props.onUpload(item.us,'other')}}),
+      React.createElement(UploadZone,{label:'Upload adicional',onFileSelected:function(file,base64){props.onFileUpload(item.us,'other',file,base64)}}),
       React.createElement('div',{style:{marginTop:12}},React.createElement(FileList,{files:item.files,onDelete:function(fid){onDeleteFile(item.us,fid)}}))
     ):null
   );
@@ -742,7 +769,7 @@ function App() {
   var _ns=useState(false),showNS=_ns[0],setShowNS=_ns[1];
   var _to=useState(null),toast=_to[0],setToast=_to[1];
   var _fe=useState({name:'',desc:'',owner:'Alberto',s:'',e:''}),fe=_fe[0],setFe=_fe[1];
-  var _fs=useState({us:'',title:'',epicId:'EP-01',priority:'medium',assignee:'Alberto',planned:'',sprint:''}),fs=_fs[0],setFs=_fs[1];
+  var _fs=useState({us:'',title:'',epicId:'EP-01',priority:'medium',assignee:'Alberto',planned:'',sprint:'',hfFile:null,hfBase64:null}),fs=_fs[0],setFs=_fs[1];
 
   
   // Load data from API
@@ -778,11 +805,29 @@ function App() {
     tt(us+' → '+(ns.label||''),ns.color||C.teal);
   }
   async function upload(us,type){
-    var v='v'+(Math.random()*2+1).toFixed(1);
-    var name=type.toUpperCase()+'_'+us+'.docx';
-    await apiPost('/stories/'+us+'/files',{name:name,fileType:type,version:v});
+    // Create hidden file input and trigger selection
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.docx,.pdf,.xlsx,.txt';
+    inp.onchange = async function() {
+      var file = inp.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = async function(e) {
+        var base64 = e.target.result.split(',')[1];
+        var payload = {name:file.name, fileType:type, version:'v1.0', binaryBase64:base64};
+        await apiPost('/stories/'+us+'/files', payload);
+        await refreshStories();
+        tt('Upload: '+file.name, '#16A34A');
+      };
+      reader.readAsDataURL(file);
+    };
+    inp.click();
+  }
+  async function uploadFile(us,type,file,base64){
+    await apiPost('/stories/'+us+'/files',{name:file.name,fileType:type,version:'v1.0',binaryBase64:base64});
     await refreshStories();
-    tt('Upload: '+name+' ('+v+')','#16A34A');
+    tt('Upload: '+file.name,'#16A34A');
   }
   async function setBug(us){await apiPost('/stories/'+us+'/bugfix',{});await refreshStories();tt(us+' → Bugfix 🐛','#DC3545')}
   async function resBug(us){await apiPost('/stories/'+us+'/bugfix-resolve',{});await refreshStories();tt(us+' → Resolvido ✓','#16A34A')}
@@ -862,7 +907,7 @@ function App() {
       panel==='gp'&&gpV==='epic'&&selEp?React.createElement(GPEpicDetail,{epic:epics.find(function(e){return e.id===selEp}),stories:stories,onBack:function(){setGpV('dash')},onStory:goStory}):null,
       panel==='arch'&&archV==='dash'?React.createElement(ArchDash,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
       panel==='arch'&&archV==='board'?React.createElement(ArchBoard,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
-      panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onBugfix:setBug,onBugfixResolve:resBug,onEdit:openEditStory,onDeleteFile:deleteFile}):null,
+      panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onFileUpload:uploadFile,onBugfix:setBug,onBugfixResolve:resBug,onEdit:openEditStory,onDeleteFile:deleteFile}):null,
       panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null
     ),
     showNE?React.createElement(Modal,{title:'Novo Épico',onClose:function(){setShowNE(false)}},
@@ -890,9 +935,33 @@ function App() {
         React.createElement(FormField,{label:'Prevista'},React.createElement(Input,{type:'date',value:fs.planned,onChange:function(v){setFs(Object.assign({},fs,{planned:v}))}}))
       ),
       React.createElement(FormField,{label:'Sprint'},React.createElement(Input,{value:fs.sprint,onChange:function(v){setFs(Object.assign({},fs,{sprint:v}))},placeholder:'Sprint 12'})),
+      React.createElement('div',{style:{marginTop:6}},
+        React.createElement(UploadZone,{
+          label:'Anexar História Funcional (.docx)',
+          hint:'Arraste ou clique para selecionar a HF',
+          accept:'.docx',
+          fileName:fs.hfFile?fs.hfFile.name:null,
+          onFileSelected:function(file,base64){setFs(Object.assign({},fs,{hfFile:file,hfBase64:base64}))}
+        }),
+        fs.hfFile?React.createElement('div',{style:{marginTop:6,display:'flex',alignItems:'center',gap:8}},
+          React.createElement('span',{style:{color:C.teal,fontSize:12}}, '📄 '+fs.hfFile.name+' ('+Math.round(fs.hfFile.size/1024)+'KB)'),
+          React.createElement('button',{onClick:function(){setFs(Object.assign({},fs,{hfFile:null,hfBase64:null}))},style:{background:'none',border:'none',color:'#DC3545',cursor:'pointer',fontSize:12}},'✕ Remover')
+        ):null
+      ),
       React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:10}},
         React.createElement(Btn,{outline:true,onClick:function(){setShowNS(false)}},'Cancelar'),
-        React.createElement(Btn,{onClick:function(){setShowNS(false);apiPost('/stories',{us:fs.us,title:fs.title,epicId:fs.epicId,priority:fs.priority,assignee:fs.assignee,sprint:fs.sprint,plannedDate:fs.planned}).then(refreshStories);tt('História criada!',C.teal)}},'Criar')
+        React.createElement(Btn,{onClick:async function(){
+          setShowNS(false);
+          await apiPost('/stories',{us:fs.us,title:fs.title,epicId:fs.epicId,priority:fs.priority,assignee:fs.assignee,sprint:fs.sprint,plannedDate:fs.planned});
+          if(fs.hfFile&&fs.hfBase64){
+            await apiPost('/stories/'+fs.us+'/files',{name:fs.hfFile.name,fileType:'hf',version:'v1.0',binaryBase64:fs.hfBase64});
+            tt('US criada com HF anexada!',C.teal);
+          } else {
+            tt('História criada!',C.teal);
+          }
+          setFs({us:'',title:'',epicId:'EP-01',priority:'medium',assignee:'Alberto',planned:'',sprint:'',hfFile:null,hfBase64:null});
+          await refreshStories();
+        }},'Criar')
       )
     ):null,
     editStory?React.createElement(Modal,{title:'Editar '+editStory.us,onClose:function(){setEditStory(null)}},
