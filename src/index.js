@@ -10,6 +10,7 @@ import downloadRoutes from './routes/download.js';
 import exportRoutes from './routes/exports.js';
 import deploysRoutes from './routes/deploys.js';
 import almRoutes, { initAlmTables } from './routes/alm.js';
+import devopsRoutes from './routes/devops.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -95,6 +96,7 @@ app.use('/api/download', downloadRoutes);
 app.use('/api/exports', exportRoutes);
 app.use('/api/deploys', deploysRoutes);
 app.use('/api/alm', almRoutes);
+app.use('/api/devops', devopsRoutes);
 
 // Job status polling
 app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
