@@ -293,6 +293,30 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const items = Array.isArray(r) ? r : [r];
           const okCount = items.filter(i => i.success).length;
           results.push({ step: objectName, ok: okCount === items.length, message: okCount === items.length ? `✅ ${objectName}: ${okCount} deleted` : `❌ ${okCount}/${items.length} deleted` });
+        } else if (step.action === 'metadata-deploy-xml') {
+          const conn = await connectToOrg(org);
+          const archiver = (await import('archiver')).default;
+          const chunks = [];
+          const archive = archiver('zip', { zlib: { level: 9 } });
+          archive.on('data', chunk => chunks.push(chunk));
+          const done = new Promise((resolve, reject) => { archive.on('end', resolve); archive.on('error', reject); });
+          for (const f of step.files || []) {
+            archive.append(Buffer.from(f.content, 'utf-8'), { name: f.path });
+          }
+          archive.finalize();
+          await done;
+          const deployBuf = Buffer.concat(chunks);
+          const deployResult = await conn.metadata.deploy(deployBuf, { rollbackOnError: true, singlePackage: true });
+          let deployStatus = null;
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            deployStatus = await conn.metadata.checkDeployStatus(deployResult.id, true);
+            if (deployStatus.done) break;
+          }
+          const ok = deployStatus?.success;
+          const details = deployStatus?.details?.componentFailures;
+          const failMsgs = details ? (Array.isArray(details) ? details : [details]).map(f => `${f.fullName}: ${f.problem}`).join('; ') : '';
+          results.push({ step: 'metadata-deploy-xml', ok: !!ok, message: ok ? `✅ Deploy succeeded (${step.files?.length || 0} files)` : `❌ Deploy failed: ${failMsgs.substring(0,400)}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
