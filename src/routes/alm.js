@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from '../config/db.js';
+import mammoth from 'mammoth';
 
 const router = Router();
 
@@ -55,6 +56,12 @@ export async function initAlmTables() {
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_alm_files_story ON alm_files(story_id)');
 
+  // DevOps pipeline: processing_status for HF files
+  try { await pool.query('ALTER TABLE alm_files ADD COLUMN IF NOT EXISTS processing_status VARCHAR(20) DEFAULT \'none\''); } catch {}
+  try { await pool.query('ALTER TABLE alm_files ADD COLUMN IF NOT EXISTS binary_content TEXT'); } catch {}
+  try { await pool.query('ALTER TABLE alm_files ADD COLUMN IF NOT EXISTS extracted_text TEXT'); } catch {}
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_alm_files_procstatus ON alm_files(processing_status)');
+
   await pool.query(`CREATE TABLE IF NOT EXISTS alm_trace (
     id SERIAL PRIMARY KEY,
     story_id VARCHAR(30) REFERENCES alm_stories(id) ON DELETE CASCADE,
@@ -90,8 +97,8 @@ async function getArtifacts(storyId) {
 }
 
 async function getFiles(storyId) {
-  const res = await pool.query('SELECT id,name,file_type,version,file_date FROM alm_files WHERE story_id=$1 ORDER BY created_at', [storyId]);
-  return res.rows.map(r => ({ id:r.id, name:r.name, type:r.file_type, version:r.version, date:r.file_date?r.file_date.toISOString().slice(0,10):null }));
+  const res = await pool.query('SELECT id,name,file_type,version,file_date,processing_status FROM alm_files WHERE story_id=$1 ORDER BY created_at', [storyId]);
+  return res.rows.map(r => ({ id:r.id, name:r.name, type:r.file_type, version:r.version, date:r.file_date?r.file_date.toISOString().slice(0,10):null, processingStatus:r.processing_status||'none' }));
 }
 
 async function addTrace(storyId, event, stage, icon) {
@@ -224,15 +231,30 @@ router.post('/stories/:us/bugfix-resolve', async (req, res) => {
 /* ═══ FILES ═══ */
 router.post('/stories/:us/files', async (req, res) => {
   try {
-    const {name,fileType,version,content} = req.body;
-    const result = await pool.query('INSERT INTO alm_files(story_id,name,file_type,version,content) VALUES($1,$2,$3,$4,$5) RETURNING id',
-      [req.params.us, name, fileType||'other', version||'v1.0', content||null]);
+    const {name,fileType,version,content,binaryBase64} = req.body;
+    const procStatus = fileType === 'hf' ? 'pendente' : 'none';
+    let extractedText = null;
+
+    // If docx binary provided, extract text with mammoth
+    if (binaryBase64 && (name.endsWith('.docx') || name.endsWith('.DOCX'))) {
+      try {
+        const buf = Buffer.from(binaryBase64, 'base64');
+        const result = await mammoth.extractRawText({ buffer: buf });
+        extractedText = result.value;
+      } catch (ex) { console.error('mammoth extract error:', ex.message); }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO alm_files(story_id,name,file_type,version,content,binary_content,extracted_text,processing_status)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+      [req.params.us, name, fileType||'other', version||'v1.0', content||extractedText||null, binaryBase64||null, extractedText||null, procStatus]
+    );
     // Auto-set artifact flag
     if (['hf','spec','adr','cenario','zip'].includes(fileType)) {
       await setArtifact(req.params.us, fileType, true);
     }
     await addTrace(req.params.us, 'Upload: ' + name, null, '📎');
-    res.json({status:'uploaded', fileId:result.rows[0].id});
+    res.json({status:'uploaded', fileId:result.rows[0].id, processingStatus:procStatus, textExtracted:!!extractedText});
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
@@ -306,6 +328,91 @@ router.delete('/stories/:us/files/:fileId', async (req, res) => {
   try {
     await pool.query('DELETE FROM alm_files WHERE id=$1 AND story_id=$2', [req.params.fileId, req.params.us]);
     res.json({status:'deleted'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+/* ═══ DEVOPS PIPELINE — HF Processing ═══ */
+
+// List stories with pending HF files (for /devops command)
+router.get('/pending-devops', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT s.id as story_id, s.title, s.epic_id, s.stage, s.priority,
+             f.id as file_id, f.name as file_name, f.file_type, f.processing_status, f.created_at as file_uploaded
+      FROM alm_stories s
+      JOIN alm_files f ON f.story_id = s.id
+      WHERE f.file_type = 'hf' AND f.processing_status = 'pendente'
+      ORDER BY f.created_at ASC
+    `);
+    const stories = {};
+    result.rows.forEach(r => {
+      if (!stories[r.story_id]) {
+        stories[r.story_id] = {
+          us: r.story_id, title: r.title, epicId: r.epic_id, stage: r.stage, priority: r.priority, hfFiles: []
+        };
+      }
+      stories[r.story_id].hfFiles.push({
+        fileId: r.file_id, name: r.file_name, uploaded: r.file_uploaded ? r.file_uploaded.toISOString().slice(0,10) : null
+      });
+    });
+    res.json({ pending: Object.values(stories), count: Object.keys(stories).length });
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Extract text from a file (mammoth for docx, plain for text)
+router.get('/files/:id/extract', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, file_type, content, binary_content, extracted_text FROM alm_files WHERE id=$1', [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({error:'File not found'});
+    const f = result.rows[0];
+
+    // If already extracted, return cached
+    if (f.extracted_text) {
+      return res.json({ fileId: f.id, name: f.name, type: f.file_type, text: f.extracted_text, source: 'cached' });
+    }
+
+    // If binary docx, extract now
+    if (f.binary_content && (f.name.endsWith('.docx') || f.name.endsWith('.DOCX'))) {
+      const buf = Buffer.from(f.binary_content, 'base64');
+      const mammothResult = await mammoth.extractRawText({ buffer: buf });
+      const text = mammothResult.value;
+      // Cache the extracted text
+      await pool.query('UPDATE alm_files SET extracted_text=$1 WHERE id=$2', [text, f.id]);
+      return res.json({ fileId: f.id, name: f.name, type: f.file_type, text, source: 'mammoth' });
+    }
+
+    // Fallback to content field
+    if (f.content) {
+      return res.json({ fileId: f.id, name: f.name, type: f.file_type, text: f.content, source: 'content' });
+    }
+
+    res.status(400).json({error:'No extractable content found'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Update file processing status
+router.put('/files/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body; // pendente, processando, concluido, erro
+    const valid = ['none','pendente','processando','concluido','erro'];
+    if (!valid.includes(status)) return res.status(400).json({error:'Invalid status. Use: ' + valid.join(', ')});
+    await pool.query('UPDATE alm_files SET processing_status=$1 WHERE id=$2', [status, req.params.id]);
+    res.json({status:'updated', processingStatus:status});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Set story stage directly (for post-devops transition)
+router.post('/stories/:us/set-stage', async (req, res) => {
+  try {
+    const { stage } = req.body;
+    const validStages = ['backlog','refinamento','hf','spec','dev','testes','deploy','homologacao','bugfix'];
+    if (!validStages.includes(stage)) return res.status(400).json({error:'Invalid stage'});
+    const r = await pool.query('SELECT stage FROM alm_stories WHERE id=$1', [req.params.us]);
+    if (!r.rows.length) return res.status(404).json({error:'Story not found'});
+    const prev = r.rows[0].stage;
+    await pool.query('UPDATE alm_stories SET stage=$1, prev_stage=$2, updated_at=NOW() WHERE id=$3', [stage, prev, req.params.us]);
+    await addTrace(req.params.us, (STAGE_LABELS[stage]||stage) + ' (devops)', stage, STAGE_ICONS[stage]||'⚙️');
+    res.json({status:'moved', from:prev, to:stage});
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
