@@ -52,6 +52,7 @@ app.post('/api/migrate', async (req, res) => {
 // Health
 app.get('/api/health', (req, res) => {
   res.json({ status: 'running', server: 'i9-mcp', version: '1.0.1' });
+});
 
 // ── GET /api/validate-email — SafetyEmail mock endpoint (CRMB2B-173) ──
 app.get('/api/validate-email', (req, res) => {
@@ -83,7 +84,6 @@ app.get('/api/validate-email', (req, res) => {
   
   // Default: valid
   return res.json({ valid: true, reason: 'Email valido', provider: domain, disposable: false, catchAll: false });
-});
 });
 
 // Init DB
