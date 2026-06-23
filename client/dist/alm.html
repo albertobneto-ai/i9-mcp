@@ -776,11 +776,17 @@ function FuncBoard(props){
             transition:'box-shadow .15s',
           },onMouseEnter:function(e){e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'},
             onMouseLeave:function(e){e.currentTarget.style.boxShadow='none'}},
-            React.createElement('div',{style:{fontWeight:700,fontSize:13,color:C.text,marginBottom:4}},card.storyId),
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+              React.createElement('span',{style:{fontWeight:700,fontSize:13,color:C.text}},card.storyId),
+              React.createElement('span',{style:{fontSize:9,fontWeight:700,color:'#fff',background:(FSM[card.status]||{c:'#999'}).c,borderRadius:10,padding:'2px 8px',textTransform:'uppercase',letterSpacing:.5}},(FSM[card.status]||{l:'?'}).l)
+            ),
             React.createElement('div',{style:{fontSize:12,color:C.textSec,marginBottom:8,lineHeight:1.4}},
               (card.storyTitle||'').length>60?(card.storyTitle||'').substring(0,60)+'...':card.storyTitle),
             React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
-              card.assignedTo?React.createElement('span',{style:{fontSize:10,color:C.textMuted,background:C.bg,borderRadius:6,padding:'2px 8px'}},card.assignedTo):null,
+              React.createElement('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                card.assignedTo?React.createElement('span',{style:{fontSize:10,color:C.textMuted,background:C.bg,borderRadius:6,padding:'2px 8px'}},card.assignedTo):null,
+                card.inputDescription?React.createElement('span',{style:{fontSize:9,color:'#059669',fontWeight:600}},'✓ Requisito'):React.createElement('span',{style:{fontSize:9,color:'#DC2626',fontWeight:600}},'⚠ Sem requisito')
+              ),
               React.createElement('div',{style:{display:'flex',alignItems:'center',gap:6}},
                 card.hfVersion>0?React.createElement('span',{style:{fontSize:10,color:C.teal,fontWeight:600}},'v'+card.hfVersion):null,
                 card.pendingReviews>0?React.createElement('span',{style:{fontSize:10,color:'#F59E0B',fontWeight:700,background:'#FEF3C7',borderRadius:6,padding:'2px 6px'}},card.pendingReviews+' rev'):null
