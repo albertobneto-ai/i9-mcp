@@ -515,4 +515,27 @@ router.post('/seed', async (req, res) => {
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
+/* ═══ ONE-TIME MIGRATION (safe, idempotent) ═══ */
+router.post('/migrate', async (req, res) => {
+  try {
+    const results = [];
+    const migrations = [
+      "ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS content TEXT",
+      "ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS version INT DEFAULT 1",
+      "ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)",
+      "ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_status VARCHAR(30) DEFAULT 'none'",
+      "ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0"
+    ];
+    for (const sql of migrations) {
+      try {
+        await pool.query(sql);
+        results.push({ sql: sql.substring(0, 60), status: 'ok' });
+      } catch(e) {
+        results.push({ sql: sql.substring(0, 60), status: 'skip', reason: e.message });
+      }
+    }
+    res.json({ status: 'migrated', results });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
