@@ -43,6 +43,12 @@ export async function initAlmTables() {
   )`);
   await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_alm_art_unique ON alm_artifacts(story_id, artifact_type)');
 
+  // Pipeline multi-agent: content storage for artifacts (additive — jun/2026)
+  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS content TEXT'); } catch {}
+  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS version INT DEFAULT 1'); } catch {}
+  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)'); } catch {}
+  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS iteration INT DEFAULT 1'); } catch {}
+
   await pool.query(`CREATE TABLE IF NOT EXISTS alm_files (
     id SERIAL PRIMARY KEY,
     story_id VARCHAR(30) REFERENCES alm_stories(id) ON DELETE CASCADE,
@@ -105,9 +111,19 @@ async function addTrace(storyId, event, stage, icon) {
   await pool.query('INSERT INTO alm_trace(story_id,event,stage,icon) VALUES($1,$2,$3,$4)', [storyId,event,stage||null,icon||'📋']);
 }
 
-async function setArtifact(storyId, type, has) {
-  await pool.query(`INSERT INTO alm_artifacts(story_id,artifact_type,has_artifact,updated_at) VALUES($1,$2,$3,NOW())
-    ON CONFLICT(story_id,artifact_type) DO UPDATE SET has_artifact=$3, updated_at=NOW()`, [storyId,type,has!==false]);
+async function setArtifact(storyId, type, has, opts) {
+  const o = opts || {};
+  if (o.content) {
+    // Full artifact with content (pipeline multi-agent)
+    await pool.query(`INSERT INTO alm_artifacts(story_id,artifact_type,has_artifact,content,version,agent,iteration,updated_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,NOW())
+      ON CONFLICT(story_id,artifact_type) DO UPDATE SET has_artifact=$3, content=$4, version=$5, agent=$6, iteration=$7, updated_at=NOW()`,
+      [storyId, type, has!==false, typeof o.content==='string'?o.content:JSON.stringify(o.content), o.version||1, o.agent||null, o.iteration||1]);
+  } else {
+    // Legacy flag-only mode (retrocompatible)
+    await pool.query(`INSERT INTO alm_artifacts(story_id,artifact_type,has_artifact,updated_at) VALUES($1,$2,$3,NOW())
+      ON CONFLICT(story_id,artifact_type) DO UPDATE SET has_artifact=$3, updated_at=NOW()`, [storyId,type,has!==false]);
+  }
 }
 
 /* ═══ EPICS ═══ */
@@ -268,9 +284,75 @@ router.get('/stories/:us/files', async (req, res) => {
 /* ═══ ARTIFACTS ═══ */
 router.post('/stories/:us/artifacts', async (req, res) => {
   try {
-    const {type,has} = req.body;
-    await setArtifact(req.params.us, type, has);
-    res.json({status:'updated'});
+    const {type, has, content, version, agent, iteration} = req.body;
+    await setArtifact(req.params.us, type, has, {content, version, agent, iteration});
+    if (content) {
+      await addTrace(req.params.us, `Artifact ${type} v${version||1} by ${agent||'system'}`, null, '📦');
+    }
+    res.json({status:'updated', type, version: version||1, hasContent: !!content});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+/* ═══ ARTIFACTS — READ (pipeline multi-agent) ═══ */
+router.get('/stories/:us/artifacts', async (req, res) => {
+  try {
+    const typeFilter = req.query.type;
+    let query, params;
+    if (typeFilter) {
+      query = 'SELECT artifact_type,has_artifact,content,version,agent,iteration,updated_at FROM alm_artifacts WHERE story_id=$1 AND artifact_type=$2 ORDER BY updated_at DESC';
+      params = [req.params.us, typeFilter];
+    } else {
+      query = 'SELECT artifact_type,has_artifact,content,version,agent,iteration,updated_at FROM alm_artifacts WHERE story_id=$1 ORDER BY updated_at DESC';
+      params = [req.params.us];
+    }
+    const result = await pool.query(query, params);
+    const artifacts = result.rows.map(r => {
+      const a = { type: r.artifact_type, has: r.has_artifact, version: r.version||1, agent: r.agent, iteration: r.iteration||1, updated: r.updated_at?r.updated_at.toISOString():null };
+      if (r.content) {
+        try { a.content = JSON.parse(r.content); } catch { a.content = r.content; }
+      }
+      return a;
+    });
+    res.json(artifacts);
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+/* ═══ PIPELINE STATUS ═══ */
+router.get('/stories/:us/pipeline', async (req, res) => {
+  try {
+    const storyRes = await pool.query('SELECT id,title,stage FROM alm_stories WHERE id=$1', [req.params.us]);
+    if (!storyRes.rows.length) return res.status(404).json({error:'Story not found'});
+    const story = storyRes.rows[0];
+
+    const artRes = await pool.query(
+      'SELECT artifact_type,has_artifact,version,agent,iteration,updated_at FROM alm_artifacts WHERE story_id=$1 ORDER BY updated_at',
+      [req.params.us]
+    );
+
+    const agents = {BA:null, SA:null, DEV:null, QA_TECH:null, QA_FUNC:null};
+    let maxIteration = 0;
+    for (const r of artRes.rows) {
+      const ag = r.agent;
+      if (ag && agents.hasOwnProperty(ag)) {
+        agents[ag] = { type: r.artifact_type, version: r.version, iteration: r.iteration, updated: r.updated_at?r.updated_at.toISOString():null };
+      }
+      if (r.iteration > maxIteration) maxIteration = r.iteration;
+    }
+
+    const traceRes = await pool.query(
+      'SELECT event,stage,icon,created_at FROM alm_trace WHERE story_id=$1 ORDER BY created_at',
+      [req.params.us]
+    );
+
+    res.json({
+      us: story.id,
+      title: story.title,
+      stage: story.stage,
+      iteration: maxIteration || 0,
+      agents,
+      artifacts: artRes.rows.map(r => ({ type:r.artifact_type, has:r.has_artifact, version:r.version, agent:r.agent, iteration:r.iteration })),
+      timeline: traceRes.rows.map(t => ({ event:t.event, stage:t.stage, icon:t.icon, date:t.created_at?t.created_at.toISOString():null }))
+    });
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
