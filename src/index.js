@@ -26,6 +26,29 @@ app.use((req, res, next) => {
   next();
 });
 
+// One-time DB migration endpoint (safe to call multiple times)
+app.post('/api/migrate', async (req, res) => {
+  try {
+    const results = [];
+    const cols = [
+      ['alm_artifacts', 'content', 'TEXT'],
+      ['alm_artifacts', 'version', 'INT DEFAULT 1'],
+      ['alm_artifacts', 'agent', 'VARCHAR(30)'],
+      ['alm_artifacts', 'iteration', 'INT DEFAULT 1']
+    ];
+    for (const [table, col, def] of cols) {
+      try {
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+        results.push({ col, status: 'added' });
+      } catch (e) {
+        if (e.code === '42701') results.push({ col, status: 'already_exists' });
+        else results.push({ col, status: 'error', message: e.message });
+      }
+    }
+    res.json({ status: 'migrated', results });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Health
 app.get('/api/health', (req, res) => {
   res.json({ status: 'running', server: 'i9-mcp', version: '1.0.1' });
