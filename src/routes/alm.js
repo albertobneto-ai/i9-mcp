@@ -44,10 +44,21 @@ export async function initAlmTables() {
   await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_alm_art_unique ON alm_artifacts(story_id, artifact_type)');
 
   // Pipeline multi-agent: content storage for artifacts (additive — jun/2026)
-  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS content TEXT'); } catch {}
-  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS version INT DEFAULT 1'); } catch {}
-  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)'); } catch {}
-  try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS iteration INT DEFAULT 1'); } catch {}
+  const migrateCols = [
+    ['content', 'TEXT'],
+    ['version', 'INT DEFAULT 1'],
+    ['agent', 'VARCHAR(30)'],
+    ['iteration', 'INT DEFAULT 1']
+  ];
+  for (const [col, def] of migrateCols) {
+    try {
+      await pool.query(`ALTER TABLE alm_artifacts ADD COLUMN ${col} ${def}`);
+      console.log(`[ALM] Column ${col} added to alm_artifacts`);
+    } catch (e) {
+      if (e.code === '42701') { console.log(`[ALM] Column ${col} already exists`); }
+      else { console.error(`[ALM] Error adding ${col}:`, e.message); }
+    }
+  }
 
   await pool.query(`CREATE TABLE IF NOT EXISTS alm_files (
     id SERIAL PRIMARY KEY,
