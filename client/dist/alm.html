@@ -753,8 +753,126 @@ async function apiPut(path, body) {
 }
 
 /* ═══ APP ═══ */
+
+/* ═══ FUNCTIONAL MODULE COMPONENTS ═══ */
+var FSTAGES=[{k:'backlog',l:'Backlog',c:'#6B7280'},{k:'gerando',l:'Gerando HF',c:'#8B5CF6'},{k:'escrita',l:'Escrita HF',c:'#3B82F6'},{k:'revisao',l:'Em Revisão',c:'#F59E0B'},{k:'aprovado',l:'Aprovado',c:'#10B981'}];
+var FSM={};FSTAGES.forEach(function(s){FSM[s.k]=s});
+
+function FuncBoard(props){
+  var cols=FSTAGES.map(function(st){
+    var items=(props.cards||[]).filter(function(c){return c.status===st.k});
+    return React.createElement('div',{key:st.k,style:{flex:1,minWidth:200}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:12,padding:'0 4px'}},
+        React.createElement('div',{style:{width:10,height:10,borderRadius:'50%',background:st.c}}),
+        React.createElement('span',{style:{color:C.text,fontWeight:700,fontSize:13}},st.l),
+        React.createElement('span',{style:{color:C.textMuted,fontSize:11,fontWeight:600,background:C.bg,borderRadius:10,padding:'2px 8px'}},items.length)
+      ),
+      React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8,minHeight:120}},
+        items.length===0?React.createElement('div',{style:{color:C.textMuted,fontSize:12,fontStyle:'italic',padding:'20px 8px',textAlign:'center'}},'Nenhum card'):
+        items.map(function(card){
+          return React.createElement('div',{key:card.id,onClick:function(){props.onSelect(card)},style:{
+            background:C.card,border:'1px solid '+C.border,borderRadius:10,padding:'14px 16px',cursor:'pointer',
+            borderLeft:'4px solid '+(FSM[card.status]||{c:C.border}).c,
+            transition:'box-shadow .15s',
+          },onMouseEnter:function(e){e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'},
+            onMouseLeave:function(e){e.currentTarget.style.boxShadow='none'}},
+            React.createElement('div',{style:{fontWeight:700,fontSize:13,color:C.text,marginBottom:4}},card.storyId),
+            React.createElement('div',{style:{fontSize:12,color:C.textSec,marginBottom:8,lineHeight:1.4}},
+              (card.storyTitle||'').length>60?(card.storyTitle||'').substring(0,60)+'...':card.storyTitle),
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+              card.assignedTo?React.createElement('span',{style:{fontSize:10,color:C.textMuted,background:C.bg,borderRadius:6,padding:'2px 8px'}},card.assignedTo):null,
+              React.createElement('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                card.hfVersion>0?React.createElement('span',{style:{fontSize:10,color:C.teal,fontWeight:600}},'v'+card.hfVersion):null,
+                card.pendingReviews>0?React.createElement('span',{style:{fontSize:10,color:'#F59E0B',fontWeight:700,background:'#FEF3C7',borderRadius:6,padding:'2px 6px'}},card.pendingReviews+' rev'):null
+              )
+            )
+          );
+        })
+      )
+    );
+  });
+  return React.createElement('div',null,
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}},
+      React.createElement('h2',{style:{color:C.text,fontSize:20,fontWeight:800,margin:0}},'Funcional — Histórias'),
+      React.createElement('span',{style:{color:C.textMuted,fontSize:12}},(props.cards||[]).length+' cards')
+    ),
+    React.createElement('div',{style:{display:'flex',gap:16,overflowX:'auto',paddingBottom:12}},cols)
+  );
+}
+
+function FuncDetail(props){
+  var card=props.card;
+  var st=FSM[card.status]||{l:card.status,c:C.border};
+  var reviews=(card.reviews||[]);
+  var pending=reviews.filter(function(r){return r.status==='pending'});
+  var done=reviews.filter(function(r){return r.status==='done'});
+  var hf=card.hfContent;
+
+  return React.createElement('div',null,
+    React.createElement('button',{onClick:props.onBack,style:{background:'none',border:'none',color:C.teal,cursor:'pointer',fontSize:13,fontWeight:600,marginBottom:16,padding:0}},'← Voltar ao Board'),
+    React.createElement(Card,{title:card.storyId+' — '+card.storyTitle},
+      React.createElement('div',{style:{display:'flex',gap:12,marginBottom:16,flexWrap:'wrap'}},
+        React.createElement('span',{style:{background:st.c,color:'#fff',borderRadius:20,padding:'4px 14px',fontSize:12,fontWeight:700}},st.l),
+        card.hfVersion>0?React.createElement('span',{style:{background:C.bg,color:C.text,borderRadius:20,padding:'4px 14px',fontSize:12,fontWeight:600}},'HF v'+card.hfVersion):null,
+        card.assignedTo?React.createElement('span',{style:{background:C.bg,color:C.textSec,borderRadius:20,padding:'4px 14px',fontSize:12}},'Atribuído: '+card.assignedTo):null,
+        card.createdBy?React.createElement('span',{style:{background:C.bg,color:C.textSec,borderRadius:20,padding:'4px 14px',fontSize:12}},'Criado por: '+card.createdBy):null
+      ),
+      card.inputDescription?React.createElement('div',{style:{marginBottom:16}},
+        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Descrição do Requisito'),
+        React.createElement('div',{style:{fontSize:13,color:C.textSec,lineHeight:1.6,background:C.bg,borderRadius:8,padding:'12px 16px'}},card.inputDescription)
+      ):null,
+      hf?React.createElement('div',{style:{marginBottom:16}},
+        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Conteúdo da HF'),
+        React.createElement('div',{style:{background:C.bg,borderRadius:8,padding:'12px 16px',maxHeight:300,overflow:'auto'}},
+          typeof hf==='object'?Object.keys(hf).map(function(k){
+            var val=hf[k];
+            return React.createElement('div',{key:k,style:{marginBottom:10}},
+              React.createElement('span',{style:{fontSize:11,fontWeight:700,color:C.teal,textTransform:'uppercase'}},k),
+              Array.isArray(val)?React.createElement('ul',{style:{margin:'4px 0',paddingLeft:20}},
+                val.map(function(v,i){return React.createElement('li',{key:i,style:{fontSize:12,color:C.textSec,marginBottom:2}},v)})
+              ):React.createElement('p',{style:{fontSize:12,color:C.textSec,margin:'4px 0'}},String(val))
+            );
+          }):React.createElement('pre',{style:{fontSize:12,color:C.textSec,margin:0,whiteSpace:'pre-wrap'}},JSON.stringify(hf,null,2))
+        )
+      ):null,
+      reviews.length>0?React.createElement('div',{style:{marginBottom:16}},
+        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:8}},'Histórico de Revisões ('+reviews.length+')'),
+        reviews.map(function(rv){
+          var isPending=rv.status==='pending';
+          return React.createElement('div',{key:rv.id,style:{background:isPending?'#FFFBEB':C.bg,border:'1px solid '+(isPending?'#F59E0B':C.border),borderRadius:8,padding:'10px 14px',marginBottom:8}},
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+              React.createElement('span',{style:{fontSize:11,fontWeight:700,color:isPending?'#D97706':'#10B981'}},isPending?'⏳ Pendente':'✅ Resolvido'),
+              React.createElement('span',{style:{fontSize:10,color:C.textMuted}},rv.requestedAt?(rv.requestedAt||'').substring(0,10):'')
+            ),
+            React.createElement('div',{style:{fontSize:12,color:C.text,marginBottom:rv.changeResponse?6:0,fontWeight:500}},'Solicitação: '+rv.changeRequest),
+            rv.changeResponse?React.createElement('div',{style:{fontSize:12,color:'#059669',fontStyle:'italic'}},'Resposta: '+rv.changeResponse):null
+          );
+        })
+      ):null,
+      card.status!=='aprovado'?React.createElement('div',{style:{borderTop:'1px solid '+C.border,paddingTop:16,marginTop:8}},
+        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:8}},'Ações'),
+        React.createElement('div',{style:{display:'flex',gap:10,flexWrap:'wrap',marginBottom:12}},
+          card.status==='escrita'?React.createElement(Btn,{onClick:function(){props.onApprove(card.id)},color:'#10B981'},'✓ Aprovar HF'):null,
+          card.status==='escrita'||card.status==='revisao'?React.createElement('div',{style:{flex:1,minWidth:250}},
+            React.createElement('textarea',{value:props.revText,onChange:function(e){props.setRevText(e.target.value)},placeholder:'Descreva o ajuste necessário...',style:{width:'100%',minHeight:60,border:'1px solid '+C.border,borderRadius:8,padding:'8px 12px',fontSize:12,fontFamily:'inherit',resize:'vertical',background:C.bg,color:C.text,boxSizing:'border-box'}}),
+            React.createElement(Btn,{onClick:function(){props.onRequestReview(card.id,props.revText)},color:'#F59E0B',disabled:!props.revText},'🔄 Solicitar Alteração')
+          ):null
+        )
+      ):React.createElement('div',{style:{borderTop:'1px solid '+C.border,paddingTop:16,marginTop:8,display:'flex',alignItems:'center',gap:12}},
+        React.createElement('span',{style:{color:'#10B981',fontWeight:700,fontSize:14}},'✅ HF Aprovada'),
+        React.createElement('span',{style:{color:C.textMuted,fontSize:12}},'Pronta para download via Claude chat')
+      )
+    )
+  );
+}
+
+
 function App() {
   var _p=useState('gp'),panel=_p[0],setPanel=_p[1];
+  var _fv=useState('board'),funcV=_fv[0],setFuncV=_fv[1];
+  var _fc=useState([]),funcCards=_fc[0],setFuncCards=_fc[1];
+  var _fsel=useState(null),selFuncCard=_fsel[0],setSelFuncCard=_fsel[1];
+  var _frev=useState(''),funcRevText=_frev[0],setFuncRevText=_frev[1];
   var _gv=useState('dash'),gpV=_gv[0],setGpV=_gv[1];
   var _av=useState('dash'),archV=_av[0],setArchV=_av[1];
   var _ep=useState(null),selEp=_ep[0],setSelEp=_ep[1];
@@ -864,6 +982,20 @@ function App() {
   function openEditStory(st){
     setEditStory({us:st.us,title:st.title,epicId:st.epicId,priority:st.priority,assignee:st.assignee||'',sprint:st.sprint||'',plannedDate:st.plannedDate||''});
   }
+  function refreshFuncCards(){
+    fetch(API+'/func/cards',{headers:H}).then(function(r){return r.json()}).then(function(d){setFuncCards(d.cards||[])}).catch(function(){})
+  }
+  function funcApprove(cardId){
+    fetch(API+'/func/cards/'+cardId,{method:'PUT',headers:H,body:JSON.stringify({status:'aprovado'})}).then(function(){
+      showToast('Aprovado!','#10B981');refreshFuncCards();setSelFuncCard(null);setFuncV('board');
+    })
+  }
+  function funcRequestReview(cardId,text){
+    if(!text)return;
+    fetch(API+'/func/cards/'+cardId+'/review',{method:'POST',headers:H,body:JSON.stringify({changeRequest:text})}).then(function(){
+      showToast('Revisão solicitada','#F59E0B');refreshFuncCards();setFuncRevText('');
+    })
+  }
   function goStory(us){setSelUs(us);setArchV('detail');setPanel('arch')}
 
   var aN=[{k:'dash',l:'Dashboard',i:'◉'},{k:'board',l:'Board',i:'▦'},{k:'matrix',l:'Matriz',i:'▤'}];
@@ -875,8 +1007,8 @@ function App() {
         React.createElement('div',{style:{background:C.teal,color:'#fff',padding:'4px 10px',borderRadius:6,fontWeight:800,fontSize:14}},'i9'),
         React.createElement('span',{style:{color:'#fff',fontWeight:700,fontSize:15}},'ALM'),
         React.createElement('div',{style:{display:'flex',gap:2,background:'rgba(255,255,255,.1)',borderRadius:8,padding:3,marginLeft:10}},
-          [{k:'gp',l:'GP',i:'📊'},{k:'arch',l:'Arquiteto',i:'⚙️'}].map(function(p){
-            return React.createElement('button',{key:p.k,onClick:function(){setPanel(p.k);if(p.k==='gp')setGpV('dash');else{setArchV('dash');setSelUs(null)}},style:{
+          [{k:'gp',l:'GP',i:'📊'},{k:'arch',l:'Arquiteto',i:'⚙️'},{k:'func',l:'Funcional',i:'📝'}].map(function(p){
+            return React.createElement('button',{key:p.k,onClick:function(){setPanel(p.k);if(p.k==='gp')setGpV('dash');else if(p.k==='arch'){setArchV('dash');setSelUs(null)}else if(p.k==='func'){setFuncV('board')}},style:{
               background:panel===p.k?C.teal:'transparent',color:panel===p.k?'#fff':'rgba(255,255,255,.6)',
               border:'none',borderRadius:6,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700,
             }},p.i+' '+p.l);
@@ -887,6 +1019,15 @@ function App() {
         aN.map(function(n){
           var active=archV===n.k||(archV==='detail'&&n.k==='board');
           return React.createElement('button',{key:n.k,onClick:function(){setArchV(n.k);setSelUs(null)},style:{
+            background:active?C.teal:'transparent',color:active?'#fff':'rgba(255,255,255,.6)',
+            border:'none',borderRadius:6,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:600,
+          }},n.i+' '+n.l);
+        })
+      ):null,
+      panel==='func'?React.createElement('div',{style:{display:'flex',gap:2,background:'rgba(255,255,255,.08)',borderRadius:8,padding:3}},
+        [{k:'board',l:'Board',i:'▦'}].map(function(n){
+          var active=funcV===n.k||(funcV==='detail'&&n.k==='board');
+          return React.createElement('button',{key:n.k,onClick:function(){setFuncV(n.k);setSelFuncCard(null)},style:{
             background:active?C.teal:'transparent',color:active?'#fff':'rgba(255,255,255,.6)',
             border:'none',borderRadius:6,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:600,
           }},n.i+' '+n.l);
@@ -908,7 +1049,9 @@ function App() {
       panel==='arch'&&archV==='dash'?React.createElement(ArchDash,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
       panel==='arch'&&archV==='board'?React.createElement(ArchBoard,{stories:stories,onSelect:function(st){setSelUs(st.us);setArchV('detail')}}):null,
       panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onFileUpload:uploadFile,onBugfix:setBug,onBugfixResolve:resBug,onEdit:openEditStory,onDeleteFile:deleteFile}):null,
-      panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null
+      panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null,
+      panel==='func'&&funcV==='board'?React.createElement(FuncBoard,{cards:funcCards,onSelect:function(card){setSelFuncCard(card);setFuncV('detail')}}):null,
+      panel==='func'&&funcV==='detail'&&selFuncCard?React.createElement(FuncDetail,{card:selFuncCard,onBack:function(){setFuncV('board');setSelFuncCard(null);refreshFuncCards()},onApprove:funcApprove,onRequestReview:funcRequestReview,revText:funcRevText,setRevText:setFuncRevText}):null
     ),
     showNE?React.createElement(Modal,{title:'Novo Épico',onClose:function(){setShowNE(false)}},
       React.createElement(FormField,{label:'Nome'},React.createElement(Input,{value:fe.name,onChange:function(v){setFe(Object.assign({},fe,{name:v}))},placeholder:'Ex: Conta Master'})),
