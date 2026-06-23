@@ -78,8 +78,8 @@ export async function initAlmTables() {
   try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)'); } catch {}
 
   // Pipeline status on stories (BA → SA → DEV → QA_TECH → QA_FUNC)
-  try { await pool.query('ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_status VARCHAR(30) DEFAULT \'none\''); } catch {}
-  try { await pool.query('ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0'); } catch {}
+  try { await pool.query("ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_status VARCHAR(30) DEFAULT 'none'"); } catch(e) { console.log("ALM migration pipeline_status:", e.message); }
+  try { await pool.query("ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0"); } catch(e) { console.log("ALM migration pipeline_iteration:", e.message); }
 }
 
 /* ═══ HELPER ═══ */
@@ -93,6 +93,8 @@ function row2story(r, artifacts, files) {
     plannedDate:r.planned_date?r.planned_date.toISOString().slice(0,10):null,
     actualDate:r.actual_date?r.actual_date.toISOString().slice(0,10):null,
     created:r.created_at?r.created_at.toISOString().slice(0,10):null,
+    pipelineStatus:r.pipeline_status||'none',
+    pipelineIteration:r.pipeline_iteration||0,
     artifacts: artifacts || {hf:false,spec:false,deploy:false,qa:false,adr:false,cenario:false,zip:false},
     files: files || [],
   };
