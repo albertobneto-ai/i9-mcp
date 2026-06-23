@@ -52,6 +52,38 @@ app.post('/api/migrate', async (req, res) => {
 // Health
 app.get('/api/health', (req, res) => {
   res.json({ status: 'running', server: 'i9-mcp', version: '1.0.1' });
+
+// ── GET /api/validate-email — SafetyEmail mock endpoint (CRMB2B-173) ──
+app.get('/api/validate-email', (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase();
+  if (!email) return res.json({ valid: false, reason: 'Email vazio', provider: null, disposable: false, catchAll: false });
+  
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) return res.json({ valid: false, reason: 'Formato invalido', provider: null, disposable: false, catchAll: false });
+  
+  const domain = email.split('@')[1];
+  
+  // Mock patterns for QA testing
+  const disposableDomains = ['tempmail.com','guerrillamail.com','throwaway.email','mailinator.com','yopmail.com'];
+  const invalidDomains = ['noexist.xyz','fake.invalid','test.invalid'];
+  const catchAllDomains = ['catchall.example.com'];
+  
+  if (invalidDomains.includes(domain)) {
+    return res.json({ valid: false, reason: 'Dominio inexistente', provider: domain, disposable: false, catchAll: false });
+  }
+  if (disposableDomains.includes(domain)) {
+    return res.json({ valid: false, reason: 'Email temporario/descartavel', provider: domain, disposable: true, catchAll: false });
+  }
+  if (catchAllDomains.includes(domain)) {
+    return res.json({ valid: true, reason: 'Dominio catch-all', provider: domain, disposable: false, catchAll: true });
+  }
+  if (email.startsWith('bounce@') || email.startsWith('noreply@')) {
+    return res.json({ valid: false, reason: 'Email nao recebe mensagens', provider: domain, disposable: false, catchAll: false });
+  }
+  
+  // Default: valid
+  return res.json({ valid: true, reason: 'Email valido', provider: domain, disposable: false, catchAll: false });
+});
 });
 
 // Init DB
@@ -360,3 +392,4 @@ app.get('/api/debug/ip', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
+
