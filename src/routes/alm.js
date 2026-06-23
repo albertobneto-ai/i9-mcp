@@ -224,6 +224,10 @@ router.post('/stories', async (req, res) => {
     const {us,title,epicId,priority,assignee,sprint,plannedDate} = req.body;
     await pool.query('INSERT INTO alm_stories(id,title,epic_id,priority,assignee,sprint,planned_date) VALUES($1,$2,$3,$4,$5,$6,$7)',
       [us,title,epicId||null,priority||'medium',assignee||'',sprint||'',plannedDate||null]);
+    // Auto-create func card in backlog
+    try {
+      await pool.query('INSERT INTO alm_func_cards(story_id, created_by) VALUES($1,$2) ON CONFLICT DO NOTHING', [us, assignee||'GP']);
+    } catch(fcErr) { console.log('func card auto-create skip:', fcErr.message); }
     await addTrace(us, 'US criada', 'backlog', '📋');
     res.json({status:'created',us});
   } catch(e) { res.status(500).json({error:e.message}); }
@@ -787,6 +791,16 @@ router.post('/migrate', async (req, res) => {
       } catch(e) {
         results.push({ sql: sql.substring(0, 60), status: 'skip', reason: e.message });
       }
+    }
+    // Backfill: create func cards for stories that don't have one
+    try {
+      const bf = await pool.query(`INSERT INTO alm_func_cards(story_id, created_by)
+        SELECT s.id, 'backfill' FROM alm_stories s
+        WHERE NOT EXISTS (SELECT 1 FROM alm_func_cards fc WHERE fc.story_id = s.id)
+        ON CONFLICT DO NOTHING`);
+      results.push({ sql: 'backfill func_cards for existing stories', status: 'ok', rows: bf.rowCount });
+    } catch(e) {
+      results.push({ sql: 'backfill func_cards', status: 'skip', reason: e.message });
     }
     res.json({ status: 'migrated', results });
   } catch(e) { res.status(500).json({ error: e.message }); }
