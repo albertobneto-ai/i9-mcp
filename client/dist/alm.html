@@ -807,6 +807,10 @@ function FuncDetail(props){
   var pending=reviews.filter(function(r){return r.status==='pending'});
   var done=reviews.filter(function(r){return r.status==='done'});
   var hf=card.hfContent;
+  var isBacklog=card.status==='backlog';
+  var _ed=useState(card.inputDescription||''),editDesc=_ed[0],setEditDesc=_ed[1];
+  var _sav=useState(false),saving=_sav[0],setSaving=_sav[1];
+  var _file=useState(null),attachFile=_file[0],setAttachFile=_file[1];
 
   return React.createElement('div',null,
     React.createElement('button',{onClick:props.onBack,style:{background:'none',border:'none',color:C.teal,cursor:'pointer',fontSize:13,fontWeight:600,marginBottom:16,padding:0}},'← Voltar ao Board'),
@@ -817,6 +821,39 @@ function FuncDetail(props){
         card.assignedTo?React.createElement('span',{style:{background:C.bg,color:C.textSec,borderRadius:20,padding:'4px 14px',fontSize:12}},'Atribuído: '+card.assignedTo):null,
         card.createdBy?React.createElement('span',{style:{background:C.bg,color:C.textSec,borderRadius:20,padding:'4px 14px',fontSize:12}},'Criado por: '+card.createdBy):null
       ),
+      isBacklog?React.createElement('div',{style:{marginBottom:16}},
+        React.createElement('div',{style:{background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:10,padding:'16px 20px',marginBottom:16}},
+          React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'#1E40AF',marginBottom:4}},'📝 Preencha o requisito'),
+          React.createElement('div',{style:{fontSize:12,color:'#3B82F6'}},'Descreva o que precisa ou anexe um arquivo. Quando pronto, o Arquiteto gera a HF via Claude chat.')
+        ),
+        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Descrição do Requisito'),
+        React.createElement('textarea',{value:editDesc,onChange:function(e){setEditDesc(e.target.value)},placeholder:'Descreva a necessidade de negócio, critérios de aceite, regras, perfis envolvidos...',style:{width:'100%',minHeight:120,border:'1px solid '+C.border,borderRadius:8,padding:'12px 16px',fontSize:13,fontFamily:'inherit',resize:'vertical',background:C.card,color:C.text,boxSizing:'border-box',lineHeight:1.6}}),
+        React.createElement('div',{style:{marginTop:12}},
+          React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Anexar Arquivo (opcional)'),
+          React.createElement('input',{type:'file',accept:'.docx,.doc,.pdf,.txt,.xlsx',onChange:function(e){if(e.target.files&&e.target.files[0])setAttachFile(e.target.files[0])},style:{fontSize:12,color:C.textSec}}),
+          attachFile?React.createElement('span',{style:{fontSize:11,color:C.teal,marginLeft:8}},attachFile.name):null
+        ),
+        React.createElement('div',{style:{marginTop:14,display:'flex',gap:10}},
+          React.createElement(Btn,{onClick:function(){
+            setSaving(true);
+            var body={inputDescription:editDesc};
+            fetch(props.apiUrl+'/func/cards/'+card.id,{method:'PUT',headers:props.headers,body:JSON.stringify(body)}).then(function(){
+              if(attachFile){
+                var reader=new FileReader();
+                reader.onload=function(){
+                  var b64=reader.result.split(',')[1];
+                  fetch(props.apiUrl+'/stories/'+card.storyId+'/files',{method:'POST',headers:props.headers,body:JSON.stringify({name:attachFile.name,fileType:'hf',binaryBase64:b64})}).then(function(){
+                    setSaving(false);props.onSaved();
+                  }).catch(function(){setSaving(false)});
+                };
+                reader.readAsDataURL(attachFile);
+              } else {
+                setSaving(false);props.onSaved();
+              }
+            }).catch(function(){setSaving(false)});
+          },color:C.teal,disabled:saving||!editDesc},saving?'Salvando...':'💾 Salvar Requisito')
+        )
+      ):
       card.inputDescription?React.createElement('div',{style:{marginBottom:16}},
         React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Descrição do Requisito'),
         React.createElement('div',{style:{fontSize:13,color:C.textSec,lineHeight:1.6,background:C.bg,borderRadius:8,padding:'12px 16px'}},card.inputDescription)
@@ -983,16 +1020,16 @@ function App() {
     setEditStory({us:st.us,title:st.title,epicId:st.epicId,priority:st.priority,assignee:st.assignee||'',sprint:st.sprint||'',plannedDate:st.plannedDate||''});
   }
   function refreshFuncCards(){
-    fetch(API+'/func/cards',{headers:H}).then(function(r){return r.json()}).then(function(d){setFuncCards(d.cards||[])}).catch(function(){})
+    fetch(API_BASE+'/func/cards',{headers:apiHeaders()}).then(function(r){return r.json()}).then(function(d){setFuncCards(d.cards||[])}).catch(function(){})
   }
   function funcApprove(cardId){
-    fetch(API+'/func/cards/'+cardId,{method:'PUT',headers:H,body:JSON.stringify({status:'aprovado'})}).then(function(){
+    fetch(API_BASE+'/func/cards/'+cardId,{method:'PUT',headers:apiHeaders(),body:JSON.stringify({status:'aprovado'})}).then(function(){
       showToast('Aprovado!','#10B981');refreshFuncCards();setSelFuncCard(null);setFuncV('board');
     })
   }
   function funcRequestReview(cardId,text){
     if(!text)return;
-    fetch(API+'/func/cards/'+cardId+'/review',{method:'POST',headers:H,body:JSON.stringify({changeRequest:text})}).then(function(){
+    fetch(API_BASE+'/func/cards/'+cardId+'/review',{method:'POST',headers:apiHeaders(),body:JSON.stringify({changeRequest:text})}).then(function(){
       showToast('Revisão solicitada','#F59E0B');refreshFuncCards();setFuncRevText('');
     })
   }
@@ -1051,7 +1088,7 @@ function App() {
       panel==='arch'&&archV==='detail'&&selStory?React.createElement(ArchDetail,{item:selStory,epics:epics,onBack:function(){setArchV('board')},onAdvance:advance,onUpload:upload,onFileUpload:uploadFile,onBugfix:setBug,onBugfixResolve:resBug,onEdit:openEditStory,onDeleteFile:deleteFile}):null,
       panel==='arch'&&archV==='matrix'?React.createElement(ArchMatrix,{stories:stories}):null,
       panel==='func'&&funcV==='board'?React.createElement(FuncBoard,{cards:funcCards,onSelect:function(card){setSelFuncCard(card);setFuncV('detail')}}):null,
-      panel==='func'&&funcV==='detail'&&selFuncCard?React.createElement(FuncDetail,{card:selFuncCard,onBack:function(){setFuncV('board');setSelFuncCard(null);refreshFuncCards()},onApprove:funcApprove,onRequestReview:funcRequestReview,revText:funcRevText,setRevText:setFuncRevText}):null
+      panel==='func'&&funcV==='detail'&&selFuncCard?React.createElement(FuncDetail,{card:selFuncCard,onBack:function(){setFuncV('board');setSelFuncCard(null);refreshFuncCards()},onApprove:funcApprove,onRequestReview:funcRequestReview,revText:funcRevText,setRevText:setFuncRevText,apiUrl:API_BASE,headers:apiHeaders(),onSaved:function(){showToast('Requisito salvo!',C.teal);refreshFuncCards()}}):null
     ),
     showNE?React.createElement(Modal,{title:'Novo Épico',onClose:function(){setShowNE(false)}},
       React.createElement(FormField,{label:'Nome'},React.createElement(Input,{value:fe.name,onChange:function(v){setFe(Object.assign({},fe,{name:v}))},placeholder:'Ex: Conta Master'})),
