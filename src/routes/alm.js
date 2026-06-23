@@ -77,6 +77,36 @@ export async function initAlmTables() {
   try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS version INT DEFAULT 1'); } catch {}
   try { await pool.query('ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)'); } catch {}
 
+
+  // ═══ FUNCTIONAL MODULE (jun/2026) ═══
+  await pool.query(`CREATE TABLE IF NOT EXISTS alm_func_cards (
+    id SERIAL PRIMARY KEY,
+    story_id VARCHAR(30) REFERENCES alm_stories(id) ON DELETE CASCADE,
+    status VARCHAR(30) DEFAULT 'backlog',
+    input_description TEXT,
+    input_file_url TEXT,
+    hf_content JSONB,
+    hf_version INT DEFAULT 0,
+    assigned_to VARCHAR(100),
+    created_by VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  )`);
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_func_cards_story ON alm_func_cards(story_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_func_cards_status ON alm_func_cards(status)');
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS alm_func_reviews (
+    id SERIAL PRIMARY KEY,
+    card_id INT REFERENCES alm_func_cards(id) ON DELETE CASCADE,
+    change_request TEXT NOT NULL,
+    change_response TEXT,
+    status VARCHAR(20) DEFAULT 'pending',
+    requested_at TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_func_reviews_card ON alm_func_reviews(card_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_func_reviews_status ON alm_func_reviews(status)');
+
   // Pipeline status on stories (BA → SA → DEV → QA_TECH → QA_FUNC)
   try { await pool.query("ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_status VARCHAR(30) DEFAULT 'none'"); } catch(e) { console.log("ALM migration pipeline_status:", e.message); }
   try { await pool.query("ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0"); } catch(e) { console.log("ALM migration pipeline_iteration:", e.message); }
@@ -487,6 +517,217 @@ router.post('/stories/:us/set-stage', async (req, res) => {
   } catch(e) { res.status(500).json({error:e.message}); }
 });
 
+
+/* ═══ FUNCTIONAL MODULE ═══ */
+const FUNC_STATUSES = ['backlog','gerando','escrita','revisao','aprovado'];
+const FUNC_LABELS = {backlog:'Backlog',gerando:'Gerando HF',escrita:'Escrita HF',revisao:'Em Revisão',aprovado:'Aprovado'};
+
+// List func cards (optional ?status= filter)
+router.get('/func/cards', async (req, res) => {
+  try {
+    let query = 'SELECT fc.*, s.title as story_title, s.epic_id FROM alm_func_cards fc JOIN alm_stories s ON s.id = fc.story_id';
+    const params = [];
+    if (req.query.status) { query += ' WHERE fc.status=$1'; params.push(req.query.status); }
+    query += ' ORDER BY fc.updated_at DESC';
+    const result = await pool.query(query, params);
+    const cards = [];
+    for (const r of result.rows) {
+      const reviews = await pool.query('SELECT id, change_request, change_response, status, requested_at, resolved_at FROM alm_func_reviews WHERE card_id=$1 ORDER BY requested_at DESC', [r.id]);
+      cards.push({
+        id: r.id, storyId: r.story_id, storyTitle: r.story_title, epicId: r.epic_id,
+        status: r.status, inputDescription: r.input_description, inputFileUrl: r.input_file_url,
+        hfContent: r.hf_content, hfVersion: r.hf_version,
+        assignedTo: r.assigned_to, createdBy: r.created_by,
+        createdAt: r.created_at ? r.created_at.toISOString() : null,
+        updatedAt: r.updated_at ? r.updated_at.toISOString() : null,
+        reviews: reviews.rows.map(rv => ({
+          id: rv.id, changeRequest: rv.change_request, changeResponse: rv.change_response,
+          status: rv.status, requestedAt: rv.requested_at ? rv.requested_at.toISOString() : null,
+          resolvedAt: rv.resolved_at ? rv.resolved_at.toISOString() : null
+        })),
+        pendingReviews: reviews.rows.filter(rv => rv.status === 'pending').length
+      });
+    }
+    res.json({ cards, count: cards.length });
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Get single func card
+router.get('/func/cards/:id', async (req, res) => {
+  try {
+    const isStoryId = isNaN(parseInt(req.params.id));
+    const query = isStoryId
+      ? 'SELECT fc.*, s.title as story_title, s.epic_id FROM alm_func_cards fc JOIN alm_stories s ON s.id = fc.story_id WHERE fc.story_id=$1'
+      : 'SELECT fc.*, s.title as story_title, s.epic_id FROM alm_func_cards fc JOIN alm_stories s ON s.id = fc.story_id WHERE fc.id=$1';
+    const result = await pool.query(query, [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({error:'Func card not found'});
+    const r = result.rows[0];
+    const reviews = await pool.query('SELECT id, change_request, change_response, status, requested_at, resolved_at FROM alm_func_reviews WHERE card_id=$1 ORDER BY requested_at DESC', [r.id]);
+    res.json({
+      id: r.id, storyId: r.story_id, storyTitle: r.story_title, epicId: r.epic_id,
+      status: r.status, inputDescription: r.input_description, inputFileUrl: r.input_file_url,
+      hfContent: r.hf_content, hfVersion: r.hf_version,
+      assignedTo: r.assigned_to, createdBy: r.created_by,
+      createdAt: r.created_at ? r.created_at.toISOString() : null,
+      updatedAt: r.updated_at ? r.updated_at.toISOString() : null,
+      reviews: reviews.rows.map(rv => ({
+        id: rv.id, changeRequest: rv.change_request, changeResponse: rv.change_response,
+        status: rv.status, requestedAt: rv.requested_at ? rv.requested_at.toISOString() : null,
+        resolvedAt: rv.resolved_at ? rv.resolved_at.toISOString() : null
+      })),
+      pendingReviews: reviews.rows.filter(rv => rv.status === 'pending').length
+    });
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Create func card (GP creates when adding story)
+router.post('/func/cards', async (req, res) => {
+  try {
+    const {storyId, inputDescription, inputFileUrl, assignedTo, createdBy} = req.body;
+    if (!storyId) return res.status(400).json({error:'storyId required'});
+    // Verify story exists
+    const check = await pool.query('SELECT id FROM alm_stories WHERE id=$1', [storyId]);
+    if (!check.rows.length) return res.status(404).json({error:'Story not found'});
+    const result = await pool.query(
+      `INSERT INTO alm_func_cards(story_id, input_description, input_file_url, assigned_to, created_by)
+       VALUES($1,$2,$3,$4,$5) RETURNING id`,
+      [storyId, inputDescription||null, inputFileUrl||null, assignedTo||null, createdBy||null]
+    );
+    await addTrace(storyId, 'Card funcional criado', null, '📝');
+    res.json({status:'created', id: result.rows[0].id, storyId});
+  } catch(e) {
+    if (e.code === '23505') return res.status(400).json({error:'Func card already exists for this story'});
+    res.status(500).json({error:e.message});
+  }
+});
+
+// Update func card (status, hfContent, description, assignment)
+router.put('/func/cards/:id', async (req, res) => {
+  try {
+    const {status, hfContent, hfVersion, inputDescription, inputFileUrl, assignedTo} = req.body;
+    if (status && !FUNC_STATUSES.includes(status)) {
+      return res.status(400).json({error:'Invalid status. Use: ' + FUNC_STATUSES.join(', ')});
+    }
+    const updates = [];
+    const params = [];
+    let idx = 1;
+    if (status) { updates.push(`status=$${idx++}`); params.push(status); }
+    if (hfContent !== undefined) { updates.push(`hf_content=$${idx++}`); params.push(JSON.stringify(hfContent)); }
+    if (hfVersion !== undefined) { updates.push(`hf_version=$${idx++}`); params.push(hfVersion); }
+    if (inputDescription !== undefined) { updates.push(`input_description=$${idx++}`); params.push(inputDescription); }
+    if (inputFileUrl !== undefined) { updates.push(`input_file_url=$${idx++}`); params.push(inputFileUrl); }
+    if (assignedTo !== undefined) { updates.push(`assigned_to=$${idx++}`); params.push(assignedTo); }
+    updates.push('updated_at=NOW()');
+    if (updates.length <= 1) return res.status(400).json({error:'No fields to update'});
+
+    const isStoryId = isNaN(parseInt(req.params.id));
+    const whereCol = isStoryId ? 'story_id' : 'id';
+    params.push(req.params.id);
+    await pool.query(`UPDATE alm_func_cards SET ${updates.join(',')} WHERE ${whereCol}=$${idx}`, params);
+
+    // Trace status changes
+    if (status) {
+      const cardQ = await pool.query('SELECT story_id FROM alm_func_cards WHERE ' + whereCol + '=$1', [req.params.id]);
+      if (cardQ.rows.length) {
+        await addTrace(cardQ.rows[0].story_id, 'Funcional: ' + (FUNC_LABELS[status]||status), null, '📝');
+      }
+    }
+    res.json({status:'updated'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Create review request (BA solicits change)
+router.post('/func/cards/:id/review', async (req, res) => {
+  try {
+    const {changeRequest} = req.body;
+    if (!changeRequest) return res.status(400).json({error:'changeRequest required'});
+
+    const isStoryId = isNaN(parseInt(req.params.id));
+    const whereCol = isStoryId ? 'story_id' : 'id';
+    const cardQ = await pool.query('SELECT id, story_id FROM alm_func_cards WHERE ' + whereCol + '=$1', [req.params.id]);
+    if (!cardQ.rows.length) return res.status(404).json({error:'Func card not found'});
+    const card = cardQ.rows[0];
+
+    const result = await pool.query(
+      'INSERT INTO alm_func_reviews(card_id, change_request) VALUES($1,$2) RETURNING id',
+      [card.id, changeRequest]
+    );
+    // Move card to revisao
+    await pool.query("UPDATE alm_func_cards SET status='revisao', updated_at=NOW() WHERE id=$1", [card.id]);
+    await addTrace(card.story_id, 'Revisão solicitada: ' + changeRequest.substring(0,80), null, '🔄');
+    res.json({status:'created', reviewId: result.rows[0].id, cardStatus: 'revisao'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Resolve review (Claude applies change)
+router.put('/func/reviews/:id', async (req, res) => {
+  try {
+    const {changeResponse} = req.body;
+    await pool.query(
+      "UPDATE alm_func_reviews SET change_response=$1, status='done', resolved_at=NOW() WHERE id=$2",
+      [changeResponse||'Ajuste aplicado', req.params.id]
+    );
+    // Get card to check pending reviews and move back to escrita
+    const revQ = await pool.query('SELECT card_id FROM alm_func_reviews WHERE id=$1', [req.params.id]);
+    if (revQ.rows.length) {
+      const cardId = revQ.rows[0].card_id;
+      const pending = await pool.query("SELECT COUNT(*) as cnt FROM alm_func_reviews WHERE card_id=$1 AND status='pending'", [cardId]);
+      if (parseInt(pending.rows[0].cnt) === 0) {
+        await pool.query("UPDATE alm_func_cards SET status='escrita', updated_at=NOW() WHERE id=$1", [cardId]);
+      }
+      const cardQ = await pool.query('SELECT story_id FROM alm_func_cards WHERE id=$1', [cardId]);
+      if (cardQ.rows.length) {
+        await addTrace(cardQ.rows[0].story_id, 'Revisão resolvida', null, '✅');
+      }
+    }
+    res.json({status:'resolved'});
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Download-ready: get HF content for docx generation
+router.get('/func/cards/:id/download', async (req, res) => {
+  try {
+    const isStoryId = isNaN(parseInt(req.params.id));
+    const whereCol = isStoryId ? 'story_id' : 'id';
+    const cardQ = await pool.query('SELECT fc.*, s.title as story_title FROM alm_func_cards fc JOIN alm_stories s ON s.id = fc.story_id WHERE fc.' + whereCol + '=$1', [req.params.id]);
+    if (!cardQ.rows.length) return res.status(404).json({error:'Func card not found'});
+    const r = cardQ.rows[0];
+    if (r.status !== 'aprovado') return res.status(400).json({error:'Card must be approved before download. Current status: ' + r.status});
+    if (!r.hf_content) return res.status(400).json({error:'No HF content generated yet'});
+    res.json({
+      storyId: r.story_id, storyTitle: r.story_title,
+      hfContent: r.hf_content, hfVersion: r.hf_version,
+      approvedAt: r.updated_at ? r.updated_at.toISOString() : null
+    });
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+// Pending reviews for Claude (list reviews awaiting resolution)
+router.get('/func/pending-reviews', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT fr.id as review_id, fr.change_request, fr.requested_at,
+             fc.id as card_id, fc.story_id, fc.hf_version, fc.status as card_status,
+             s.title as story_title
+      FROM alm_func_reviews fr
+      JOIN alm_func_cards fc ON fc.id = fr.card_id
+      JOIN alm_stories s ON s.id = fc.story_id
+      WHERE fr.status = 'pending'
+      ORDER BY fr.requested_at ASC
+    `);
+    res.json({
+      reviews: result.rows.map(r => ({
+        reviewId: r.review_id, changeRequest: r.change_request,
+        requestedAt: r.requested_at ? r.requested_at.toISOString() : null,
+        cardId: r.card_id, storyId: r.story_id, storyTitle: r.story_title,
+        hfVersion: r.hf_version, cardStatus: r.card_status
+      })),
+      count: result.rows.length
+    });
+  } catch(e) { res.status(500).json({error:e.message}); }
+});
+
+
 /* ═══ SEED (populate from mock data) ═══ */
 router.post('/seed', async (req, res) => {
   try {
@@ -524,7 +765,20 @@ router.post('/migrate', async (req, res) => {
       "ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS version INT DEFAULT 1",
       "ALTER TABLE alm_artifacts ADD COLUMN IF NOT EXISTS agent VARCHAR(30)",
       "ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_status VARCHAR(30) DEFAULT 'none'",
-      "ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0"
+      "ALTER TABLE alm_stories ADD COLUMN IF NOT EXISTS pipeline_iteration INT DEFAULT 0",
+      `CREATE TABLE IF NOT EXISTS alm_func_cards (
+        id SERIAL PRIMARY KEY, story_id VARCHAR(30) REFERENCES alm_stories(id) ON DELETE CASCADE,
+        status VARCHAR(30) DEFAULT 'backlog', input_description TEXT, input_file_url TEXT,
+        hf_content JSONB, hf_version INT DEFAULT 0, assigned_to VARCHAR(100), created_by VARCHAR(100),
+        created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+      )`,
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_func_cards_story ON alm_func_cards(story_id)",
+      `CREATE TABLE IF NOT EXISTS alm_func_reviews (
+        id SERIAL PRIMARY KEY, card_id INT REFERENCES alm_func_cards(id) ON DELETE CASCADE,
+        change_request TEXT NOT NULL, change_response TEXT, status VARCHAR(20) DEFAULT 'pending',
+        requested_at TIMESTAMPTZ DEFAULT NOW(), resolved_at TIMESTAMPTZ
+      )`,
+      "CREATE INDEX IF NOT EXISTS idx_func_reviews_card ON alm_func_reviews(card_id)"
     ];
     for (const sql of migrations) {
       try {
