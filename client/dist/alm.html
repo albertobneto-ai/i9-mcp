@@ -756,48 +756,103 @@ async function apiPut(path, body) {
 
 /* ═══ FUNCTIONAL MODULE COMPONENTS ═══ */
 
-/* ═══ RECURSIVE HF CONTENT RENDERER ═══ */
-function renderHfValue(val, depth) {
-  depth = depth || 0;
-  if (val === null || val === undefined) return null;
-  if (typeof val === 'string') {
-    return React.createElement('div', {style:{fontSize:12,color:C.textSec,lineHeight:1.6,marginBottom:4,paddingLeft:depth*16}}, val);
-  }
-  if (Array.isArray(val)) {
-    return React.createElement('div', {style:{paddingLeft:depth*16}},
-      val.map(function(item, i) {
-        if (typeof item === 'string') {
-          return React.createElement('div', {key:i, style:{fontSize:12,color:C.textSec,lineHeight:1.5,marginBottom:3,paddingLeft:8,borderLeft:'2px solid '+C.border,marginLeft:0,paddingTop:2,paddingBottom:2}}, item);
-        }
-        if (typeof item === 'object') {
-          return React.createElement('div', {key:i, style:{fontSize:12,color:C.textSec,marginBottom:6,background:i%2===0?'#fff':ROW_ALT,borderRadius:6,padding:'6px 10px',border:'1px solid '+C.border}},
-            Object.keys(item).map(function(k2) {
-              return React.createElement('div', {key:k2, style:{display:'flex',gap:6,marginBottom:2}},
-                React.createElement('span', {style:{fontSize:10,fontWeight:700,color:C.teal,minWidth:80,textTransform:'uppercase'}}, k2.replace(/_/g,' ')+':'),
-                React.createElement('span', {style:{fontSize:11,color:C.textSec}}, String(item[k2]))
-              );
-            })
-          );
-        }
-        return null;
-      })
-    );
-  }
-  if (typeof val === 'object') {
-    return React.createElement('div', {style:{paddingLeft:depth*12}},
-      Object.keys(val).map(function(k2) {
-        var label = k2.replace(/_/g, ' ').replace(/^\d+\.?\s*/, '');
-        return React.createElement('div', {key:k2, style:{marginBottom:8}},
-          React.createElement('div', {style:{fontSize:11,fontWeight:600,color:'#6B7280',marginBottom:3}}, label),
-          renderHfValue(val[k2], depth+1)
-        );
-      })
-    );
-  }
-  return React.createElement('div', {style:{fontSize:12,color:C.textSec}}, String(val));
+/* ═══ HF PREVIEW RENDERER (Nimbus Style) ═══ */
+var HF_PURPLE='#6C44A0',HF_PURPLELIGHT='rgba(108,68,160,.06)',HF_BORDER='#E2EEF4',HF_DARK='#0C2433',HF_SEC='#3D5A6E';
+var HF_SECTIONS={
+  '01':'User Story','02':'Contexto de Negócio','03':'Objetos e Campos','04':'Critérios de Aceitação',
+  '05':'Regras de Negócio','06':'Cenários e Fluxos','07':'Interface e Experiência','08':'Segurança e Acesso',
+  '09':'Integrações e Dependências','10':'Requisitos Não-Funcionais','11':'Sugestão Técnica',
+  '12':'Definition of Done','13':'Perguntas em Aberto','14':'Referências'
+};
+
+function hfSectionNum(key){var m=key.match(/^(\d+)/);return m?m[1]:null}
+function hfSectionLabel(key){var n=hfSectionNum(key);return n&&HF_SECTIONS[n]?HF_SECTIONS[n]:key.replace(/_/g,' ')}
+
+function hfRenderText(text){
+  return React.createElement('div',{style:{fontSize:13,color:HF_DARK,lineHeight:1.7,marginBottom:6}},text);
 }
 
-var ROW_ALT = "F7F7F7";
+function hfRenderUserStory(text){
+  var parts=[];var s=String(text);
+  var comoI=s.indexOf('Como ');var queroI=s.indexOf('eu quero ');if(queroI<0)queroI=s.indexOf('quero ');
+  var paraI=s.indexOf('para que ');if(paraI<0)paraI=s.indexOf('para ');
+  if(comoI>=0&&queroI>0&&paraI>0){
+    parts.push(React.createElement('span',{key:'c',style:{color:HF_PURPLE,fontWeight:700}},'Como '));
+    parts.push(React.createElement('span',{key:'c2',style:{color:HF_DARK}},s.substring(comoI+5,queroI)));
+    parts.push(React.createElement('br',{key:'br1'}));
+    var queroWord=s.indexOf('eu quero ')>=0?'eu quero ':'quero ';
+    parts.push(React.createElement('span',{key:'q',style:{color:HF_PURPLE,fontWeight:700}},queroWord));
+    var paraWord=s.indexOf('para que ')>=0?'para que ':'para ';
+    parts.push(React.createElement('span',{key:'q2',style:{color:HF_DARK}},s.substring(s.indexOf(queroWord)+queroWord.length,paraI)));
+    parts.push(React.createElement('br',{key:'br2'}));
+    parts.push(React.createElement('span',{key:'p',style:{color:HF_PURPLE,fontWeight:700}},paraWord));
+    parts.push(React.createElement('span',{key:'p2',style:{color:HF_DARK}},s.substring(paraI+paraWord.length)));
+  } else { parts.push(React.createElement('span',{key:'f'},s)); }
+  return React.createElement('div',{style:{fontSize:14,lineHeight:1.8,fontStyle:'italic',background:HF_PURPLELIGHT,borderLeft:'4px solid '+HF_PURPLE,borderRadius:'0 10px 10px 0',padding:'16px 20px',margin:'8px 0'}},parts);
+}
+
+function hfRenderStringList(arr,icon){
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:4}},
+    arr.map(function(item,i){
+      var prefix='';var rest=item;
+      var m=item.match(/^([A-Z]{2,3}-\d+):\s*/);
+      if(m){prefix=m[1];rest=item.substring(m[0].length)}
+      return React.createElement('div',{key:i,style:{display:'flex',gap:10,alignItems:'flex-start',padding:'8px 12px',background:i%2===0?'#fff':'#F8FAFC',borderRadius:8,border:'1px solid #F1F5F9'}},
+        React.createElement('span',{style:{fontSize:11,fontWeight:700,color:HF_PURPLE,minWidth:prefix?52:16,flexShrink:0}},prefix||(icon||'•')),
+        React.createElement('span',{style:{fontSize:12,color:HF_DARK,lineHeight:1.6}},rest)
+      );
+    })
+  );
+}
+
+function hfRenderObjTable(arr){
+  if(!arr.length)return null;
+  var keys=Object.keys(arr[0]);
+  return React.createElement('div',{style:{overflowX:'auto',borderRadius:8,border:'1px solid '+HF_BORDER}},
+    React.createElement('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+      React.createElement('thead',null,
+        React.createElement('tr',null,keys.map(function(k){
+          return React.createElement('th',{key:k,style:{background:HF_PURPLE,color:'#fff',padding:'8px 12px',textAlign:'left',fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:.5,whiteSpace:'nowrap'}},k.replace(/_/g,' '));
+        }))
+      ),
+      React.createElement('tbody',null,arr.map(function(row,i){
+        return React.createElement('tr',{key:i},keys.map(function(k){
+          return React.createElement('td',{key:k,style:{padding:'7px 12px',borderBottom:'1px solid #F1F5F9',color:HF_DARK,background:i%2===0?'#fff':'#F8FAFC',fontSize:12}},String(row[k]||''));
+        }));
+      }))
+    )
+  );
+}
+
+function hfRenderSubSections(obj){
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+    Object.keys(obj).map(function(k){
+      var label=k.replace(/_/g,' ').replace(/^\d+\.?\s*/,'');
+      var val=obj[k];
+      return React.createElement('div',{key:k},
+        React.createElement('div',{style:{fontSize:11,fontWeight:700,color:HF_SEC,marginBottom:4,textTransform:'uppercase',letterSpacing:.3}},label),
+        typeof val==='string'?hfRenderText(val):
+        Array.isArray(val)?
+          (val.length>0&&typeof val[0]==='object'?hfRenderObjTable(val):hfRenderStringList(val)):
+        typeof val==='object'?hfRenderSubSections(val):
+        hfRenderText(String(val))
+      );
+    })
+  );
+}
+
+function hfRenderSection(key, val){
+  var num=hfSectionNum(key);
+  if(num==='01'&&typeof val==='string')return hfRenderUserStory(val);
+  if(typeof val==='string')return hfRenderText(val);
+  if(Array.isArray(val)){
+    if(val.length>0&&typeof val[0]==='object')return hfRenderObjTable(val);
+    var icon=num==='12'?'✓':num==='14'?'→':null;
+    return hfRenderStringList(val,icon);
+  }
+  if(typeof val==='object')return hfRenderSubSections(val);
+  return hfRenderText(String(val));
+}
 var FSTAGES=[{k:'backlog',l:'Backlog',c:'#6B7280'},{k:'gerando',l:'Gerando HF',c:'#8B5CF6'},{k:'escrita',l:'Escrita HF',c:'#3B82F6'},{k:'revisao',l:'Em Revisão',c:'#F59E0B'},{k:'aprovado',l:'Aprovado',c:'#10B981'}];
 var FSM={};FSTAGES.forEach(function(s){FSM[s.k]=s});
 
@@ -908,15 +963,31 @@ function FuncDetail(props){
         React.createElement('div',{style:{fontSize:13,color:C.textSec,lineHeight:1.6,background:C.bg,borderRadius:8,padding:'12px 16px'}},card.inputDescription)
       ):null,
       hf?React.createElement('div',{style:{marginBottom:16}},
-        React.createElement('div',{style:{fontSize:11,fontWeight:600,color:C.textMuted,textTransform:'uppercase',marginBottom:6}},'Conteúdo da HF'),
-        React.createElement('div',{style:{background:C.bg,borderRadius:10,padding:'16px 20px',maxHeight:600,overflow:'auto'}},
-          typeof hf==='object'?Object.keys(hf).sort().map(function(k){
-            var label=k.replace(/_/g,' ');
-            return React.createElement('div',{key:k,style:{marginBottom:14,borderBottom:'1px solid '+C.border,paddingBottom:10}},
-              React.createElement('div',{style:{fontSize:12,fontWeight:700,color:C.teal,marginBottom:6,textTransform:'uppercase',letterSpacing:0.5}},label),
-              renderHfValue(hf[k],0)
-            );
-          }):React.createElement('pre',{style:{fontSize:12,color:C.textSec,margin:0,whiteSpace:'pre-wrap'}},JSON.stringify(hf,null,2))
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:12}},
+          React.createElement('div',{style:{width:20,height:20,borderRadius:'50%',background:HF_PURPLE,display:'flex',alignItems:'center',justifyContent:'center'}},
+            React.createElement('span',{style:{color:'#fff',fontSize:10,fontWeight:700}},'HF')
+          ),
+          React.createElement('span',{style:{fontSize:13,fontWeight:700,color:HF_DARK}},'História Funcional'),
+          React.createElement('span',{style:{fontSize:11,color:HF_SEC,marginLeft:4}},'v'+card.hfVersion)
+        ),
+        React.createElement('div',{style:{background:'#fff',borderRadius:12,border:'1px solid '+HF_BORDER,overflow:'hidden'}},
+          React.createElement('div',{style:{maxHeight:700,overflow:'auto',padding:'0'}},
+            typeof hf==='object'?Object.keys(hf).sort().map(function(k,idx){
+              var num=hfSectionNum(k);
+              var label=hfSectionLabel(k);
+              return React.createElement('div',{key:k,style:{borderBottom:'1px solid #F1F5F9'}},
+                React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',background:idx%2===0?'#FAFBFD':'#fff',cursor:'default'}},
+                  num?React.createElement('div',{style:{width:28,height:28,borderRadius:'50%',background:HF_PURPLE,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
+                    React.createElement('span',{style:{color:'#fff',fontSize:11,fontWeight:700}},num)
+                  ):null,
+                  React.createElement('span',{style:{fontSize:13,fontWeight:700,color:HF_DARK}},label)
+                ),
+                React.createElement('div',{style:{padding:'8px 20px 16px',paddingLeft:num?58:20}},
+                  hfRenderSection(k,hf[k])
+                )
+              );
+            }):React.createElement('pre',{style:{fontSize:12,color:C.textSec,margin:0,whiteSpace:'pre-wrap',padding:20}},JSON.stringify(hf,null,2))
+          )
         )
       ):null,
       reviews.length>0?React.createElement('div',{style:{marginBottom:16}},
