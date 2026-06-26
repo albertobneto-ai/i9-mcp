@@ -11,6 +11,7 @@ import exportRoutes from './routes/exports.js';
 import deploysRoutes from './routes/deploys.js';
 import almRoutes, { initAlmTables } from './routes/alm.js';
 import devopsRoutes from './routes/devops.js';
+import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -152,6 +153,7 @@ app.use('/api/exports', exportRoutes);
 app.use('/api/deploys', deploysRoutes);
 app.use('/api/alm', almRoutes);
 app.use('/api/devops', devopsRoutes);
+  app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 
 // Job status polling
 app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
