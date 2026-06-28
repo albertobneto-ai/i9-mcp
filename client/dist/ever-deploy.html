@@ -160,10 +160,10 @@ body { background: #F1F5F9; }
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
             <div class="flex justify-between items-start">
-              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Deploys</div><div class="text-3xl font-bold tracking-tight mt-1 text-[#0B5CAB]" id="stat-total">—</div></div>
+              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total de Deploys</div><div class="text-3xl font-bold tracking-tight mt-1 text-[#0B5CAB]" id="stat-total">—</div></div>
               <div class="w-10 h-10 bg-blue-50 text-[#0B5CAB] rounded-2xl flex items-center justify-center"><i class="fa-solid fa-rocket"></i></div>
             </div>
-            <div class="text-xs mt-4 text-slate-400">histórico completo</div>
+            <div class="text-xs mt-4 text-slate-400">no histórico</div>
           </div>
           <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
             <div class="flex justify-between items-start">
@@ -195,7 +195,7 @@ body { background: #F1F5F9; }
               <button onclick="nav('hist',null)" class="text-xs text-[#0B5CAB] font-semibold hover:underline">Histórico completo →</button>
             </div>
             <div id="dash-activity">
-              <div class="empty-state"><i class="fa-solid fa-clock-rotate-left text-slate-300"></i>Nenhum deploy ainda</div>
+              <div class="empty-state"><i class="fa-solid fa-clock-rotate-left text-slate-300"></i>Nenhum deploy registrado</div>
             </div>
           </div>
 
@@ -223,7 +223,7 @@ body { background: #F1F5F9; }
         </div>
         <div class="card">
           <table class="tbl">
-            <thead><tr><th>US</th><th>Descrição</th><th>Origem</th><th>Destino</th><th>Comps</th><th>Tag</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>US</th><th>Descrição</th><th>Origem</th><th>Destino</th><th>Comp.</th><th>Tag</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="hist-tbody">
               <tr><td colspan="9" class="text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Carregando...</td></tr>
             </tbody>
@@ -244,20 +244,20 @@ body { background: #F1F5F9; }
           <!-- P1 — US -->
           <div class="p-6" id="wp1">
             <div class="font-semibold text-slate-900 mb-1">Selecione a User Story</div>
-            <div class="text-xs text-slate-500 mb-4">Informe o número e nome da US que deseja deployar</div>
+            <div class="text-xs text-slate-500 mb-4">Informe o número e a descrição da US que deseja deployar</div>
             <div class="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="text-xs font-semibold text-slate-600 mb-1 block">Número da US</label>
-                <input class="inp w-full" placeholder="ex: CRMB2B-108" id="us-number">
+                <input class="inp w-full" placeholder="Ex.: CRMB2B-108" id="us-number">
               </div>
               <div>
                 <label class="text-xs font-semibold text-slate-600 mb-1 block">Nome / Descrição</label>
-                <input class="inp w-full" placeholder="ex: Edição Automática de Contas" id="us-name">
+                <input class="inp w-full" placeholder="Ex.: Edição Automática de Contas" id="us-name">
               </div>
             </div>
             <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600">
               <i class="fa-solid fa-circle-info text-[#0B5CAB] mr-2"></i>
-              Execute <strong>/devops</strong> no chat primeiro para que os artefatos estejam disponíveis no Git antes de iniciar o deploy.
+              Execute <strong>/devops</strong> no chat antes de iniciar o deploy, para garantir que os artefatos estejam disponíveis no Git.
             </div>
             <div class="flex justify-end mt-5">
               <button class="btn-primary" onclick="wizNext1()">Próximo <i class="fa-solid fa-arrow-right"></i></button>
@@ -268,11 +268,11 @@ body { background: #F1F5F9; }
           <div class="p-6 hidden" id="wp2">
             <div class="grid grid-cols-2 gap-5">
               <div>
-                <div class="font-semibold text-slate-900 mb-3">Org origem</div>
+                <div class="font-semibold text-slate-900 mb-3">Org de Origem</div>
                 <div class="space-y-2" id="org-origin-list"><div class="text-xs text-slate-400">Carregando orgs...</div></div>
               </div>
               <div>
-                <div class="font-semibold text-slate-900 mb-3">Org destino</div>
+                <div class="font-semibold text-slate-900 mb-3">Org de Destino</div>
                 <div class="space-y-2" id="org-dest-list"><div class="text-xs text-slate-400">Carregando orgs...</div></div>
               </div>
             </div>
@@ -337,7 +337,7 @@ body { background: #F1F5F9; }
       <div id="p-rollback" class="hidden page-anim">
         <div class="grid grid-cols-2 gap-5">
           <div class="card">
-            <div class="p-5 border-b border-slate-100 font-bold text-slate-900">Selecionar deploy</div>
+            <div class="p-5 border-b border-slate-100 font-bold text-slate-900">Selecionar Deploy</div>
             <div id="rb-list">
               <div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i>Carregando...</div>
             </div>
@@ -512,7 +512,7 @@ async function loadHistory() {
             ${d.status==='ok' ? `<button onclick="nav('rollback',null)" class="btn-ghost btn-sm mt-2">Rollback disponível</button>` : ''}
           </div>
         </div>`).join('')
-      : '<div class="empty-state"><i class="fa-solid fa-rocket text-slate-300"></i>Nenhum deploy ainda</div>';
+      : '<div class="empty-state"><i class="fa-solid fa-rocket text-slate-300"></i>Nenhum deploy registrado</div>';
 
     renderHistoryTable(deploys);
   } catch(e) {
@@ -580,7 +580,7 @@ function wizNext1() {
 async function wizNext2() {
   if (!selectedOriginId) { toast('Selecione a org de origem', 'warn'); return; }
   if (!selectedDestId)   { toast('Selecione a org de destino', 'warn'); return; }
-  if (selectedOriginId === selectedDestId) { toast('Origem e destino devem ser orgs diferentes', 'warn'); return; }
+  if (selectedOriginId === selectedDestId) { toast('Origem e destino não podem ser a mesma org', 'warn'); return; }
   goWiz(3);
   await loadDiff();
 }
@@ -614,7 +614,7 @@ async function loadDiff() {
     // Info do deploy
     compsEl.innerHTML = `
       <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
-        <div class="font-semibold text-slate-900 mb-2">Detalhes do deploy</div>
+        <div class="font-semibold text-slate-900 mb-2">Detalhes do Deploy</div>
         <div class="grid grid-cols-2 gap-3 text-xs text-slate-600">
           <div><span class="font-semibold">US:</span> ${selectedUS.number} — ${selectedUS.name || '—'}</div>
           <div><span class="font-semibold">Origem:</span> ${result.origin?.name || '—'}</div>
@@ -658,7 +658,7 @@ async function startDeploy() {
     addLog(`Deploy ${currentDeployId} iniciado — ${selectedUS.number}`);
     startPoll(currentDeployId);
   } catch(e) {
-    toast('Erro ao iniciar deploy: ' + e.message, 'err');
+    toast('Erro ao iniciar o deploy: ' + e.message, 'err');
     document.getElementById('btn-deploy').disabled = false;
   }
 }
@@ -708,7 +708,7 @@ async function pollStatus(id) {
       document.getElementById('dp-bar').className = 'prog-fill ok';
       document.getElementById('dp-bar').style.width = '100%';
       document.getElementById('dp-pct').textContent = '100%';
-      toast('Deploy concluído! Tag: ' + (deploy.git_tag || '—'), 'ok');
+      toast('Deploy concluído — Tag: ' + (deploy.git_tag || '—'), 'ok');
       loadHistory();
     } else if (deploy.status === 'error') {
       clearInterval(pollInterval);
@@ -744,7 +744,7 @@ async function resumeDeploy() {
     document.getElementById('dp-pill').className = 'pill pill-warn';
     document.getElementById('dp-pill').textContent = 'Retomando...';
     document.getElementById('dp-bar').className = 'prog-fill';
-    addLog('↺ Retomando deploy do ponto de falha...');
+    addLog('↺ Retomando deploy a partir do ponto de falha...');
     startPoll(currentDeployId);
     toast('Retomando deploy...', 'ok');
   } catch(e) { toast('Erro: ' + e.message, 'err'); }
@@ -818,13 +818,13 @@ function selRBDeploy(deploy) {
       </div>
       ${isErr ? `<div class="err-box mb-4"><div class="err-title"><i class="fa-solid fa-triangle-exclamation"></i> Erro registrado</div><div class="err-code">${deploy.error_message||'—'}</div></div>` : ''}
       <div class="divider"></div>
-      <div class="font-semibold text-sm text-slate-900 mb-3">${isErr ? 'Retomar ou descartar' : 'Rollback ou redeploy'}</div>
+      <div class="font-semibold text-sm text-slate-900 mb-3">${isErr ? 'Retomar ou Descartar' : 'Rollback ou Redeploy'}</div>
       <div class="flex gap-3">
         ${isErr
           ? `<button class="btn-ghost flex-1 justify-center" onclick="discardDeploy(${deploy.id})"><i class="fa-solid fa-xmark"></i> Descartar</button>
              <button class="btn-primary flex-1 justify-center" onclick="openDeployById(${deploy.id})"><i class="fa-solid fa-rotate-right"></i> Retomar</button>`
           : `<button class="btn-err flex-1 justify-center" onclick="doRollback(${deploy.id})"><i class="fa-solid fa-rotate-left"></i> Rollback</button>
-             <button class="btn-ghost flex-1 justify-center" onclick="openDeployById(${deploy.id})"><i class="fa-solid fa-eye"></i> Ver deploy</button>`
+             <button class="btn-ghost flex-1 justify-center" onclick="openDeployById(${deploy.id})"><i class="fa-solid fa-eye"></i> Ver Deploy</button>`
         }
       </div>
     </div>`;
