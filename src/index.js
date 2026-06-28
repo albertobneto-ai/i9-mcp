@@ -11,6 +11,7 @@ import exportRoutes from './routes/exports.js';
 import deploysRoutes from './routes/deploys.js';
 import almRoutes, { initAlmTables } from './routes/alm.js';
 import devopsRoutes from './routes/devops.js';
+import everDeployRoutes from './routes/ever-deploy.js';
 import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -153,6 +154,7 @@ app.use('/api/exports', exportRoutes);
 app.use('/api/deploys', deploysRoutes);
 app.use('/api/alm', almRoutes);
 app.use('/api/devops', devopsRoutes);
+app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 
 // Job status polling
@@ -394,4 +396,5 @@ app.get('/api/debug/ip', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
+
 
