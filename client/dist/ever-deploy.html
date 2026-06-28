@@ -8,11 +8,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 * { font-family: 'Inter', system-ui, sans-serif; }
 body { background: #F1F5F9; }
 
-.sf-blue { color: #0B5CAB; }
 .nav-link { transition: all 0.1s ease; }
 .nav-link:hover { background-color: #F1F5F9; }
 .nav-link.active { background-color: #EFF6FF; color: #0B5CAB; font-weight: 600; border-right: 3px solid #0B5CAB; }
@@ -21,602 +19,342 @@ body { background: #F1F5F9; }
 .metric-card { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
 .metric-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -5px rgba(15,23,42,.08); }
 
-.utag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #EFF6FF; color: #0B5CAB; border: 1px solid #BFDBFE; white-space: nowrap; }
-.utag.err { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+.utag { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; background:#EFF6FF; color:#0B5CAB; border:1px solid #BFDBFE; white-space:nowrap; }
+.utag.err { background:#FEF2F2; color:#DC2626; border-color:#FECACA; }
 
-/* Pills */
-.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; }
-.pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.pill-ok   { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
-.pill-ok::before { background: #059669; }
-.pill-err  { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
-.pill-err::before { background: #DC2626; }
-.pill-warn { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
-.pill-warn::before { background: #D97706; }
-.pill-neu  { background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; }
-.pill-neu::before { background: #94A3B8; }
-.pill-blue { background: #EFF6FF; color: #0B5CAB; border: 1px solid #BFDBFE; }
-.pill-blue::before { background: #0B5CAB; }
+.pill { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:3px 10px; border-radius:9999px; white-space:nowrap; }
+.pill::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.pill-ok   { background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; } .pill-ok::before   { background:#059669; }
+.pill-err  { background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; } .pill-err::before  { background:#DC2626; }
+.pill-warn { background:#FFFBEB; color:#D97706; border:1px solid #FDE68A; } .pill-warn::before { background:#D97706; }
+.pill-neu  { background:#F8FAFC; color:#64748B; border:1px solid #E2E8F0; } .pill-neu::before  { background:#94A3B8; }
+.pill-blue { background:#EFF6FF; color:#0B5CAB; border:1px solid #BFDBFE; } .pill-blue::before { background:#0B5CAB; }
 
-/* Wizard steps */
-.wiz-step { display: flex; align-items: center; gap: 8px; padding: 10px 20px 12px; font-size: 13px; font-weight: 600; color: #94A3B8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; white-space: nowrap; }
-.wiz-step.active { color: #0B5CAB; border-color: #0B5CAB; }
-.wiz-step.done   { color: #059669; }
-.wiz-step-n { width: 20px; height: 20px; border-radius: 50%; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
-.wiz-step.active .wiz-step-n { background: #EFF6FF; border-color: #BFDBFE; color: #0B5CAB; }
-.wiz-step.done .wiz-step-n   { background: #ECFDF5; border-color: #A7F3D0; color: #059669; }
+.wiz-step { display:flex; align-items:center; gap:8px; padding:10px 20px 12px; font-size:13px; font-weight:600; color:#94A3B8; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; white-space:nowrap; }
+.wiz-step.active { color:#0B5CAB; border-color:#0B5CAB; }
+.wiz-step.done   { color:#059669; }
+.wiz-step-n { width:20px; height:20px; border-radius:50%; background:#F1F5F9; border:1px solid #E2E8F0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+.wiz-step.active .wiz-step-n { background:#EFF6FF; border-color:#BFDBFE; color:#0B5CAB; }
+.wiz-step.done .wiz-step-n   { background:#ECFDF5; border-color:#A7F3D0; color:#059669; }
 
-/* Progress */
-.prog-track { height: 5px; background: #E2E8F0; border-radius: 9999px; overflow: hidden; }
-.prog-fill  { height: 100%; border-radius: 9999px; background: #0B5CAB; transition: width .5s ease; }
-.prog-fill.ok  { background: #059669; }
-.prog-fill.err { background: #DC2626; }
+.prog-track { height:5px; background:#E2E8F0; border-radius:9999px; overflow:hidden; }
+.prog-fill  { height:100%; border-radius:9999px; background:#0B5CAB; transition:width .5s ease; }
+.prog-fill.ok  { background:#059669; }
+.prog-fill.err { background:#DC2626; }
 
-/* Step rows */
-.step-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #F1F5F9; }
-.step-row:last-child { border-bottom: none; }
-.step-n { width: 24px; height: 24px; border-radius: 50%; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #94A3B8; flex-shrink: 0; }
-.step-n.done   { background: #ECFDF5; border-color: #A7F3D0; color: #059669; }
-.step-n.active { background: #EFF6FF; border-color: #BFDBFE; color: #0B5CAB; }
-.step-n.err    { background: #FEF2F2; border-color: #FECACA; color: #DC2626; }
+.step-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #F1F5F9; }
+.step-row:last-child { border-bottom:none; }
+.step-n { width:24px; height:24px; border-radius:50%; background:#F1F5F9; border:1px solid #E2E8F0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#94A3B8; flex-shrink:0; }
+.step-n.done   { background:#ECFDF5; border-color:#A7F3D0; color:#059669; }
+.step-n.active { background:#EFF6FF; border-color:#BFDBFE; color:#0B5CAB; }
+.step-n.err    { background:#FEF2F2; border-color:#FECACA; color:#DC2626; }
 
-/* Diff */
-.diff-block { border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
-.diff-hd { background: #F8FAFC; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
-.diff-file { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #0F172A; }
-.dl { display: flex; align-items: baseline; }
-.dl-ln { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #CBD5E1; width: 30px; text-align: right; padding: 0 7px; flex-shrink: 0; }
-.dl-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 10px; flex: 1; }
-.dl.add { background: #F0FDF4; }
-.dl.add .dl-code { color: #15803D; }
-.dl.add .dl-ln { color: #86EFAC; }
-.dl.rem { background: #FEF2F2; }
-.dl.rem .dl-code { color: #B91C1C; }
-.dl.ctx .dl-code { color: #94A3B8; }
+.err-box { background:#FEF2F2; border:1px solid #FECACA; border-left:4px solid #DC2626; border-radius:10px; padding:14px 16px; }
+.err-title { font-size:13px; font-weight:700; color:#DC2626; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.err-code { font-family:'JetBrains Mono',monospace; font-size:11px; color:#7F1D1D; line-height:1.9; background:rgba(220,38,38,.05); padding:8px 10px; border-radius:6px; }
+.err-foot { margin-top:10px; font-size:11px; color:#991B1B; }
 
-/* Err box */
-.err-box { background: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626; border-radius: 10px; padding: 14px 16px; }
-.err-title { font-size: 13px; font-weight: 700; color: #DC2626; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-.err-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7F1D1D; line-height: 1.9; background: rgba(220,38,38,.05); padding: 8px 10px; border-radius: 6px; }
-.err-foot { margin-top: 10px; font-size: 11px; color: #991B1B; }
+.org-card { border:1px solid #E2E8F0; border-radius:12px; padding:12px 14px; cursor:pointer; transition:all .15s; background:#F8FAFC; }
+.org-card:hover { border-color:#93C5FD; background:#EFF6FF; }
+.org-card.sel { border-color:#0B5CAB; background:#EFF6FF; }
 
-/* Fix badge pulse */
-.fix-badge { animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+.usi { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; cursor:pointer; transition:background .12s; border:1px solid transparent; margin-bottom:4px; }
+.usi:hover { background:#F8FAFC; }
+.usi.sel { background:#EFF6FF; border-color:#BFDBFE; }
 
-/* Org select */
-.org-card { border: 1px solid #E2E8F0; border-radius: 12px; padding: 13px 15px; cursor: pointer; transition: all .15s; background: #F8FAFC; }
-.org-card:hover { border-color: #93C5FD; background: #EFF6FF; }
-.org-card.sel { border-color: #0B5CAB; background: #EFF6FF; }
-.org-card.disabled { opacity: .45; cursor: not-allowed; }
+.log-term { font-family:'JetBrains Mono',monospace; font-size:10.5px; background:#0F172A; color:#94A3B8; padding:12px; border-radius:10px; min-height:60px; max-height:100px; overflow-y:auto; line-height:1.9; }
+.tbl { width:100%; border-collapse:collapse; }
+.tbl th { font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:.5px; padding:10px 14px; border-bottom:2px solid #F1F5F9; text-align:left; }
+.tbl td { padding:10px 14px; border-bottom:1px solid #F8FAFC; font-size:12px; vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:#F8FAFC; }
 
-/* US select item */
-.usi { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background .12s; border: 1px solid transparent; margin-bottom: 4px; }
-.usi:hover { background: #F8FAFC; }
-.usi.sel { background: #EFF6FF; border-color: #BFDBFE; }
+.btn-primary { background:#0B5CAB; color:white; border:none; border-radius:10px; padding:7px 16px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background .12s; font-family:inherit; }
+.btn-primary:hover { background:#094A8A; }
+.btn-primary:disabled { background:#CBD5E1; cursor:not-allowed; }
+.btn-ghost { background:white; color:#475569; border:1px solid #E2E8F0; border-radius:10px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all .12s; font-family:inherit; }
+.btn-ghost:hover { border-color:#94A3B8; color:#0F172A; }
+.btn-err { background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; border-radius:10px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all .12s; font-family:inherit; }
+.btn-err:hover { background:#DC2626; color:white; }
+.btn-sm { padding:4px 10px; font-size:11px; }
 
-/* Log terminal */
-.log-term { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; background: #0F172A; color: #94A3B8; padding: 12px; border-radius: 10px; min-height: 60px; max-height: 90px; overflow-y: auto; line-height: 1.9; }
+.divider { height:1px; background:#F1F5F9; margin:12px 0; }
+.inp { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:7px 12px; color:#0F172A; font-size:12px; font-family:inherit; }
+.inp:focus { outline:none; border-color:#0B5CAB; background:white; }
+.inp::placeholder { color:#94A3B8; }
+.sel-inp { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:7px 10px; color:#475569; font-size:12px; font-family:inherit; cursor:pointer; }
 
-/* Table */
-.tbl { width: 100%; border-collapse: collapse; }
-.tbl th { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; border-bottom: 2px solid #F1F5F9; text-align: left; }
-.tbl td { padding: 11px 14px; border-bottom: 1px solid #F8FAFC; font-size: 13px; vertical-align: middle; }
-.tbl tr:last-child td { border-bottom: none; }
-.tbl tr:hover td { background: #F8FAFC; }
+.claude-panel { background:#EFF6FF; border:1px solid #BFDBFE; border-left:4px solid #0B5CAB; border-radius:10px; padding:14px 16px; }
+.tl-item { display:flex; gap:12px; padding-bottom:18px; }
+.tl-item:last-child { padding-bottom:0; }
+.tl-left { display:flex; flex-direction:column; align-items:center; }
+.tl-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; border:2px solid; }
+.tl-dot.ok  { border-color:#059669; background:#ECFDF5; color:#059669; }
+.tl-dot.err { border-color:#DC2626; background:#FEF2F2; color:#DC2626; }
+.tl-dot.run { border-color:#D97706; background:#FFFBEB; color:#D97706; }
+.tl-line { width:1px; flex:1; background:#E2E8F0; margin:3px 0; }
 
-/* Buttons */
-.btn-primary { background: #0B5CAB; color: white; border: none; border-radius: 10px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background .12s; font-family: inherit; }
-.btn-primary:hover { background: #094A8A; }
-.btn-primary:disabled { background: #CBD5E1; cursor: not-allowed; }
-.btn-ghost { background: white; color: #475569; border: 1px solid #E2E8F0; border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .12s; font-family: inherit; }
-.btn-ghost:hover { border-color: #94A3B8; color: #0F172A; }
-.btn-err { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .12s; font-family: inherit; }
-.btn-err:hover { background: #DC2626; color: white; }
-.btn-warn { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .12s; font-family: inherit; }
-.btn-warn:hover { background: #D97706; color: white; }
-.btn-sm { padding: 5px 11px; font-size: 11px; }
+.empty-state { text-align:center; padding:40px 20px; color:#94A3B8; }
+.empty-state i { font-size:32px; margin-bottom:12px; display:block; }
 
-/* Filter bar */
-.inp { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 7px 12px; color: #0F172A; font-size: 12px; font-family: inherit; }
-.inp:focus { outline: none; border-color: #0B5CAB; background: white; }
-.inp::placeholder { color: #94A3B8; }
-.sel-inp { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 7px 10px; color: #475569; font-size: 12px; font-family: inherit; cursor: pointer; }
-
-/* Claude panel */
-.claude-panel { background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #0B5CAB; border-radius: 10px; padding: 14px 16px; }
-
-/* Timeline */
-.tl-item { display: flex; gap: 12px; padding-bottom: 18px; }
-.tl-item:last-child { padding-bottom: 0; }
-.tl-left { display: flex; flex-direction: column; align-items: center; }
-.tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; border: 2px solid; }
-.tl-dot.ok  { border-color: #059669; background: #ECFDF5; color: #059669; }
-.tl-dot.err { border-color: #DC2626; background: #FEF2F2; color: #DC2626; }
-.tl-dot.run { border-color: #D97706; background: #FFFBEB; color: #D97706; }
-.tl-line { width: 1px; flex: 1; background: #E2E8F0; margin: 3px 0; }
-
-/* Divider */
-.divider { height: 1px; background: #F1F5F9; margin: 12px 0; }
-
-/* Page animation */
-.page-content { animation: fadeUp .18s ease; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.page-anim { animation:fadeUp .18s ease; }
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:4px; }
 </style>
 </head>
 <body>
 <div class="flex h-screen overflow-hidden">
 
-  <!-- ── SIDEBAR ── -->
-  <nav class="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col">
-    <div class="px-5 pt-5 pb-4 flex items-center gap-x-3 border-b border-slate-100">
-      <div class="w-9 h-9 bg-[#0B5CAB] rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg viewBox="0 0 36 14" fill="none" style="width:26px;height:10px">
-          <path d="M18,7 C18,3 15.5,1 12,1 C7,1 2,3.5 2,7 C2,10.5 7,13 12,13 C15.5,13 18,11 18,7 C18,3 20.5,1 24,1 C29,1 34,3.5 34,7 C34,10.5 29,13 24,13 C20.5,13 18,11 18,7 Z" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
-        </svg>
-      </div>
-      <span class="font-bold text-xl tracking-tight text-[#0B5CAB]">Ever<span class="text-slate-800">DevOps</span></span>
+<!-- ── SIDEBAR ── -->
+<nav class="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col">
+  <div class="px-5 pt-4 pb-3 flex items-center gap-x-3 border-b border-slate-100">
+    <div class="w-9 h-9 bg-[#0B5CAB] rounded-xl flex items-center justify-center flex-shrink-0">
+      <svg viewBox="0 0 36 14" fill="none" style="width:22px;height:9px">
+        <path d="M18,7 C18,3 15.5,1 12,1 C7,1 2,3.5 2,7 C2,10.5 7,13 12,13 C15.5,13 18,11 18,7 C18,3 20.5,1 24,1 C29,1 34,3.5 34,7 C34,10.5 29,13 24,13 C20.5,13 18,11 18,7 Z" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+      </svg>
     </div>
+    <span class="font-bold text-xl tracking-tight text-[#0B5CAB]">Ever<span class="text-slate-800">DevOps</span></span>
+  </div>
 
-    <div class="px-4 py-3 border-b border-slate-100">
-      <div class="relative">
-        <input type="text" placeholder="Buscar US, componente..." class="w-full bg-slate-50 border border-slate-200 focus:border-[#0B5CAB] pl-8 pr-3 py-2 text-xs rounded-xl outline-none">
-        <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
-      </div>
-    </div>
-
-    <div class="px-3 flex-1 overflow-y-auto py-3 text-sm space-y-5">
-      <div>
-        <div class="text-xs font-bold text-slate-400 px-3 mb-2 tracking-widest">PRINCIPAL</div>
-        <div class="space-y-0.5">
-          <a href="#" onclick="showPage('dash',this);return false" class="nav-link active flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-[#0B5CAB]"><i class="fa-solid fa-chart-line w-4 text-center"></i><span>Dashboard</span></a>
-          <a href="#" onclick="showPage('hist',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-clock-rotate-left w-4 text-center"></i><span>Histórico</span><span class="ml-auto text-xs font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">23</span></a>
-          <a href="#" onclick="showPage('deploy',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-rocket w-4 text-center"></i><span>Novo Deploy</span><span class="ml-auto text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">2</span></a>
-          <a href="#" onclick="showPage('rollback',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-rotate-left w-4 text-center"></i><span>Rollback</span></a>
-        </div>
-      </div>
-
-      <div>
-        <div class="text-xs font-bold text-slate-400 px-3 mb-2 tracking-widest">ORGS</div>
-        <div class="space-y-0.5 text-sm" id="orgs-status">
-          <div class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-slate-600"><span class="w-2 h-2 bg-emerald-500 rounded-full shadow-sm" style="box-shadow:0 0 4px #10b981"></span><span>arqevery</span><span class="ml-auto text-xs text-emerald-600 font-semibold">Online</span></div>
-          <div class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-slate-600"><span class="w-2 h-2 bg-amber-400 rounded-full"></span><span>homologação</span></div>
-          <div class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-slate-400"><span class="w-2 h-2 bg-slate-300 rounded-full"></span><span>produção</span></div>
-        </div>
-      </div>
-
-      <div>
-        <div class="text-xs font-bold text-slate-400 px-3 mb-2 tracking-widest">GIT</div>
-        <div class="space-y-0.5">
-          <a href="#" onclick="showPage('hist',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-code-branch w-4 text-center"></i><span>Commits & Tags</span></a>
-          <a href="#" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-box-archive w-4 text-center"></i><span>Artefatos</span></a>
-        </div>
+  <div class="px-3 flex-1 overflow-y-auto py-3 text-sm space-y-5">
+    <div>
+      <div class="text-xs font-bold text-slate-400 px-3 mb-2 tracking-widest">PRINCIPAL</div>
+      <div class="space-y-0.5">
+        <a href="#" onclick="nav('dash',this);return false" class="nav-link active flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-[#0B5CAB]"><i class="fa-solid fa-chart-line w-4 text-center"></i><span>Dashboard</span></a>
+        <a href="#" onclick="nav('hist',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-clock-rotate-left w-4 text-center"></i><span>Histórico</span><span class="ml-auto text-xs font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full" id="hist-count">—</span></a>
+        <a href="#" onclick="nav('deploy',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-rocket w-4 text-center"></i><span>Novo Deploy</span></a>
+        <a href="#" onclick="nav('rollback',this);return false" class="nav-link flex items-center gap-x-3 px-3 py-2.5 rounded-xl text-slate-600"><i class="fa-solid fa-rotate-left w-4 text-center"></i><span>Rollback</span></a>
       </div>
     </div>
-
-    <div class="p-4 border-t border-slate-100">
-      <div class="flex items-center gap-x-3 px-2">
-        <div class="w-8 h-8 bg-gradient-to-br from-[#0B5CAB] to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0">AB</div>
-        <div><div class="font-semibold text-sm">Alberto Bottaro</div><div class="text-xs text-slate-500">Salesforce Architect</div></div>
-      </div>
-    </div>
-  </nav>
-
-  <!-- ── MAIN ── -->
-  <div class="flex-1 flex flex-col overflow-hidden">
-
-    <!-- TOPBAR -->
-    <header class="h-14 bg-white border-b border-slate-200 flex items-center px-6 justify-between flex-shrink-0">
-      <div class="font-bold text-xl tracking-tight" id="page-title">Dashboard</div>
-      <div class="flex items-center gap-x-3">
-        <div class="relative hidden md:block">
-          <input type="text" placeholder="Buscar deploy, US, hash..." class="bg-slate-50 border border-slate-200 focus:border-[#0B5CAB] pl-9 pr-4 py-2 text-sm rounded-xl outline-none w-72">
-          <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-        </div>
-        <button onclick="showPage('deploy',null)" class="btn-primary text-sm">
-          <i class="fa-solid fa-plus"></i> Novo Deploy
-        </button>
-        <button class="w-9 h-9 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-xl relative">
-          <i class="fa-solid fa-bell"></i>
-          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-        <div class="w-8 h-8 bg-[#0B5CAB] rounded-full flex items-center justify-center text-white text-xs font-black">AB</div>
-      </div>
-    </header>
-
-    <!-- PAGES -->
-    <div class="flex-1 overflow-auto bg-slate-50">
-      <div class="max-w-[1320px] mx-auto p-6">
-
-        <!-- ═══ DASHBOARD ═══ -->
-        <div id="page-dash" class="page-content">
-          <!-- Stat cards -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
-              <div class="flex justify-between items-start">
-                <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">USs Entregues</div><div class="text-3xl font-bold tracking-tight mt-1 text-[#0B5CAB]">16<span class="text-xl font-normal text-slate-400">/17</span></div></div>
-                <div class="w-10 h-10 bg-blue-50 text-[#0B5CAB] rounded-2xl flex items-center justify-center"><i class="fa-solid fa-box"></i></div>
-              </div>
-              <div class="text-emerald-600 text-xs font-semibold mt-4">↑ 1 esta semana</div>
-            </div>
-            <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
-              <div class="flex justify-between items-start">
-                <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Deploys OK</div><div class="text-3xl font-bold tracking-tight mt-1 text-emerald-600">22</div></div>
-                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-circle-check"></i></div>
-              </div>
-              <div class="text-xs mt-4 font-semibold text-emerald-600">100% sucesso hoje</div>
-            </div>
-            <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
-              <div class="flex justify-between items-start">
-                <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Com Erro</div><div class="text-3xl font-bold tracking-tight mt-1 text-red-600">1</div></div>
-                <div class="w-10 h-10 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-              </div>
-              <div class="text-xs mt-4 text-red-600 font-semibold">CRMB2B-108 pausado</div>
-            </div>
-            <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
-              <div class="flex justify-between items-start">
-                <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Rollbacks</div><div class="text-3xl font-bold tracking-tight mt-1 text-slate-400">0</div></div>
-                <div class="w-10 h-10 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-rotate-left"></i></div>
-              </div>
-              <div class="text-xs mt-4 text-slate-400">Últimos 30 dias</div>
-            </div>
-          </div>
-
-          <!-- Pipeline -->
-          <div class="card p-6 mb-5">
-            <div class="flex justify-between items-center mb-5">
-              <div class="font-bold text-base text-slate-900">Pipeline Ativo</div>
-              <button onclick="showPage('deploy',null)" class="text-xs text-[#0B5CAB] font-semibold hover:underline">Ver tudo →</button>
-            </div>
-            <div class="space-y-3">
-              <!-- US 108 com erro -->
-              <div class="flex gap-x-4 items-center p-4 bg-red-50 border border-red-100 rounded-2xl">
-                <span class="utag err">CRMB2B-108</span>
-                <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-sm text-slate-900">Edição Automática de Contas</div>
-                  <div class="text-xs text-red-600 mt-0.5 font-medium">Pausado com erro · 40% · FIELD_INTEGRITY_EXCEPTION</div>
-                  <div class="mt-2 prog-track"><div class="prog-fill err" style="width:40%"></div></div>
-                </div>
-                <button onclick="showPage('deploy',null);setTimeout(()=>goWiz(4),50)" class="btn-err btn-sm flex-shrink-0">
-                  <i class="fa-solid fa-circle-exclamation"></i> Ver erro
-                </button>
-              </div>
-              <!-- US 174 -->
-              <div class="flex gap-x-4 items-center p-4 bg-white border border-slate-200 rounded-2xl">
-                <span class="utag">CRMB2B-174</span>
-                <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-sm">Conta Master — Próxima etapa</div>
-                  <div class="text-xs text-slate-500 mt-0.5">Artefatos prontos no Git · aguardando início</div>
-                </div>
-                <button onclick="showPage('deploy',null)" class="btn-ghost btn-sm flex-shrink-0">Iniciar</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2 cols: Orgs + Atividade -->
-          <div class="grid grid-cols-3 gap-5">
-            <div class="card p-5">
-              <div class="font-bold text-sm text-slate-900 mb-4">Orgs Conectadas</div>
-              <div class="space-y-3">
-                <div class="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" style="box-shadow:0 0 5px #10b981"></span>
-                  <div class="flex-1 min-w-0"><div class="text-sm font-semibold">ORG ARQUITETURA</div><div class="text-xs text-slate-500 font-mono">arqevery · sandbox</div></div>
-                  <span class="pill pill-ok text-xs">Online</span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                  <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
-                  <div class="flex-1 min-w-0"><div class="text-sm font-semibold">Homologação</div><div class="text-xs text-slate-500 font-mono">hml.algar · sandbox</div></div>
-                  <span class="pill pill-warn text-xs">Aguardando</span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span class="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0"></span>
-                  <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-slate-500">Produção</div><div class="text-xs text-slate-400 font-mono">algar.prod · production</div></div>
-                  <span class="pill pill-neu text-xs">Bloqueada</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="card p-5 col-span-2">
-              <div class="flex justify-between items-center mb-4">
-                <div class="font-bold text-sm text-slate-900">Atividade Recente</div>
-                <button onclick="showPage('hist',null)" class="text-xs text-[#0B5CAB] font-semibold hover:underline">Histórico completo →</button>
-              </div>
-              <div class="space-y-4">
-                <div class="tl-item">
-                  <div class="tl-left"><div class="tl-dot err"><i class="fa-solid fa-xmark text-xs"></i></div><div class="tl-line"></div></div>
-                  <div class="flex-1 pt-0.5">
-                    <div class="text-sm font-semibold flex items-center gap-2 flex-wrap"><span class="utag err">CRMB2B-108</span> Deploy pausado com erro <span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">a3f92c1</span></div>
-                    <div class="text-xs text-slate-500 mt-1">há 8 min · arqevery → homologação · parou no componente 3/5</div>
-                    <button onclick="showPage('deploy',null);setTimeout(()=>goWiz(4),50)" class="btn-err btn-sm mt-2"><i class="fa-solid fa-circle-exclamation"></i> Ver erro e retomar</button>
-                  </div>
-                </div>
-                <div class="tl-item">
-                  <div class="tl-left"><div class="tl-dot ok"><i class="fa-solid fa-check text-xs"></i></div><div class="tl-line"></div></div>
-                  <div class="flex-1 pt-0.5">
-                    <div class="text-sm font-semibold flex items-center gap-2 flex-wrap"><span class="utag">CRMB2B-107</span> Deploy concluído <span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">b8e41d0</span></div>
-                    <div class="text-xs text-slate-500 mt-1">há 2h · arqevery · 4 Permission Sets · 2 Page Layouts</div>
-                    <button onclick="showPage('rollback',null)" class="btn-ghost btn-sm mt-2">Rollback disponível</button>
-                  </div>
-                </div>
-                <div class="tl-item">
-                  <div class="tl-left"><div class="tl-dot ok"><i class="fa-solid fa-check text-xs"></i></div></div>
-                  <div class="flex-1 pt-0.5">
-                    <div class="text-sm font-semibold flex items-center gap-2 flex-wrap"><span class="utag">CRMB2B-109</span> Deploy concluído <span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">c1d7e82</span></div>
-                    <div class="text-xs text-slate-500 mt-1">há 3h · arqevery · Field History Tracking · 10 campos</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ═══ HISTÓRICO ═══ -->
-        <div id="page-hist" class="hidden page-content">
-          <div class="flex gap-3 mb-5">
-            <input class="inp flex-1" placeholder="Buscar US, componente, hash, erro...">
-            <select class="sel-inp"><option>Todas as orgs</option><option>arqevery</option><option>homologação</option></select>
-            <select class="sel-inp"><option>Todos os status</option><option>OK</option><option>Erro</option></select>
-            <select class="sel-inp"><option>Últimos 30 dias</option><option>7 dias</option><option>Hoje</option></select>
-            <button class="btn-ghost btn-sm">Exportar</button>
-          </div>
-          <div class="card">
-            <table class="tbl">
-              <thead><tr><th>US</th><th>Descrição</th><th>Org destino</th><th>Comps</th><th>Commit</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
-              <tbody id="hist-tbody">
-                <tr>
-                  <td><span class="utag err">CRMB2B-108</span></td>
-                  <td class="text-slate-600">Edição Automática de Contas</td>
-                  <td><span class="text-amber-600 text-xs font-semibold">homologação</span></td>
-                  <td class="font-mono text-xs text-slate-500">3/5 ✕</td>
-                  <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">a3f92c1</span></td>
-                  <td class="text-xs text-slate-400">há 8 min</td>
-                  <td><span class="pill pill-err">Erro</span></td>
-                  <td><div class="flex gap-2"><button onclick="showPage('deploy',null);setTimeout(()=>goWiz(4),50)" class="btn-err btn-sm">Ver erro</button><button onclick="showPage('rollback',null)" class="btn-ghost btn-sm">Rollback</button></div></td>
-                </tr>
-                <tr>
-                  <td><span class="utag">CRMB2B-107</span></td>
-                  <td class="text-slate-600">Edição Manual de Contas</td>
-                  <td><span class="text-emerald-600 text-xs font-semibold">arqevery</span></td>
-                  <td class="font-mono text-xs text-slate-500">6</td>
-                  <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">b8e41d0</span></td>
-                  <td class="text-xs text-slate-400">há 2h</td>
-                  <td><span class="pill pill-ok">OK</span></td>
-                  <td><div class="flex gap-2"><button onclick="showPage('rollback',null)" class="btn-ghost btn-sm">Rollback</button><button class="btn-ghost btn-sm">Redeploy</button></div></td>
-                </tr>
-                <tr>
-                  <td><span class="utag">CRMB2B-109</span></td>
-                  <td class="text-slate-600">Histórico de Contas</td>
-                  <td><span class="text-emerald-600 text-xs font-semibold">arqevery</span></td>
-                  <td class="font-mono text-xs text-slate-500">3</td>
-                  <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">c1d7e82</span></td>
-                  <td class="text-xs text-slate-400">há 3h</td>
-                  <td><span class="pill pill-ok">OK</span></td>
-                  <td><div class="flex gap-2"><button onclick="showPage('rollback',null)" class="btn-ghost btn-sm">Rollback</button><button class="btn-ghost btn-sm">Redeploy</button></div></td>
-                </tr>
-                <tr>
-                  <td><span class="utag">CRMB2B-98</span></td>
-                  <td class="text-slate-600">API de Consumo</td>
-                  <td><span class="text-emerald-600 text-xs font-semibold">arqevery</span></td>
-                  <td class="font-mono text-xs text-slate-500">4</td>
-                  <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">f2a91b3</span></td>
-                  <td class="text-xs text-slate-400">ontem</td>
-                  <td><span class="pill pill-ok">OK</span></td>
-                  <td><div class="flex gap-2"><button onclick="showPage('rollback',null)" class="btn-ghost btn-sm">Rollback</button><button class="btn-ghost btn-sm">Redeploy</button></div></td>
-                </tr>
-                <tr>
-                  <td><span class="utag">CRMB2B-90</span></td>
-                  <td class="text-slate-600">Record Types e Profiles</td>
-                  <td><span class="text-emerald-600 text-xs font-semibold">arqevery</span></td>
-                  <td class="font-mono text-xs text-slate-500">8</td>
-                  <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">d9c03a7</span></td>
-                  <td class="text-xs text-slate-400">28/06</td>
-                  <td><span class="pill pill-ok">OK</span></td>
-                  <td><div class="flex gap-2"><button onclick="showPage('rollback',null)" class="btn-ghost btn-sm">Rollback</button><button class="btn-ghost btn-sm">Redeploy</button></div></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ═══ DEPLOY WIZARD ═══ -->
-        <div id="page-deploy" class="hidden page-content">
-          <!-- Wiz header -->
-          <div class="card mb-5">
-            <div class="flex border-b border-slate-100" id="wiz-tabs">
-              <div class="wiz-step done" id="ws1" onclick="goWiz(1)"><div class="wiz-step-n">✓</div>Selecionar US</div>
-              <div class="wiz-step done" id="ws2" onclick="goWiz(2)"><div class="wiz-step-n">✓</div>Escolher orgs</div>
-              <div class="wiz-step done" id="ws3" onclick="goWiz(3)"><div class="wiz-step-n">✓</div>Revisar diff</div>
-              <div class="wiz-step active" id="ws4" onclick="goWiz(4)"><div class="wiz-step-n">4</div>Executar deploy</div>
-            </div>
-
-            <!-- P1 -->
-            <div class="p-6 hidden" id="wp1">
-              <div class="font-semibold text-slate-900 mb-4">Selecione a User Story</div>
-              <div class="space-y-2">
-                <div class="usi" onclick="selUS(this)"><span class="utag err">CRMB2B-108</span><div class="flex-1"><div class="text-sm font-semibold">Edição Automática de Contas</div><div class="text-xs text-slate-500">5 componentes · pausado com erro</div></div><span class="pill pill-err">Erro</span></div>
-                <div class="usi" onclick="selUS(this)"><span class="utag">CRMB2B-174</span><div class="flex-1"><div class="text-sm font-semibold">Conta Master — Próxima etapa</div><div class="text-xs text-slate-500">3 componentes · pronto</div></div><span class="pill pill-neu">Pronto</span></div>
-                <div class="usi" onclick="selUS(this)"><span class="utag">CRMB2B-107</span><div class="flex-1"><div class="text-sm font-semibold">Edição Manual de Contas</div><div class="text-xs text-slate-500">6 componentes · deployado há 2h</div></div><span class="pill pill-ok">OK</span></div>
-              </div>
-              <div class="flex justify-end mt-5"><button class="btn-primary" onclick="goWiz(2)">Próximo <i class="fa-solid fa-arrow-right"></i></button></div>
-            </div>
-
-            <!-- P2 -->
-            <div class="p-6 hidden" id="wp2">
-              <div class="grid grid-cols-2 gap-5">
-                <div><div class="font-semibold text-slate-900 mb-3">Org origem</div>
-                  <div class="space-y-2">
-                    <div class="org-card sel"><div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><div class="font-semibold text-sm">ORG ARQUITETURA</div></div><div class="text-xs text-slate-500 font-mono">arqevery · sandbox</div><div class="mt-2"><span class="pill pill-ok text-xs">Selecionada</span></div></div>
-                  </div>
-                </div>
-                <div><div class="font-semibold text-slate-900 mb-3">Org destino</div>
-                  <div class="space-y-2">
-                    <div class="org-card" onclick="selOrg(this)"><div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><div class="font-semibold text-sm">ORG ARQUITETURA</div></div><div class="text-xs text-slate-500 font-mono">arqevery · sandbox</div></div>
-                    <div class="org-card sel" onclick="selOrg(this)"><div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span><div class="font-semibold text-sm">Homologação</div></div><div class="text-xs text-slate-500 font-mono">hml.algar · sandbox</div><div class="mt-2"><span class="pill pill-blue text-xs">Selecionada</span></div></div>
-                    <div class="org-card disabled"><div class="flex items-center gap-2 mb-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span><div class="font-semibold text-sm text-slate-400">Produção</div></div><div class="text-xs text-slate-400 font-mono">bloqueada</div></div>
-                  </div>
-                </div>
-              </div>
-              <div class="flex justify-between mt-5"><button class="btn-ghost" onclick="goWiz(1)"><i class="fa-solid fa-arrow-left"></i> Voltar</button><button class="btn-primary" onclick="goWiz(3)">Analisar diff <i class="fa-solid fa-arrow-right"></i></button></div>
-            </div>
-
-            <!-- P3 -->
-            <div class="p-6 hidden" id="wp3">
-              <div class="claude-panel mb-5">
-                <div class="flex items-center gap-2 mb-2"><span class="text-[#0B5CAB] font-bold">✦</span><span class="font-bold text-sm text-[#0B5CAB]">Análise Claude — CRMB2B-108</span></div>
-                <div class="text-sm text-slate-700 leading-relaxed">5 componentes novos, nenhum conflito com <strong>homologação</strong>. A VR usa Custom Permission ao invés de <code class="font-mono text-xs bg-blue-100 px-1.5 py-0.5 rounded">$Profile.Name</code> — mais resiliente a renomeações. Os 2 Permission Sets são aditivos e não afetam FLS existente.</div>
-                <div class="flex gap-2 mt-3"><span class="pill pill-ok">0 conflitos</span><span class="pill pill-blue">5 adições</span><span class="pill pill-neu">0 remoções</span></div>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <div class="diff-block">
-                    <div class="diff-hd"><span class="diff-file">validationRules / VR_Account_RestrictedFields</span><span class="pill pill-blue text-xs">Novo</span></div>
-                    <div class="dl ctx"><span class="dl-ln">—</span><span class="dl-code">(não existe em homologação)</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">NOT(ISNEW()) AND NOT($Permission.Bypass...)</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">AND (ISCHANGED(Name) OR ISCHANGED(...))</span></div>
-                  </div>
-                  <div class="diff-block">
-                    <div class="diff-hd"><span class="diff-file">customPermissions / BypassRestrictedFields</span><span class="pill pill-blue text-xs">Novo</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">label: Bypass Restricted Fields Update</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">description: Permite MuleSoft atualizar...</span></div>
-                  </div>
-                </div>
-                <div>
-                  <div class="diff-block">
-                    <div class="diff-hd"><span class="diff-file">permissionSets / PS_Account_RestrictedAPI_FLS</span><span class="pill pill-blue text-xs">Novo</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">fieldPermissions: CNPJ__c [Read/Write]</span></div>
-                    <div class="dl add"><span class="dl-ln">+</span><span class="dl-code">fieldPermissions: CodigoCnaeFiscal__c [Read Only]</span></div>
-                  </div>
-                  <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <div class="font-semibold text-sm text-slate-900 mb-3">Confirmar componentes</div>
-                    <div class="space-y-2 text-sm text-slate-600">
-                      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked class="accent-[#0B5CAB]">VR_Account_RestrictedFields_APIUpdate</label>
-                      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked class="accent-[#0B5CAB]">BypassRestrictedFieldsUpdate</label>
-                      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked class="accent-[#0B5CAB]">PS_Account_RestrictedAPI_FLS</label>
-                      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked class="accent-[#0B5CAB]">PS_Account_SerasaIntegration_FLS</label>
-                      <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked class="accent-[#0B5CAB]">Screen Flow AlterarNaturezaJuridica</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="flex justify-between mt-5"><button class="btn-ghost" onclick="goWiz(2)"><i class="fa-solid fa-arrow-left"></i> Voltar</button><button class="btn-primary" onclick="goWiz(4);runDeploy()">Confirmar e Deployar <i class="fa-solid fa-rocket"></i></button></div>
-            </div>
-
-            <!-- P4 — EXECUÇÃO + ERRO -->
-            <div class="p-6" id="wp4">
-              <div class="flex items-center justify-between mb-5">
-                <div>
-                  <div class="font-bold text-slate-900">Deploy em execução</div>
-                  <div class="text-xs text-slate-500 mt-0.5">CRMB2B-108 → homologação · arqevery como origem</div>
-                </div>
-                <span class="pill pill-err" id="dp-pill">Pausado com erro</span>
-              </div>
-
-              <!-- Barra geral -->
-              <div class="mb-5">
-                <div class="flex justify-between mb-1.5">
-                  <span class="text-xs text-slate-500 font-medium">Progresso geral</span>
-                  <span class="text-xs font-mono text-slate-700" id="dp-pct">40% · parou no step 3</span>
-                </div>
-                <div class="prog-track" style="height:6px"><div class="prog-fill err" id="dp-bar" style="width:40%"></div></div>
-              </div>
-
-              <!-- Steps -->
-              <div class="bg-slate-50 rounded-xl p-4 mb-5">
-                <div class="step-row">
-                  <div class="step-n done" id="sn1">✓</div>
-                  <div class="flex-1"><div class="text-sm font-semibold">VR_Account_RestrictedFields_APIUpdate</div><div class="text-xs text-slate-500">Validation Rule · Account</div></div>
-                  <span class="pill pill-ok" id="sp1">OK</span>
-                </div>
-                <div class="step-row">
-                  <div class="step-n done" id="sn2">✓</div>
-                  <div class="flex-1"><div class="text-sm font-semibold">BypassRestrictedFieldsUpdate</div><div class="text-xs text-slate-500">Custom Permission</div></div>
-                  <span class="pill pill-ok" id="sp2">OK</span>
-                </div>
-                <div class="step-row">
-                  <div class="step-n err" id="sn3">✕</div>
-                  <div class="flex-1"><div class="text-sm font-semibold">PS_Account_RestrictedAPI_FLS</div><div class="text-xs text-slate-500">Permission Set · 4 FLS</div></div>
-                  <span class="pill pill-err" id="sp3">Erro</span>
-                </div>
-                <div class="step-row">
-                  <div class="step-n" id="sn4">4</div>
-                  <div class="flex-1"><div class="text-sm font-semibold text-slate-400">PS_Account_SerasaIntegration_FLS</div><div class="text-xs text-slate-400">Aguardando resolução</div></div>
-                  <span class="pill pill-neu" id="sp4">Na fila</span>
-                </div>
-                <div class="step-row">
-                  <div class="step-n" id="sn5">5</div>
-                  <div class="flex-1"><div class="text-sm font-semibold text-slate-400">Screen Flow AlterarNaturezaJuridica</div><div class="text-xs text-slate-400">Aguardando resolução</div></div>
-                  <span class="pill pill-neu" id="sp5">Na fila</span>
-                </div>
-              </div>
-
-              <!-- Erro box -->
-              <div class="err-box mb-4" id="err-box">
-                <div class="err-title"><i class="fa-solid fa-triangle-exclamation"></i> Erro no componente 3 — PS_Account_RestrictedAPI_FLS</div>
-                <div class="err-code">FIELD_INTEGRITY_EXCEPTION: field 'CodigoCnaeFiscal__c'<br>not found on object 'Account'.<br><br>Referencing field that does not exist in target org.<br>Component: permissionSets/PS_Account_RestrictedAPI_FLS<br>Line: fieldPermissions → field: CodigoCnaeFiscal__c</div>
-                <div class="err-foot"><i class="fa-solid fa-circle-info"></i> O campo <strong>CodigoCnaeFiscal__c</strong> não existe em <strong>homologação</strong>. Provavelmente CRMB2B-50A não foi deployada nesta org. Cole este erro no chat para análise e correção.</div>
-              </div>
-
-              <!-- Ações -->
-              <div class="flex items-center gap-3 flex-wrap" id="err-actions">
-                <button class="btn-ghost btn-sm" onclick="copyErr()"><i class="fa-solid fa-copy"></i> Copiar erro</button>
-                <button class="btn-ghost btn-sm"><i class="fa-solid fa-comment"></i> Abrir chat</button>
-                <div class="flex-1"></div>
-                <span class="pill fix-badge bg-emerald-100 text-emerald-700 border border-emerald-200 hidden" id="fix-badge"><i class="fa-solid fa-circle-check"></i> Correção disponível no Git</span>
-                <button class="btn-warn btn-sm" id="btn-simfix" onclick="simFix()"><i class="fa-solid fa-wand-magic-sparkles"></i> Simular correção no chat</button>
-                <button class="btn-primary" id="btn-retomar" disabled onclick="retomar()"><i class="fa-solid fa-rotate-right"></i> Retomar deploy</button>
-              </div>
-
-              <div class="divider"></div>
-              <div class="log-term" id="dp-log">
-                <div><span class="text-slate-600">[09:14:02]</span> → Deployando 1/5 — VR_Account_RestrictedFields_APIUpdate</div>
-                <div><span class="text-slate-600">[09:14:04]</span> <span class="text-emerald-400">✓ Componente 1 OK</span></div>
-                <div><span class="text-slate-600">[09:14:04]</span> → Deployando 2/5 — BypassRestrictedFieldsUpdate</div>
-                <div><span class="text-slate-600">[09:14:06]</span> <span class="text-emerald-400">✓ Componente 2 OK</span></div>
-                <div><span class="text-slate-600">[09:14:06]</span> → Deployando 3/5 — PS_Account_RestrictedAPI_FLS</div>
-                <div><span class="text-slate-600">[09:14:09]</span> <span class="text-red-400">✕ ERRO: FIELD_INTEGRITY_EXCEPTION: field 'CodigoCnaeFiscal__c' not found</span></div>
-                <div><span class="text-slate-600">[09:14:09]</span> <span class="text-red-400">✕ Deploy pausado. Componentes 4 e 5 não executados.</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ═══ ROLLBACK ═══ -->
-        <div id="page-rollback" class="hidden page-content">
-          <div class="grid grid-cols-2 gap-5">
-            <div class="card">
-              <div class="p-5 border-b border-slate-100 font-bold text-slate-900">Deploys anteriores</div>
-              <div id="rb-list" style="padding:0">
-                <div onclick="selRB(this,'108','a3f92c1','Edição Automática de Contas','há 8 min','3/5 ✕','err')" class="flex items-center gap-3 p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <span class="utag err">CRMB2B-108</span><div class="flex-1"><div class="text-sm font-semibold">Edição Automática de Contas</div><div class="text-xs text-slate-500">há 8 min · homologação · 3/5</div></div><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">a3f92c1</span><span class="pill pill-err">Erro</span>
-                </div>
-                <div onclick="selRB(this,'107','b8e41d0','Edição Manual de Contas','há 2h','6 componentes','ok')" class="flex items-center gap-3 p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <span class="utag">CRMB2B-107</span><div class="flex-1"><div class="text-sm font-semibold">Edição Manual de Contas</div><div class="text-xs text-slate-500">há 2h · arqevery · 6</div></div><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">b8e41d0</span><span class="pill pill-ok">OK</span>
-                </div>
-                <div onclick="selRB(this,'109','c1d7e82','Histórico de Contas','há 3h','3 componentes','ok')" class="flex items-center gap-3 p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <span class="utag">CRMB2B-109</span><div class="flex-1"><div class="text-sm font-semibold">Histórico de Contas</div><div class="text-xs text-slate-500">há 3h · arqevery · 3</div></div><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">c1d7e82</span><span class="pill pill-ok">OK</span>
-                </div>
-                <div onclick="selRB(this,'98','f2a91b3','API de Consumo','ontem','4 componentes','ok')" class="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <span class="utag">CRMB2B-98</span><div class="flex-1"><div class="text-sm font-semibold">API de Consumo</div><div class="text-xs text-slate-500">ontem · arqevery · 4</div></div><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">f2a91b3</span><span class="pill pill-ok">OK</span>
-                </div>
-              </div>
-            </div>
-            <div id="rb-detail">
-              <div class="card p-10 text-center text-slate-400">
-                <i class="fa-solid fa-rotate-left text-4xl mb-3 text-slate-300"></i>
-                <div class="font-semibold text-slate-500">Selecione um deploy à esquerda</div>
-                <div class="text-xs mt-1">para rollback ou redeploy em outra org</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <div>
+      <div class="text-xs font-bold text-slate-400 px-3 mb-2 tracking-widest">ORGS</div>
+      <div class="space-y-0.5 text-sm" id="sidebar-orgs">
+        <div class="px-3 py-2 text-slate-400 text-xs">Carregando...</div>
       </div>
     </div>
   </div>
+
+  <div class="p-4 border-t border-slate-100">
+    <div class="flex items-center gap-x-3 px-2">
+      <div class="w-8 h-8 bg-gradient-to-br from-[#0B5CAB] to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0">AB</div>
+      <div><div class="font-semibold text-sm">Alberto Bottaro</div><div class="text-xs text-slate-500">Salesforce Architect</div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="flex-1 flex flex-col overflow-hidden">
+  <header class="h-14 bg-white border-b border-slate-200 flex items-center px-6 justify-between flex-shrink-0">
+    <div class="font-bold text-xl tracking-tight" id="page-title">Dashboard</div>
+    <div class="flex items-center gap-x-3">
+      <button onclick="nav('deploy',null)" class="btn-primary text-sm"><i class="fa-solid fa-plus"></i> Novo Deploy</button>
+      <div class="w-8 h-8 bg-[#0B5CAB] rounded-full flex items-center justify-center text-white text-xs font-black">AB</div>
+    </div>
+  </header>
+
+  <div class="flex-1 overflow-auto bg-slate-50">
+    <div class="max-w-[1280px] mx-auto p-6">
+
+      <!-- ═══ DASHBOARD ═══ -->
+      <div id="p-dash" class="page-anim">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
+            <div class="flex justify-between items-start">
+              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Deploys</div><div class="text-3xl font-bold tracking-tight mt-1 text-[#0B5CAB]" id="stat-total">—</div></div>
+              <div class="w-10 h-10 bg-blue-50 text-[#0B5CAB] rounded-2xl flex items-center justify-center"><i class="fa-solid fa-rocket"></i></div>
+            </div>
+            <div class="text-xs mt-4 text-slate-400">histórico completo</div>
+          </div>
+          <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
+            <div class="flex justify-between items-start">
+              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Concluídos</div><div class="text-3xl font-bold tracking-tight mt-1 text-emerald-600" id="stat-ok">—</div></div>
+              <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="text-xs mt-4 text-emerald-600 font-semibold" id="stat-ok-pct">—</div>
+          </div>
+          <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
+            <div class="flex justify-between items-start">
+              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Com Erro</div><div class="text-3xl font-bold tracking-tight mt-1 text-red-600" id="stat-err">—</div></div>
+              <div class="w-10 h-10 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="text-xs mt-4 text-red-500 font-medium" id="stat-err-label">—</div>
+          </div>
+          <div class="metric-card bg-white rounded-2xl p-5 border border-slate-100">
+            <div class="flex justify-between items-start">
+              <div><div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Orgs</div><div class="text-3xl font-bold tracking-tight mt-1 text-slate-700" id="stat-orgs">—</div></div>
+              <div class="w-10 h-10 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-server"></i></div>
+            </div>
+            <div class="text-xs mt-4 text-slate-400">cadastradas</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-5">
+          <div class="card p-5 col-span-2">
+            <div class="flex justify-between items-center mb-4">
+              <div class="font-bold text-sm text-slate-900">Atividade Recente</div>
+              <button onclick="nav('hist',null)" class="text-xs text-[#0B5CAB] font-semibold hover:underline">Histórico completo →</button>
+            </div>
+            <div id="dash-activity">
+              <div class="empty-state"><i class="fa-solid fa-clock-rotate-left text-slate-300"></i>Nenhum deploy ainda</div>
+            </div>
+          </div>
+
+          <div class="card p-5">
+            <div class="font-bold text-sm text-slate-900 mb-4">Orgs Conectadas</div>
+            <div class="space-y-3" id="dash-orgs">
+              <div class="empty-state py-6"><i class="fa-solid fa-server text-slate-300 text-xl mb-2 block"></i><span class="text-xs">Carregando...</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ HISTÓRICO ═══ -->
+      <div id="p-hist" class="hidden page-anim">
+        <div class="flex gap-3 mb-4">
+          <input class="inp flex-1" placeholder="Buscar US, status..." id="hist-search" oninput="filterHistory()">
+          <select class="sel-inp" id="hist-filter-status" onchange="filterHistory()">
+            <option value="">Todos os status</option>
+            <option value="ok">OK</option>
+            <option value="error">Erro</option>
+            <option value="running">Em progresso</option>
+            <option value="rolledback">Rollback</option>
+          </select>
+          <button class="btn-ghost btn-sm" onclick="loadHistory()"><i class="fa-solid fa-arrows-rotate"></i> Atualizar</button>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead><tr><th>US</th><th>Descrição</th><th>Origem</th><th>Destino</th><th>Comps</th><th>Tag</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="hist-tbody">
+              <tr><td colspan="9" class="text-center py-10 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══ NOVO DEPLOY ═══ -->
+      <div id="p-deploy" class="hidden page-anim">
+        <div class="card mb-5">
+          <div class="flex border-b border-slate-100">
+            <div class="wiz-step active" id="ws1" onclick="goWiz(1)"><div class="wiz-step-n">1</div>Selecionar US</div>
+            <div class="wiz-step" id="ws2"><div class="wiz-step-n">2</div>Escolher orgs</div>
+            <div class="wiz-step" id="ws3"><div class="wiz-step-n">3</div>Revisar diff</div>
+            <div class="wiz-step" id="ws4"><div class="wiz-step-n">4</div>Executar</div>
+          </div>
+
+          <!-- P1 — US -->
+          <div class="p-6" id="wp1">
+            <div class="font-semibold text-slate-900 mb-1">Selecione a User Story</div>
+            <div class="text-xs text-slate-500 mb-4">Informe o número e nome da US que deseja deployar</div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="text-xs font-semibold text-slate-600 mb-1 block">Número da US</label>
+                <input class="inp w-full" placeholder="ex: CRMB2B-108" id="us-number">
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-slate-600 mb-1 block">Nome / Descrição</label>
+                <input class="inp w-full" placeholder="ex: Edição Automática de Contas" id="us-name">
+              </div>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600">
+              <i class="fa-solid fa-circle-info text-[#0B5CAB] mr-2"></i>
+              Execute <strong>/devops</strong> no chat primeiro para que os artefatos estejam disponíveis no Git antes de iniciar o deploy.
+            </div>
+            <div class="flex justify-end mt-5">
+              <button class="btn-primary" onclick="wizNext1()">Próximo <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <!-- P2 — ORGS -->
+          <div class="p-6 hidden" id="wp2">
+            <div class="grid grid-cols-2 gap-5">
+              <div>
+                <div class="font-semibold text-slate-900 mb-3">Org origem</div>
+                <div class="space-y-2" id="org-origin-list"><div class="text-xs text-slate-400">Carregando orgs...</div></div>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-900 mb-3">Org destino</div>
+                <div class="space-y-2" id="org-dest-list"><div class="text-xs text-slate-400">Carregando orgs...</div></div>
+              </div>
+            </div>
+            <div class="flex justify-between mt-5">
+              <button class="btn-ghost" onclick="goWiz(1)"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+              <button class="btn-primary" onclick="wizNext2()">Analisar diff <i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+          </div>
+
+          <!-- P3 — DIFF -->
+          <div class="p-6 hidden" id="wp3">
+            <div class="claude-panel mb-5" id="claude-analysis">
+              <div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-spinner fa-spin text-[#0B5CAB]"></i><span class="font-bold text-sm text-[#0B5CAB]">Analisando com Claude...</span></div>
+              <div class="text-sm text-slate-500">Comparando componentes entre as orgs...</div>
+            </div>
+            <div id="diff-components" class="space-y-2 mb-4"></div>
+            <div class="flex justify-between mt-5">
+              <button class="btn-ghost" onclick="goWiz(2)"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+              <button class="btn-primary" id="btn-deploy" onclick="startDeploy()">Confirmar e Deployar <i class="fa-solid fa-rocket"></i></button>
+            </div>
+          </div>
+
+          <!-- P4 — EXECUÇÃO -->
+          <div class="p-6 hidden" id="wp4">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <div class="font-bold text-slate-900" id="dp-title">Deploy em execução</div>
+                <div class="text-xs text-slate-500 mt-0.5" id="dp-subtitle">—</div>
+              </div>
+              <span class="pill pill-warn" id="dp-pill">Em progresso</span>
+            </div>
+
+            <div class="mb-5">
+              <div class="flex justify-between mb-1.5">
+                <span class="text-xs text-slate-500 font-medium">Progresso</span>
+                <span class="text-xs font-mono text-slate-700" id="dp-pct">0%</span>
+              </div>
+              <div class="prog-track" style="height:6px"><div class="prog-fill" id="dp-bar" style="width:0%"></div></div>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-4 mb-5" id="dp-steps"></div>
+
+            <div class="err-box mb-4 hidden" id="err-box">
+              <div class="err-title"><i class="fa-solid fa-triangle-exclamation"></i> <span id="err-component">Erro no componente</span></div>
+              <div class="err-code" id="err-message">—</div>
+              <div class="err-foot"><i class="fa-solid fa-circle-info"></i> Cole este erro no chat do i9-mcp para análise e correção. Após corrigido, clique em <strong>Retomar deploy</strong>.</div>
+            </div>
+
+            <div class="hidden items-center gap-3 flex-wrap" id="err-actions">
+              <button class="btn-ghost btn-sm" onclick="copyError()"><i class="fa-solid fa-copy"></i> Copiar erro</button>
+              <div class="flex-1"></div>
+              <button class="btn-primary" id="btn-retomar" onclick="resumeDeploy()"><i class="fa-solid fa-rotate-right"></i> Retomar deploy</button>
+            </div>
+
+            <div class="divider"></div>
+            <div class="log-term" id="dp-log"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ROLLBACK ═══ -->
+      <div id="p-rollback" class="hidden page-anim">
+        <div class="grid grid-cols-2 gap-5">
+          <div class="card">
+            <div class="p-5 border-b border-slate-100 font-bold text-slate-900">Selecionar deploy</div>
+            <div id="rb-list">
+              <div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i>Carregando...</div>
+            </div>
+          </div>
+          <div id="rb-detail">
+            <div class="card p-10 text-center text-slate-400">
+              <i class="fa-solid fa-rotate-left text-4xl mb-3 text-slate-300 block"></i>
+              <div class="font-semibold text-slate-500">Selecione um deploy à esquerda</div>
+              <div class="text-xs mt-1">para rollback ou redeploy em outra org</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- TOAST -->
@@ -626,291 +364,491 @@ body { background: #F1F5F9; }
 </div>
 
 <script>
-// ── NAV ──
-function showPage(page, navEl) {
-  document.querySelectorAll('[id^="page-"]').forEach(el => {
-    el.classList.add('hidden');
-    el.classList.remove('page-content');
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const API = window.location.origin;
+let JWT = '';
+let allOrgs = [];
+let selectedUS = { number: '', name: '' };
+let selectedOriginId = null;
+let selectedDestId = null;
+let diffData = null;
+let currentDeployId = null;
+let pollInterval = null;
+let historyData = [];
+
+// ── AUTH — pegar token do cookie/localStorage ou login silencioso ─────────────
+async function getToken() {
+  if (JWT) return JWT;
+  // Tentar pegar do localStorage
+  const stored = localStorage.getItem('i9_token');
+  if (stored) { JWT = stored; return JWT; }
+  // Login silencioso admin
+  try {
+    const r = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@everi9.com', password: 'admin2026' })
+    });
+    const d = await r.json();
+    JWT = d.token;
+    if (JWT) localStorage.setItem('i9_token', JWT);
+  } catch(e) { console.error('auth:', e); }
+  return JWT;
+}
+
+async function api(method, path, body) {
+  const token = await getToken();
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(`${API}/api/ever-deploy${path}`, opts);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+  return d;
+}
+
+// ── NAV ──────────────────────────────────────────────────────────────────────
+function nav(page, linkEl) {
+  ['dash','hist','deploy','rollback'].forEach(p => {
+    const el = document.getElementById('p-'+p);
+    if (el) el.classList.toggle('hidden', p !== page);
   });
-  const target = document.getElementById('page-' + page);
-  if (target) { target.classList.remove('hidden'); target.classList.add('page-content'); }
   const titles = { dash:'Dashboard', hist:'Histórico de Deploys', deploy:'Novo Deploy', rollback:'Rollback / Redeploy' };
   document.getElementById('page-title').textContent = titles[page] || page;
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  if (navEl) navEl.classList.add('active');
+  if (linkEl) linkEl.classList.add('active');
+  if (page === 'hist')     loadHistory();
+  if (page === 'rollback') loadRollback();
+  if (page === 'deploy')   { goWiz(1); loadOrgsForWizard(); }
 }
 
-// ── WIZARD ──
+// ── ORGS ─────────────────────────────────────────────────────────────────────
+async function loadOrgs() {
+  try {
+    const { orgs } = await api('GET', '/orgs');
+    allOrgs = orgs;
+    document.getElementById('stat-orgs').textContent = orgs.length;
+
+    // Sidebar
+    document.getElementById('sidebar-orgs').innerHTML = orgs.length
+      ? orgs.map(o => `
+        <div class="flex items-center gap-x-3 px-3 py-2 rounded-xl text-slate-600">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink:0"></span>
+          <span class="text-sm">${o.name}</span>
+        </div>`).join('')
+      : '<div class="px-3 py-2 text-xs text-slate-400">Nenhuma org</div>';
+
+    // Dashboard orgs panel
+    document.getElementById('dash-orgs').innerHTML = orgs.map(o => `
+      <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">${o.name}</div>
+          <div class="text-xs text-slate-500 font-mono truncate">${o.username}</div>
+        </div>
+        <span class="pill pill-ok text-xs">Online</span>
+      </div>`).join('');
+  } catch(e) { console.error('loadOrgs:', e.message); }
+}
+
+function loadOrgsForWizard() {
+  ['org-origin-list','org-dest-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = allOrgs.length
+      ? allOrgs.map(o => `
+        <div class="org-card" data-org-id="${o.id}" onclick="selOrg(this,'${id}')">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div class="font-semibold text-sm">${o.name}</div>
+          </div>
+          <div class="text-xs text-slate-500 font-mono">${o.username}</div>
+        </div>`).join('')
+      : '<div class="text-xs text-slate-400">Nenhuma org cadastrada</div>';
+  });
+}
+
+function selOrg(el, listId) {
+  document.getElementById(listId).querySelectorAll('.org-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  if (listId === 'org-origin-list') selectedOriginId = parseInt(el.dataset.orgId);
+  else selectedDestId = parseInt(el.dataset.orgId);
+}
+
+// ── HISTÓRICO ─────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const { deploys } = await api('GET', '/deploys');
+    historyData = deploys;
+    document.getElementById('hist-count').textContent = deploys.length;
+
+    // Stats dashboard
+    const ok  = deploys.filter(d => d.status === 'ok').length;
+    const err = deploys.filter(d => d.status === 'error').length;
+    document.getElementById('stat-total').textContent = deploys.length;
+    document.getElementById('stat-ok').textContent = ok;
+    document.getElementById('stat-ok-pct').textContent = deploys.length ? Math.round(ok/deploys.length*100) + '% taxa de sucesso' : '—';
+    document.getElementById('stat-err').textContent = err;
+    document.getElementById('stat-err-label').textContent = err > 0 ? `${err} deploy${err>1?'s':''} com erro` : 'Nenhum erro';
+
+    // Atividade recente (dashboard)
+    const recent = deploys.slice(0, 5);
+    document.getElementById('dash-activity').innerHTML = recent.length
+      ? recent.map(d => `
+        <div class="tl-item">
+          <div class="tl-left">
+            <div class="tl-dot ${d.status==='ok'?'ok':d.status==='error'?'err':'run'}">
+              <i class="fa-solid ${d.status==='ok'?'fa-check':d.status==='error'?'fa-xmark':'fa-spinner fa-spin'} text-xs"></i>
+            </div>
+            ${recent.indexOf(d) < recent.length-1 ? '<div class="tl-line"></div>' : ''}
+          </div>
+          <div class="flex-1 pt-0.5">
+            <div class="text-sm font-semibold flex items-center gap-2 flex-wrap">
+              <span class="utag ${d.status==='error'?'err':''}">${d.us_number}</span>
+              ${d.us_name || ''}
+              ${statusPill(d.status)}
+            </div>
+            <div class="text-xs text-slate-500 mt-1">${timeAgo(d.created_at)} · ${d.origin_name||'?'} → ${d.dest_name||'?'}</div>
+            ${d.status==='error' ? `<button onclick="openDeployById(${d.id})" class="btn-err btn-sm mt-2">Ver erro e retomar</button>` : ''}
+            ${d.status==='ok' ? `<button onclick="nav('rollback',null)" class="btn-ghost btn-sm mt-2">Rollback disponível</button>` : ''}
+          </div>
+        </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-rocket text-slate-300"></i>Nenhum deploy ainda</div>';
+
+    renderHistoryTable(deploys);
+  } catch(e) {
+    console.error('loadHistory:', e.message);
+    document.getElementById('hist-tbody').innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function filterHistory() {
+  const search = document.getElementById('hist-search')?.value.toLowerCase() || '';
+  const status = document.getElementById('hist-filter-status')?.value || '';
+  const filtered = historyData.filter(d => {
+    const matchSearch = !search || d.us_number.toLowerCase().includes(search) || (d.us_name||'').toLowerCase().includes(search);
+    const matchStatus = !status || d.status === status;
+    return matchSearch && matchStatus;
+  });
+  renderHistoryTable(filtered);
+}
+
+function renderHistoryTable(deploys) {
+  const tbody = document.getElementById('hist-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = deploys.length
+    ? deploys.map(d => `
+      <tr>
+        <td><span class="utag ${d.status==='error'?'err':''}">${d.us_number}</span></td>
+        <td class="text-slate-600">${d.us_name || '—'}</td>
+        <td class="text-xs font-semibold text-slate-600">${d.origin_name || d.origin_org_id}</td>
+        <td class="text-xs font-semibold ${d.status==='ok'?'text-emerald-600':'text-amber-600'}">${d.dest_name || d.dest_org_id}</td>
+        <td class="font-mono text-xs text-slate-500">${(d.components||[]).length}</td>
+        <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">${d.git_tag || '—'}</span></td>
+        <td class="text-xs text-slate-400">${timeAgo(d.created_at)}</td>
+        <td>${statusPill(d.status)}</td>
+        <td>
+          <div class="flex gap-2">
+            ${d.status==='error'   ? `<button onclick="openDeployById(${d.id})" class="btn-err btn-sm">Ver erro</button>` : ''}
+            ${d.status==='ok'      ? `<button onclick="openRollbackById(${d.id})" class="btn-ghost btn-sm">Rollback</button>` : ''}
+            ${d.status==='running' ? `<button onclick="openDeployById(${d.id})" class="btn-ghost btn-sm">Ver progresso</button>` : ''}
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" class="text-center py-10 text-slate-400">Nenhum deploy encontrado</td></tr>';
+}
+
+// ── WIZARD ────────────────────────────────────────────────────────────────────
 function goWiz(s) {
   for (let i = 1; i <= 4; i++) {
-    const wp = document.getElementById('wp' + i);
-    const ws = document.getElementById('ws' + i);
-    wp.classList.toggle('hidden', i !== s);
-    ws.classList.remove('active', 'done');
+    document.getElementById('wp'+i).classList.toggle('hidden', i !== s);
+    const ws = document.getElementById('ws'+i);
+    ws.classList.remove('active','done');
     if (i < s) ws.classList.add('done');
     if (i === s) ws.classList.add('active');
   }
 }
-function selUS(el) { document.querySelectorAll('.usi').forEach(e => e.classList.remove('sel')); el.classList.add('sel'); }
-function selOrg(el) { el.closest('.space-y-2').querySelectorAll('.org-card').forEach(c => c.classList.remove('sel')); el.classList.add('sel'); }
 
-// ── DEPLOY SIMULADO ──
-function runDeploy() {
-  const bar = document.getElementById('dp-bar'), pct = document.getElementById('dp-pct');
-  const pill = document.getElementById('dp-pill'), log = document.getElementById('dp-log');
-  const errBox = document.getElementById('err-box'), errAct = document.getElementById('err-actions');
-  bar.className = 'prog-fill'; bar.style.width = '0%'; pct.textContent = '0%';
-  pill.className = 'pill pill-warn'; pill.textContent = 'Em progresso';
-  errBox.style.display = 'none'; errAct.style.display = 'none';
-  log.innerHTML = '';
-  for (let i = 1; i <= 5; i++) {
-    const sn = document.getElementById('sn'+i), sp = document.getElementById('sp'+i);
-    sn.className = 'step-n' + (i === 1 ? ' active' : '');
-    sn.textContent = i;
-    sp.className = 'pill pill-neu'; sp.textContent = 'Na fila';
-    document.getElementById('sn'+i).querySelector?.('');
+function wizNext1() {
+  const num  = document.getElementById('us-number').value.trim();
+  const name = document.getElementById('us-name').value.trim();
+  if (!num) { toast('Informe o número da US', 'warn'); return; }
+  selectedUS = { number: num, name };
+  loadOrgsForWizard();
+  goWiz(2);
+}
+
+async function wizNext2() {
+  if (!selectedOriginId) { toast('Selecione a org de origem', 'warn'); return; }
+  if (!selectedDestId)   { toast('Selecione a org de destino', 'warn'); return; }
+  if (selectedOriginId === selectedDestId) { toast('Origem e destino devem ser orgs diferentes', 'warn'); return; }
+  goWiz(3);
+  await loadDiff();
+}
+
+async function loadDiff() {
+  const panel = document.getElementById('claude-analysis');
+  const compsEl = document.getElementById('diff-components');
+  panel.innerHTML = `<div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-spinner fa-spin text-[#0B5CAB]"></i><span class="font-bold text-sm text-[#0B5CAB]">Analisando com Claude...</span></div><div class="text-sm text-slate-500">Comparando componentes entre as orgs...</div>`;
+  compsEl.innerHTML = '';
+
+  try {
+    // Diff com componentes vazios — o backend verifica o que existe
+    const result = await api('POST', '/diff', {
+      us_number: selectedUS.number,
+      us_name: selectedUS.name,
+      origin_org_id: selectedOriginId,
+      dest_org_id: selectedDestId,
+      components: [{ type: 'CustomObject', fullName: 'Account', action: 'verify' }]
+    });
+    diffData = result;
+
+    // Análise Claude
+    panel.innerHTML = `
+      <div class="flex items-center gap-2 mb-2"><span class="text-[#0B5CAB] font-bold">✦</span><span class="font-bold text-sm text-[#0B5CAB]">Análise Claude — ${selectedUS.number}</span></div>
+      <div class="text-sm text-slate-700 leading-relaxed">${result.claude_analysis || 'Análise concluída.'}</div>
+      <div class="flex gap-2 mt-3">
+        <span class="pill pill-ok">${result.summary?.additions || 0} adições</span>
+        <span class="pill ${(result.summary?.conflicts||0)>0?'pill-warn':'pill-neu'}">${result.summary?.conflicts || 0} conflitos</span>
+      </div>`;
+
+    // Info do deploy
+    compsEl.innerHTML = `
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
+        <div class="font-semibold text-slate-900 mb-2">Detalhes do deploy</div>
+        <div class="grid grid-cols-2 gap-3 text-xs text-slate-600">
+          <div><span class="font-semibold">US:</span> ${selectedUS.number} — ${selectedUS.name || '—'}</div>
+          <div><span class="font-semibold">Origem:</span> ${result.origin?.name || '—'}</div>
+          <div><span class="font-semibold">Destino:</span> ${result.dest?.name || '—'}</div>
+          <div><span class="font-semibold">Componentes:</span> ${result.summary?.total || 0}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    panel.innerHTML = `<div class="text-sm text-red-600"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${e.message}</div>`;
   }
-  document.getElementById('btn-retomar').disabled = true;
-  document.getElementById('fix-badge').classList.add('hidden');
-  document.getElementById('btn-simfix').style.display = 'inline-flex';
-
-  let step = 1;
-  function tick() {
-    if (step > 5) { finish(); return; }
-    const sn = document.getElementById('sn'+step), sp = document.getElementById('sp'+step);
-    sn.className = 'step-n active'; sp.className = 'pill pill-warn'; sp.textContent = 'Deployando...';
-    addLog('→ Deployando ' + step + '/5...');
-    bar.style.width = Math.round((step - 0.5) / 5 * 100) + '%';
-    setTimeout(() => {
-      if (step === 3) {
-        sn.className = 'step-n err'; sn.textContent = '✕';
-        sp.className = 'pill pill-err'; sp.textContent = 'Erro';
-        bar.className = 'prog-fill err'; bar.style.width = '40%';
-        pct.textContent = '40% · parou no step 3';
-        pill.className = 'pill pill-err'; pill.textContent = 'Pausado com erro';
-        addLog('✕ ERRO: FIELD_INTEGRITY_EXCEPTION: CodigoCnaeFiscal__c not found', 'err');
-        addLog('✕ Deploy pausado. Componentes 4 e 5 não executados.', 'err');
-        errBox.style.display = 'block'; errAct.style.display = 'flex';
-        toast('Deploy pausado — erro no componente 3', 'err');
-        return;
-      }
-      sn.className = 'step-n done'; sn.textContent = '✓';
-      sp.className = 'pill pill-ok'; sp.textContent = 'OK';
-      addLog('✓ Componente ' + step + ' OK', 'ok');
-      pct.textContent = Math.round(step / 5 * 100) + '%';
-      bar.style.width = Math.round(step / 5 * 100) + '%';
-      step++; setTimeout(tick, 600);
-    }, 900);
-  }
-  setTimeout(tick, 300);
 }
 
-function finish() {
-  document.getElementById('dp-bar').className = 'prog-fill ok';
-  document.getElementById('dp-bar').style.width = '100%';
-  document.getElementById('dp-pct').textContent = '100%';
-  document.getElementById('dp-pill').className = 'pill pill-ok';
-  document.getElementById('dp-pill').textContent = 'Concluído';
-  addLog('✓ Deploy finalizado — tag CRMB2B-108-hml criada', 'ok');
-  toast('Deploy CRMB2B-108 concluído com sucesso', 'ok');
-}
+// ── DEPLOY ────────────────────────────────────────────────────────────────────
+async function startDeploy() {
+  document.getElementById('btn-deploy').disabled = true;
+  goWiz(4);
 
-function addLog(msg, type) {
-  const log = document.getElementById('dp-log');
-  const t = new Date().toLocaleTimeString('pt-BR');
-  const col = type === 'ok' ? 'text-emerald-400' : type === 'err' ? 'text-red-400' : 'text-slate-400';
-  log.innerHTML += `<div><span class="text-slate-600">[${t}]</span> <span class="${col}">${msg}</span></div>`;
-  log.scrollTop = log.scrollHeight;
-}
+  const subtitle = document.getElementById('dp-subtitle');
+  if (subtitle) subtitle.textContent = `${selectedUS.number} → ${allOrgs.find(o=>o.id===selectedDestId)?.name || '?'}`;
 
-function copyErr() { toast('Erro copiado para a área de transferência', 'ok'); }
-
-function simFix() {
-  document.getElementById('btn-simfix').style.display = 'none';
-  setTimeout(() => {
-    document.getElementById('fix-badge').classList.remove('hidden');
-    document.getElementById('btn-retomar').disabled = false;
-    addLog('ℹ Correção detectada no Git — commit e7f12a3 · CodigoCnaeFiscal__c criado em homologação');
-    toast('Correção disponível — Retomar deploy habilitado', 'ok');
-  }, 1200);
-}
-
-function retomar() {
-  document.getElementById('err-box').style.display = 'none';
-  document.getElementById('err-actions').style.display = 'none';
-  document.getElementById('fix-badge').classList.add('hidden');
-  const pill = document.getElementById('dp-pill');
-  pill.className = 'pill pill-warn'; pill.textContent = 'Retomando...';
+  // Limpar estado
   document.getElementById('dp-bar').className = 'prog-fill';
-  addLog('↺ Retomando do componente 3 com artefato corrigido...');
-  let step = 3;
-  function tick() {
-    if (step > 5) { finish(); return; }
-    const sn = document.getElementById('sn'+step), sp = document.getElementById('sp'+step);
-    sn.className = 'step-n active'; sn.textContent = step;
-    sp.className = 'pill pill-warn'; sp.textContent = 'Deployando...';
-    addLog('→ Deployando ' + step + '/5...');
-    document.getElementById('dp-bar').style.width = Math.round((step - 0.5) / 5 * 100) + '%';
-    setTimeout(() => {
-      sn.className = 'step-n done'; sn.textContent = '✓';
-      sp.className = 'pill pill-ok'; sp.textContent = 'OK';
-      addLog('✓ Componente ' + step + ' OK', 'ok');
-      document.getElementById('dp-pct').textContent = Math.round(step / 5 * 100) + '%';
-      document.getElementById('dp-bar').style.width = Math.round(step / 5 * 100) + '%';
-      step++; setTimeout(tick, 700);
-    }, 1000);
+  document.getElementById('dp-bar').style.width = '0%';
+  document.getElementById('dp-pct').textContent = '0%';
+  document.getElementById('dp-pill').className = 'pill pill-warn';
+  document.getElementById('dp-pill').textContent = 'Em progresso';
+  document.getElementById('err-box').classList.add('hidden');
+  document.getElementById('err-actions').classList.add('hidden');
+  document.getElementById('dp-log').innerHTML = '';
+  document.getElementById('dp-steps').innerHTML = '<div class="text-xs text-slate-400">Iniciando deploy...</div>';
+
+  try {
+    const result = await api('POST', '/deploy', {
+      us_number: selectedUS.number,
+      us_name: selectedUS.name,
+      origin_org_id: selectedOriginId,
+      dest_org_id: selectedDestId,
+      components: diffData?.diff || []
+    });
+    currentDeployId = result.deploy_id;
+    addLog(`Deploy ${currentDeployId} iniciado — ${selectedUS.number}`);
+    startPoll(currentDeployId);
+  } catch(e) {
+    toast('Erro ao iniciar deploy: ' + e.message, 'err');
+    document.getElementById('btn-deploy').disabled = false;
   }
-  setTimeout(tick, 400);
 }
 
-// ── ROLLBACK ──
-function selRB(el, us, hash, name, when, comps, status) {
+function startPoll(id) {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(() => pollStatus(id), 2000);
+}
+
+async function pollStatus(id) {
+  try {
+    const { deploy, logs, progress } = await api('GET', `/deploy/${id}/status`);
+
+    document.getElementById('dp-bar').style.width = progress.pct + '%';
+    document.getElementById('dp-pct').textContent = progress.pct + '%';
+
+    // Renderizar steps
+    const comps = deploy.components || [];
+    if (comps.length) {
+      document.getElementById('dp-steps').innerHTML = comps.map((c, i) => {
+        const step = i + 1;
+        const done = (deploy.completed_steps || []).includes(step);
+        const isErr = deploy.error_component === c.fullName;
+        const isRun = deploy.status === 'running' && !done && !isErr && step === (deploy.completed_steps||[]).length + 1;
+        let cls = 'step-n', icon = step, pill = 'pill-neu', pillTxt = 'Na fila';
+        if (done)  { cls='step-n done'; icon='✓'; pill='pill-ok'; pillTxt='OK'; }
+        if (isErr) { cls='step-n err';  icon='✕'; pill='pill-err'; pillTxt='Erro'; }
+        if (isRun) { cls='step-n active'; pill='pill-warn'; pillTxt='Deployando...'; }
+        return `<div class="step-row"><div class="${cls}">${icon}</div><div class="flex-1"><div class="text-sm font-semibold ${!done&&!isErr&&!isRun?'text-slate-400':''}">${c.fullName||c.type}</div><div class="text-xs text-slate-500">${c.type||''}</div></div><span class="pill ${pill}">${pillTxt}</span></div>`;
+      }).join('');
+    }
+
+    // Log
+    if (logs.length) {
+      document.getElementById('dp-log').innerHTML = logs.map(l => {
+        const col = l.status==='ok'?'text-emerald-400':l.status==='error'?'text-red-400':'text-slate-400';
+        const t = new Date(l.created_at).toLocaleTimeString('pt-BR');
+        return `<div><span class="text-slate-600">[${t}]</span> <span class="${col}">${l.message}</span></div>`;
+      }).join('');
+      document.getElementById('dp-log').scrollTop = 999;
+    }
+
+    if (deploy.status === 'ok') {
+      clearInterval(pollInterval);
+      document.getElementById('dp-pill').className = 'pill pill-ok';
+      document.getElementById('dp-pill').textContent = 'Concluído';
+      document.getElementById('dp-bar').className = 'prog-fill ok';
+      document.getElementById('dp-bar').style.width = '100%';
+      document.getElementById('dp-pct').textContent = '100%';
+      toast('Deploy concluído! Tag: ' + (deploy.git_tag || '—'), 'ok');
+      loadHistory();
+    } else if (deploy.status === 'error') {
+      clearInterval(pollInterval);
+      document.getElementById('dp-pill').className = 'pill pill-err';
+      document.getElementById('dp-pill').textContent = 'Pausado com erro';
+      document.getElementById('dp-bar').className = 'prog-fill err';
+      document.getElementById('err-box').classList.remove('hidden');
+      document.getElementById('err-actions').classList.remove('hidden');
+      document.getElementById('err-component').textContent = 'Erro em ' + (deploy.error_component || '?');
+      document.getElementById('err-message').textContent = deploy.error_message || '—';
+      toast('Deploy pausado com erro', 'err');
+    }
+  } catch(e) { console.error('poll:', e.message); }
+}
+
+function addLog(msg) {
+  const el = document.getElementById('dp-log');
+  const t = new Date().toLocaleTimeString('pt-BR');
+  el.innerHTML += `<div><span class="text-slate-600">[${t}]</span> <span class="text-slate-400">${msg}</span></div>`;
+}
+
+function copyError() {
+  const msg = document.getElementById('err-message').textContent;
+  navigator.clipboard.writeText(msg).then(() => toast('Erro copiado', 'ok'));
+}
+
+async function resumeDeploy() {
+  if (!currentDeployId) return;
+  try {
+    await api('POST', `/deploy/${currentDeployId}/resume`, {});
+    document.getElementById('err-box').classList.add('hidden');
+    document.getElementById('err-actions').classList.add('hidden');
+    document.getElementById('dp-pill').className = 'pill pill-warn';
+    document.getElementById('dp-pill').textContent = 'Retomando...';
+    document.getElementById('dp-bar').className = 'prog-fill';
+    addLog('↺ Retomando deploy do ponto de falha...');
+    startPoll(currentDeployId);
+    toast('Retomando deploy...', 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function openDeployById(id) {
+  nav('deploy', null);
+  goWiz(4);
+  currentDeployId = id;
+  document.getElementById('err-box').classList.add('hidden');
+  document.getElementById('err-actions').classList.add('hidden');
+  document.getElementById('dp-log').innerHTML = '';
+  document.getElementById('dp-steps').innerHTML = '';
+  startPoll(id);
+}
+
+// ── ROLLBACK ──────────────────────────────────────────────────────────────────
+async function loadRollback() {
+  const list = document.getElementById('rb-list');
+  list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Carregando...</div>';
+  try {
+    const { deploys } = await api('GET', '/deploys');
+    list.innerHTML = deploys.length
+      ? deploys.map(d => `
+        <div onclick="selRB(this,${d.id})" class="flex items-center gap-3 p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors">
+          <span class="utag ${d.status==='error'?'err':''}">${d.us_number}</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold truncate">${d.us_name || '—'}</div>
+            <div class="text-xs text-slate-500">${timeAgo(d.created_at)} · ${d.dest_name||'?'}</div>
+          </div>
+          <span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">${d.git_tag||'—'}</span>
+          ${statusPill(d.status)}
+        </div>`).join('')
+      : '<div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i>Nenhum deploy</div>';
+  } catch(e) { list.innerHTML = `<div class="empty-state text-red-500">${e.message}</div>`; }
+}
+
+async function openRollbackById(id) {
+  nav('rollback', null);
+  await loadRollback();
+  // Selecionar automaticamente
+  const { deploy } = await api('GET', `/deploy/${id}/status`);
+  selRBDeploy(deploy);
+}
+
+async function selRB(el, id) {
   document.querySelectorAll('#rb-list > div').forEach(e => e.classList.remove('bg-blue-50'));
   el.classList.add('bg-blue-50');
-  const isErr = status === 'err';
+  try {
+    const { deploy } = await api('GET', `/deploy/${id}/status`);
+    selRBDeploy(deploy);
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function selRBDeploy(deploy) {
+  const isErr = deploy.status === 'error';
   document.getElementById('rb-detail').innerHTML = `
     <div class="card p-5">
       <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2"><span class="utag ${isErr?'err':''}">${us}</span><span class="font-bold text-slate-900">${name}</span></div>
-        <span class="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">${hash}</span>
+        <div class="flex items-center gap-2">
+          <span class="utag ${isErr?'err':''}">${deploy.us_number}</span>
+          <span class="font-bold text-slate-900">${deploy.us_name || '—'}</span>
+        </div>
+        <span class="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">${deploy.git_tag||deploy.id}</span>
       </div>
       <div class="space-y-2 text-sm mb-4">
-        <div class="flex gap-2"><span class="text-slate-500">Data:</span><strong>${when}</strong></div>
-        <div class="flex gap-2"><span class="text-slate-500">Componentes:</span><strong>${comps}</strong></div>
-        <div class="flex gap-2 items-center"><span class="text-slate-500">Status:</span><span class="pill ${isErr?'pill-err':'pill-ok'}">${isErr?'Pausado com erro':'OK'}</span></div>
+        <div><span class="text-slate-500">Data:</span> <strong>${new Date(deploy.created_at).toLocaleString('pt-BR')}</strong></div>
+        <div><span class="text-slate-500">Origem:</span> <strong>${deploy.origin_name||deploy.origin_org_id}</strong></div>
+        <div><span class="text-slate-500">Destino:</span> <strong>${deploy.dest_name||deploy.dest_org_id}</strong></div>
+        <div><span class="text-slate-500">Status:</span> ${statusPill(deploy.status)}</div>
       </div>
-      ${isErr ? `<div class="err-box mb-4"><div class="err-title"><i class="fa-solid fa-triangle-exclamation"></i> Erro registrado</div><div class="err-code">FIELD_INTEGRITY_EXCEPTION: CodigoCnaeFiscal__c<br>not found on object Account</div></div>` : ''}
+      ${isErr ? `<div class="err-box mb-4"><div class="err-title"><i class="fa-solid fa-triangle-exclamation"></i> Erro registrado</div><div class="err-code">${deploy.error_message||'—'}</div></div>` : ''}
       <div class="divider"></div>
-      <div class="font-semibold text-sm text-slate-900 mb-3">${isErr ? 'Retomar ou descartar' : 'Redeploy em outra org'}</div>
-      <div class="space-y-2 mb-4">
-        <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-[#0B5CAB] hover:bg-blue-50 transition-all">
-          <input type="radio" name="rb-org" class="accent-[#0B5CAB]">
-          <div><div class="font-semibold text-sm">Homologação</div><div class="text-xs text-slate-500 font-mono">hml.algar · sandbox</div></div>
-        </label>
-        <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-[#0B5CAB] hover:bg-blue-50 transition-all">
-          <input type="radio" name="rb-org" class="accent-[#0B5CAB]">
-          <div><div class="font-semibold text-sm">Produção</div><div class="text-xs text-slate-500 font-mono">algar.prod · production</div></div>
-        </label>
-      </div>
+      <div class="font-semibold text-sm text-slate-900 mb-3">${isErr ? 'Retomar ou descartar' : 'Rollback ou redeploy'}</div>
       <div class="flex gap-3">
         ${isErr
-          ? `<button class="btn-ghost flex-1 justify-center" onclick="toast('Deploy descartado','err')"><i class="fa-solid fa-xmark"></i> Descartar</button>
-             <button class="btn-primary flex-1 justify-center" onclick="toast('Retomando CRMB2B-${us}...','ok')"><i class="fa-solid fa-rotate-right"></i> Retomar</button>`
-          : `<button class="btn-err flex-1 justify-center" onclick="toast('Rollback iniciado — ${hash}','err')"><i class="fa-solid fa-rotate-left"></i> Rollback</button>
-             <button class="btn-primary flex-1 justify-center" onclick="toast('Redeploy iniciado','ok')"><i class="fa-solid fa-rocket"></i> Redeploy</button>`
+          ? `<button class="btn-ghost flex-1 justify-center" onclick="discardDeploy(${deploy.id})"><i class="fa-solid fa-xmark"></i> Descartar</button>
+             <button class="btn-primary flex-1 justify-center" onclick="openDeployById(${deploy.id})"><i class="fa-solid fa-rotate-right"></i> Retomar</button>`
+          : `<button class="btn-err flex-1 justify-center" onclick="doRollback(${deploy.id})"><i class="fa-solid fa-rotate-left"></i> Rollback</button>
+             <button class="btn-ghost flex-1 justify-center" onclick="openDeployById(${deploy.id})"><i class="fa-solid fa-eye"></i> Ver deploy</button>`
         }
       </div>
     </div>`;
 }
 
-// ── TOAST ──
-function toast(msg, type) {
-  const el = document.getElementById('toast');
-  const icon = document.getElementById('toast-icon');
-  document.getElementById('toast-msg').textContent = msg;
-  icon.className = type === 'ok' ? 'fa-solid fa-check-circle text-emerald-400' : type === 'err' ? 'fa-solid fa-circle-exclamation text-red-400' : 'fa-solid fa-triangle-exclamation text-amber-400';
-  el.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-  el.classList.add('opacity-100', 'translate-y-0');
-  setTimeout(() => {
-    el.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-    el.classList.remove('opacity-100', 'translate-y-0');
-  }, 3000);
-}
-
-window.onload = () => showPage('dash', null);
-</script>
-
-<script>
-// ── API EVER DEVOPS ──────────────────────────────────────────────────────────
-const API = window.location.origin;
-let JWT = localStorage.getItem('ed_token') || '';
-let currentDeployId = null;
-let pollInterval = null;
-
-async function apiCall(method, path, body) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + JWT }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(API + '/api/ever-deploy' + path, opts);
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.error || 'Erro ' + r.status);
-  return d;
-}
-
-// ── CARREGAR ORGS ────────────────────────────────────────────────────────────
-async function loadOrgs() {
+async function doRollback(id) {
   try {
-    const { orgs } = await apiCall('GET', '/orgs');
-    renderOrgStatus(orgs);
-    renderOrgSelectors(orgs);
-  } catch(e) { console.error('loadOrgs:', e.message); }
+    await api('POST', `/deploy/${id}/rollback`, {});
+    toast('Rollback registrado com sucesso', 'ok');
+    loadRollback();
+    loadHistory();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
-function renderOrgStatus(orgs) {
-  const wrap = document.getElementById('orgs-status');
-  if (!wrap) return;
-  wrap.innerHTML = orgs.map(o => `
-    <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
-      <div class="flex-1">
-        <div class="text-sm font-semibold">${o.name}</div>
-        <div class="text-xs text-slate-500 font-mono">${o.username}</div>
-      </div>
-      <span class="pill pill-ok text-xs">Cadastrada</span>
-    </div>`).join('');
-}
-
-function renderOrgSelectors(orgs) {
-  ['org-origin-list','org-dest-list'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = orgs.map(o => `
-      <div class="org-card" data-org-id="${o.id}" onclick="selOrgReal(this,'${id}')">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <div class="oc-name">${o.name}</div>
-        </div>
-        <div class="oc-type font-mono">${o.username}</div>
-      </div>`).join('');
-  });
-}
-
-function selOrgReal(el, listId) {
-  document.getElementById(listId).querySelectorAll('.org-card').forEach(c => c.classList.remove('sel'));
-  el.classList.add('sel');
-}
-
-// ── CARREGAR HISTÓRICO ───────────────────────────────────────────────────────
-async function loadHistory() {
+async function discardDeploy(id) {
   try {
-    const { deploys } = await apiCall('GET', '/deploys');
-    const tbody = document.getElementById('hist-tbody');
-    if (!tbody) return;
-    if (!deploys.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">Nenhum deploy encontrado</td></tr>';
-      return;
-    }
-    tbody.innerHTML = deploys.map(d => `
-      <tr>
-        <td><span class="utag ${d.status==='error'?'err':''}">${d.us_number}</span></td>
-        <td class="text-slate-600">${d.us_name || '—'}</td>
-        <td><span class="text-xs font-semibold ${d.status==='ok'?'text-emerald-600':'text-amber-600'}">${d.dest_name || d.dest_org_id}</span></td>
-        <td class="font-mono text-xs text-slate-500">${(d.components||[]).length}</td>
-        <td><span class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">${d.git_tag || d.git_commit || '—'}</span></td>
-        <td class="text-xs text-slate-400">${new Date(d.created_at).toLocaleString('pt-BR')}</td>
-        <td>${statusPill(d.status)}</td>
-        <td>
-          <div class="flex gap-2">
-            ${d.status==='error' ? `<button onclick="openDeploy(${d.id})" class="btn-err btn-sm">Ver erro</button>` : ''}
-            ${d.status==='ok' ? `<button onclick="openRollback(${d.id})" class="btn-ghost btn-sm">Rollback</button>` : ''}
-          </div>
-        </td>
-      </tr>`).join('');
-  } catch(e) { console.error('loadHistory:', e.message); }
+    await api('POST', `/deploy/${id}/rollback`, {});
+    toast('Deploy descartado', 'warn');
+    loadRollback();
+    loadHistory();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function statusPill(s) {
   const map = {
     ok:         '<span class="pill pill-ok">OK</span>',
@@ -922,130 +860,34 @@ function statusPill(s) {
   return map[s] || `<span class="pill pill-neu">${s}</span>`;
 }
 
-// ── POLLING STATUS DEPLOY ────────────────────────────────────────────────────
-function startPoll(deployId) {
-  currentDeployId = deployId;
-  if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(() => pollStatus(deployId), 2000);
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60)   return 'agora';
+  if (diff < 3600) return `há ${Math.round(diff/60)} min`;
+  if (diff < 86400)return `há ${Math.round(diff/3600)}h`;
+  return new Date(dateStr).toLocaleDateString('pt-BR');
 }
 
-async function pollStatus(deployId) {
-  try {
-    const { deploy, logs, progress } = await apiCall('GET', `/deploy/${deployId}/status`);
-
-    // Atualizar barra
-    const bar = document.getElementById('dp-bar');
-    const pct = document.getElementById('dp-pct');
-    const pill = document.getElementById('dp-pill');
-    if (bar) bar.style.width = progress.pct + '%';
-    if (pct) pct.textContent = progress.pct + '%';
-
-    // Atualizar steps
-    (deploy.components || []).forEach((comp, i) => {
-      const sn = document.getElementById('sn'+(i+1));
-      const sp = document.getElementById('sp'+(i+1));
-      const completed = (deploy.completed_steps || []).includes(i+1);
-      const isError = deploy.error_component === comp.fullName;
-      if (!sn || !sp) return;
-      if (completed) { sn.className='step-n done'; sn.textContent='✓'; sp.className='pill pill-ok'; sp.textContent='OK'; }
-      else if (isError) { sn.className='step-n err'; sn.textContent='✕'; sp.className='pill pill-err'; sp.textContent='Erro'; }
-    });
-
-    // Atualizar log
-    const logEl = document.getElementById('dp-log');
-    if (logEl && logs.length) {
-      logEl.innerHTML = logs.map(l => {
-        const col = l.status==='ok' ? 'text-emerald-400' : l.status==='error' ? 'text-red-400' : 'text-slate-400';
-        const t = new Date(l.created_at).toLocaleTimeString('pt-BR');
-        return `<div><span class="text-slate-600">[${t}]</span> <span class="${col}">${l.message}</span></div>`;
-      }).join('');
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    // Status final
-    if (deploy.status === 'ok') {
-      clearInterval(pollInterval);
-      if (pill) { pill.className='pill pill-ok'; pill.textContent='Concluído'; }
-      if (bar)  { bar.className='prog-fill ok'; bar.style.width='100%'; }
-      toast('Deploy concluído com sucesso — tag: ' + deploy.git_tag, 'ok');
-    } else if (deploy.status === 'error') {
-      clearInterval(pollInterval);
-      if (pill) { pill.className='pill pill-err'; pill.textContent='Pausado com erro'; }
-      if (bar)  { bar.className='prog-fill err'; }
-      showRealError(deploy);
-    }
-  } catch(e) { console.error('poll:', e.message); }
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  const icon = document.getElementById('toast-icon');
+  document.getElementById('toast-msg').textContent = msg;
+  icon.className = type==='ok' ? 'fa-solid fa-check-circle text-emerald-400'
+                 : type==='err'? 'fa-solid fa-circle-exclamation text-red-400'
+                 :               'fa-solid fa-triangle-exclamation text-amber-400';
+  el.classList.remove('opacity-0','translate-y-4','pointer-events-none');
+  el.classList.add('opacity-100','translate-y-0');
+  setTimeout(() => {
+    el.classList.add('opacity-0','translate-y-4','pointer-events-none');
+    el.classList.remove('opacity-100','translate-y-0');
+  }, 3200);
 }
 
-function showRealError(deploy) {
-  const box = document.getElementById('err-box');
-  const act = document.getElementById('err-actions');
-  if (box) {
-    box.style.display = 'block';
-    const codeEl = box.querySelector('.err-code');
-    const titleEl = box.querySelector('.err-title');
-    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Erro em ${deploy.error_component}`;
-    if (codeEl)  codeEl.innerHTML = (deploy.error_message || '').replace(/</g,'&lt;');
-  }
-  if (act) act.style.display = 'flex';
-}
-
-async function resumeDeploy() {
-  if (!currentDeployId) return;
-  try {
-    document.getElementById('err-box').style.display = 'none';
-    document.getElementById('err-actions').style.display = 'none';
-    document.getElementById('fix-badge').classList.add('hidden');
-    await apiCall('POST', `/deploy/${currentDeployId}/resume`, {});
-    startPoll(currentDeployId);
-    toast('Retomando deploy...', 'ok');
-  } catch(e) { toast('Erro ao retomar: ' + e.message, 'err'); }
-}
-
-async function openRollback(deployId) {
-  showPage('rollback', null);
-  try {
-    const { deploy } = await apiCall('GET', `/deploy/${deployId}/status`);
-    selRB(null, deploy.us_number, deploy.git_tag || deploy.git_commit || '—',
-      deploy.us_name, new Date(deploy.created_at).toLocaleString('pt-BR'),
-      (deploy.components||[]).length + ' componentes', deploy.status, deploy.id);
-  } catch(e) { toast(e.message, 'err'); }
-}
-
-async function execRollback(deployId) {
-  try {
-    await apiCall('POST', `/deploy/${deployId}/rollback`, {});
-    toast('Rollback registrado com sucesso', 'ok');
-    loadHistory();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
-}
-
-async function openDeploy(deployId) {
-  showPage('deploy', null);
-  goWiz(4);
-  currentDeployId = deployId;
-  try {
-    const { deploy, logs } = await apiCall('GET', `/deploy/${deployId}/status`);
-    showRealError(deploy);
-  } catch(e) { console.error(e); }
-}
-
-// ── INICIALIZAÇÃO ────────────────────────────────────────────────────────────
-const _origShowPage = showPage;
-window.showPage = function(p, el) {
-  _origShowPage(p, el);
-  if (p === 'hist') loadHistory();
-  if (p === 'dash') { loadHistory(); loadOrgs(); }
-};
-
-window.addEventListener('load', () => {
-  // Sobrescrever botão retomar com versão real
-  const btn = document.getElementById('btn-retomar');
-  if (btn) btn.onclick = resumeDeploy;
-  loadOrgs();
-  loadHistory();
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  await loadOrgs();
+  await loadHistory();
 });
 </script>
-
 </body>
 </html>
