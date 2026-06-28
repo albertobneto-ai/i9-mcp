@@ -1,12 +1,11 @@
 // src/routes/ever-deploy.js — Ever DevOps: deploy entre orgs Salesforce
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { connectToOrg, metadataRead, testConnection } from '../services/sf-multi.js';
+import { metadataRead, testConnection, metadataCreate, metadataUpdate, deployField } from '../services/sf-multi.js';
+import { call as claudeCall } from '../services/claude.js';
 import pool from '../config/db.js';
-import Anthropic from '@anthropic-ai/sdk';
 
 const router = express.Router();
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,10 +48,9 @@ async function ensureDeployTables() {
   `);
 }
 
-// Inicializar tabelas ao subir
 ensureDeployTables().catch(e => console.error('[EverDeploy] table init error:', e.message));
 
-// ── GET /api/ever-deploy/orgs — lista orgs disponíveis ───────────────────────
+// ── GET /api/ever-deploy/orgs ─────────────────────────────────────────────────
 router.get('/orgs', authMiddleware, async (req, res) => {
   try {
     const r = await pool.query(
@@ -62,7 +60,7 @@ router.get('/orgs', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── GET /api/ever-deploy/orgs/:id/test — testa conexão ───────────────────────
+// ── GET /api/ever-deploy/orgs/:id/test ───────────────────────────────────────
 router.get('/orgs/:id/test', authMiddleware, async (req, res) => {
   try {
     const org = await getOrg(req.params.id);
@@ -72,31 +70,27 @@ router.get('/orgs/:id/test', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── GET /api/ever-deploy/deploys — histórico ─────────────────────────────────
+// ── GET /api/ever-deploy/deploys ─────────────────────────────────────────────
 router.get('/deploys', authMiddleware, async (req, res) => {
   try {
-    const { org_id, status, limit = 50 } = req.query;
+    const { status, limit = 50 } = req.query;
     let q = `
-      SELECT d.*,
-        o1.name as origin_name, o2.name as dest_name
+      SELECT d.*, o1.name as origin_name, o2.name as dest_name
       FROM ed_deploys d
       LEFT JOIN orgs o1 ON o1.id = d.origin_org_id
       LEFT JOIN orgs o2 ON o2.id = d.dest_org_id
     `;
     const params = [];
-    const where = [];
-    if (org_id) { params.push(org_id); where.push(`(d.origin_org_id=$${params.length} OR d.dest_org_id=$${params.length})`); }
-    if (status) { params.push(status); where.push(`d.status=$${params.length}`); }
-    if (where.length) q += ' WHERE ' + where.join(' AND ');
-    q += ' ORDER BY d.created_at DESC LIMIT $' + (params.length + 1);
+    if (status) { params.push(status); q += ` WHERE d.status=$1`; }
+    q += ` ORDER BY d.created_at DESC LIMIT $${params.length + 1}`;
     params.push(parseInt(limit));
     const r = await pool.query(q, params);
     res.json({ deploys: r.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── GET /api/ever-deploy/deploys/:id — detalhe deploy ────────────────────────
-router.get('/deploys/:id', authMiddleware, async (req, res) => {
+// ── GET /api/ever-deploy/deploy/:id/status ───────────────────────────────────
+router.get('/deploy/:id/status', authMiddleware, async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT d.*, o1.name as origin_name, o2.name as dest_name
@@ -105,91 +99,75 @@ router.get('/deploys/:id', authMiddleware, async (req, res) => {
       LEFT JOIN orgs o2 ON o2.id = d.dest_org_id
       WHERE d.id = $1
     `, [req.params.id]);
-    if (!r.rows[0]) return res.status(404).json({ error: 'Deploy não encontrado' });
+    if (!r.rows[0]) return res.status(404).json({ error: 'Não encontrado' });
 
     const logs = await pool.query(
       'SELECT * FROM ed_deploy_log WHERE deploy_id=$1 ORDER BY id',
       [req.params.id]
     );
-    res.json({ deploy: r.rows[0], logs: logs.rows });
+    const deploy = r.rows[0];
+    const total = (deploy.components || []).length;
+    const done  = (deploy.completed_steps || []).length;
+    res.json({
+      deploy,
+      logs: logs.rows,
+      progress: { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── POST /api/ever-deploy/diff — analisa diff entre orgs ─────────────────────
+// ── POST /api/ever-deploy/diff ────────────────────────────────────────────────
 router.post('/diff', authMiddleware, async (req, res) => {
   const { us_number, us_name, origin_org_id, dest_org_id, components } = req.body;
   if (!us_number || !origin_org_id || !dest_org_id || !components?.length) {
     return res.status(400).json({ error: 'us_number, origin_org_id, dest_org_id, components obrigatórios' });
   }
   try {
-    const [originOrg, destOrg] = await Promise.all([
-      getOrg(origin_org_id),
-      getOrg(dest_org_id)
-    ]);
+    const [originOrg, destOrg] = await Promise.all([getOrg(origin_org_id), getOrg(dest_org_id)]);
     if (!originOrg) return res.status(404).json({ error: 'Org origem não encontrada' });
     if (!destOrg)   return res.status(404).json({ error: 'Org destino não encontrada' });
 
-    // Para cada componente, verificar se existe no destino
     const diffResults = await Promise.all(components.map(async (comp) => {
       try {
         const existing = await metadataRead(destOrg, comp.type, comp.fullName);
-        return {
-          ...comp,
-          existsInDest: !!existing,
-          existingValue: existing || null,
-          conflict: !!existing,
-          action: existing ? 'update' : 'create'
-        };
+        return { ...comp, existsInDest: !!existing, conflict: !!existing, action: existing ? 'update' : 'create' };
       } catch {
-        return { ...comp, existsInDest: false, existingValue: null, conflict: false, action: 'create' };
+        return { ...comp, existsInDest: false, conflict: false, action: 'create' };
       }
     }));
 
-    // Análise Claude do diff
     const conflicts = diffResults.filter(c => c.conflict);
     const additions = diffResults.filter(c => !c.conflict);
 
     let claudeAnalysis = '';
     try {
-      const prompt = `Você é um arquiteto Salesforce analisando um diff de deploy.
-
-US: ${us_number} — ${us_name || ''}
-Org origem: ${originOrg.name}
-Org destino: ${destOrg.name}
-
-Componentes novos (${additions.length}): ${additions.map(c => c.fullName).join(', ') || 'nenhum'}
-Componentes com conflito (${conflicts.length}): ${conflicts.map(c => c.fullName).join(', ') || 'nenhum'}
-
-Analise o impacto em 3-4 linhas em português. Seja direto e técnico.`;
-
-      const msg = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }]
-      });
-      claudeAnalysis = msg.content[0]?.text || '';
+      claudeAnalysis = await claudeCall(
+        'Você é um arquiteto Salesforce. Analise o diff de deploy em 3-4 linhas em português. Seja direto e técnico.',
+        [{
+          role: 'user',
+          content: `US: ${us_number} — ${us_name || ''}
+Origem: ${originOrg.name} → Destino: ${destOrg.name}
+Novos (${additions.length}): ${additions.map(c => c.fullName).join(', ') || 'nenhum'}
+Conflitos (${conflicts.length}): ${conflicts.map(c => c.fullName).join(', ') || 'nenhum'}`
+        }],
+        300
+      );
     } catch (e) {
       claudeAnalysis = 'Análise indisponível no momento.';
     }
 
     res.json({
-      us_number,
-      us_name,
+      us_number, us_name,
       origin: { id: originOrg.id, name: originOrg.name },
-      dest: { id: destOrg.id, name: destOrg.name },
+      dest:   { id: destOrg.id,   name: destOrg.name },
       diff: diffResults,
-      summary: {
-        total: diffResults.length,
-        additions: additions.length,
-        conflicts: conflicts.length,
-        removals: 0
-      },
+      summary: { total: diffResults.length, additions: additions.length, conflicts: conflicts.length, removals: 0 },
       claude_analysis: claudeAnalysis
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── POST /api/ever-deploy/deploy — inicia deploy ─────────────────────────────
+// ── POST /api/ever-deploy/deploy — inicia deploy ──────────────────────────────
 router.post('/deploy', authMiddleware, async (req, res) => {
   const { us_number, us_name, origin_org_id, dest_org_id, components } = req.body;
   if (!us_number || !origin_org_id || !dest_org_id || !components?.length) {
@@ -197,19 +175,15 @@ router.post('/deploy', authMiddleware, async (req, res) => {
   }
   try {
     const r = await pool.query(`
-      INSERT INTO ed_deploys
-        (us_number, us_name, origin_org_id, dest_org_id, status, components)
-      VALUES ($1,$2,$3,$4,'running',$5)
-      RETURNING id
+      INSERT INTO ed_deploys (us_number, us_name, origin_org_id, dest_org_id, status, components)
+      VALUES ($1,$2,$3,$4,'running',$5) RETURNING id
     `, [us_number, us_name || '', origin_org_id, dest_org_id, JSON.stringify(components)]);
 
     const deployId = r.rows[0].id;
     res.json({ deploy_id: deployId, status: 'running' });
 
-    // Execução assíncrona
-    runDeploy(deployId, origin_org_id, dest_org_id, components, us_number).catch(e =>
-      console.error(`[EverDeploy] deploy ${deployId} error:`, e.message)
-    );
+    runDeploy(deployId, origin_org_id, dest_org_id, components, us_number)
+      .catch(e => console.error(`[EverDeploy] deploy ${deployId} error:`, e.message));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -220,141 +194,92 @@ async function runDeploy(deployId, originOrgId, destOrgId, components, usNumber)
   for (let i = 0; i < components.length; i++) {
     const comp = components[i];
     try {
-      // Log início
       await pool.query(
         'INSERT INTO ed_deploy_log (deploy_id,step,component,action,status,message) VALUES ($1,$2,$3,$4,$5,$6)',
-        [deployId, i + 1, comp.fullName, comp.action || 'deploy', 'running', `Deployando ${comp.type} ${comp.fullName}`]
+        [deployId, i+1, comp.fullName, comp.action || 'deploy', 'running', `Deployando ${comp.type} ${comp.fullName}`]
       );
 
-      // Executar deploy do componente na org destino
-      await deployComponent(destOrg, comp);
+      if (comp.type === 'CustomField') {
+        await deployField(destOrg, comp.metadata);
+      } else if (comp.action === 'update') {
+        await metadataUpdate(destOrg, comp.type, comp.metadata);
+      } else {
+        await metadataCreate(destOrg, comp.type, comp.metadata);
+      }
 
       completedSteps.push(i + 1);
 
-      // Log sucesso
       await pool.query(
         'INSERT INTO ed_deploy_log (deploy_id,step,component,action,status,message) VALUES ($1,$2,$3,$4,$5,$6)',
-        [deployId, i + 1, comp.fullName, comp.action || 'deploy', 'ok', `${comp.fullName} deployado com sucesso`]
+        [deployId, i+1, comp.fullName, comp.action || 'deploy', 'ok', `${comp.fullName} OK`]
       );
-
-      // Atualizar progresso
-      const pct = Math.round(((i + 1) / components.length) * 100);
       await pool.query(
         'UPDATE ed_deploys SET completed_steps=$1, updated_at=NOW() WHERE id=$2',
         [JSON.stringify(completedSteps), deployId]
       );
-
     } catch (err) {
-      // Erro — parar
       await pool.query(
         'INSERT INTO ed_deploy_log (deploy_id,step,component,action,status,message) VALUES ($1,$2,$3,$4,$5,$6)',
-        [deployId, i + 1, comp.fullName, comp.action || 'deploy', 'error', err.message]
+        [deployId, i+1, comp.fullName, comp.action || 'deploy', 'error', err.message]
       );
       await pool.query(
-        `UPDATE ed_deploys SET
-          status='error', error_component=$1, error_message=$2,
-          paused_at_step=$3, completed_steps=$4, updated_at=NOW()
-        WHERE id=$5`,
-        [comp.fullName, err.message, i + 1, JSON.stringify(completedSteps), deployId]
+        `UPDATE ed_deploys SET status='error', error_component=$1, error_message=$2,
+         paused_at_step=$3, completed_steps=$4, updated_at=NOW() WHERE id=$5`,
+        [comp.fullName, err.message, i+1, JSON.stringify(completedSteps), deployId]
       );
       return;
     }
   }
 
-  // Tudo OK — criar tag
-  const tag = `${usNumber}-${destOrg.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}`;
+  const tag = `${usNumber}-${destOrg.name.replace(/\s+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}`;
   await pool.query(
     `UPDATE ed_deploys SET status='ok', git_tag=$1, completed_steps=$2, updated_at=NOW() WHERE id=$3`,
     [tag, JSON.stringify(completedSteps), deployId]
   );
   await pool.query(
     'INSERT INTO ed_deploy_log (deploy_id,step,component,action,status,message) VALUES ($1,$2,$3,$4,$5,$6)',
-    [deployId, components.length + 1, 'git', 'tag', 'ok', `Tag criada: ${tag}`]
+    [deployId, components.length+1, 'git', 'tag', 'ok', `Tag criada: ${tag}`]
   );
 }
 
-async function deployComponent(org, comp) {
-  const { metadataCreate, metadataUpdate, deployField } = await import('../services/sf-multi.js');
-  if (comp.type === 'CustomField') {
-    await deployField(org, comp.metadata);
-  } else if (comp.action === 'update') {
-    await metadataUpdate(org, comp.type, comp.metadata);
-  } else {
-    await metadataCreate(org, comp.type, comp.metadata);
-  }
-}
-
-// ── POST /api/ever-deploy/deploy/:id/resume — retomar deploy após correção ───
+// ── POST /api/ever-deploy/deploy/:id/resume ───────────────────────────────────
 router.post('/deploy/:id/resume', authMiddleware, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM ed_deploys WHERE id=$1', [req.params.id]);
     const deploy = r.rows[0];
-    if (!deploy) return res.status(404).json({ error: 'Deploy não encontrado' });
-    if (deploy.status !== 'error') return res.status(400).json({ error: 'Deploy não está pausado com erro' });
+    if (!deploy) return res.status(404).json({ error: 'Não encontrado' });
+    if (deploy.status !== 'error') return res.status(400).json({ error: 'Deploy não está em erro' });
 
-    const components = deploy.components;
-    const pausedAt = deploy.paused_at_step; // índice base 1
-    const remaining = components.slice(pausedAt - 1); // retoma do que falhou
+    const pausedAt = deploy.paused_at_step;
+    const remaining = (deploy.components || []).slice(pausedAt - 1);
 
     await pool.query(
-      'UPDATE ed_deploys SET status=\'running\', error_component=NULL, error_message=NULL, updated_at=NOW() WHERE id=$1',
+      "UPDATE ed_deploys SET status='running', error_component=NULL, error_message=NULL, updated_at=NOW() WHERE id=$1",
       [deploy.id]
     );
 
     res.json({ deploy_id: deploy.id, status: 'running', resuming_from_step: pausedAt });
 
-    runDeploy(deploy.id, deploy.origin_org_id, deploy.dest_org_id, remaining, deploy.us_number).catch(e =>
-      console.error(`[EverDeploy] resume ${deploy.id} error:`, e.message)
-    );
+    runDeploy(deploy.id, deploy.origin_org_id, deploy.dest_org_id, remaining, deploy.us_number)
+      .catch(e => console.error(`[EverDeploy] resume ${deploy.id}:`, e.message));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── POST /api/ever-deploy/deploy/:id/rollback — rollback ─────────────────────
+// ── POST /api/ever-deploy/deploy/:id/rollback ─────────────────────────────────
 router.post('/deploy/:id/rollback', authMiddleware, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM ed_deploys WHERE id=$1', [req.params.id]);
-    const deploy = r.rows[0];
-    if (!deploy) return res.status(404).json({ error: 'Deploy não encontrado' });
+    if (!r.rows[0]) return res.status(404).json({ error: 'Não encontrado' });
 
     await pool.query(
-      'UPDATE ed_deploys SET status=\'rolledback\', updated_at=NOW() WHERE id=$1',
-      [deploy.id]
+      "UPDATE ed_deploys SET status='rolledback', updated_at=NOW() WHERE id=$1",
+      [req.params.id]
     );
     await pool.query(
       'INSERT INTO ed_deploy_log (deploy_id,step,component,action,status,message) VALUES ($1,$2,$3,$4,$5,$6)',
-      [deploy.id, 0, 'system', 'rollback', 'ok', `Rollback iniciado por ${req.user?.email || 'usuário'}`]
+      [req.params.id, 0, 'system', 'rollback', 'ok', `Rollback por ${req.user?.email || 'usuário'}`]
     );
-
-    res.json({ status: 'rolledback', deploy_id: deploy.id });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── GET /api/ever-deploy/deploy/:id/status — polling status ──────────────────
-router.get('/deploy/:id/status', authMiddleware, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT d.*, o1.name as origin_name, o2.name as dest_name
-      FROM ed_deploys d
-      LEFT JOIN orgs o1 ON o1.id=d.origin_org_id
-      LEFT JOIN orgs o2 ON o2.id=d.dest_org_id
-      WHERE d.id=$1
-    `, [req.params.id]);
-    if (!r.rows[0]) return res.status(404).json({ error: 'Não encontrado' });
-
-    const logs = await pool.query(
-      'SELECT * FROM ed_deploy_log WHERE deploy_id=$1 ORDER BY id',
-      [req.params.id]
-    );
-
-    const deploy = r.rows[0];
-    const total = (deploy.components || []).length;
-    const done = (deploy.completed_steps || []).length;
-
-    res.json({
-      deploy: r.rows[0],
-      logs: logs.rows,
-      progress: { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
-    });
+    res.json({ status: 'rolledback', deploy_id: parseInt(req.params.id) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
