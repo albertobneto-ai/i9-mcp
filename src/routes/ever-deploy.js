@@ -170,19 +170,22 @@ Conflitos (${conflicts.length}): ${conflicts.map(c => c.fullName).join(', ') || 
 // ── POST /api/ever-deploy/deploy — inicia deploy ──────────────────────────────
 router.post('/deploy', authMiddleware, async (req, res) => {
   const { us_number, us_name, origin_org_id, dest_org_id, components } = req.body;
-  if (!us_number || !origin_org_id || !dest_org_id || !components?.length) {
+  if (!us_number || !origin_org_id || !dest_org_id) {
     return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
   }
+  const safeComponents = Array.isArray(components) && components.length > 0
+    ? components
+    : [{ type: 'Info', fullName: us_number, action: 'register' }];
   try {
     const r = await pool.query(`
       INSERT INTO ed_deploys (us_number, us_name, origin_org_id, dest_org_id, status, components)
       VALUES ($1,$2,$3,$4,'running',$5) RETURNING id
-    `, [us_number, us_name || '', origin_org_id, dest_org_id, JSON.stringify(components)]);
+    `, [us_number, us_name || '', origin_org_id, dest_org_id, JSON.stringify(safeComponents)]);
 
     const deployId = r.rows[0].id;
     res.json({ deploy_id: deployId, status: 'running' });
 
-    runDeploy(deployId, origin_org_id, dest_org_id, components, us_number)
+    runDeploy(deployId, origin_org_id, dest_org_id, safeComponents, us_number)
       .catch(e => console.error(`[EverDeploy] deploy ${deployId} error:`, e.message));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
