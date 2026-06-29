@@ -559,6 +559,7 @@ function renderHistoryTable(deploys) {
 
 // ── WIZARD ────────────────────────────────────────────────────────────────────
 function goWiz(s) {
+  if (s === 1) { compList = []; }
   for (let i = 1; i <= 4; i++) {
     document.getElementById('wp'+i).classList.toggle('hidden', i !== s);
     const ws = document.getElementById('ws'+i);
@@ -588,43 +589,73 @@ async function wizNext2() {
 async function loadDiff() {
   const panel = document.getElementById('claude-analysis');
   const compsEl = document.getElementById('diff-components');
-  panel.innerHTML = `<div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-spinner fa-spin text-[#0B5CAB]"></i><span class="font-bold text-sm text-[#0B5CAB]">Analisando com Claude...</span></div><div class="text-sm text-slate-500">Comparando componentes entre as orgs...</div>`;
-  compsEl.innerHTML = '';
 
-  try {
-    // Diff com componentes vazios — o backend verifica o que existe
-    const result = await api('POST', '/diff', {
-      us_number: selectedUS.number,
-      us_name: selectedUS.name,
-      origin_org_id: selectedOriginId,
-      dest_org_id: selectedDestId,
-      components: [{ type: 'CustomObject', fullName: 'Account', action: 'verify' }]
-    });
-    diffData = result;
+  // Exibir resumo do deploy e form para adicionar componentes
+  const originOrg = allOrgs.find(o => o.id === selectedOriginId);
+  const destOrg   = allOrgs.find(o => o.id === selectedDestId);
 
-    // Análise Claude
-    panel.innerHTML = `
-      <div class="flex items-center gap-2 mb-2"><span class="text-[#0B5CAB] font-bold">✦</span><span class="font-bold text-sm text-[#0B5CAB]">Análise Claude — ${selectedUS.number}</span></div>
-      <div class="text-sm text-slate-700 leading-relaxed">${result.claude_analysis || 'Análise concluída.'}</div>
-      <div class="flex gap-2 mt-3">
-        <span class="pill pill-ok">${result.summary?.additions || 0} adições</span>
-        <span class="pill ${(result.summary?.conflicts||0)>0?'pill-warn':'pill-neu'}">${result.summary?.conflicts || 0} conflitos</span>
-      </div>`;
+  panel.innerHTML = `
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-[#0B5CAB] font-bold">✦</span>
+      <span class="font-bold text-sm text-[#0B5CAB]">Resumo — ${selectedUS.number}</span>
+    </div>
+    <div class="text-sm text-slate-700 leading-relaxed">
+      Deploy de <strong>${originOrg?.name || selectedOriginId}</strong> para <strong>${destOrg?.name || selectedDestId}</strong>.
+      Confirme os componentes abaixo e clique em <strong>Confirmar e Deployar</strong>.
+    </div>`;
 
-    // Info do deploy
-    compsEl.innerHTML = `
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
-        <div class="font-semibold text-slate-900 mb-2">Detalhes do Deploy</div>
-        <div class="grid grid-cols-2 gap-3 text-xs text-slate-600">
-          <div><span class="font-semibold">US:</span> ${selectedUS.number} — ${selectedUS.name || '—'}</div>
-          <div><span class="font-semibold">Origem:</span> ${result.origin?.name || '—'}</div>
-          <div><span class="font-semibold">Destino:</span> ${result.dest?.name || '—'}</div>
-          <div><span class="font-semibold">Componentes:</span> ${result.summary?.total || 0}</div>
-        </div>
-      </div>`;
-  } catch(e) {
-    panel.innerHTML = `<div class="text-sm text-red-600"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${e.message}</div>`;
-  }
+  // Form para listar componentes que serão deployados
+  compsEl.innerHTML = `
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="font-semibold text-sm text-slate-900">Componentes a deployar</div>
+        <button onclick="addComponent()" class="btn-ghost btn-sm"><i class="fa-solid fa-plus"></i> Adicionar</button>
+      </div>
+      <div id="comp-list" class="space-y-2">
+        <div class="text-xs text-slate-400 italic">Nenhum componente adicionado. Clique em "+ Adicionar" ou prossiga para registrar o deploy da US.</div>
+      </div>
+      <div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 gap-3 text-xs text-slate-600">
+        <div><span class="font-semibold">US:</span> ${selectedUS.number} — ${selectedUS.name || '—'}</div>
+        <div><span class="font-semibold">Origem:</span> ${originOrg?.name || '—'}</div>
+        <div><span class="font-semibold">Destino:</span> ${destOrg?.name || '—'}</div>
+      </div>
+    </div>`;
+
+  diffData = { diff: [], origin: originOrg, dest: destOrg };
+}
+
+let compList = [];
+
+function addComponent() {
+  const types = ['PermissionSet','ValidationRule','CustomField','Flow','ApexClass','CustomPermission','Layout','QuickAction','CustomObject'];
+  const idx = compList.length;
+  compList.push({ type: 'PermissionSet', fullName: '', action: 'create' });
+  renderCompList();
+}
+
+function removeComponent(idx) {
+  compList.splice(idx, 1);
+  renderCompList();
+}
+
+function renderCompList() {
+  const el = document.getElementById('comp-list');
+  if (!el) return;
+  const types = ['PermissionSet','ValidationRule','CustomField','Flow','ApexClass','CustomPermission','Layout','QuickAction','CustomObject'];
+  el.innerHTML = compList.length ? compList.map((c, i) => `
+    <div class="flex gap-2 items-center">
+      <select onchange="compList[${i}].type=this.value" class="sel-inp text-xs flex-shrink-0">
+        ${types.map(t => `<option ${t===c.type?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input value="${c.fullName}" placeholder="API Name (ex: PS_Account_FLS)" oninput="compList[${i}].fullName=this.value"
+        class="inp flex-1 text-xs">
+      <select onchange="compList[${i}].action=this.value" class="sel-inp text-xs flex-shrink-0">
+        <option ${c.action==='create'?'selected':''}>create</option>
+        <option ${c.action==='update'?'selected':''}>update</option>
+      </select>
+      <button onclick="removeComponent(${i})" class="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+    </div>`).join('')
+    : '<div class="text-xs text-slate-400 italic">Nenhum componente. Clique em "+ Adicionar" ou prossiga para registrar apenas o deploy da US.</div>';
 }
 
 // ── DEPLOY ────────────────────────────────────────────────────────────────────
@@ -647,12 +678,17 @@ async function startDeploy() {
   document.getElementById('dp-steps').innerHTML = '<div class="text-xs text-slate-400">Iniciando deploy...</div>';
 
   try {
+    // Usar componentes do form; garantir pelo menos 1 item para o backend aceitar
+    const components = compList.length > 0
+      ? compList.filter(c => c.fullName.trim())
+      : [{ type: 'Info', fullName: selectedUS.number, action: 'register' }];
+
     const result = await api('POST', '/deploy', {
       us_number: selectedUS.number,
       us_name: selectedUS.name,
       origin_org_id: selectedOriginId,
       dest_org_id: selectedDestId,
-      components: diffData?.diff || []
+      components
     });
     currentDeployId = result.deploy_id;
     addLog(`Deploy ${currentDeployId} iniciado — ${selectedUS.number}`);
