@@ -131,6 +131,16 @@ router.get('/:id/metadata-read/:type/:fullName', authMiddleware, async (req, res
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/orgs/:id/metadata-update/:type — Update existing metadata (full object body)
+router.post('/:id/metadata-update/:type', authMiddleware, async (req, res) => {
+  try {
+    const org = await getOrgById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
+    const result = await metadataUpdate(org, req.params.type, req.body);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── POST /api/orgs/:id/batch-deploy — Deploy batch de fields/apex/metadata ──
 // Endpoint aditivo para deploy em lote. Cada step é executado sequencialmente.
 router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
