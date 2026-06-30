@@ -149,17 +149,16 @@ export async function metadataRetrieve(org, types) {
   }
   return status;
 }
-export async function metadataDeployZip(org, zipBase64) {
+export async function metadataDeployZipAsync(org, zipBase64) {
   const conn = await connectToOrg(org);
   const buf = Buffer.from(zipBase64, 'base64');
   const result = await conn.metadata.deploy(buf, { rollbackOnError: true, singlePackage: true });
-  let status = null;
-  for (let i = 0; i < 60; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    status = await conn.metadata.checkDeployStatus(result.id, true);
-    if (status.done === 'true' || status.done === true) break;
-  }
-  return status;
+  return { id: result.id };
+}
+
+export async function checkDeployStatusById(org, deployId) {
+  const conn = await connectToOrg(org);
+  return await conn.metadata.checkDeployStatus(deployId, true);
 }
 
 
