@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, metadataRetrieve, metadataDeployZip, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, metadataRetrieve, metadataDeployZipAsync, checkDeployStatusById, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -157,7 +157,17 @@ router.post('/:id/metadata-deploy-zip', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
-    const status = await metadataDeployZip(org, req.body.zipBase64);
+    const result = await metadataDeployZipAsync(org, req.body.zipBase64);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/orgs/:id/metadata-deploy-status/:deployId — Check status of an async deploy
+router.get('/:id/metadata-deploy-status/:deployId', authMiddleware, async (req, res) => {
+  try {
+    const org = await getOrgById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
+    const status = await checkDeployStatusById(org, req.params.deployId);
     res.json(status);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
