@@ -1,7 +1,7 @@
 // src/routes/orgs.js — CRUD de orgs + seletor
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, metadataRetrieve, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
+import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, metadataRetrieve, metadataDeployZip, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -148,6 +148,16 @@ router.post('/:id/metadata-retrieve', authMiddleware, async (req, res) => {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
     const status = await metadataRetrieve(org, req.body.types);
+    res.json(status);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/orgs/:id/metadata-deploy-zip — Deploy a full base64 zip (body: { zipBase64 })
+router.post('/:id/metadata-deploy-zip', authMiddleware, async (req, res) => {
+  try {
+    const org = await getOrgById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
+    const status = await metadataDeployZip(org, req.body.zipBase64);
     res.json(status);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
