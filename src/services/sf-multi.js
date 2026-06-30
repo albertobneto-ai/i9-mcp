@@ -133,6 +133,24 @@ export async function metadataUpdate(org, type, metadata) {
   return await conn.metadata.update(type, metadata);
 }
 
+export async function metadataRetrieve(org, types) {
+  const conn = await connectToOrg(org);
+  const retrieveRequest = {
+    apiVersion: '62.0',
+    singlePackage: true,
+    unpackaged: { types, version: '62.0' }
+  };
+  const result = await conn.metadata.retrieve(retrieveRequest);
+  let status = null;
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    status = await conn.metadata.checkRetrieveStatus(result.id);
+    if (status.done === 'true' || status.done === true) break;
+  }
+  return status;
+}
+
+
 // Deletar metadado generico em qualquer org
 export async function metadataDelete(org, type, fullName) {
   const conn = await connectToOrg(org);
