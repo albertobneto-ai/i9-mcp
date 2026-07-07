@@ -49,10 +49,10 @@ router.get('/stats', async (req, res) => {
       pool.query(`SELECT section, COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END)::int as done FROM bug_cards GROUP BY section ORDER BY section`),
       pool.query(`SELECT CASE WHEN claude_exec ILIKE 'SIM%' THEN 'SIM' WHEN claude_exec ILIKE '%PARCIAL%' THEN 'PARCIAL' ELSE 'NAO' END as tipo, COUNT(*)::int as count FROM bug_cards GROUP BY 1`),
       pool.query(`SELECT COUNT(*)::int as total, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, COALESCE(SUM(dev_h),0)::numeric(7,2) as dev_h, COALESCE(SUM(margin_h),0)::numeric(7,2) as margin_h, COALESCE(SUM(unit_h),0)::numeric(7,2) as unit_h, COALESCE(SUM(func_h),0)::numeric(7,2) as func_h FROM bug_cards`),
-      pool.query(`SELECT COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours FROM bug_cards WHERE status='CONCLUIDO'`),
+      pool.query(`SELECT COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours FROM bug_cards WHERE status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO')`),
       pool.query(`SELECT COUNT(*)::int as count FROM bug_cards WHERE blocked IS NOT NULL`),
       pool.query(`SELECT COUNT(*)::int as count FROM bug_cards WHERE status = ANY($1)`, [IN_PROGRESS]),
-      pool.query(`SELECT COALESCE(SUM(CASE WHEN status='CONCLUIDO' THEN total_h ELSE 0 END),0)::numeric(7,2) as consumed, COALESCE(SUM(CASE WHEN status!='CONCLUIDO' THEN total_h ELSE 0 END),0)::numeric(7,2) as remaining FROM bug_cards`)
+      pool.query(`SELECT COALESCE(SUM(CASE WHEN status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO') THEN total_h ELSE 0 END),0)::numeric(7,2) as consumed, COALESCE(SUM(CASE WHEN status IN ('BACKLOG','EM_ANALISE','EM_DESENVOLVIMENTO','AGUARDANDO_DEPLOY') THEN total_h ELSE 0 END),0)::numeric(7,2) as remaining FROM bug_cards`)
     ]);
     const t = totals.rows[0];
     const avgPerItem = t.total > 0 ? (parseFloat(t.hours) / t.total).toFixed(2) : 0;
@@ -90,6 +90,7 @@ router.patch('/:id', async (req, res) => {
     const sets = []; const vals = []; let idx = 1;
     if (status) { sets.push(`status = $${idx++}`); vals.push(status); }
     if (notes !== undefined) { sets.push(`notes = $${idx++}`); vals.push(notes); }
+    if (req.body.blocked !== undefined) { sets.push(`blocked = $${idx++}`); vals.push(req.body.blocked || null); }
     sets.push(`updated_at = NOW()`);
     if (sets.length < 2) return res.status(400).json({ error: 'Nothing to update' });
     vals.push(req.params.id);
