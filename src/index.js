@@ -14,6 +14,7 @@ import devopsRoutes from './routes/devops.js';
 import everDeployRoutes from './routes/ever-deploy.js';
 import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
+import bugsRoutes from './routes/bugs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -156,6 +157,7 @@ app.use('/api/alm', almRoutes);
 app.use('/api/devops', devopsRoutes);
 app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
+app.use('/api/bugs', bugsRoutes);
 
 // Job status polling
 app.get('/api/jobs/:id', authMiddleware, async (req, res) => {
@@ -324,6 +326,13 @@ app.use('/api/chat', authMiddleware, async (req, res, next) => {
 // Static frontend
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDist));
+// Bug Tracker page
+app.get('/bugs', (req, res) => {
+  res.sendFile(path.join(clientDist, 'bugs.html'), err => {
+    if (err) res.status(404).json({ error: 'Bug tracker page not found' });
+  });
+});
+
 app.get(/^\/(?!api\/).*/, (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'), err => {
     if (err) res.status(404).json({ error: 'Frontend not found' });
