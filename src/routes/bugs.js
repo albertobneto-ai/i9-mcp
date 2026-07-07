@@ -46,7 +46,7 @@ router.get('/stats', async (req, res) => {
   try {
     const [byStatus, bySection, byAutonomy, totals, done, blocked, inProg, hours] = await Promise.all([
       pool.query(`SELECT status, COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours FROM bug_cards GROUP BY status ORDER BY status`),
-      pool.query(`SELECT section, COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END)::int as done FROM bug_cards GROUP BY section ORDER BY section`),
+      pool.query(`SELECT section, COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, SUM(CASE WHEN status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO') THEN 1 ELSE 0 END)::int as done FROM bug_cards GROUP BY section ORDER BY section`),
       pool.query(`SELECT CASE WHEN claude_exec ILIKE 'SIM%' THEN 'SIM' WHEN claude_exec ILIKE '%PARCIAL%' THEN 'PARCIAL' ELSE 'NAO' END as tipo, COUNT(*)::int as count FROM bug_cards GROUP BY 1`),
       pool.query(`SELECT COUNT(*)::int as total, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, COALESCE(SUM(dev_h),0)::numeric(7,2) as dev_h, COALESCE(SUM(margin_h),0)::numeric(7,2) as margin_h, COALESCE(SUM(unit_h),0)::numeric(7,2) as unit_h, COALESCE(SUM(func_h),0)::numeric(7,2) as func_h FROM bug_cards`),
       pool.query(`SELECT COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours FROM bug_cards WHERE status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO')`),
