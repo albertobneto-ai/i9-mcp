@@ -248,9 +248,8 @@ function renderDash(s){
     <div class="forecast-box">
       <div class="forecast-icon">📅</div>
       <div class="forecast-content">
-        <div class="fc-label">Previsão de Finalização</div>
-        <div class="fc-date">${endStr}</div>
-        <div class="fc-sub">~${daysLeft} dias úteis restantes${consumed>0?' · velocidade: '+((consumed/(Math.max(d.count,1))).toFixed(1))+'h/item':''}</div>
+        <div class="fc-label">Progresso Geral</div>
+        <div class="fc-date" style="font-size:20px;">${d.count>0?'Velocidade: '+(consumed/d.count).toFixed(1)+'h/item':'Aguardando execução'}</div>
         <div class="forecast-bars">
           <div class="forecast-bar"><div class="fb-val">${fmtH(remaining)}</div><div class="fb-lbl">Restante</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(remaining,totalH)}%;background:var(--gray-s);"></div></div></div>
           <div class="forecast-bar"><div class="fb-val">${fmtH(consumed)}</div><div class="fb-lbl">Consumido</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(consumed,totalH)}%;background:var(--green-l);"></div></div></div>
