@@ -195,7 +195,7 @@ function renderDash(s){
   const t=s.total, d=s.done, donePct=pct(d.count,t.total);
   const remaining=parseFloat(s.hoursRemaining), consumed=parseFloat(s.hoursConsumed);
   const totalH=parseFloat(t.hours);
-  const velocity=consumed>0&&d.count>0?(consumed/d.count).toFixed(1):'—';
+  const velocity=d.count>0?(consumed/d.count).toFixed(1):'—';
   // Forecast
   const daysLeft=remaining>0?(remaining/8).toFixed(1):'0';
   const today=new Date();
