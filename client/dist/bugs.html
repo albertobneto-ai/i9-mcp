@@ -199,7 +199,9 @@ function renderDash(s){
   // Forecast
   const daysLeft=remaining>0?(remaining/8).toFixed(1):'0';
   const today=new Date();
-  const endDate=new Date(today);endDate.setDate(endDate.getDate()+Math.ceil(parseFloat(daysLeft)*1.4));
+  const endDate=new Date(today);
+  let bizDays=Math.ceil(parseFloat(daysLeft));
+  let added=0;while(added<bizDays){endDate.setDate(endDate.getDate()+1);const dow=endDate.getDay();if(dow!==0&&dow!==6)added++;}
   const endStr=endDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}).replace('.','');
   // Status map
   const statusMap={};COLS.forEach(c=>statusMap[c.key]={count:0,hours:0});
@@ -248,7 +250,7 @@ function renderDash(s){
       <div class="forecast-content">
         <div class="fc-label">Previsão de Finalização</div>
         <div class="fc-date">${endStr}</div>
-        <div class="fc-sub">~${daysLeft} dias úteis restantes</div>
+        <div class="fc-sub">~${daysLeft} dias úteis restantes${consumed>0?' · velocidade: '+((consumed/(Math.max(d.count,1))).toFixed(1))+'h/item':''}</div>
         <div class="forecast-bars">
           <div class="forecast-bar"><div class="fb-val">${fmtH(remaining)}</div><div class="fb-lbl">Restante</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(remaining,totalH)}%;background:var(--gray-s);"></div></div></div>
           <div class="forecast-bar"><div class="fb-val">${fmtH(consumed)}</div><div class="fb-lbl">Consumido</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(consumed,totalH)}%;background:var(--green-l);"></div></div></div>
