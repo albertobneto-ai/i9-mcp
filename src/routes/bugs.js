@@ -49,7 +49,7 @@ router.get('/stats', async (req, res) => {
       pool.query(`SELECT COUNT(*)::int as total, COALESCE(SUM(total_h),0)::numeric(7,2) as hours, COALESCE(SUM(dev_h),0)::numeric(7,2) as dev_h, COALESCE(SUM(margin_h),0)::numeric(7,2) as margin_h, COALESCE(SUM(unit_h),0)::numeric(7,2) as unit_h, COALESCE(SUM(func_h),0)::numeric(7,2) as func_h FROM bug_cards`),
       pool.query(`SELECT COUNT(*)::int as count, COALESCE(SUM(total_h),0)::numeric(7,2) as hours FROM bug_cards WHERE status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO')`),
       pool.query(`SELECT COUNT(*)::int as count FROM bug_cards WHERE blocked IS NOT NULL`),
-      pool.query(`SELECT COUNT(*)::int as count FROM bug_cards WHERE status = ANY($1)`, [IN_PROGRESS]),
+      pool.query(`SELECT COUNT(*)::int as count FROM bug_cards WHERE status NOT IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO')`),
       pool.query(`SELECT COALESCE(SUM(CASE WHEN status IN ('DEPLOY_EXECUTADO','CORRECAO_APLICADA','AGUARDANDO_PASSOS_MANUAIS','EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO') THEN total_h ELSE 0 END),0)::numeric(7,2) as consumed, COALESCE(SUM(CASE WHEN status IN ('BACKLOG','EM_ANALISE','EM_DESENVOLVIMENTO','AGUARDANDO_DEPLOY') THEN total_h ELSE 0 END),0)::numeric(7,2) as remaining FROM bug_cards`)
     ]);
     const t = totals.rows[0];
