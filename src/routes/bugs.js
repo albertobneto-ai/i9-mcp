@@ -128,4 +128,32 @@ router.post('/seed', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Create single bug ──
+router.post('/', async (req, res) => {
+  try {
+    const it = req.body;
+    if (!it.code || !it.name) return res.status(400).json({ error: 'code and name required' });
+    const r = await pool.query(`INSERT INTO bug_cards (code,name,obj,section,problem,root_cause,correction,claude_exec,manual_step,effort,blocked,status,dev_h,margin_h,unit_h,func_h,total_h,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
+      [it.code,it.name,it.obj||'',it.section||'',it.problem||'',it.root_cause||'',it.correction||'',it.claude_exec||'',it.manual_step||'',it.effort||'',it.blocked||null,it.status||'BACKLOG',it.dev_h||0,it.margin_h||0,it.unit_h||0,it.func_h||0,it.total_h||0,it.notes||'']);
+    res.json({ success: true, id: r.rows[0].id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Bulk create (append) ──
+router.post('/bulk-create', async (req, res) => {
+  try {
+    const items = req.body.items;
+    if (!items || !items.length) return res.status(400).json({ error: 'items[] required' });
+    let inserted = 0;
+    for (const it of items) {
+      try {
+        await pool.query(`INSERT INTO bug_cards (code,name,obj,section,problem,root_cause,correction,claude_exec,manual_step,effort,blocked,status,dev_h,margin_h,unit_h,func_h,total_h,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+          [it.code,it.name,it.obj||'',it.section||'',it.problem||'',it.root_cause||'',it.correction||'',it.claude_exec||'',it.manual_step||'',it.effort||'',it.blocked||null,it.status||'BACKLOG',it.dev_h||0,it.margin_h||0,it.unit_h||0,it.func_h||0,it.total_h||0,it.notes||'']);
+        inserted++;
+      } catch (e) { if (e.code !== '23505') throw e; }
+    }
+    res.json({ status: 'created', inserted });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
