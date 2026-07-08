@@ -337,27 +337,53 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
         } else if (step.action === 'metadata-deploy-xml') {
           const conn = await connectToOrg(org);
           const archiver = (await import('archiver')).default;
-          const chunks = [];
-          const archive = archiver('zip', { zlib: { level: 9 } });
-          archive.on('data', chunk => chunks.push(chunk));
-          const done = new Promise((resolve, reject) => { archive.on('end', resolve); archive.on('error', reject); });
-          for (const f of step.files || []) {
-            archive.append(Buffer.from(f.content, 'utf-8'), { name: f.path });
+          const allFiles = step.files || [];
+
+          // ── AUTO-CHUNK: detect multiple profiles and deploy 1-at-a-time ──
+          const profileFiles = allFiles.filter(f => f.path.startsWith('profiles/') && f.path.endsWith('.profile-meta.xml'));
+          const nonProfileFiles = allFiles.filter(f => !f.path.startsWith('profiles/') || !f.path.endsWith('.profile-meta.xml'));
+
+          if (profileFiles.length > 1) {
+            const chunkResults = [];
+            for (const pf of profileFiles) {
+              const profileName = pf.path.replace('profiles/', '').replace('.profile-meta.xml', '');
+              const chunkPkg = `<?xml version="1.0" encoding="UTF-8"?>\n<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n    <types>\n        <name>Profile</name>\n        <members>${profileName}</members>\n    </types>\n    <version>62.0</version>\n</Package>`;
+              const chunkFiles = [{ path: 'package.xml', content: chunkPkg }, pf];
+              for (const nf of nonProfileFiles) { if (nf.path !== 'package.xml') chunkFiles.push(nf); }
+              try {
+                const cBuf = []; const cArc = archiver('zip', { zlib: { level: 9 } });
+                cArc.on('data', c => cBuf.push(c));
+                const cDone = new Promise((ok, fail) => { cArc.on('end', ok); cArc.on('error', fail); });
+                for (const f of chunkFiles) cArc.append(Buffer.from(f.content, 'utf-8'), { name: f.path });
+                cArc.finalize(); await cDone;
+                const dr = await conn.metadata.deploy(Buffer.concat(cBuf), { rollbackOnError: true, singlePackage: true });
+                let ds = null;
+                for (let p = 0; p < 30; p++) { await new Promise(r => setTimeout(r, 2000)); ds = await conn.metadata.checkDeployStatus(dr.id, true); if (ds.done) break; }
+                const cOk = ds?.success;
+                const cf = ds?.details?.componentFailures;
+                const fm = cf ? (Array.isArray(cf) ? cf : [cf]).map(x => x.problem).join('; ') : '';
+                chunkResults.push({ profile: profileName, ok: !!cOk, message: cOk ? '✅' : `❌ ${fm.substring(0,200)}` });
+              } catch (ce) { chunkResults.push({ profile: profileName, ok: false, message: `❌ ${ce.message}` }); }
+            }
+            const cOkN = chunkResults.filter(r => r.ok).length;
+            const cFailMsgs = chunkResults.filter(r => !r.ok).map(r => `${r.profile}: ${r.message}`).join('; ');
+            results.push({ step: 'metadata-deploy-xml', ok: cOkN === profileFiles.length, chunked: true, chunkResults,
+              message: cOkN === profileFiles.length ? `✅ Deploy succeeded: ${cOkN} profiles (auto-chunked)` : `⚠️ ${cOkN}/${profileFiles.length} profiles OK. Failures: ${cFailMsgs.substring(0,400)}`
+            });
+          } else {
+            const chunks = []; const archive = archiver('zip', { zlib: { level: 9 } });
+            archive.on('data', chunk => chunks.push(chunk));
+            const done = new Promise((resolve, reject) => { archive.on('end', resolve); archive.on('error', reject); });
+            for (const f of allFiles) archive.append(Buffer.from(f.content, 'utf-8'), { name: f.path });
+            archive.finalize(); await done;
+            const deployResult = await conn.metadata.deploy(Buffer.concat(chunks), { rollbackOnError: true, singlePackage: true });
+            let deployStatus = null;
+            for (let i = 0; i < 30; i++) { await new Promise(r => setTimeout(r, 2000)); deployStatus = await conn.metadata.checkDeployStatus(deployResult.id, true); if (deployStatus.done) break; }
+            const ok = deployStatus?.success;
+            const details = deployStatus?.details?.componentFailures;
+            const failMsgs = details ? (Array.isArray(details) ? details : [details]).map(f => `${f.fullName}: ${f.problem}`).join('; ') : '';
+            results.push({ step: 'metadata-deploy-xml', ok: !!ok, message: ok ? `✅ Deploy succeeded (${allFiles.length} files)` : `❌ Deploy failed: ${failMsgs.substring(0,400)}` });
           }
-          archive.finalize();
-          await done;
-          const deployBuf = Buffer.concat(chunks);
-          const deployResult = await conn.metadata.deploy(deployBuf, { rollbackOnError: true, singlePackage: true });
-          let deployStatus = null;
-          for (let i = 0; i < 30; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            deployStatus = await conn.metadata.checkDeployStatus(deployResult.id, true);
-            if (deployStatus.done) break;
-          }
-          const ok = deployStatus?.success;
-          const details = deployStatus?.details?.componentFailures;
-          const failMsgs = details ? (Array.isArray(details) ? details : [details]).map(f => `${f.fullName}: ${f.problem}`).join('; ') : '';
-          results.push({ step: 'metadata-deploy-xml', ok: !!ok, message: ok ? `✅ Deploy succeeded (${step.files?.length || 0} files)` : `❌ Deploy failed: ${failMsgs.substring(0,400)}` });
         } else {
           results.push({ step: step.action, ok: false, message: '⚠️ action não suportada no batch: ' + step.action });
         }
