@@ -159,9 +159,11 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
 <div class="tab-bar">
   <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
   <button class="tab-btn" onclick="showTab('board')">Board</button>
+  <button class="tab-btn" onclick="showTab('equalizacao')">Equalização</button>
 </div>
 <div class="tab-content active" id="tab-dashboard"><div class="dash" id="dashContent"><div style="padding:40px;color:var(--gray-m);">Carregando dashboard...</div></div></div>
 <div class="tab-content" id="tab-board"><div class="board" id="board"></div></div>
+<div class="tab-content" id="tab-equalizacao"><div class="dash" id="eqContent"><div style="padding:40px;color:var(--gray-m);">Carregando...</div></div></div>
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-head"><h2 id="modalTitle"></h2><button class="close" onclick="closeModal()">&times;</button></div>
@@ -187,13 +189,25 @@ function fmtH(v){v=parseFloat(v)||0;return v<1?(v*60).toFixed(0)+'m':v.toFixed(1
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function pct(a,b){return b>0?Math.round(a/b*100):0;}
 function badgeClass(c){if(!c)return'badge-nao';const t=c.toUpperCase();if(t.startsWith('SIM'))return'badge-sim';if(t.includes('PARCIAL'))return'badge-parcial';return'badge-nao';}
-function showTab(name){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.id==='tab-'+name));}
+function showTab(name){
+  const map={'dashboard':'Dashboard','board':'Board','equalizacao':'Equalização'};
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent===map[name]));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.id==='tab-'+name));
+  if(name==='equalizacao')renderEQ();
+}
 
 // ══ DASHBOARD ══
 function renderDash(s){
   if(!s)return;
   const t=s.total, d=s.done, donePct=pct(d.count,t.total);
   const remaining=parseFloat(s.hoursRemaining), consumed=parseFloat(s.hoursConsumed);
+  // EQ stats
+  const eqCards=cards.filter(c=>c.code&&c.code.startsWith('EQ-'));
+  const eqTotal=eqCards.length;
+  const eqDone=eqCards.filter(c=>c.status==='CONCLUIDO'||c.status==='DEPLOY_EXECUTADO'||c.status==='CORRECAO_APLICADA').length;
+  const eqConsumed=eqCards.filter(c=>c.status!=='BACKLOG').reduce((s,c)=>s+parseFloat(c.total_h||0),0);
+  const eqRemaining=eqCards.filter(c=>c.status==='BACKLOG'||c.status==='EM_ANALISE'||c.status==='EM_DESENVOLVIMENTO').reduce((s,c)=>s+parseFloat(c.total_h||0),0);
+  const eqTotalH=eqCards.reduce((s,c)=>s+parseFloat(c.total_h||0),0);
   const totalH=parseFloat(t.hours);
   const velocity=d.count>0?(consumed/d.count).toFixed(1):'—';
   // Forecast
@@ -248,13 +262,13 @@ function renderDash(s){
     <div class="forecast-box">
       <div class="forecast-icon">📅</div>
       <div class="forecast-content">
-        <div class="fc-label">Progresso Geral</div>
-        <div class="fc-date" style="font-size:20px;">${d.count>0?'Velocidade: '+(consumed/d.count).toFixed(1)+'h/item':'Aguardando execução'}</div>
+        <div class="fc-label">Equalização de Ambientes</div>
+        <div class="fc-date" style="font-size:20px;">${eqDone>0?'Velocidade: '+(eqConsumed/eqDone).toFixed(1)+'h/item':'Aguardando execução'}</div>
         <div class="forecast-bars">
-          <div class="forecast-bar"><div class="fb-val">${fmtH(remaining)}</div><div class="fb-lbl">Restante</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(remaining,totalH)}%;background:var(--gray-s);"></div></div></div>
-          <div class="forecast-bar"><div class="fb-val">${fmtH(consumed)}</div><div class="fb-lbl">Consumido</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(consumed,totalH)}%;background:var(--green-l);"></div></div></div>
-          <div class="forecast-bar"><div class="fb-val">${s.unblocked}</div><div class="fb-lbl">Desbloq.</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(s.unblocked,t.total)}%;background:var(--gray-s);"></div></div></div>
-          <div class="forecast-bar"><div class="fb-val">${s.blocked}</div><div class="fb-lbl">Bloqueados</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(s.blocked,t.total)}%;background:#8B4545;"></div></div></div>
+          <div class="forecast-bar"><div class="fb-val">${fmtH(eqRemaining)}</div><div class="fb-lbl">Restante</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(eqRemaining,eqTotalH)}%;background:var(--gray-s);"></div></div></div>
+          <div class="forecast-bar"><div class="fb-val">${fmtH(eqConsumed)}</div><div class="fb-lbl">Consumido</div><div class="fb-bar"><div class="fb-fill" style="width:${pct(eqConsumed,eqTotalH)}%;background:var(--green-l);"></div></div></div>
+          <div class="forecast-bar"><div class="fb-val">${eqTotal}</div><div class="fb-lbl">Desbloq.</div><div class="fb-bar"><div class="fb-fill" style="width:100%;background:var(--gray-s);"></div></div></div>
+          <div class="forecast-bar"><div class="fb-val">0</div><div class="fb-lbl">Bloqueados</div><div class="fb-bar"><div class="fb-fill" style="width:0%;background:#8B4545;"></div></div></div>
         </div>
       </div>
     </div>
@@ -372,6 +386,31 @@ function openModal(c){
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ══ EQUALIZAÇÃO TAB ══
+function renderEQ(){
+  const eqCards=cards.filter(c=>c.code&&c.code.startsWith('EQ-'));
+  if(!eqCards.length){document.getElementById('eqContent').innerHTML='<div style="padding:40px;color:var(--gray-m);">Nenhum item EQ encontrado</div>';return;}
+  const phases={};
+  eqCards.forEach(c=>{const sec=c.section||'Sem fase';if(!phases[sec])phases[sec]=[];phases[sec].push(c);});
+  const statusColor=(s)=>{if(s==='CONCLUIDO'||s==='DEPLOY_EXECUTADO'||s==='CORRECAO_APLICADA')return'var(--green)';if(s==='BACKLOG')return'var(--gray-m)';if(s==='EM_DESENVOLVIMENTO'||s==='EM_ANALISE')return'var(--blue)';return'var(--amber)';};
+  const statusLabel=(s)=>{const m={'BACKLOG':'Backlog','EM_ANALISE':'Em Análise','EM_DESENVOLVIMENTO':'Em Desenv.','DEPLOY_EXECUTADO':'Deploy OK','CONCLUIDO':'Concluído','CORRECAO_APLICADA':'Aplicado','AGUARDANDO_DEPLOY':'Aguard. Deploy'};return m[s]||s;};
+  let html='';
+  const eqDone=eqCards.filter(c=>c.status==='CONCLUIDO'||c.status==='DEPLOY_EXECUTADO'||c.status==='CORRECAO_APLICADA').length;
+  const eqTotalH=eqCards.reduce((s,c)=>s+parseFloat(c.total_h||0),0);
+  const eqPct=pct(eqDone,eqCards.length);
+  html+=`<div style="margin:12px 0;"><div class="kpi dark" style="max-width:100%;"><div class="kpi-label">Equalização HOMOL → arqevery</div><div class="kpi-value">${eqDone}/${eqCards.length}</div><div class="kpi-sub">${eqPct}% concluído — ${fmtH(eqTotalH)} total estimado</div><div class="kpi-bar"><div class="kpi-bar-fill" style="width:${eqPct}%;background:var(--green);"></div></div></div></div>`;
+  for(const[phase,items]of Object.entries(phases)){
+    const pDone=items.filter(c=>c.status==='CONCLUIDO'||c.status==='DEPLOY_EXECUTADO'||c.status==='CORRECAO_APLICADA').length;
+    html+=`<div class="section-label">${esc(phase)} — ${pDone}/${items.length}</div>`;
+    html+=`<div class="chart-card" style="margin-bottom:10px;"><table class="etbl"><tr><th>Código</th><th>Item</th><th>Objeto</th><th class="num">Horas</th><th>Status</th></tr>`;
+    items.forEach(c=>{
+      html+=`<tr style="cursor:pointer;" onclick="openModal(cards.find(x=>x.id===${c.id}))"><td style="font-weight:700;">${esc(c.code)}</td><td>${esc(c.name)}</td><td><span class="card-obj">${esc(c.obj)}</span></td><td class="num">${fmtH(c.total_h)}</td><td><span style="color:${statusColor(c.status)};font-weight:600;font-size:9px;">${statusLabel(c.status)}</span></td></tr>`;
+    });
+    html+=`</table></div>`;
+  }
+  document.getElementById('eqContent').innerHTML=html;
+}
 
 // ══ DATA LOADING ══
 async function loadCards(){try{const r=await fetch(API);cards=await r.json();renderBoard();}catch(e){console.error(e);}}
