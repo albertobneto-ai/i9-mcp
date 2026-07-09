@@ -28,6 +28,11 @@ router.get('/init', async (req, res) => {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bug_status ON bug_cards(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bug_code ON bug_cards(code)');
     await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_action TEXT`);
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_result_status VARCHAR(30)`);
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_result_details TEXT`);
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_result_attachment_name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_result_attachment_data TEXT`);
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_result_at TIMESTAMPTZ`);
     res.json({ status: 'ok', table: 'bug_cards' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -35,7 +40,11 @@ router.get('/init', async (req, res) => {
 // ── List all ──
 router.get('/', async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM bug_cards ORDER BY id');
+    const r = await pool.query(`SELECT id,code,name,obj,section,problem,root_cause,correction,claude_exec,
+      manual_step,effort,blocked,status,dev_h,margin_h,unit_h,func_h,total_h,notes,dev_action,
+      dev_result_status,dev_result_details,dev_result_attachment_name,
+      (dev_result_attachment_data IS NOT NULL) AS has_attachment,
+      dev_result_at,updated_at,created_at FROM bug_cards ORDER BY id`);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -75,9 +84,22 @@ router.get('/stats', async (req, res) => {
 // ── Get one ──
 router.get('/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM bug_cards WHERE id = $1', [req.params.id]);
+    const r = await pool.query(`SELECT id,code,name,obj,section,problem,root_cause,correction,claude_exec,
+      manual_step,effort,blocked,status,dev_h,margin_h,unit_h,func_h,total_h,notes,dev_action,
+      dev_result_status,dev_result_details,dev_result_attachment_name,
+      (dev_result_attachment_data IS NOT NULL) AS has_attachment,
+      dev_result_at,updated_at,created_at FROM bug_cards WHERE id = $1`, [req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Get attachment ──
+router.get('/:id/attachment', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT dev_result_attachment_name, dev_result_attachment_data FROM bug_cards WHERE id = $1', [req.params.id]);
+    if (!r.rows[0] || !r.rows[0].dev_result_attachment_data) return res.status(404).json({ error: 'No attachment' });
+    res.json({ name: r.rows[0].dev_result_attachment_name, data: r.rows[0].dev_result_attachment_data });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -86,11 +108,19 @@ router.patch('/:id', async (req, res) => {
   try {
     const { status, notes } = req.body;
     if (status && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status', valid: STATUSES });
+    if (req.body.dev_result_attachment_data && req.body.dev_result_attachment_data.length > 7000000) {
+      return res.status(400).json({ error: 'Attachment too large (max ~5MB)' });
+    }
     const sets = []; const vals = []; let idx = 1;
     if (status) { sets.push(`status = $${idx++}`); vals.push(status); }
     if (notes !== undefined) { sets.push(`notes = $${idx++}`); vals.push(notes); }
     if (req.body.blocked !== undefined) { sets.push(`blocked = $${idx++}`); vals.push(req.body.blocked || null); }
     if (req.body.dev_action !== undefined) { sets.push(`dev_action = $${idx++}`); vals.push(req.body.dev_action || null); }
+    if (req.body.dev_result_status !== undefined) { sets.push(`dev_result_status = $${idx++}`); vals.push(req.body.dev_result_status || null); }
+    if (req.body.dev_result_details !== undefined) { sets.push(`dev_result_details = $${idx++}`); vals.push(req.body.dev_result_details || null); }
+    if (req.body.dev_result_attachment_name !== undefined) { sets.push(`dev_result_attachment_name = $${idx++}`); vals.push(req.body.dev_result_attachment_name || null); }
+    if (req.body.dev_result_attachment_data !== undefined) { sets.push(`dev_result_attachment_data = $${idx++}`); vals.push(req.body.dev_result_attachment_data || null); }
+    if (req.body.dev_result_status !== undefined || req.body.dev_result_details !== undefined) { sets.push(`dev_result_at = NOW()`); }
     for (const f of ['dev_h','margin_h','unit_h','func_h','total_h']) {
       if (req.body[f] !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(req.body[f]); }
     }
