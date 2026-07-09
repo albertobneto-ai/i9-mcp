@@ -714,29 +714,18 @@ async function loadAll(){await Promise.all([loadCards(),loadStats()]);}
 setInterval(loadAll,30000);
 loadAll();
 
+
 // ══════════════════════════════════════════════════
-// GP — GESTÃO DE BUGS
+// GP — GESTÃO DE BUGS  (v2 — fix upload/sync/hooks)
 // ══════════════════════════════════════════════════
-let gpData = [];       // from spreadsheet (localStorage)
-let gpActive = [];     // filtered
-let gpBoardMap = {};   // code → board card (from /api/bugs)
+let gpData    = [];   // dados da planilha
+let gpActive  = [];   // filtrados
+let gpBoardMap = {};  // code → card do board
 let gpSortCol = -1, gpSortAsc = true;
+let gpRendered = false; // evita double-render
 
 const GP_STORE_KEY = 'gp_bugs_data_v1';
 const GP_META_KEY  = 'gp_bugs_meta_v1';
-
-// Status map: planilha → board status label
-const GP_STATUS_MAP = {
-  'Correção em testes unitários':'EM_TESTES_UNITARIOS',
-  'Homologado':'CONCLUIDO',
-  'Ref Téc':'EM_ANALISE',
-  'Liberado para Reteste Algar':'EM_TESTES_FUNCIONAIS',
-  'Pronto para Homologação (QA+PO Algar)':'AGUARDANDO_DEPLOY',
-  'Em testes':'EM_TESTES_UNITARIOS',
-  'Pronto Dev':'AGUARDANDO_DEPLOY',
-  'Cancelado':'FORA_DO_ESCOPO',
-  'BackLog':'BACKLOG'
-};
 
 const BOARD_STATUS_LABEL = {
   'BACKLOG':'Backlog','EM_ANALISE':'Em Análise','EM_DESENVOLVIMENTO':'Em Dev',
@@ -746,8 +735,13 @@ const BOARD_STATUS_LABEL = {
   'CONCLUIDO':'Concluído','FORA_DO_ESCOPO':'Fora Escopo'
 };
 
+// ── HELPERS ──────────────────────────────────────
 function gpEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function gpFirstN(s){ if(!s)return'—'; const p=s.trim().split(/\s+/); return p.length<2?s:p[0]+' '+p[p.length-1]; }
+function gpFirstN(s){
+  if(!s)return'—';
+  const p=s.trim().split(/\s+/);
+  return p.length<2?s:p[0]+' '+p[p.length-1];
+}
 
 function gpStatusBadge(s){
   const m={
@@ -783,42 +777,49 @@ function gpBoardBadge(code){
 
 // ── RENDER ───────────────────────────────────────
 function gpRenderKPIs(){
-  const d=gpData;
-  const cnt=(fn)=>d.filter(fn).length;
-  const total=d.length;
+  const d=gpData, total=d.length;
+  if(!total){ document.getElementById('gp-kpis').innerHTML=''; return; }
+  const cnt=fn=>d.filter(fn).length;
   const fix=cnt(b=>b.status==='Correção em testes unitários');
   const hom=cnt(b=>b.status==='Homologado');
   const back=cnt(b=>b.status==='BackLog');
   const ma=cnt(b=>b.prioridade==='Muito Alta');
-  const board_match=d.filter(b=>gpBoardMap[b.id]).length;
+  const synced=d.filter(b=>gpBoardMap[b.id]).length;
   document.getElementById('gp-kpis').innerHTML=`
     <div class="kpi dark"><div class="kpi-label">Total Bugs</div><div class="kpi-value">${total}</div><div class="kpi-sub">todas as frentes</div></div>
     <div class="kpi dark" style="border-top:2px solid #8B4545;"><div class="kpi-label">Em Correção</div><div class="kpi-value" style="color:#c07070;">${fix}</div><div class="kpi-sub">testes unitários</div></div>
     <div class="kpi dark" style="border-top:2px solid #4A6A4A;"><div class="kpi-label">Homologados</div><div class="kpi-value" style="color:#6B8E6B;">${hom}</div><div class="kpi-sub">aprovados</div></div>
-    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>
-  `;
-  document.getElementById('gp-alert').style.display=ma>0?'block':'none';
-  document.getElementById('gp-alert').innerHTML=`⚠ <strong>${ma} bugs Muito Alta</strong> em aberto · <strong>${fix} em correção</strong> aguardando próxima janela HML · ${board_match} sincronizados com o board`;
+    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>`;
+  const alertEl=document.getElementById('gp-alert');
+  if(alertEl){
+    alertEl.style.display=ma>0?'block':'none';
+    alertEl.innerHTML=`⚠ <strong>${ma} bugs Muito Alta</strong> em aberto · <strong>${fix} em correção</strong> · ${synced}/${total} sincronizados com o board`;
+  }
 }
 
 function gpRenderCharts(){
+  const d=gpData;
+  if(!d.length)return;
+
   // Status bars
-  const statusCounts={};
-  gpData.forEach(b=>{ statusCounts[b.status]=(statusCounts[b.status]||0)+1; });
-  const sorted=Object.entries(statusCounts).sort((a,b)=>b[1]-a[1]);
+  const sc={};
+  d.forEach(b=>{ sc[b.status]=(sc[b.status]||0)+1; });
+  const sorted=Object.entries(sc).sort((a,b)=>b[1]-a[1]);
   const maxS=sorted[0]?.[1]||1;
+  const abbr={'Correção em testes unitários':'Em Correção','Pronto para Homologação (QA+PO Algar)':'Pronto HML','Liberado para Reteste Algar':'Reteste Algar'};
   const sBars=sorted.map(([s,c])=>`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <div style="width:130px;font-size:10px;color:var(--gray-s);text-align:right;flex-shrink:0;line-height:1.2;">${gpEsc(s==='Correção em testes unitários'?'Em Correção':s==='Pronto para Homologação (QA+PO Algar)'?'Pronto HML':s)}</div>
+      <div style="width:130px;font-size:10px;color:var(--gray-s);text-align:right;flex-shrink:0;line-height:1.2;">${gpEsc(abbr[s]||s)}</div>
       <div style="flex:1;background:var(--gray-d);border-radius:3px;height:16px;">
         <div style="height:100%;border-radius:3px;background:var(--blue);width:${Math.round(c/maxS*100)}%;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);min-width:20px;">${c}</div>
       </div>
     </div>`).join('');
-  document.getElementById('gp-status-chart').innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;padding-left:2px;">Status dos Bugs</div>${sBars}`;
+  document.getElementById('gp-status-chart').innerHTML=
+    `<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Status dos Bugs</div>${sBars}`;
 
   // Frente bars
   const fc={'Gestão de Leads':0,'Gestão de Contas':0,'Gestão de Contatos':0};
-  gpData.forEach(b=>{ if(fc[b.frente]!==undefined)fc[b.frente]++; });
+  d.forEach(b=>{ if(fc[b.frente]!==undefined)fc[b.frente]++; });
   const maxF=Math.max(...Object.values(fc),1);
   const fBars=Object.entries(fc).map(([f,c])=>`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -826,14 +827,15 @@ function gpRenderCharts(){
       <div style="flex:1;background:var(--gray-d);border-radius:3px;height:20px;">
         <div style="height:100%;border-radius:3px;background:var(--blue);width:${Math.round(c/maxF*100)}%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);min-width:20px;">${c}</div>
       </div>
-      <div style="font-size:10px;color:var(--gray-m);width:30px;">${Math.round(c/gpData.length*100)}%</div>
+      <div style="font-size:10px;color:var(--gray-m);width:34px;">${d.length?Math.round(c/d.length*100):0}%</div>
     </div>`).join('');
-  document.getElementById('gp-frente-chart').innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;padding-left:2px;">Por Frente</div>${fBars}`;
+  document.getElementById('gp-frente-chart').innerHTML=
+    `<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Por Frente</div>${fBars}`;
 
-  // Prio cards
+  // Prios
   const prios=[['Muito Alta','#c07070','🔴'],['Alta','#c09050','🟠'],['Média','#c8b050','🟡'],['Baixa','#70aa80','🟢']];
   document.getElementById('gp-prios').innerHTML=prios.map(([p,col,ic])=>{
-    const c=gpData.filter(b=>b.prioridade===p).length;
+    const c=d.filter(b=>b.prioridade===p).length;
     return `<div class="kpi dark" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
       <div style="font-size:20px;">${ic}</div>
       <div><div style="font-size:24px;font-weight:800;color:${col};line-height:1;">${c}</div>
@@ -843,42 +845,46 @@ function gpRenderCharts(){
 
   // Matrix
   const frentes=['Gestão de Leads','Gestão de Contas','Gestão de Contatos'];
-  const statuses2=['Em Correção','Homologado','Ref Téc','Em Testes','Reteste','Pronto HML','BackLog','Cancel.'];
-  const statusKeys=['Correção em testes unitários','Homologado','Ref Téc','Em testes','Liberado para Reteste Algar','Pronto para Homologação (QA+PO Algar)','BackLog','Cancelado'];
+  const sk=['Correção em testes unitários','Homologado','Ref Téc','Em testes','Liberado para Reteste Algar','Pronto para Homologação (QA+PO Algar)','BackLog','Cancelado'];
+  const sh=['Em Correção','Homologado','Ref Téc','Em Testes','Reteste','Pronto HML','BackLog','Cancel.'];
   let mt=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Matriz Frente × Status</div>
   <table style="width:100%;border-collapse:collapse;min-width:600px;font-size:10px;">
   <tr style="background:var(--black);">
-    <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:600;color:var(--gray-m);letter-spacing:.5px;">Frente</th>
-    ${statuses2.map(s=>`<th style="padding:7px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--gray-m);letter-spacing:.5px;white-space:nowrap;">${s}</th>`).join('')}
+    <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:600;color:var(--gray-m);">Frente</th>
+    ${sh.map(s=>`<th style="padding:7px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--gray-m);white-space:nowrap;">${s}</th>`).join('')}
     <th style="padding:7px 10px;text-align:center;font-size:9px;font-weight:700;color:var(--gray-s);">Total</th>
   </tr>`;
-  let totals=new Array(statusKeys.length).fill(0), grandTotal=0;
+  const totals=new Array(sk.length).fill(0); let grand=0;
   frentes.forEach(fr=>{
-    const row=gpData.filter(b=>b.frente===fr);
-    const rowT=row.length; grandTotal+=rowT;
+    const row=d.filter(b=>b.frente===fr); grand+=row.length;
     mt+=`<tr style="border-bottom:1px solid var(--gray-d);">
       <td style="padding:9px 10px;font-size:10px;font-weight:600;color:var(--gray-l);white-space:nowrap;">${fr.replace('Gestão de ','')}</td>`;
-    statusKeys.forEach((sk,i)=>{
-      const c=row.filter(b=>b.status===sk).length;
-      totals[i]+=c;
-      mt+=`<td style="padding:9px 8px;text-align:center;font-weight:700;color:${c>0?(sk==='Correção em testes unitários'?'#c07070':sk==='Homologado'?'#6B8E6B':'var(--gray-s)'):'var(--gray-d)'};">${c||'—'}</td>`;
+    sk.forEach((s,i)=>{
+      const c=row.filter(b=>b.status===s).length; totals[i]+=c;
+      mt+=`<td style="padding:9px 8px;text-align:center;font-weight:700;color:${c>0?(s==='Correção em testes unitários'?'#c07070':s==='Homologado'?'#6B8E6B':'var(--gray-s)'):'var(--gray-d)'};">${c||'—'}</td>`;
     });
-    mt+=`<td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${rowT}</td></tr>`;
+    mt+=`<td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${row.length}</td></tr>`;
   });
   mt+=`<tr style="background:rgba(255,255,255,.02);">
-    <td style="padding:9px 10px;font-weight:800;color:var(--white);font-size:10px;">TOTAL</td>
+    <td style="padding:9px 10px;font-weight:800;color:var(--white);">TOTAL</td>
     ${totals.map((c,i)=>`<td style="padding:9px 8px;text-align:center;font-weight:800;color:${i===0?'#c07070':i===1?'#6B8E6B':'var(--gray-s)'};">${c}</td>`).join('')}
-    <td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${grandTotal}</td>
+    <td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${grand}</td>
   </tr></table>`;
   document.getElementById('gp-matrix').innerHTML=mt;
 }
 
 function gpRenderTable(data){
   const tbody=document.getElementById('gp-tbody');
+  if(!tbody)return;
+  if(!data.length){
+    tbody.innerHTML=`<tr><td colspan="9" style="padding:30px;text-align:center;color:var(--gray-m);font-size:11px;">Nenhum bug encontrado</td></tr>`;
+    document.getElementById('gp-count').textContent='0 bugs';
+    return;
+  }
   tbody.innerHTML=data.map(b=>`
-    <tr class="gp-trow" onclick="gpOpenModal('${gpEsc(b.id)}')">
-      <td class="gp-td"><span class="gp-id">${gpEsc(b.id)}</span>${b.contestado?'<span style="color:#c07070;font-size:9px;margin-left:4px;" title="Devolutiva contestada">⚠</span>':''}</td>
-      <td class="gp-td gp-desc" style="max-width:240px;line-height:1.3;">${gpEsc(b.descricao)}</td>
+    <tr class="gp-trow" onclick="gpOpenModal('${b.id.replace(/'/g,"\\'")}')">
+      <td class="gp-td"><span class="gp-id">${gpEsc(b.id)}</span>${b.contestado&&b.contestado.resposta_algar?'<span style="color:#c07070;font-size:9px;margin-left:4px;" title="Devolutiva contestada">⚠</span>':''}</td>
+      <td class="gp-td gp-desc">${gpEsc(b.descricao)}</td>
       <td class="gp-td">${gpStatusBadge(b.status)}</td>
       <td class="gp-td">${gpBoardBadge(b.id)}</td>
       <td class="gp-td">${gpPrioBadge(b.prioridade)}</td>
@@ -892,7 +898,7 @@ function gpRenderTable(data){
 
 // ── FILTER / SORT ─────────────────────────────────
 function gpFilter(){
-  const s=document.getElementById('gp-search').value.toLowerCase();
+  const s=(document.getElementById('gp-search').value||'').toLowerCase();
   const st=document.getElementById('gp-fstatus').value;
   const pr=document.getElementById('gp-fprio').value;
   const fr=document.getElementById('gp-ffrente').value;
@@ -906,8 +912,9 @@ function gpFilter(){
   gpRenderTable(gpActive);
 }
 function gpClearFilters(){
-  ['gp-search','gp-fstatus','gp-fprio','gp-ffrente'].forEach(id=>document.getElementById(id).value='');
-  gpActive=[...gpData]; gpRenderTable(gpActive);
+  ['gp-search','gp-fstatus','gp-fprio','gp-ffrente'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  gpActive=[...gpData];
+  gpRenderTable(gpActive);
 }
 function gpSort(col){
   if(gpSortCol===col)gpSortAsc=!gpSortAsc; else{gpSortCol=col;gpSortAsc=true;}
@@ -919,29 +926,18 @@ function gpSort(col){
   gpRenderTable(gpActive);
 }
 
-// ── SYNC WITH BOARD ──────────────────────────────
+// ── BOARD SYNC ────────────────────────────────────
 async function gpRefreshFromBoard(){
   try{
     const r=await fetch(API);
+    if(!r.ok)return;
     const boardCards=await r.json();
     gpBoardMap={};
     boardCards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
-    // Update gp status where board has newer info
-    let updated=0;
-    gpData.forEach(b=>{
-      const bc=gpBoardMap[b.id];
-      if(bc){
-        const mappedStatus=Object.entries(GP_STATUS_MAP).find(([,v])=>v===bc.status)?.[0];
-        if(mappedStatus&&mappedStatus!==b.status){
-          b.board_status_override=bc.status;
-        }
-      }
-    });
-    gpSave(); gpRender();
-    showGpSyncStatus(Object.keys(gpBoardMap).length);
-  }catch(e){ console.error('gpRefreshFromBoard error:',e); }
+    gpSetSyncStatus(Object.keys(gpBoardMap).length);
+  }catch(e){ console.warn('gpRefreshFromBoard:',e.message); }
 }
-function showGpSyncStatus(matched){
+function gpSetSyncStatus(matched){
   const dot=document.getElementById('gp-sync-dot');
   const lbl=document.getElementById('gp-sync-label');
   if(dot)dot.style.background=matched>0?'#6B8E6B':'#8B4545';
@@ -950,39 +946,251 @@ function showGpSyncStatus(matched){
 
 // ── STORAGE ──────────────────────────────────────
 function gpSave(){
-  try{localStorage.setItem(GP_STORE_KEY,JSON.stringify(gpData));}catch(e){}
+  try{ localStorage.setItem(GP_STORE_KEY,JSON.stringify(gpData)); }catch(e){ console.warn('gpSave:',e); }
 }
-function gpLoad(){
+function gpLoadFromStorage(){
   try{
     const raw=localStorage.getItem(GP_STORE_KEY);
-    if(raw)gpData=JSON.parse(raw);
+    if(raw){ gpData=JSON.parse(raw); return true; }
+  }catch(e){ console.warn('gpLoadFromStorage:',e); }
+  return false;
+}
+function gpLoadMeta(){
+  try{
     const meta=localStorage.getItem(GP_META_KEY);
     if(meta){
       const m=JSON.parse(meta);
       const dot=document.getElementById('gp-sync-dot');
       const lbl=document.getElementById('gp-sync-label');
-      if(dot)dot.style.background='#6B8E6B';
-      if(lbl)lbl.textContent=`planilha carregada em ${m.loaded_at||'?'}`;
+      if(dot)dot.style.background='#4A6A4A';
+      if(lbl)lbl.textContent=`${m.file||'planilha'} · ${m.total||0} bugs · carregado ${m.loaded_at||''}`;
     }
   }catch(e){}
 }
 
 // ── RENDER ALL ────────────────────────────────────
 function gpRender(){
-  if(!gpData.length)return;
+  if(!gpData.length){
+    const tbody=document.getElementById('gp-tbody');
+    if(tbody)tbody.innerHTML=`<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--gray-m);font-size:11px;">Nenhuma planilha carregada.<br>Clique em <strong>Atualizar Planilha</strong> para começar.</td></tr>`;
+    return;
+  }
   gpActive=[...gpData];
-  gpRenderKPIs(); gpRenderCharts(); gpRenderTable(gpActive);
+  // Reset filters
+  ['gp-search','gp-fstatus','gp-fprio','gp-ffrente'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  gpRenderKPIs();
+  gpRenderCharts();
+  gpRenderTable(gpActive);
 }
 
-// ── MODAL ────────────────────────────────────────
+// ── UPLOAD MODAL ─────────────────────────────────
+function openUploadModal(){
+  const ov=document.getElementById('upload-modal-overlay');
+  if(ov)ov.classList.add('open');
+  const sel=document.getElementById('um-file-selected');
+  if(sel){ sel.style.display='none'; sel.innerHTML=''; }
+  const prog=document.getElementById('um-progress');
+  if(prog)prog.style.display='none';
+  const fill=document.getElementById('um-progress-fill');
+  if(fill){ fill.style.width='0%'; fill.style.background=getComputedStyle(document.documentElement).getPropertyValue('--green')||'#4A6A4A'; }
+  const ptxt=document.getElementById('um-progress-text');
+  if(ptxt)ptxt.textContent='';
+  const btn=document.getElementById('um-btn-load');
+  if(btn){ btn.disabled=true; btn.innerHTML='↑ Carregar e Atualizar'; }
+  window._gpSelectedFile=null;
+}
+function closeUploadModal(){
+  const ov=document.getElementById('upload-modal-overlay');
+  if(ov)ov.classList.remove('open');
+}
+
+function handleFileSelect(input){
+  const files=input.files||input;
+  const file=files[0];
+  if(!file)return;
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    alert('Selecione um arquivo .xlsx ou .xls');
+    return;
+  }
+  window._gpSelectedFile=file;
+  const sel=document.getElementById('um-file-selected');
+  if(sel){
+    sel.style.display='flex';
+    sel.innerHTML=`📄 <strong>${gpEsc(file.name)}</strong> <span style="color:var(--gray-m);margin-left:6px;">(${(file.size/1024).toFixed(0)} KB)</span>`;
+  }
+  const btn=document.getElementById('um-btn-load');
+  if(btn)btn.disabled=false;
+}
+
+async function processUpload(){
+  const file=window._gpSelectedFile;
+  if(!file){ alert('Selecione um arquivo primeiro'); return; }
+
+  const btn  =document.getElementById('um-btn-load');
+  const prog =document.getElementById('um-progress');
+  const fill =document.getElementById('um-progress-fill');
+  const ptxt =document.getElementById('um-progress-text');
+
+  btn.disabled=true;
+  btn.textContent='Processando...';
+  prog.style.display='block';
+  fill.style.width='5%';
+  ptxt.textContent='Carregando biblioteca XLSX...';
+
+  const setProgress=(pct,txt)=>{ fill.style.width=pct+'%'; if(txt)ptxt.textContent=txt; };
+
+  try{
+    // 1. Load XLSX library
+    const XLSX=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+    setProgress(15,'Lendo arquivo...');
+
+    // 2. Read file
+    const ab=await file.arrayBuffer();
+    setProgress(30,'Parseando planilha...');
+
+    const wb=XLSX.read(new Uint8Array(ab),{type:'array',cellDates:true,dense:false});
+    setProgress(45,'Verificando abas...');
+
+    // 3. Validate main sheet
+    const wsMain=wb.Sheets['Gestão de Bugs'];
+    if(!wsMain)throw new Error('Aba "Gestão de Bugs" não encontrada na planilha');
+
+    const mainRows=XLSX.utils.sheet_to_json(wsMain,{header:1,defval:''});
+    if(mainRows.length<2)throw new Error('Aba "Gestão de Bugs" está vazia');
+    setProgress(55,'Lendo abas de detalhes...');
+
+    // 4. Read detail sheets
+    const detailSheets={
+      'Bugs':          ['cod','coluna_kanban','situacao_interna','devolutiva'],
+      'Bugs Conta':    ['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],
+      'Bugs Contato':  ['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],
+      'Bugs Lead':     ['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica']
+    };
+    const detailMap={};
+    for(const[sn,cols] of Object.entries(detailSheets)){
+      const ws=wb.Sheets[sn];
+      if(!ws)continue;
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      rows.slice(1).forEach(r=>{
+        if(!r[0])return;
+        const cid=String(r[0]).trim();
+        const entry={sheet:sn};
+        cols.forEach((c,i)=>{ entry[c]=String(r[i]===null||r[i]===undefined?'':r[i]).trim().replace(/\u00a0/g,' '); });
+        if(!detailMap[cid])detailMap[cid]=entry;
+        else Object.assign(detailMap[cid],Object.fromEntries(Object.entries(entry).filter(([,v])=>v&&v!=='None'&&v!=='n/a')));
+      });
+    }
+    setProgress(65,'Lendo devolutivas contestadas...');
+
+    // 5. Read devolutivas
+    const wsDev=wb.Sheets['Devolutivas não aceitas Algar'];
+    const devMap={};
+    if(wsDev){
+      const dRows=XLSX.utils.sheet_to_json(wsDev,{header:1,defval:''});
+      dRows.slice(1).forEach(r=>{
+        if(!r[0])return;
+        const cid=String(r[0]).trim();
+        devMap[cid]={
+          situacao:   String(r[2]||'').replace(/\u00a0/g,' '),
+          devolutiva_dev: String(r[3]||'').replace(/\u00a0/g,' '),
+          resposta_algar: String(r[4]||'').replace(/\u00a0/g,' ')
+        };
+      });
+    }
+    setProgress(75,'Construindo registros...');
+
+    // 6. Build bug objects
+    const bugs=[];
+    mainRows.slice(1).forEach(r=>{
+      if(!r[0])return;
+      const id=String(r[0]).trim();
+      if(!id)return;
+
+      // Date handling — XLSX can return Date objects or serial numbers or strings
+      let data='';
+      const rawDate=r[4];
+      if(rawDate instanceof Date&&!isNaN(rawDate)){
+        data=rawDate.toLocaleDateString('pt-BR');
+      } else if(typeof rawDate==='number'&&rawDate>40000){
+        // Excel serial date
+        const d=new Date(Math.round((rawDate-25569)*86400000));
+        data=d.toLocaleDateString('pt-BR');
+      } else if(rawDate){
+        data=String(rawDate);
+      }
+
+      const det=detailMap[id]||{};
+      const dev=devMap[id]||{};
+
+      bugs.push({
+        id,
+        descricao:          String(r[1]||'').trim(),
+        status:             String(r[2]||'').trim(),
+        prioridade:         String(r[3]||'').trim(),
+        data,
+        responsavel_criacao:String(r[5]||'').trim(),
+        ponto_focal:        String(r[6]||'').trim(),
+        frente:             String(r[7]||'').trim(),
+        us:                 String(r[8]||'').trim(),
+        desc_us:            String(r[9]||'').trim(),
+        cnt_every:          String(r[10]===null||r[10]===undefined?'':r[10]).trim(),
+        status_us:          String(r[11]||'').trim(),
+        esforco:            String(r[12]===null||r[12]===undefined?'':r[12]).trim(),
+        prazo:              String(r[13]===null||r[13]===undefined?'':r[13]).trim(),
+        responsavel_fix:    String(r[14]||'').trim(),
+        detail:  det,
+        contestado: dev.resposta_algar ? dev : {}
+      });
+    });
+
+    if(!bugs.length)throw new Error('Nenhum bug encontrado na planilha. Verifique se o arquivo é o correto.');
+    setProgress(88,`${bugs.length} bugs lidos. Salvando...`);
+
+    // 7. Persist — REPLACE everything
+    gpData=[];        // clear first
+    gpBoardMap={};    // clear board map
+    gpData=bugs;      // assign fresh
+    gpSave();
+    localStorage.setItem(GP_META_KEY,JSON.stringify({
+      loaded_at: new Date().toLocaleString('pt-BR'),
+      file: file.name,
+      total: bugs.length
+    }));
+    setProgress(93,'Sincronizando com o board...');
+
+    // 8. Sync board (independent — don't let it fail the upload)
+    try{ await gpRefreshFromBoard(); }catch(e){ console.warn('Board sync após upload:',e); }
+    setProgress(100,`✓ ${bugs.length} bugs carregados com sucesso!`);
+
+    // 9. Render — single call after everything is set
+    gpRender();
+
+    // Update sync badge
+    const dot=document.getElementById('gp-sync-dot');
+    const lbl=document.getElementById('gp-sync-label');
+    if(dot)dot.style.background='#4A6A4A';
+    if(lbl)lbl.textContent=`${file.name} · ${bugs.length} bugs · ${new Date().toLocaleTimeString('pt-BR')}`;
+
+    setTimeout(closeUploadModal,1500);
+
+  }catch(err){
+    console.error('processUpload error:',err);
+    if(ptxt)ptxt.textContent='❌ Erro: '+(err.message||String(err));
+    if(fill)fill.style.background='#8B4545';
+    if(btn){ btn.disabled=false; btn.innerHTML='↑ Tentar Novamente'; }
+  }
+}
+
+// ── GP DETAIL MODAL ────────────────────────────────
 function gpOpenModal(id){
-  const b=gpData.find(x=>x.id===id); if(!b)return;
+  const b=gpData.find(x=>x.id===id);
+  if(!b)return;
   const d=b.detail||{};
   const c=b.contestado||{};
   const bc=gpBoardMap[b.id];
 
-  let idRow=`<span class="gp-id" style="font-size:13px;">${gpEsc(b.id)}</span>${gpStatusBadge(b.status)}${gpPrioBadge(b.prioridade)}${gpFrenteBadge(b.frente)}`;
-  if(c.resposta_algar)idRow+=`<span style="font-size:9px;font-weight:700;background:rgba(139,69,69,.2);color:#c07070;border-radius:3px;padding:2px 6px;">⚠ CONTESTADO</span>`;
+  let idRow=`<span class="gp-id" style="font-size:13px;">${gpEsc(b.id)}</span> ${gpStatusBadge(b.status)} ${gpPrioBadge(b.prioridade)} ${gpFrenteBadge(b.frente)}`;
+  if(c.resposta_algar)idRow+=` <span style="font-size:9px;font-weight:700;background:rgba(139,69,69,.2);color:#c07070;border-radius:3px;padding:2px 6px;">⚠ CONTESTADO</span>`;
 
   let body='';
 
@@ -994,19 +1202,19 @@ function gpOpenModal(id){
     <div class="gm-field"><div class="gm-flbl">Frente</div><div class="gm-fval">${gpEsc(b.frente||'—')}</div></div>
   </div></div>`;
 
-  // Status (planilha + board)
+  // Status comparado
   body+=`<div class="gm-section"><div class="gm-section-lbl">Status</div>
   <div class="gm-grid">
     <div class="gm-field"><div class="gm-flbl">Status Planilha GP</div><div class="gm-fval">${gpStatusBadge(b.status)}</div></div>
     <div class="gm-field"><div class="gm-flbl">Status Board Bug Tracker</div><div class="gm-fval">${bc?`<span style="font-weight:700;color:var(--gray-l);">${gpEsc(BOARD_STATUS_LABEL[bc.status]||bc.status)}</span>`:'<span style="color:var(--gray-m);font-size:10px;">Não encontrado no board</span>'}</div></div>
   </div></div>`;
 
-  // US & Rastreabilidade
+  // US
   body+=`<div class="gm-section"><div class="gm-section-lbl">US &amp; Rastreabilidade</div>
   <div class="gm-grid">
     <div class="gm-field"><div class="gm-flbl">US Impactada</div><div class="gm-fval mono">${gpEsc(b.us||'—')}</div></div>
     <div class="gm-field"><div class="gm-flbl">Status da US</div><div class="gm-fval">${gpEsc(b.status_us||'—')}</div></div>
-    <div class="gm-field full"><div class="gm-flbl">Descrição da US</div><div class="gm-fval">${gpEsc(b.desc_us||'—')}</div></div>
+    ${b.desc_us?`<div class="gm-field full"><div class="gm-flbl">Descrição da US</div><div class="gm-fval">${gpEsc(b.desc_us)}</div></div>`:''}
     <div class="gm-field"><div class="gm-flbl">CNT Every</div><div class="gm-fval">${gpEsc(b.cnt_every||'—')}</div></div>
     <div class="gm-field"><div class="gm-flbl">Esforço</div><div class="gm-fval">${gpEsc(b.esforco||'—')}</div></div>
   </div></div>`;
@@ -1021,13 +1229,14 @@ function gpOpenModal(id){
 
   // Análise técnica
   if(d.situacao_interna||d.devolutiva||d.acao){
-    body+=`<div class="gm-section"><div class="gm-section-lbl">Análise Técnica ${d.sheet?`— ${gpEsc(d.sheet)}`:''}</div>
-    <div class="gm-grid">`;
-    if(d.coluna_kanban)body+=`<div class="gm-field"><div class="gm-flbl">Coluna Kanban Dev</div><div class="gm-fval">${gpEsc(d.coluna_kanban)}</div></div>`;
+    body+=`<div class="gm-section"><div class="gm-section-lbl">Análise Técnica${d.sheet?' — '+gpEsc(d.sheet):''}</div><div class="gm-grid">`;
+    if(d.coluna_kanban)     body+=`<div class="gm-field"><div class="gm-flbl">Coluna Kanban Dev</div><div class="gm-fval">${gpEsc(d.coluna_kanban)}</div></div>`;
     if(d.prioridade_tecnica)body+=`<div class="gm-field"><div class="gm-flbl">Prioridade Técnica</div><div class="gm-fval">${gpEsc(d.prioridade_tecnica)}</div></div>`;
-    if(d.situacao_interna)body+=`<div class="gm-field full"><div class="gm-flbl">Situação / Descrição Técnica</div><div class="gm-fval pre">${gpEsc(d.situacao_interna)}</div></div>`;
-    if(d.devolutiva&&d.devolutiva!=='n/a'&&d.devolutiva!=='None')body+=`<div class="gm-field full"><div class="gm-flbl">Devolutiva Everymind</div><div class="gm-fval pre">${gpEsc(d.devolutiva)}</div></div>`;
-    if(d.acao&&d.acao!=='n/a'&&d.acao!=='None')body+=`<div class="gm-field full"><div class="gm-flbl">Ação / Plano de Correção</div><div class="gm-fval pre">${gpEsc(d.acao)}</div></div>`;
+    if(d.situacao_interna)  body+=`<div class="gm-field full"><div class="gm-flbl">Situação / Descrição Técnica</div><div class="gm-fval pre">${gpEsc(d.situacao_interna)}</div></div>`;
+    if(d.devolutiva&&d.devolutiva!=='n/a'&&d.devolutiva!=='None')
+      body+=`<div class="gm-field full"><div class="gm-flbl">Devolutiva Everymind</div><div class="gm-fval pre">${gpEsc(d.devolutiva)}</div></div>`;
+    if(d.acao&&d.acao!=='n/a'&&d.acao!=='None')
+      body+=`<div class="gm-field full"><div class="gm-flbl">Ação / Plano de Correção</div><div class="gm-fval pre">${gpEsc(d.acao)}</div></div>`;
     body+=`</div></div>`;
   }
 
@@ -1043,10 +1252,9 @@ function gpOpenModal(id){
   }
 
   // Timeline
-  body+=`<div class="gm-section"><div class="gm-section-lbl">Linha do Tempo</div>
-  <div>
+  body+=`<div class="gm-section"><div class="gm-section-lbl">Linha do Tempo</div><div>
     <div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--blue)"></div><div><div class="gm-tl-txt">Identificado por <strong>${gpEsc(gpFirstN(b.responsavel_criacao))}</strong></div><div class="gm-tl-date">${gpEsc(b.data)}</div></div></div>
-    ${d.coluna_kanban?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--gray-m)"></div><div><div class="gm-tl-txt">Coluna board dev: <strong>${gpEsc(d.coluna_kanban)}</strong></div></div></div>`:''}
+    ${d.coluna_kanban?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--gray-m)"></div><div><div class="gm-tl-txt">Board dev: <strong>${gpEsc(d.coluna_kanban)}</strong></div></div></div>`:''}
     <div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--green)"></div><div><div class="gm-tl-txt">Status planilha: <strong>${gpEsc(b.status)}</strong></div></div></div>
     ${bc?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:#456080"></div><div><div class="gm-tl-txt">Status board: <strong>${gpEsc(BOARD_STATUS_LABEL[bc.status]||bc.status)}</strong></div></div></div>`:''}
     ${c.resposta_algar?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:#8B4545"></div><div><div class="gm-tl-txt" style="color:#c07070;"><strong>Devolutiva contestada pelo Algar</strong></div></div></div>`:''}
@@ -1057,6 +1265,7 @@ function gpOpenModal(id){
   document.getElementById('gm-body').innerHTML=body;
   document.getElementById('gp-modal-overlay').classList.add('open');
 }
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     document.getElementById('gp-modal-overlay')?.classList.remove('open');
@@ -1064,154 +1273,43 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-// ── UPLOAD MODAL ─────────────────────────────────
-function openUploadModal(){
-  document.getElementById('upload-modal-overlay').classList.add('open');
-  document.getElementById('um-file-selected').style.display='none';
-  document.getElementById('um-progress').style.display='none';
-  document.getElementById('um-btn-load').disabled=true;
-  window._gpSelectedFile=null;
-}
-function closeUploadModal(){
-  document.getElementById('upload-modal-overlay').classList.remove('open');
-}
-
-function handleFileSelect(input){
-  const file=input.files[0];
-  if(!file)return;
-  if(!file.name.match(/\.(xlsx|xls)$/i)){
-    alert('Selecione um arquivo .xlsx ou .xls'); input.value=''; return;
-  }
-  window._gpSelectedFile=file;
-  const sel=document.getElementById('um-file-selected');
-  sel.style.display='flex';
-  sel.innerHTML=`📄 <strong>${file.name}</strong> <span style="color:var(--gray-m)">(${(file.size/1024).toFixed(0)} KB)</span>`;
-  document.getElementById('um-btn-load').disabled=false;
-}
-
-async function processUpload(){
-  const file=window._gpSelectedFile;
-  if(!file)return;
-  const btn=document.getElementById('um-btn-load');
-  btn.disabled=true; btn.textContent='Processando...';
-  const prog=document.getElementById('um-progress');
-  const fill=document.getElementById('um-progress-fill');
-  const ptxt=document.getElementById('um-progress-text');
-  prog.style.display='block'; fill.style.width='10%'; ptxt.textContent='Lendo arquivo...';
-
-  try{
-    const XLSX=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
-    fill.style.width='30%'; ptxt.textContent='Parseando planilha...';
-    const ab=await file.arrayBuffer();
-    const wb=XLSX.read(ab,{type:'array',cellDates:true});
-
-    fill.style.width='50%'; ptxt.textContent='Processando abas...';
-
-    // Main sheet: Gestão de Bugs
-    const wsMain=wb.Sheets['Gestão de Bugs'];
-    if(!wsMain)throw new Error('Aba "Gestão de Bugs" não encontrada');
-    const mainRows=XLSX.utils.sheet_to_json(wsMain,{header:1,defval:''});
-
-    // Detail sheets
-    const detailSheets={'Bugs':['cod','coluna_kanban','situacao_interna','devolutiva'],'Bugs Conta':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],'Bugs Contato':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],'Bugs Lead':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica']};
-    const detailMap={};
-    for(const[sn,cols] of Object.entries(detailSheets)){
-      const ws=wb.Sheets[sn]; if(!ws)continue;
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      rows.slice(1).forEach(r=>{
-        if(!r[0])return;
-        const cid=String(r[0]).trim();
-        const entry={sheet:sn};
-        cols.forEach((c,i)=>entry[c]=String(r[i]||'').trim().replace(/\xa0/g,' '));
-        if(!detailMap[cid])detailMap[cid]=entry;
-        else Object.assign(detailMap[cid],Object.fromEntries(Object.entries(entry).filter(([,v])=>v)));
-      });
-    }
-
-    // Devolutivas
-    const wsDev=wb.Sheets['Devolutivas não aceitas Algar'];
-    const devMap={};
-    if(wsDev){
-      const dRows=XLSX.utils.sheet_to_json(wsDev,{header:1,defval:''});
-      dRows.slice(1).forEach(r=>{
-        if(!r[0])return;
-        devMap[String(r[0]).trim()]={situacao:String(r[2]||''),devolutiva_dev:String(r[3]||''),resposta_algar:String(r[4]||'')};
-      });
-    }
-
-    fill.style.width='75%'; ptxt.textContent='Construindo registros...';
-
-    const bugs=[];
-    mainRows.slice(1).forEach(r=>{
-      if(!r[0])return;
-      const id=String(r[0]).trim();
-      let data='';
-      if(r[4] instanceof Date)data=r[4].toLocaleDateString('pt-BR');
-      else if(r[4])data=String(r[4]);
-      bugs.push({
-        id,descricao:String(r[1]||''),status:String(r[2]||''),prioridade:String(r[3]||''),
-        data,responsavel_criacao:String(r[5]||''),ponto_focal:String(r[6]||''),
-        frente:String(r[7]||''),us:String(r[8]||''),desc_us:String(r[9]||''),
-        cnt_every:String(r[10]||''),status_us:String(r[11]||''),
-        esforco:String(r[12]||''),prazo:String(r[13]||''),responsavel_fix:String(r[14]||''),
-        detail:detailMap[id]||{},contestado:devMap[id]&&devMap[id].resposta_algar?devMap[id]:{}
-      });
-    });
-
-    fill.style.width='90%'; ptxt.textContent='Salvando...';
-    gpData=bugs;
-    gpActive=[...bugs];
-    gpSave();
-    localStorage.setItem(GP_META_KEY,JSON.stringify({loaded_at:new Date().toLocaleString('pt-BR'),file:file.name,total:bugs.length}));
-
-    fill.style.width='100%'; ptxt.textContent=`✓ ${bugs.length} bugs carregados com sucesso`;
-
-    // Sync board immediately after load
+// ── INIT ─────────────────────────────────────────
+// Runs on first click of the GP tab
+async function initGP(){
+  gpLoadMeta();
+  const hasData=gpLoadFromStorage();
+  if(hasData&&gpData.length){
     await gpRefreshFromBoard();
     gpRender();
-
-    const dot=document.getElementById('gp-sync-dot');
-    const lbl=document.getElementById('gp-sync-label');
-    if(dot)dot.style.background='#6B8E6B';
-    if(lbl)lbl.textContent=`${file.name} · ${bugs.length} bugs · carregado às ${new Date().toLocaleTimeString('pt-BR')}`;
-
-    setTimeout(closeUploadModal,1200);
-  }catch(err){
-    ptxt.textContent='❌ Erro: '+err.message;
-    fill.style.background='#8B4545';
-    btn.disabled=false; btn.innerHTML='↑ Tentar Novamente';
-    console.error(err);
+  } else {
+    // Show empty state
+    gpRender();
   }
 }
 
-// ── INIT GP ──────────────────────────────────────
-function initGP(){
-  gpLoad();
-  if(gpData.length){
-    gpRefreshFromBoard().then(()=>gpRender());
-  }
-}
-
-// Hook into showTab to init GP on first visit
-const _origShowTab=showTab;
-showTab=function(name){
-  _origShowTab(name);
-  if(name==='gp'&&!window._gpInited){ window._gpInited=true; initGP(); }
-};
-
-// Also hook renderBoard to update gpBoardMap whenever board reloads
-const _origRenderBoard=window.renderBoard;
-if(_origRenderBoard){
-  window.renderBoard=function(...args){
-    _origRenderBoard.apply(this,args);
-    if(gpData.length){
-      // Rebuild board map
-      gpBoardMap={};
-      if(window.cards)window.cards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
-      if(window._gpInited)gpRender();
-    }
+// ── TAB HOOK ─────────────────────────────────────
+// Wrap showTab AFTER it's defined by the main script
+// We use setTimeout(0) to ensure the main script has fully executed first
+setTimeout(()=>{
+  const _orig=window.showTab;
+  window.showTab=function(name){
+    _orig.call(this,name);
+    if(name==='gp'&&!window._gpInited){ window._gpInited=true; initGP(); }
   };
-}
+
+  // Also hook renderBoard so board updates reflect in GP table
+  const _origRB=window.renderBoard;
+  if(typeof _origRB==='function'){
+    window.renderBoard=function(...args){
+      _origRB.apply(this,args);
+      if(window.cards&&gpData.length){
+        gpBoardMap={};
+        window.cards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
+        if(window._gpInited){ gpRenderTable(gpActive.length?gpActive:gpData); }
+      }
+    };
+  }
+},0);
 
 </script>
 
