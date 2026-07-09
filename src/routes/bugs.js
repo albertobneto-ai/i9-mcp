@@ -27,6 +27,7 @@ router.get('/init', async (req, res) => {
     )`);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bug_status ON bug_cards(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bug_code ON bug_cards(code)');
+    await pool.query(`ALTER TABLE bug_cards ADD COLUMN IF NOT EXISTS dev_action TEXT`);
     res.json({ status: 'ok', table: 'bug_cards' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -89,6 +90,7 @@ router.patch('/:id', async (req, res) => {
     if (status) { sets.push(`status = $${idx++}`); vals.push(status); }
     if (notes !== undefined) { sets.push(`notes = $${idx++}`); vals.push(notes); }
     if (req.body.blocked !== undefined) { sets.push(`blocked = $${idx++}`); vals.push(req.body.blocked || null); }
+    if (req.body.dev_action !== undefined) { sets.push(`dev_action = $${idx++}`); vals.push(req.body.dev_action || null); }
     for (const f of ['dev_h','margin_h','unit_h','func_h','total_h']) {
       if (req.body[f] !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(req.body[f]); }
     }
