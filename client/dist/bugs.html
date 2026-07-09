@@ -146,6 +146,83 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
 .time-cell.total .tc-val{color:var(--white);}
 .col-body::-webkit-scrollbar{width:3px;}.col-body::-webkit-scrollbar-track{background:transparent;}.col-body::-webkit-scrollbar-thumb{background:var(--gray-l);border-radius:3px;}
 @media(max-width:1100px){.g4{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr;}.g2{grid-template-columns:1fr;}}
+
+/* ── GP TAB ── */
+.gp-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.gp-fix{background:rgba(70,90,200,.15);color:#8898ee;border:1px solid rgba(70,90,200,.3);}
+.gp-hom{background:rgba(74,106,74,.15);color:#6B8E6B;border:1px solid rgba(74,106,74,.3);}
+.gp-reft{background:rgba(69,96,128,.15);color:#7aaad0;border:1px solid rgba(69,96,128,.3);}
+.gp-ret{background:rgba(122,101,48,.2);color:#c8a050;border:1px solid rgba(122,101,48,.3);}
+.gp-pronto{background:rgba(50,110,90,.15);color:#60b890;border:1px solid rgba(50,110,90,.3);}
+.gp-testes{background:rgba(100,70,140,.15);color:#b090d8;border:1px solid rgba(100,70,140,.3);}
+.gp-dev{background:rgba(60,90,130,.15);color:#80b0d0;border:1px solid rgba(60,90,130,.3);}
+.gp-cancel{background:rgba(80,80,80,.15);color:#909090;border:1px solid rgba(80,80,80,.3);}
+.gp-back{background:rgba(139,69,69,.15);color:#c07070;border:1px solid rgba(139,69,69,.3);}
+.gp-pma{background:rgba(139,69,69,.18);color:#d07070;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700;}
+.gp-pa{background:rgba(130,90,40,.18);color:#c09050;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700;}
+.gp-pm{background:rgba(120,110,30,.18);color:#b8a840;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700;}
+.gp-pb{background:rgba(50,100,70,.18);color:#70aa80;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700;}
+.gp-fl{background:rgba(60,60,180,.12);color:#8090d8;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:600;}
+.gp-fc{background:rgba(50,90,140,.12);color:#7090c0;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:600;}
+.gp-fco{background:rgba(90,60,140,.12);color:#9080c0;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:600;}
+.gp-trow{border-bottom:1px solid var(--gray-d);cursor:pointer;transition:background .1s;}
+.gp-trow:hover td{background:rgba(255,255,255,.03);}
+.gp-td{padding:9px 12px;font-size:11px;color:var(--gray-s);vertical-align:middle;}
+.gp-id{font-family:monospace;font-size:11px;font-weight:700;color:#8090d8;}
+.gp-desc{color:var(--gray-l);max-width:260px;line-height:1.3;}
+.gp-sync-ok{color:#6B8E6B;} .gp-sync-diff{color:#c07070;} .gp-sync-none{color:var(--gray-m);}
+/* UPLOAD MODAL */
+#upload-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#upload-modal-overlay.open{display:flex;}
+#upload-modal{background:var(--dark);border:1px solid var(--gray-d);border-radius:12px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.um-header{background:var(--black);border-bottom:1px solid var(--gray-d);padding:16px 20px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.um-title{font-size:13px;font-weight:700;color:var(--white);}
+.um-close{background:var(--gray-d);border:none;color:var(--gray-s);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.um-close:hover{background:var(--gray-m);color:var(--white);}
+.um-body{padding:22px;}
+.um-drop{border:2px dashed var(--gray-d);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.um-drop:hover,.um-drop.drag{border-color:var(--gray-s);background:rgba(255,255,255,.02);}
+.um-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.um-drop-icon{font-size:32px;margin-bottom:10px;}
+.um-drop-text{font-size:12px;color:var(--gray-s);margin-bottom:4px;}
+.um-drop-hint{font-size:10px;color:var(--gray-m);}
+.um-file-selected{background:rgba(74,106,74,.12);border:1px solid rgba(74,106,74,.3);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:11px;color:var(--gray-s);display:none;align-items:center;gap:10px;}
+.um-progress{margin-top:12px;display:none;}
+.um-progress-bar{height:4px;background:var(--gray-d);border-radius:2px;overflow:hidden;margin-top:6px;}
+.um-progress-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s;}
+.um-progress-text{font-size:10px;color:var(--gray-m);}
+.um-footer{display:flex;gap:10px;padding:0 22px 20px;justify-content:flex-end;}
+.um-btn-cancel{background:var(--gray-d);border:none;color:var(--gray-s);border-radius:7px;padding:8px 18px;font-size:11px;cursor:pointer;font-family:inherit;}
+.um-btn-cancel:hover{background:var(--gray-m);}
+.um-btn-load{background:var(--black);border:1px solid var(--gray-d);color:var(--white);border-radius:7px;padding:8px 18px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;}
+.um-btn-load:hover:not(:disabled){background:#222;}
+.um-btn-load:disabled{opacity:.4;cursor:not-allowed;}
+/* GP MODAL */
+#gp-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:998;align-items:flex-start;justify-content:center;padding:40px 16px;backdrop-filter:blur(3px);overflow-y:auto;}
+#gp-modal-overlay.open{display:flex;}
+#gp-modal{background:var(--dark);border:1px solid var(--gray-d);border-radius:12px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.gm-header{background:var(--black);border-bottom:1px solid var(--gray-d);padding:16px 20px;border-radius:12px 12px 0 0;position:sticky;top:40px;}
+.gm-id-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+.gm-title{font-size:13px;font-weight:700;color:var(--white);line-height:1.3;}
+.gm-body{padding:20px;}
+.gm-section{margin-bottom:16px;}
+.gm-section-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-m);padding-bottom:6px;border-bottom:1px solid var(--gray-d);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.gm-section-lbl::before{content:'';width:2px;height:10px;background:var(--white);border-radius:1px;display:inline-block;}
+.gm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.gm-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.gm-field{background:rgba(255,255,255,.03);border:1px solid var(--gray-d);border-radius:6px;padding:10px 12px;}
+.gm-field.full{grid-column:1/-1;}
+.gm-flbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-m);font-weight:600;margin-bottom:4px;}
+.gm-fval{font-size:11px;color:var(--gray-s);line-height:1.4;}
+.gm-fval.mono{font-family:monospace;color:#8090d8;font-weight:700;}
+.gm-fval.pre{white-space:pre-wrap;font-size:10.5px;max-height:180px;overflow-y:auto;color:var(--gray-s);}
+.gm-contested{background:rgba(139,69,69,.06);border:1px solid rgba(139,69,69,.2);border-left:3px solid #8B4545;border-radius:6px;padding:12px 14px;margin-top:8px;}
+.gm-contested-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:5px;}
+.gm-tl-row{display:flex;gap:10px;margin-bottom:7px;}
+.gm-tl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.gm-tl-txt{font-size:11px;color:var(--gray-s);}
+.gm-tl-date{font-size:10px;color:var(--gray-m);}
+
 </style>
 </head>
 <body>
@@ -160,6 +237,7 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
   <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
   <button class="tab-btn" onclick="showTab('board')">Board</button>
   <button class="tab-btn" onclick="showTab('equalizacao')">Equalização</button>
+  <button class="tab-btn" onclick="showTab('gp')">Gestão de Bugs</button>
 </div>
 <div class="tab-content active" id="tab-dashboard"><div class="dash" id="dashContent"><div style="padding:40px;color:var(--gray-m);">Carregando dashboard...</div></div></div>
 <div class="tab-content" id="tab-board"><div class="board" id="board"></div></div>
@@ -198,6 +276,87 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
     </div>
   </div>
 </div>
+
+<div class="tab-content" id="tab-gp">
+<div class="dash">
+
+<!-- GP TOOLBAR -->
+<div style="display:flex;align-items:center;gap:10px;padding:14px 4px 10px;flex-wrap:wrap;">
+  <span style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);">Gestão de Bugs GP</span>
+  <span id="gp-sync-info" style="font-size:10px;color:var(--gray-m);background:var(--dark);padding:2px 8px;border-radius:4px;">
+    <span id="gp-sync-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#888;margin-right:4px;vertical-align:middle;"></span>
+    <span id="gp-sync-label">sem planilha carregada</span>
+  </span>
+  <button onclick="openUploadModal()" style="margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--black);color:var(--white);border:1px solid var(--gray-d);border-radius:7px;padding:8px 16px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.3px;transition:all .15s;" onmouseover="this.style.background='#222'" onmouseout="this.style.background='var(--black)'">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v8M4 4l3-3 3 3M2 11h10"/></svg>
+    Atualizar Planilha
+  </button>
+  <button onclick="gpRefreshFromBoard()" title="Sincronizar com status do board" style="display:flex;align-items:center;gap:6px;background:var(--dark);color:var(--gray-s);border:1px solid var(--gray-d);border-radius:7px;padding:8px 12px;font-size:11px;cursor:pointer;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--gray-s)'">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 6.5A5 5 0 0 1 11 3.5M11.5 6.5A5 5 0 0 1 2 9.5"/><path d="M9 3l2 .5.5-2M4 10l-2-.5-.5 2"/></svg>
+    Sincronizar Board
+  </button>
+</div>
+
+<!-- GP ALERT -->
+<div id="gp-alert" style="display:none;background:rgba(139,69,69,.08);border:1px solid rgba(139,69,69,.25);border-left:3px solid #8B4545;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--gray-m);"></div>
+
+<!-- GP KPI STRIP -->
+<div class="dash-grid g4" id="gp-kpis" style="padding-top:0;margin-bottom:10px;"></div>
+
+<!-- GP CHARTS ROW -->
+<div class="dash-grid g2" style="padding-top:0;margin-bottom:10px;">
+  <div class="chart-card" id="gp-status-chart"><div style="padding:20px;color:var(--gray-m);font-size:11px;">Carregando...</div></div>
+  <div class="chart-card" id="gp-frente-chart"><div style="padding:20px;color:var(--gray-m);font-size:11px;">Carregando...</div></div>
+</div>
+
+<!-- GP PRIO ROW -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;" id="gp-prios"></div>
+
+<!-- GP MATRIX -->
+<div class="chart-card" style="margin-bottom:10px;overflow-x:auto;" id="gp-matrix"></div>
+
+<!-- GP FILTERS + TABLE -->
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;padding:4px 0;">
+  <input id="gp-search" oninput="gpFilter()" placeholder="🔍  Buscar ID, descrição, US..." style="background:var(--dark);border:1px solid var(--gray-d);color:var(--white);border-radius:6px;padding:6px 10px;font-size:11px;width:220px;font-family:inherit;">
+  <select id="gp-fstatus" onchange="gpFilter()" style="background:var(--dark);border:1px solid var(--gray-d);color:var(--gray-s);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;">
+    <option value="">Todos Status</option>
+    <option>Correção em testes unitários</option><option>Homologado</option><option>Ref Téc</option>
+    <option>Em testes</option><option>Liberado para Reteste Algar</option>
+    <option>Pronto para Homologação (QA+PO Algar)</option><option>BackLog</option>
+    <option>Cancelado</option><option>Pronto Dev</option>
+  </select>
+  <select id="gp-fprio" onchange="gpFilter()" style="background:var(--dark);border:1px solid var(--gray-d);color:var(--gray-s);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;">
+    <option value="">Todas Prioridades</option>
+    <option>Muito Alta</option><option>Alta</option><option>Média</option><option>Baixa</option>
+  </select>
+  <select id="gp-ffrente" onchange="gpFilter()" style="background:var(--dark);border:1px solid var(--gray-d);color:var(--gray-s);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;">
+    <option value="">Todas as Frentes</option>
+    <option>Gestão de Leads</option><option>Gestão de Contas</option><option>Gestão de Contatos</option>
+  </select>
+  <button onclick="gpClearFilters()" style="background:var(--gray-d);border:none;color:var(--gray-s);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit;">✕</button>
+  <span id="gp-count" style="margin-left:auto;font-size:10px;color:var(--gray-m);"></span>
+</div>
+<div style="background:var(--dark);border:1px solid var(--gray-d);border-radius:8px;overflow:hidden;overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;min-width:900px;" id="gp-table">
+    <thead>
+      <tr style="background:var(--black);">
+        <th onclick="gpSort(0)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;white-space:nowrap;">ID ↕</th>
+        <th onclick="gpSort(1)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;">Descrição ↕</th>
+        <th onclick="gpSort(2)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;white-space:nowrap;">Status ↕</th>
+        <th style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;white-space:nowrap;">Status Board</th>
+        <th onclick="gpSort(3)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;white-space:nowrap;">Prioridade ↕</th>
+        <th onclick="gpSort(4)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;white-space:nowrap;">Data ↕</th>
+        <th onclick="gpSort(5)" style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;cursor:pointer;white-space:nowrap;">Frente ↕</th>
+        <th style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;white-space:nowrap;">US</th>
+        <th style="padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);text-align:left;white-space:nowrap;">Resp. Fix</th>
+      </tr>
+    </thead>
+    <tbody id="gp-tbody"></tbody>
+  </table>
+</div>
+</div><!-- /dash -->
+</div><!-- /tab-gp -->
+
 <script>
 const API='/api/bugs';
 const COLS=[
@@ -554,6 +713,553 @@ async function loadStats(){try{const r=await fetch(API+'/stats');stats=await r.j
 async function loadAll(){await Promise.all([loadCards(),loadStats()]);}
 setInterval(loadAll,30000);
 loadAll();
+
+// ══════════════════════════════════════════════════
+// GP — GESTÃO DE BUGS
+// ══════════════════════════════════════════════════
+let gpData = [];       // from spreadsheet (localStorage)
+let gpActive = [];     // filtered
+let gpBoardMap = {};   // code → board card (from /api/bugs)
+let gpSortCol = -1, gpSortAsc = true;
+
+const GP_STORE_KEY = 'gp_bugs_data_v1';
+const GP_META_KEY  = 'gp_bugs_meta_v1';
+
+// Status map: planilha → board status label
+const GP_STATUS_MAP = {
+  'Correção em testes unitários':'EM_TESTES_UNITARIOS',
+  'Homologado':'CONCLUIDO',
+  'Ref Téc':'EM_ANALISE',
+  'Liberado para Reteste Algar':'EM_TESTES_FUNCIONAIS',
+  'Pronto para Homologação (QA+PO Algar)':'AGUARDANDO_DEPLOY',
+  'Em testes':'EM_TESTES_UNITARIOS',
+  'Pronto Dev':'AGUARDANDO_DEPLOY',
+  'Cancelado':'FORA_DO_ESCOPO',
+  'BackLog':'BACKLOG'
+};
+
+const BOARD_STATUS_LABEL = {
+  'BACKLOG':'Backlog','EM_ANALISE':'Em Análise','EM_DESENVOLVIMENTO':'Em Dev',
+  'AGUARDANDO_DEPLOY':'Ag. Deploy','AGUARDANDO_PASSOS_MANUAIS':'Ag. Manual',
+  'DEPLOY_EXECUTADO':'Deploy Exec.','CORRECAO_APLICADA':'Correção Aplic.',
+  'EM_TESTES_UNITARIOS':'Em Testes Unit.','EM_TESTES_FUNCIONAIS':'Em Testes Func.',
+  'CONCLUIDO':'Concluído','FORA_DO_ESCOPO':'Fora Escopo'
+};
+
+function gpEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function gpFirstN(s){ if(!s)return'—'; const p=s.trim().split(/\s+/); return p.length<2?s:p[0]+' '+p[p.length-1]; }
+
+function gpStatusBadge(s){
+  const m={
+    'Correção em testes unitários':['gp-fix','Em Correção'],
+    'Homologado':['gp-hom','Homologado'],
+    'Ref Téc':['gp-reft','Ref Téc'],
+    'Liberado para Reteste Algar':['gp-ret','Reteste Algar'],
+    'Pronto para Homologação (QA+PO Algar)':['gp-pronto','Pronto HML'],
+    'Em testes':['gp-testes','Em Testes'],
+    'Pronto Dev':['gp-dev','Pronto Dev'],
+    'Cancelado':['gp-cancel','Cancelado'],
+    'BackLog':['gp-back','BackLog'],
+  };
+  const [c,l]=m[s]||['gp-reft',s||'—'];
+  return `<span class="gp-badge ${c}">${gpEsc(l)}</span>`;
+}
+function gpPrioBadge(p){
+  const m={'Muito Alta':'gp-pma','Alta':'gp-pa','Média':'gp-pm','Baixa':'gp-pb'};
+  return `<span class="${m[p]||'gp-pm'}">${gpEsc(p||'—')}</span>`;
+}
+function gpFrenteBadge(f){
+  const m={'Gestão de Leads':'gp-fl','Gestão de Contas':'gp-fc','Gestão de Contatos':'gp-fco'};
+  return `<span class="${m[f]||'gp-fl'}">${gpEsc(f||'—')}</span>`;
+}
+function gpBoardBadge(code){
+  const c=gpBoardMap[code];
+  if(!c)return'<span style="color:var(--gray-m);font-size:9px;">—</span>';
+  const lbl=BOARD_STATUS_LABEL[c.status]||c.status;
+  const cols={CONCLUIDO:'#6B8E6B',CORRECAO_APLICADA:'#6B8E6B',FORA_DO_ESCOPO:'#767676',BACKLOG:'#8B4545'};
+  const col=cols[c.status]||'#456080';
+  return `<span style="font-size:9px;font-weight:700;color:${col};background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:2px 6px;">${gpEsc(lbl)}</span>`;
+}
+
+// ── RENDER ───────────────────────────────────────
+function gpRenderKPIs(){
+  const d=gpData;
+  const cnt=(fn)=>d.filter(fn).length;
+  const total=d.length;
+  const fix=cnt(b=>b.status==='Correção em testes unitários');
+  const hom=cnt(b=>b.status==='Homologado');
+  const back=cnt(b=>b.status==='BackLog');
+  const ma=cnt(b=>b.prioridade==='Muito Alta');
+  const board_match=d.filter(b=>gpBoardMap[b.id]).length;
+  document.getElementById('gp-kpis').innerHTML=`
+    <div class="kpi dark"><div class="kpi-label">Total Bugs</div><div class="kpi-value">${total}</div><div class="kpi-sub">todas as frentes</div></div>
+    <div class="kpi dark" style="border-top:2px solid #8B4545;"><div class="kpi-label">Em Correção</div><div class="kpi-value" style="color:#c07070;">${fix}</div><div class="kpi-sub">testes unitários</div></div>
+    <div class="kpi dark" style="border-top:2px solid #4A6A4A;"><div class="kpi-label">Homologados</div><div class="kpi-value" style="color:#6B8E6B;">${hom}</div><div class="kpi-sub">aprovados</div></div>
+    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>
+  `;
+  document.getElementById('gp-alert').style.display=ma>0?'block':'none';
+  document.getElementById('gp-alert').innerHTML=`⚠ <strong>${ma} bugs Muito Alta</strong> em aberto · <strong>${fix} em correção</strong> aguardando próxima janela HML · ${board_match} sincronizados com o board`;
+}
+
+function gpRenderCharts(){
+  // Status bars
+  const statusCounts={};
+  gpData.forEach(b=>{ statusCounts[b.status]=(statusCounts[b.status]||0)+1; });
+  const sorted=Object.entries(statusCounts).sort((a,b)=>b[1]-a[1]);
+  const maxS=sorted[0]?.[1]||1;
+  const sBars=sorted.map(([s,c])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="width:130px;font-size:10px;color:var(--gray-s);text-align:right;flex-shrink:0;line-height:1.2;">${gpEsc(s==='Correção em testes unitários'?'Em Correção':s==='Pronto para Homologação (QA+PO Algar)'?'Pronto HML':s)}</div>
+      <div style="flex:1;background:var(--gray-d);border-radius:3px;height:16px;">
+        <div style="height:100%;border-radius:3px;background:var(--blue);width:${Math.round(c/maxS*100)}%;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);min-width:20px;">${c}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('gp-status-chart').innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;padding-left:2px;">Status dos Bugs</div>${sBars}`;
+
+  // Frente bars
+  const fc={'Gestão de Leads':0,'Gestão de Contas':0,'Gestão de Contatos':0};
+  gpData.forEach(b=>{ if(fc[b.frente]!==undefined)fc[b.frente]++; });
+  const maxF=Math.max(...Object.values(fc),1);
+  const fBars=Object.entries(fc).map(([f,c])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:110px;font-size:10px;color:var(--gray-s);text-align:right;flex-shrink:0;">${f.replace('Gestão de ','')}</div>
+      <div style="flex:1;background:var(--gray-d);border-radius:3px;height:20px;">
+        <div style="height:100%;border-radius:3px;background:var(--blue);width:${Math.round(c/maxF*100)}%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);min-width:20px;">${c}</div>
+      </div>
+      <div style="font-size:10px;color:var(--gray-m);width:30px;">${Math.round(c/gpData.length*100)}%</div>
+    </div>`).join('');
+  document.getElementById('gp-frente-chart').innerHTML=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;padding-left:2px;">Por Frente</div>${fBars}`;
+
+  // Prio cards
+  const prios=[['Muito Alta','#c07070','🔴'],['Alta','#c09050','🟠'],['Média','#c8b050','🟡'],['Baixa','#70aa80','🟢']];
+  document.getElementById('gp-prios').innerHTML=prios.map(([p,col,ic])=>{
+    const c=gpData.filter(b=>b.prioridade===p).length;
+    return `<div class="kpi dark" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
+      <div style="font-size:20px;">${ic}</div>
+      <div><div style="font-size:24px;font-weight:800;color:${col};line-height:1;">${c}</div>
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-m);margin-top:2px;">${p}</div></div>
+    </div>`;
+  }).join('');
+
+  // Matrix
+  const frentes=['Gestão de Leads','Gestão de Contas','Gestão de Contatos'];
+  const statuses2=['Em Correção','Homologado','Ref Téc','Em Testes','Reteste','Pronto HML','BackLog','Cancel.'];
+  const statusKeys=['Correção em testes unitários','Homologado','Ref Téc','Em testes','Liberado para Reteste Algar','Pronto para Homologação (QA+PO Algar)','BackLog','Cancelado'];
+  let mt=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Matriz Frente × Status</div>
+  <table style="width:100%;border-collapse:collapse;min-width:600px;font-size:10px;">
+  <tr style="background:var(--black);">
+    <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:600;color:var(--gray-m);letter-spacing:.5px;">Frente</th>
+    ${statuses2.map(s=>`<th style="padding:7px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--gray-m);letter-spacing:.5px;white-space:nowrap;">${s}</th>`).join('')}
+    <th style="padding:7px 10px;text-align:center;font-size:9px;font-weight:700;color:var(--gray-s);">Total</th>
+  </tr>`;
+  let totals=new Array(statusKeys.length).fill(0), grandTotal=0;
+  frentes.forEach(fr=>{
+    const row=gpData.filter(b=>b.frente===fr);
+    const rowT=row.length; grandTotal+=rowT;
+    mt+=`<tr style="border-bottom:1px solid var(--gray-d);">
+      <td style="padding:9px 10px;font-size:10px;font-weight:600;color:var(--gray-l);white-space:nowrap;">${fr.replace('Gestão de ','')}</td>`;
+    statusKeys.forEach((sk,i)=>{
+      const c=row.filter(b=>b.status===sk).length;
+      totals[i]+=c;
+      mt+=`<td style="padding:9px 8px;text-align:center;font-weight:700;color:${c>0?(sk==='Correção em testes unitários'?'#c07070':sk==='Homologado'?'#6B8E6B':'var(--gray-s)'):'var(--gray-d)'};">${c||'—'}</td>`;
+    });
+    mt+=`<td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${rowT}</td></tr>`;
+  });
+  mt+=`<tr style="background:rgba(255,255,255,.02);">
+    <td style="padding:9px 10px;font-weight:800;color:var(--white);font-size:10px;">TOTAL</td>
+    ${totals.map((c,i)=>`<td style="padding:9px 8px;text-align:center;font-weight:800;color:${i===0?'#c07070':i===1?'#6B8E6B':'var(--gray-s)'};">${c}</td>`).join('')}
+    <td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${grandTotal}</td>
+  </tr></table>`;
+  document.getElementById('gp-matrix').innerHTML=mt;
+}
+
+function gpRenderTable(data){
+  const tbody=document.getElementById('gp-tbody');
+  tbody.innerHTML=data.map(b=>`
+    <tr class="gp-trow" onclick="gpOpenModal('${gpEsc(b.id)}')">
+      <td class="gp-td"><span class="gp-id">${gpEsc(b.id)}</span>${b.contestado?'<span style="color:#c07070;font-size:9px;margin-left:4px;" title="Devolutiva contestada">⚠</span>':''}</td>
+      <td class="gp-td gp-desc" style="max-width:240px;line-height:1.3;">${gpEsc(b.descricao)}</td>
+      <td class="gp-td">${gpStatusBadge(b.status)}</td>
+      <td class="gp-td">${gpBoardBadge(b.id)}</td>
+      <td class="gp-td">${gpPrioBadge(b.prioridade)}</td>
+      <td class="gp-td" style="white-space:nowrap;font-size:10px;color:var(--gray-m);">${gpEsc(b.data)}</td>
+      <td class="gp-td">${gpFrenteBadge(b.frente)}</td>
+      <td class="gp-td" style="font-family:monospace;font-size:10px;color:#8090d8;font-weight:700;">${gpEsc(b.us||'—')}</td>
+      <td class="gp-td" style="font-size:10px;color:var(--gray-m);">${gpEsc(gpFirstN(b.responsavel_fix||b.responsavel_criacao))}</td>
+    </tr>`).join('');
+  document.getElementById('gp-count').textContent=data.length+' bugs';
+}
+
+// ── FILTER / SORT ─────────────────────────────────
+function gpFilter(){
+  const s=document.getElementById('gp-search').value.toLowerCase();
+  const st=document.getElementById('gp-fstatus').value;
+  const pr=document.getElementById('gp-fprio').value;
+  const fr=document.getElementById('gp-ffrente').value;
+  gpActive=gpData.filter(b=>{
+    if(s&&!b.id.toLowerCase().includes(s)&&!b.descricao.toLowerCase().includes(s)&&!(b.us||'').toLowerCase().includes(s))return false;
+    if(st&&b.status!==st)return false;
+    if(pr&&b.prioridade!==pr)return false;
+    if(fr&&b.frente!==fr)return false;
+    return true;
+  });
+  gpRenderTable(gpActive);
+}
+function gpClearFilters(){
+  ['gp-search','gp-fstatus','gp-fprio','gp-ffrente'].forEach(id=>document.getElementById(id).value='');
+  gpActive=[...gpData]; gpRenderTable(gpActive);
+}
+function gpSort(col){
+  if(gpSortCol===col)gpSortAsc=!gpSortAsc; else{gpSortCol=col;gpSortAsc=true;}
+  const keys=['id','descricao','status','prioridade','data','frente'];
+  gpActive.sort((a,b)=>{
+    let va=(a[keys[col]]||'').toLowerCase(), vb=(b[keys[col]]||'').toLowerCase();
+    return gpSortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+  });
+  gpRenderTable(gpActive);
+}
+
+// ── SYNC WITH BOARD ──────────────────────────────
+async function gpRefreshFromBoard(){
+  try{
+    const r=await fetch(API);
+    const boardCards=await r.json();
+    gpBoardMap={};
+    boardCards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
+    // Update gp status where board has newer info
+    let updated=0;
+    gpData.forEach(b=>{
+      const bc=gpBoardMap[b.id];
+      if(bc){
+        const mappedStatus=Object.entries(GP_STATUS_MAP).find(([,v])=>v===bc.status)?.[0];
+        if(mappedStatus&&mappedStatus!==b.status){
+          b.board_status_override=bc.status;
+        }
+      }
+    });
+    gpSave(); gpRender();
+    showGpSyncStatus(Object.keys(gpBoardMap).length);
+  }catch(e){ console.error('gpRefreshFromBoard error:',e); }
+}
+function showGpSyncStatus(matched){
+  const dot=document.getElementById('gp-sync-dot');
+  const lbl=document.getElementById('gp-sync-label');
+  if(dot)dot.style.background=matched>0?'#6B8E6B':'#8B4545';
+  if(lbl)lbl.textContent=`${matched} sincronizados com o board · ${new Date().toLocaleTimeString('pt-BR')}`;
+}
+
+// ── STORAGE ──────────────────────────────────────
+function gpSave(){
+  try{localStorage.setItem(GP_STORE_KEY,JSON.stringify(gpData));}catch(e){}
+}
+function gpLoad(){
+  try{
+    const raw=localStorage.getItem(GP_STORE_KEY);
+    if(raw)gpData=JSON.parse(raw);
+    const meta=localStorage.getItem(GP_META_KEY);
+    if(meta){
+      const m=JSON.parse(meta);
+      const dot=document.getElementById('gp-sync-dot');
+      const lbl=document.getElementById('gp-sync-label');
+      if(dot)dot.style.background='#6B8E6B';
+      if(lbl)lbl.textContent=`planilha carregada em ${m.loaded_at||'?'}`;
+    }
+  }catch(e){}
+}
+
+// ── RENDER ALL ────────────────────────────────────
+function gpRender(){
+  if(!gpData.length)return;
+  gpActive=[...gpData];
+  gpRenderKPIs(); gpRenderCharts(); gpRenderTable(gpActive);
+}
+
+// ── MODAL ────────────────────────────────────────
+function gpOpenModal(id){
+  const b=gpData.find(x=>x.id===id); if(!b)return;
+  const d=b.detail||{};
+  const c=b.contestado||{};
+  const bc=gpBoardMap[b.id];
+
+  let idRow=`<span class="gp-id" style="font-size:13px;">${gpEsc(b.id)}</span>${gpStatusBadge(b.status)}${gpPrioBadge(b.prioridade)}${gpFrenteBadge(b.frente)}`;
+  if(c.resposta_algar)idRow+=`<span style="font-size:9px;font-weight:700;background:rgba(139,69,69,.2);color:#c07070;border-radius:3px;padding:2px 6px;">⚠ CONTESTADO</span>`;
+
+  let body='';
+
+  // Identificação
+  body+=`<div class="gm-section"><div class="gm-section-lbl">Identificação</div>
+  <div class="gm-grid3">
+    <div class="gm-field"><div class="gm-flbl">ID do Bug</div><div class="gm-fval mono">${gpEsc(b.id)}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Data Criação</div><div class="gm-fval">${gpEsc(b.data)||'—'}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Frente</div><div class="gm-fval">${gpEsc(b.frente||'—')}</div></div>
+  </div></div>`;
+
+  // Status (planilha + board)
+  body+=`<div class="gm-section"><div class="gm-section-lbl">Status</div>
+  <div class="gm-grid">
+    <div class="gm-field"><div class="gm-flbl">Status Planilha GP</div><div class="gm-fval">${gpStatusBadge(b.status)}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Status Board Bug Tracker</div><div class="gm-fval">${bc?`<span style="font-weight:700;color:var(--gray-l);">${gpEsc(BOARD_STATUS_LABEL[bc.status]||bc.status)}</span>`:'<span style="color:var(--gray-m);font-size:10px;">Não encontrado no board</span>'}</div></div>
+  </div></div>`;
+
+  // US & Rastreabilidade
+  body+=`<div class="gm-section"><div class="gm-section-lbl">US &amp; Rastreabilidade</div>
+  <div class="gm-grid">
+    <div class="gm-field"><div class="gm-flbl">US Impactada</div><div class="gm-fval mono">${gpEsc(b.us||'—')}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Status da US</div><div class="gm-fval">${gpEsc(b.status_us||'—')}</div></div>
+    <div class="gm-field full"><div class="gm-flbl">Descrição da US</div><div class="gm-fval">${gpEsc(b.desc_us||'—')}</div></div>
+    <div class="gm-field"><div class="gm-flbl">CNT Every</div><div class="gm-fval">${gpEsc(b.cnt_every||'—')}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Esforço</div><div class="gm-fval">${gpEsc(b.esforco||'—')}</div></div>
+  </div></div>`;
+
+  // Responsáveis
+  body+=`<div class="gm-section"><div class="gm-section-lbl">Responsáveis</div>
+  <div class="gm-grid3">
+    <div class="gm-field"><div class="gm-flbl">Criado por</div><div class="gm-fval">${gpEsc(b.responsavel_criacao||'—')}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Ponto Focal</div><div class="gm-fval">${gpEsc(b.ponto_focal||'—')}</div></div>
+    <div class="gm-field"><div class="gm-flbl">Resp. Fix</div><div class="gm-fval">${gpEsc(b.responsavel_fix||d.responsavel_tecnico||'—')}</div></div>
+  </div></div>`;
+
+  // Análise técnica
+  if(d.situacao_interna||d.devolutiva||d.acao){
+    body+=`<div class="gm-section"><div class="gm-section-lbl">Análise Técnica ${d.sheet?`— ${gpEsc(d.sheet)}`:''}</div>
+    <div class="gm-grid">`;
+    if(d.coluna_kanban)body+=`<div class="gm-field"><div class="gm-flbl">Coluna Kanban Dev</div><div class="gm-fval">${gpEsc(d.coluna_kanban)}</div></div>`;
+    if(d.prioridade_tecnica)body+=`<div class="gm-field"><div class="gm-flbl">Prioridade Técnica</div><div class="gm-fval">${gpEsc(d.prioridade_tecnica)}</div></div>`;
+    if(d.situacao_interna)body+=`<div class="gm-field full"><div class="gm-flbl">Situação / Descrição Técnica</div><div class="gm-fval pre">${gpEsc(d.situacao_interna)}</div></div>`;
+    if(d.devolutiva&&d.devolutiva!=='n/a'&&d.devolutiva!=='None')body+=`<div class="gm-field full"><div class="gm-flbl">Devolutiva Everymind</div><div class="gm-fval pre">${gpEsc(d.devolutiva)}</div></div>`;
+    if(d.acao&&d.acao!=='n/a'&&d.acao!=='None')body+=`<div class="gm-field full"><div class="gm-flbl">Ação / Plano de Correção</div><div class="gm-fval pre">${gpEsc(d.acao)}</div></div>`;
+    body+=`</div></div>`;
+  }
+
+  // Devolutiva contestada
+  if(c.resposta_algar){
+    body+=`<div class="gm-section"><div class="gm-section-lbl" style="color:#8B4545;">⚠ Devolutiva Contestada</div>
+    <div class="gm-contested">
+      <div class="gm-contested-lbl" style="color:var(--gray-m);">Devolutiva Everymind</div>
+      <div style="font-size:11px;color:var(--gray-s);margin-bottom:10px;">${gpEsc(c.devolutiva_dev||'—')}</div>
+      <div class="gm-contested-lbl" style="color:#c07070;">Resposta Algar (Não Aceita)</div>
+      <div style="font-size:11px;color:var(--gray-s);">${gpEsc(c.resposta_algar)}</div>
+    </div></div>`;
+  }
+
+  // Timeline
+  body+=`<div class="gm-section"><div class="gm-section-lbl">Linha do Tempo</div>
+  <div>
+    <div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--blue)"></div><div><div class="gm-tl-txt">Identificado por <strong>${gpEsc(gpFirstN(b.responsavel_criacao))}</strong></div><div class="gm-tl-date">${gpEsc(b.data)}</div></div></div>
+    ${d.coluna_kanban?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--gray-m)"></div><div><div class="gm-tl-txt">Coluna board dev: <strong>${gpEsc(d.coluna_kanban)}</strong></div></div></div>`:''}
+    <div class="gm-tl-row"><div class="gm-tl-dot" style="background:var(--green)"></div><div><div class="gm-tl-txt">Status planilha: <strong>${gpEsc(b.status)}</strong></div></div></div>
+    ${bc?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:#456080"></div><div><div class="gm-tl-txt">Status board: <strong>${gpEsc(BOARD_STATUS_LABEL[bc.status]||bc.status)}</strong></div></div></div>`:''}
+    ${c.resposta_algar?`<div class="gm-tl-row"><div class="gm-tl-dot" style="background:#8B4545"></div><div><div class="gm-tl-txt" style="color:#c07070;"><strong>Devolutiva contestada pelo Algar</strong></div></div></div>`:''}
+  </div></div>`;
+
+  document.getElementById('gm-id-row').innerHTML=idRow;
+  document.getElementById('gm-title').textContent=b.descricao;
+  document.getElementById('gm-body').innerHTML=body;
+  document.getElementById('gp-modal-overlay').classList.add('open');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.getElementById('gp-modal-overlay')?.classList.remove('open');
+    document.getElementById('upload-modal-overlay')?.classList.remove('open');
+  }
+});
+
+// ── UPLOAD MODAL ─────────────────────────────────
+function openUploadModal(){
+  document.getElementById('upload-modal-overlay').classList.add('open');
+  document.getElementById('um-file-selected').style.display='none';
+  document.getElementById('um-progress').style.display='none';
+  document.getElementById('um-btn-load').disabled=true;
+  window._gpSelectedFile=null;
+}
+function closeUploadModal(){
+  document.getElementById('upload-modal-overlay').classList.remove('open');
+}
+
+function handleFileSelect(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    alert('Selecione um arquivo .xlsx ou .xls'); input.value=''; return;
+  }
+  window._gpSelectedFile=file;
+  const sel=document.getElementById('um-file-selected');
+  sel.style.display='flex';
+  sel.innerHTML=`📄 <strong>${file.name}</strong> <span style="color:var(--gray-m)">(${(file.size/1024).toFixed(0)} KB)</span>`;
+  document.getElementById('um-btn-load').disabled=false;
+}
+
+async function processUpload(){
+  const file=window._gpSelectedFile;
+  if(!file)return;
+  const btn=document.getElementById('um-btn-load');
+  btn.disabled=true; btn.textContent='Processando...';
+  const prog=document.getElementById('um-progress');
+  const fill=document.getElementById('um-progress-fill');
+  const ptxt=document.getElementById('um-progress-text');
+  prog.style.display='block'; fill.style.width='10%'; ptxt.textContent='Lendo arquivo...';
+
+  try{
+    const XLSX=await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+    fill.style.width='30%'; ptxt.textContent='Parseando planilha...';
+    const ab=await file.arrayBuffer();
+    const wb=XLSX.read(ab,{type:'array',cellDates:true});
+
+    fill.style.width='50%'; ptxt.textContent='Processando abas...';
+
+    // Main sheet: Gestão de Bugs
+    const wsMain=wb.Sheets['Gestão de Bugs'];
+    if(!wsMain)throw new Error('Aba "Gestão de Bugs" não encontrada');
+    const mainRows=XLSX.utils.sheet_to_json(wsMain,{header:1,defval:''});
+
+    // Detail sheets
+    const detailSheets={'Bugs':['cod','coluna_kanban','situacao_interna','devolutiva'],'Bugs Conta':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],'Bugs Contato':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica'],'Bugs Lead':['cod','coluna_kanban','situacao_interna','devolutiva','acao','responsavel_tecnico','prioridade_tecnica']};
+    const detailMap={};
+    for(const[sn,cols] of Object.entries(detailSheets)){
+      const ws=wb.Sheets[sn]; if(!ws)continue;
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      rows.slice(1).forEach(r=>{
+        if(!r[0])return;
+        const cid=String(r[0]).trim();
+        const entry={sheet:sn};
+        cols.forEach((c,i)=>entry[c]=String(r[i]||'').trim().replace(/\xa0/g,' '));
+        if(!detailMap[cid])detailMap[cid]=entry;
+        else Object.assign(detailMap[cid],Object.fromEntries(Object.entries(entry).filter(([,v])=>v)));
+      });
+    }
+
+    // Devolutivas
+    const wsDev=wb.Sheets['Devolutivas não aceitas Algar'];
+    const devMap={};
+    if(wsDev){
+      const dRows=XLSX.utils.sheet_to_json(wsDev,{header:1,defval:''});
+      dRows.slice(1).forEach(r=>{
+        if(!r[0])return;
+        devMap[String(r[0]).trim()]={situacao:String(r[2]||''),devolutiva_dev:String(r[3]||''),resposta_algar:String(r[4]||'')};
+      });
+    }
+
+    fill.style.width='75%'; ptxt.textContent='Construindo registros...';
+
+    const bugs=[];
+    mainRows.slice(1).forEach(r=>{
+      if(!r[0])return;
+      const id=String(r[0]).trim();
+      let data='';
+      if(r[4] instanceof Date)data=r[4].toLocaleDateString('pt-BR');
+      else if(r[4])data=String(r[4]);
+      bugs.push({
+        id,descricao:String(r[1]||''),status:String(r[2]||''),prioridade:String(r[3]||''),
+        data,responsavel_criacao:String(r[5]||''),ponto_focal:String(r[6]||''),
+        frente:String(r[7]||''),us:String(r[8]||''),desc_us:String(r[9]||''),
+        cnt_every:String(r[10]||''),status_us:String(r[11]||''),
+        esforco:String(r[12]||''),prazo:String(r[13]||''),responsavel_fix:String(r[14]||''),
+        detail:detailMap[id]||{},contestado:devMap[id]&&devMap[id].resposta_algar?devMap[id]:{}
+      });
+    });
+
+    fill.style.width='90%'; ptxt.textContent='Salvando...';
+    gpData=bugs;
+    gpActive=[...bugs];
+    gpSave();
+    localStorage.setItem(GP_META_KEY,JSON.stringify({loaded_at:new Date().toLocaleString('pt-BR'),file:file.name,total:bugs.length}));
+
+    fill.style.width='100%'; ptxt.textContent=`✓ ${bugs.length} bugs carregados com sucesso`;
+
+    // Sync board immediately after load
+    await gpRefreshFromBoard();
+    gpRender();
+
+    const dot=document.getElementById('gp-sync-dot');
+    const lbl=document.getElementById('gp-sync-label');
+    if(dot)dot.style.background='#6B8E6B';
+    if(lbl)lbl.textContent=`${file.name} · ${bugs.length} bugs · carregado às ${new Date().toLocaleTimeString('pt-BR')}`;
+
+    setTimeout(closeUploadModal,1200);
+  }catch(err){
+    ptxt.textContent='❌ Erro: '+err.message;
+    fill.style.background='#8B4545';
+    btn.disabled=false; btn.innerHTML='↑ Tentar Novamente';
+    console.error(err);
+  }
+}
+
+// ── INIT GP ──────────────────────────────────────
+function initGP(){
+  gpLoad();
+  if(gpData.length){
+    gpRefreshFromBoard().then(()=>gpRender());
+  }
+}
+
+// Hook into showTab to init GP on first visit
+const _origShowTab=showTab;
+showTab=function(name){
+  _origShowTab(name);
+  if(name==='gp'&&!window._gpInited){ window._gpInited=true; initGP(); }
+};
+
+// Also hook renderBoard to update gpBoardMap whenever board reloads
+const _origRenderBoard=window.renderBoard;
+if(_origRenderBoard){
+  window.renderBoard=function(...args){
+    _origRenderBoard.apply(this,args);
+    if(gpData.length){
+      // Rebuild board map
+      gpBoardMap={};
+      if(window.cards)window.cards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
+      if(window._gpInited)gpRender();
+    }
+  };
+}
+
 </script>
+
+<!-- UPLOAD MODAL -->
+<div id="upload-modal-overlay" onclick="if(event.target.id==='upload-modal-overlay')closeUploadModal()">
+  <div id="upload-modal">
+    <div class="um-header">
+      <span class="um-title">↑ Atualizar Planilha de Bugs</span>
+      <button class="um-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="um-body">
+      <p style="font-size:11px;color:var(--gray-m);margin-bottom:14px;">Selecione o arquivo <strong style="color:var(--gray-s)">Projeto_Algar_-_Gestão_de_Bugs_Everymind.xlsx</strong> para atualizar os dados da aba Gestão de Bugs GP.</p>
+      <div class="um-drop" id="um-drop"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');handleFileSelect({files:event.dataTransfer.files})">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFileSelect(this)">
+        <div class="um-drop-icon">📊</div>
+        <div class="um-drop-text">Arraste o arquivo aqui ou clique para selecionar</div>
+        <div class="um-drop-hint">.xlsx ou .xls — Gestão_de_Bugs_Everymind</div>
+      </div>
+      <div class="um-file-selected" id="um-file-selected"></div>
+      <div class="um-progress" id="um-progress">
+        <div class="um-progress-text" id="um-progress-text">Processando...</div>
+        <div class="um-progress-bar"><div class="um-progress-fill" id="um-progress-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="um-footer">
+      <button class="um-btn-cancel" onclick="closeUploadModal()">Cancelar</button>
+      <button class="um-btn-load" id="um-btn-load" onclick="processUpload()" disabled>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 1v8M3.5 4l3-3 3 3M1.5 11h10"/></svg>
+        Carregar e Atualizar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- GP DETAIL MODAL -->
+<div id="gp-modal-overlay" onclick="if(event.target.id==='gp-modal-overlay')document.getElementById('gp-modal-overlay').classList.remove('open')">
+  <div id="gp-modal">
+    <div class="gm-header">
+      <div class="gm-id-row" id="gm-id-row"></div>
+      <div class="gm-title" id="gm-title"></div>
+      <button class="um-close" style="position:absolute;top:14px;right:14px;" onclick="document.getElementById('gp-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="gm-body" id="gm-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
