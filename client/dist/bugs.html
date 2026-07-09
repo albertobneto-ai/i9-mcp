@@ -376,6 +376,7 @@ function openModal(c){
     <div class="field"><label>Correção Técnica</label><pre>${esc(c.correction)}</pre></div>
     <div class="field"><label>Execução Claude</label><pre>${esc(c.claude_exec)}</pre></div>
     <div class="field"><label>Passo Manual</label><pre>${esc(c.manual_step)}</pre></div>
+    ${c.dev_action?'<div class="field"><label style="color:#8B5A00;">🔧 Dev Action</label><pre style="background:#FFF8E1;border-left:3px solid #8B5A00;">'+esc(c.dev_action)+'</pre></div>':''}
     ${c.blocked?'<div class="field"><label>Bloqueado por</label><p style="color:#8B4545;font-weight:700;">'+esc(c.blocked)+'</p></div>':''}
     ${c.notes?'<div class="field"><label>Notas</label><pre>'+esc(c.notes)+'</pre></div>':''}`;
   const btns=document.getElementById('modalStatusBtns');
