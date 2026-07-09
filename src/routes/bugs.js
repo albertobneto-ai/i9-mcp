@@ -156,4 +156,23 @@ router.post('/bulk-create', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Delete single ──
+router.delete('/:id', async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM bug_cards WHERE id = $1 RETURNING id, code', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true, deleted: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Bulk delete by codes ──
+router.post('/bulk-delete', async (req, res) => {
+  try {
+    const { codes } = req.body;
+    if (!codes || !codes.length) return res.status(400).json({ error: 'codes[] required' });
+    const r = await pool.query('DELETE FROM bug_cards WHERE code = ANY($1) RETURNING id, code', [codes]);
+    res.json({ success: true, deleted: r.rows.length, items: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
