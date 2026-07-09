@@ -6,7 +6,7 @@ const router = Router();
 const STATUSES = [
   'BACKLOG','EM_ANALISE','EM_DESENVOLVIMENTO','AGUARDANDO_DEPLOY','AGUARDANDO_PASSOS_MANUAIS',
   'DEPLOY_EXECUTADO','CORRECAO_APLICADA',
-  'EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO'
+  'EM_TESTES_UNITARIOS','EM_TESTES_FUNCIONAIS','CONCLUIDO','FORA_DO_ESCOPO'
 ];
 
 const IN_PROGRESS = ['EM_ANALISE','EM_DESENVOLVIMENTO','AGUARDANDO_DEPLOY'];
@@ -89,6 +89,9 @@ router.patch('/:id', async (req, res) => {
     if (status) { sets.push(`status = $${idx++}`); vals.push(status); }
     if (notes !== undefined) { sets.push(`notes = $${idx++}`); vals.push(notes); }
     if (req.body.blocked !== undefined) { sets.push(`blocked = $${idx++}`); vals.push(req.body.blocked || null); }
+    for (const f of ['dev_h','margin_h','unit_h','func_h','total_h']) {
+      if (req.body[f] !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(req.body[f]); }
+    }
     sets.push(`updated_at = NOW()`);
     if (sets.length < 2) return res.status(400).json({ error: 'Nothing to update' });
     vals.push(req.params.id);
