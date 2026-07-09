@@ -405,7 +405,23 @@ function openModal(c){
     <div class="field"><label>Execução Claude</label><pre>${esc(c.claude_exec)}</pre></div>
     <div class="field"><label>Passo Manual</label><pre>${esc(c.manual_step)}</pre></div>
     ${c.dev_action?'<div class="field"><label style="color:#8B5A00;">🔧 Dev Action</label><pre style="background:#FFF8E1;border-left:3px solid #8B5A00;">'+esc(c.dev_action)+'</pre><button onclick="openResultModal('+c.id+')" style="margin-top:6px;padding:6px 12px;border:1px solid #8B5A00;border-radius:4px;background:#FFF8E1;color:#8B5A00;cursor:pointer;font-size:11px;font-weight:600;">📋 Registrar Resultado</button></div>':''}
-    ${c.dev_result_status?'<div class="field"><label style="color:'+(c.dev_result_status==='VALIDADO'?'var(--green)':c.dev_result_status==='INCONSISTENCIA'?'#B00020':'var(--amber)')+';">'+(c.dev_result_status==='VALIDADO'?'✅ Validado':c.dev_result_status==='INCONSISTENCIA'?'⚠️ Inconsistência':'ℹ️ + Informações')+'</label><pre>'+esc(c.dev_result_details||'')+'</pre>'+(c.has_attachment?'<button onclick="viewAttachment('+c.id+')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">📎 '+esc(c.dev_result_attachment_name||'anexo')+'</button>':'')+'</div>':''}
+    ${c.dev_result_status?`<div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="color:${c.dev_result_status==='VALIDADO'?'var(--green)':c.dev_result_status==='INCONSISTENCIA'?'#B00020':'var(--amber)'};">${c.dev_result_status==='VALIDADO'?'✅ Validado':c.dev_result_status==='INCONSISTENCIA'?'⚠️ Inconsistência':'ℹ️ + Informações'}</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gray-m);cursor:pointer;font-weight:600;">
+          <input type="checkbox" id="resultToggle${c.id}" checked onchange="toggleResultView(${c.id})"> Mostrar resultado
+        </label>
+      </div>
+      <div id="resultContent${c.id}">
+        <pre>${esc(c.dev_result_details||'')}</pre>
+        ${c.has_attachment?`<div style="display:flex;gap:10px;align-items:center;margin-top:6px;">
+          <span style="font-size:11px;color:var(--gray-d);">📎 ${esc(c.dev_result_attachment_name||'anexo')}</span>
+          <button onclick="viewAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">👁 Visualizar</button>
+          <button onclick="downloadAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">⬇ Baixar</button>
+          <button onclick="deleteAttachment(${c.id})" style="font-size:10px;color:#B00020;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">🗑 Excluir</button>
+        </div>`:''}
+      </div>
+    </div>`:''}
     ${c.blocked?'<div class="field"><label>Bloqueado por</label><p style="color:#8B4545;font-weight:700;">'+esc(c.blocked)+'</p></div>':''}
     ${c.notes?'<div class="field"><label>Notas</label><pre>'+esc(c.notes)+'</pre></div>':''}`;
   const btns=document.getElementById('modalStatusBtns');
@@ -463,6 +479,32 @@ async function viewAttachment(cardId){
     else if(d.data.startsWith('data:application/pdf')){win.location.href=d.data;}
     else{win.document.write('<pre>'+d.name+'</pre><a href="'+d.data+'" download="'+d.name+'">Baixar '+d.name+'</a>');}
   }catch(err){console.error(err);alert('Erro ao abrir anexo');}
+}
+function toggleResultView(cardId){
+  const el=document.getElementById('resultContent'+cardId);
+  const chk=document.getElementById('resultToggle'+cardId);
+  if(el)el.style.display=chk.checked?'':'none';
+}
+async function downloadAttachment(cardId){
+  try{
+    const resp=await fetch(API+'/'+cardId+'/attachment');
+    if(!resp.ok){alert('Anexo não encontrado');return;}
+    const d=await resp.json();
+    const a=document.createElement('a');
+    a.href=d.data; a.download=d.name||'anexo'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }catch(err){console.error(err);alert('Erro ao baixar anexo');}
+}
+async function deleteAttachment(cardId){
+  if(!confirm('Excluir este anexo? Esta ação não pode ser desfeita.'))return;
+  try{
+    const resp=await fetch(API+'/'+cardId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({dev_result_attachment_data:'',dev_result_attachment_name:''})});
+    if(!resp.ok){alert('Erro ao excluir anexo');return;}
+    const updated=await resp.json();
+    const idx=cards.findIndex(c=>c.id===cardId);
+    if(idx>-1){cards[idx]={...cards[idx],...updated,has_attachment:false};}
+    const card=cards.find(c=>c.id===cardId);
+    if(card)openModal(card);
+  }catch(err){console.error(err);alert('Erro ao excluir anexo');}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
