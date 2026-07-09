@@ -170,6 +170,34 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
     <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
+<div class="modal-overlay" id="resultModalOverlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head"><h2>Registrar Resultado</h2><button class="close" onclick="closeResultModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Resultado</label>
+        <select id="resultStatusSelect" style="width:100%;padding:8px;border:1px solid var(--gray-l);border-radius:4px;font-size:12px;margin-top:4px;">
+          <option value="VALIDADO">Validado</option>
+          <option value="INCONSISTENCIA">Inconsistência</option>
+          <option value="MAIS_INFORMACOES">+ Informações</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Detalhes</label>
+        <textarea id="resultDetailsText" rows="6" style="width:100%;padding:8px;border:1px solid var(--gray-l);border-radius:4px;font-size:12px;margin-top:4px;font-family:inherit;" placeholder="Descreva o resultado do teste, evidências, passos executados..."></textarea>
+      </div>
+      <div class="field">
+        <label>Anexo (evidência de teste)</label>
+        <input type="file" id="resultFileInput" style="width:100%;margin-top:4px;font-size:11px;" accept="image/*,.pdf,.txt,.log" />
+        <div id="resultFileName" style="font-size:10px;color:var(--gray-m);margin-top:4px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+        <button onclick="closeResultModal()" style="padding:8px 16px;border:1px solid var(--gray-l);border-radius:4px;background:var(--white);cursor:pointer;font-size:12px;">Cancelar</button>
+        <button onclick="saveResult()" style="padding:8px 16px;border:none;border-radius:4px;background:var(--black);color:var(--white);cursor:pointer;font-size:12px;font-weight:600;">Salvar Resultado</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 const API='/api/bugs';
 const COLS=[
@@ -376,7 +404,8 @@ function openModal(c){
     <div class="field"><label>Correção Técnica</label><pre>${esc(c.correction)}</pre></div>
     <div class="field"><label>Execução Claude</label><pre>${esc(c.claude_exec)}</pre></div>
     <div class="field"><label>Passo Manual</label><pre>${esc(c.manual_step)}</pre></div>
-    ${c.dev_action?'<div class="field"><label style="color:#8B5A00;">🔧 Dev Action</label><pre style="background:#FFF8E1;border-left:3px solid #8B5A00;">'+esc(c.dev_action)+'</pre></div>':''}
+    ${c.dev_action?'<div class="field"><label style="color:#8B5A00;">🔧 Dev Action</label><pre style="background:#FFF8E1;border-left:3px solid #8B5A00;">'+esc(c.dev_action)+'</pre><button onclick="openResultModal('+c.id+')" style="margin-top:6px;padding:6px 12px;border:1px solid #8B5A00;border-radius:4px;background:#FFF8E1;color:#8B5A00;cursor:pointer;font-size:11px;font-weight:600;">📋 Registrar Resultado</button></div>':''}
+    ${c.dev_result_status?'<div class="field"><label style="color:'+(c.dev_result_status==='VALIDADO'?'var(--green)':c.dev_result_status==='INCONSISTENCIA'?'#B00020':'var(--amber)')+';">'+(c.dev_result_status==='VALIDADO'?'✅ Validado':c.dev_result_status==='INCONSISTENCIA'?'⚠️ Inconsistência':'ℹ️ + Informações')+'</label><pre>'+esc(c.dev_result_details||'')+'</pre>'+(c.has_attachment?'<button onclick="viewAttachment('+c.id+')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">📎 '+esc(c.dev_result_attachment_name||'anexo')+'</button>':'')+'</div>':''}
     ${c.blocked?'<div class="field"><label>Bloqueado por</label><p style="color:#8B4545;font-weight:700;">'+esc(c.blocked)+'</p></div>':''}
     ${c.notes?'<div class="field"><label>Notas</label><pre>'+esc(c.notes)+'</pre></div>':''}`;
   const btns=document.getElementById('modalStatusBtns');
@@ -387,6 +416,54 @@ function openModal(c){
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// ══ RESULT MODAL ══
+let resultCardId=null, resultFileData=null, resultFileName=null;
+function openResultModal(cardId){
+  resultCardId=cardId; resultFileData=null; resultFileName=null;
+  document.getElementById('resultStatusSelect').value='VALIDADO';
+  document.getElementById('resultDetailsText').value='';
+  document.getElementById('resultFileInput').value='';
+  document.getElementById('resultFileName').textContent='';
+  document.getElementById('resultModalOverlay').classList.add('open');
+}
+function closeResultModal(){document.getElementById('resultModalOverlay').classList.remove('open');resultCardId=null;}
+document.getElementById('resultModalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeResultModal();});
+document.getElementById('resultFileInput').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){alert('Arquivo muito grande (máx 5MB)');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=()=>{resultFileData=reader.result;resultFileName=file.name;document.getElementById('resultFileName').textContent='✓ '+file.name;};
+  reader.readAsDataURL(file);
+});
+async function saveResult(){
+  if(!resultCardId)return;
+  const status=document.getElementById('resultStatusSelect').value;
+  const details=document.getElementById('resultDetailsText').value;
+  const payload={dev_result_status:status,dev_result_details:details};
+  if(resultFileData){payload.dev_result_attachment_data=resultFileData;payload.dev_result_attachment_name=resultFileName;}
+  try{
+    const resp=await fetch(API+'/'+resultCardId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!resp.ok){const err=await resp.json();alert('Erro: '+(err.error||'falha ao salvar'));return;}
+    const updated=await resp.json();
+    const idx=cards.findIndex(c=>c.id===resultCardId);
+    if(idx>-1)cards[idx]={...cards[idx],...updated,has_attachment:!!resultFileData||cards[idx].has_attachment};
+    closeResultModal();
+    const card=cards.find(c=>c.id===resultCardId);
+    if(card)openModal(card);
+  }catch(err){console.error(err);alert('Erro ao salvar resultado');}
+}
+async function viewAttachment(cardId){
+  try{
+    const resp=await fetch(API+'/'+cardId+'/attachment');
+    if(!resp.ok){alert('Anexo não encontrado');return;}
+    const d=await resp.json();
+    const win=window.open();
+    if(d.data.startsWith('data:image')){win.document.write('<img src="'+d.data+'" style="max-width:100%;">');}
+    else if(d.data.startsWith('data:application/pdf')){win.location.href=d.data;}
+    else{win.document.write('<pre>'+d.name+'</pre><a href="'+d.data+'" download="'+d.name+'">Baixar '+d.name+'</a>');}
+  }catch(err){console.error(err);alert('Erro ao abrir anexo');}
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 
 // ══ EQUALIZAÇÃO TAB ══
