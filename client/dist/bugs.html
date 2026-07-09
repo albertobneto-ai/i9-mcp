@@ -182,7 +182,8 @@ const COLS=[
   {key:'AGUARDANDO_PASSOS_MANUAIS',label:'Passos Manuais',color:'var(--amber)'},
   {key:'EM_TESTES_UNITARIOS',label:'Testes Unit.',color:'var(--blue)'},
   {key:'EM_TESTES_FUNCIONAIS',label:'Testes Func.',color:'var(--blue)'},
-  {key:'CONCLUIDO',label:'Concluído',color:'var(--green)'}
+  {key:'CONCLUIDO',label:'Concluído',color:'var(--green)'},
+  {key:'FORA_DO_ESCOPO',label:'Fora do Escopo',color:'var(--gray-s)'}
 ];
 let cards=[],stats=null,dragId=null;
 function fmtH(v){v=parseFloat(v)||0;return v<1?(v*60).toFixed(0)+'m':v.toFixed(1)+'h';}
