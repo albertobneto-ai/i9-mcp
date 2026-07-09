@@ -408,9 +408,12 @@ function openModal(c){
     ${c.dev_result_status?`<div class="field">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <label style="color:${c.dev_result_status==='VALIDADO'?'var(--green)':c.dev_result_status==='INCONSISTENCIA'?'#B00020':'var(--amber)'};">${c.dev_result_status==='VALIDADO'?'✅ Validado':c.dev_result_status==='INCONSISTENCIA'?'⚠️ Inconsistência':'ℹ️ + Informações'}</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gray-m);cursor:pointer;font-weight:600;">
-          <input type="checkbox" id="resultToggle${c.id}" checked onchange="toggleResultView(${c.id})"> Mostrar resultado
-        </label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gray-m);cursor:pointer;font-weight:600;">
+            <input type="checkbox" id="resultToggle${c.id}" checked onchange="toggleResultView(${c.id})"> Mostrar resultado
+          </label>
+          <button onclick="deleteResult(${c.id})" style="font-size:10px;color:#B00020;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-weight:600;">🗑 Excluir ação</button>
+        </div>
       </div>
       <div id="resultContent${c.id}">
         <pre>${esc(c.dev_result_details||'')}</pre>
@@ -418,7 +421,7 @@ function openModal(c){
           <span style="font-size:11px;color:var(--gray-d);">📎 ${esc(c.dev_result_attachment_name||'anexo')}</span>
           <button onclick="viewAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">👁 Visualizar</button>
           <button onclick="downloadAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">⬇ Baixar</button>
-          <button onclick="deleteAttachment(${c.id})" style="font-size:10px;color:#B00020;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">🗑 Excluir</button>
+          <button onclick="deleteAttachment(${c.id})" style="font-size:10px;color:#B00020;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">🗑 Excluir anexo</button>
         </div>`:''}
       </div>
     </div>`:''}
@@ -493,6 +496,18 @@ async function downloadAttachment(cardId){
     const a=document.createElement('a');
     a.href=d.data; a.download=d.name||'anexo'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }catch(err){console.error(err);alert('Erro ao baixar anexo');}
+}
+async function deleteResult(cardId){
+  if(!confirm('Excluir toda a ação registrada (resultado, detalhes e anexo)? Esta ação não pode ser desfeita.'))return;
+  try{
+    const resp=await fetch(API+'/'+cardId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({dev_result_status:'',dev_result_details:'',dev_result_attachment_data:'',dev_result_attachment_name:''})});
+    if(!resp.ok){alert('Erro ao excluir resultado');return;}
+    const updated=await resp.json();
+    const idx=cards.findIndex(c=>c.id===cardId);
+    if(idx>-1){cards[idx]={...cards[idx],...updated,has_attachment:false};}
+    const card=cards.find(c=>c.id===cardId);
+    if(card)openModal(card);
+  }catch(err){console.error(err);alert('Erro ao excluir resultado');}
 }
 async function deleteAttachment(cardId){
   if(!confirm('Excluir este anexo? Esta ação não pode ser desfeita.'))return;
