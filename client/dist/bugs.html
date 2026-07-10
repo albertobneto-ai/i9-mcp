@@ -576,14 +576,14 @@ function openModal(c){
       </div>
       <div id="resultContent${c.id}">
         <pre>${esc(c.dev_result_details||'')}</pre>
-        ${c.has_attachment?`<div style="display:flex;gap:10px;align-items:center;margin-top:6px;">
+      </div>
+    </div>`:''}
+    ${c.has_attachment?`<div class="field"><div style="display:flex;gap:10px;align-items:center;">
           <span style="font-size:11px;color:var(--gray-d);">📎 ${esc(c.dev_result_attachment_name||'anexo')}</span>
           <button onclick="viewAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">👁 Visualizar</button>
           <button onclick="downloadAttachment(${c.id})" style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">⬇ Baixar</button>
           <button onclick="deleteAttachment(${c.id})" style="font-size:10px;color:#B00020;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">🗑 Excluir anexo</button>
-        </div>`:''}
-      </div>
-    </div>`:''}
+        </div></div>`:''}
     ${c.blocked?'<div class="field"><label>Bloqueado por</label><p style="color:#8B4545;font-weight:700;">'+esc(c.blocked)+'</p></div>':''}
     ${c.notes?'<div class="field"><label>Notas</label><pre>'+esc(c.notes)+'</pre></div>':''}`;
   const btns=document.getElementById('modalStatusBtns');
