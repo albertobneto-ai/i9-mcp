@@ -322,6 +322,16 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const ids = items.filter(i => i.id).map(i => i.id);
           const errors = items.filter(i => !i.success).map(i => (i.errors || []).map(e => e.message).join(', '));
           results.push({ step: objectName, ok: okCount === items.length, ids, okCount, totalCount: items.length, message: okCount === items.length ? `✅ ${objectName}: ${okCount} inserted [${ids.join(',')}]` : `❌ ${okCount}/${items.length} OK. Errors: ${errors.join('; ').substring(0,300)}` });
+        } else if (step.action === 'sobject-update') {
+          // ADITIVO — update de registros existentes (necessário Id em cada record)
+          const conn = await connectToOrg(org);
+          const objectName = step.objectName || step.type;
+          const records = step.records || [step.body];
+          const r = await conn.sobject(objectName).update(records);
+          const items = Array.isArray(r) ? r : [r];
+          const okCount = items.filter(i => i.success).length;
+          const errors = items.filter(i => !i.success).map(i => (i.errors || []).map(e => e.message).join(', '));
+          results.push({ step: objectName, ok: okCount === items.length, okCount, totalCount: items.length, message: okCount === items.length ? `✅ ${objectName}: ${okCount} updated` : `❌ ${okCount}/${items.length} OK. Errors: ${errors.join('; ').substring(0,300)}` });
         } else if (step.action === 'sobject-query') {
           const conn = await connectToOrg(org);
           const r = await conn.query(step.query);
