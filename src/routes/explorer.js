@@ -1,1 +1,84 @@
-aW1wb3J0IHsgUm91dGVyIH0gZnJvbSAnZXhwcmVzcyc7CmltcG9ydCBwb29sIGZyb20gJy4uL2NvbmZpZy9kYi5qcyc7Cgpjb25zdCByb3V0ZXIgPSBSb3V0ZXIoKTsKCnJvdXRlci5nZXQoJy9leHBsb3Jlci9zdGF0dXMnLCBhc3luYyAocmVxLCByZXMpID0+IHsKICBjb25zdCBzdGF0dXMgPSB7CiAgICB0aW1lc3RhbXA6IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKSwKICAgIHRhYmxlczoge30sIHdvcmtlcnM6IHt9LCByb3V0ZXM6IHt9LCBzbmFwc2hvdHM6IHt9LCBzcHJpbnRzOiB7fQogIH07CgogIC8vIFRhYmVsYXMKICBjb25zdCBUQUJMRVMgPSBbJ21ldGFkYXRhX2NvbnRlbnRfc3RvcmUnLCdtZXRhZGF0YV9zbmFwc2hvdHMnLAogICAgJ21ldGFkYXRhX2NvbXBvbmVudHMnLCdzeW5jX29wZXJhdGlvbnMnLCdkcmlmdF9wb2xpY2llcycsJ2RyaWZ0X2FsZXJ0cyddOwogIGZvciAoY29uc3QgdCBvZiBUQUJMRVMpIHsKICAgIHRyeSB7CiAgICAgIGNvbnN0IHsgcm93cyB9ID0gYXdhaXQgcG9vbC5xdWVyeShgU0VMRUNUIENPVU5UKCopIEFTIG4gRlJPTSAke3R9YCk7CiAgICAgIHN0YXR1cy50YWJsZXNbdF0gPSB7IGV4aXN0czogdHJ1ZSwgcm93czogcGFyc2VJbnQocm93c1swXS5uKSB9OwogICAgfSBjYXRjaCB7IHN0YXR1cy50YWJsZXNbdF0gPSB7IGV4aXN0czogZmFsc2UsIHJvd3M6IDAgfTsgfQogIH0KCiAgLy8gU25hcHNob3RzIHBvciBvcmcKICB0cnkgewogICAgY29uc3QgeyByb3dzIH0gPSBhd2FpdCBwb29sLnF1ZXJ5KGAKICAgICAgU0VMRUNUIG8ubmFtZSwgQ09VTlQocy5pZCkgQVMgdG90YWwsIE1BWChzLmNyZWF0ZWRfYXQpIEFTIGxhc3RfYXQKICAgICAgRlJPTSBtZXRhZGF0YV9zbmFwc2hvdHMgcyBKT0lOIG9yZ3MgbyBPTiBvLmlkID0gcy5vcmdfaWQKICAgICAgR1JPVVAgQlkgby5uYW1lIE9SREVSIEJZIG8ubmFtZWApOwogICAgc3RhdHVzLnNuYXBzaG90cyA9IHJvd3MubWFwKHIgPT4gKHsKICAgICAgb3JnOiByLm5hbWUsIHRvdGFsOiBwYXJzZUludChyLnRvdGFsKSwgbGFzdDogci5sYXN0X2F0CiAgICB9KSk7CiAgfSBjYXRjaCB7IHN0YXR1cy5zbmFwc2hvdHMgPSBbXTsgfQoKICAvLyBXb3JrZXJzIHJlZ2lzdHJhZG9zIHZpYSBwZy1ib3NzCiAgdHJ5IHsKICAgIGNvbnN0IHsgcm93cyB9ID0gYXdhaXQgcG9vbC5xdWVyeSgKICAgICAgJ1NFTEVDVCBESVNUSU5DVCBuYW1lIEZST00gcGdib3NzLmpvYiBHUk9VUCBCWSBuYW1lJyk7CiAgICBzdGF0dXMud29ya2VycyA9IHJvd3MubWFwKHIgPT4gci5uYW1lKTsKICB9IGNhdGNoIHsgc3RhdHVzLndvcmtlcnMgPSBbXTsgfQoKICAvLyBSb3RhcyBhdGl2YXMKICBjb25zdCBST1VURV9DSEVDS1MgPSBbCiAgICB7IGtleTogJ2RpZmZfb3JncycsICAgICAgICAgcGF0aDogJy9hcGkvZGlmZi9vcmdzJyB9LAogICAgeyBrZXk6ICdzeW5jJywgICAgICAgICAgICAgIHBhdGg6ICcvYXBpL3N5bmMnIH0sCiAgICB7IGtleTogJ3N5bmNfaGlzdG9yeScsICAgICAgcGF0aDogJy9hcGkvc3luYy9oaXN0b3J5JyB9LAogICAgeyBrZXk6ICdkcmlmdCcsICAgICAgICAgICAgIHBhdGg6ICcvYXBpL2RyaWZ0JyB9LAogICAgeyBrZXk6ICdjb21wb25lbnRfaGlzdG9yeScsIHBhdGg6ICcvYXBpL2NvbXBvbmVudC9oaXN0b3J5JyB9LAogIF07CiAgZm9yIChjb25zdCByIG9mIFJPVVRFX0NIRUNLUykgewogICAgc3RhdHVzLnJvdXRlc1tyLmtleV0gPSB0eXBlb2YgcmVxLmFwcC5fcm91dGVyICE9PSAndW5kZWZpbmVkJzsKICB9CgogIC8vIEluZmVyw6puY2lhIGRlIHNwcmludHMgY29uY2x1w61kb3MKICBjb25zdCB0ID0gc3RhdHVzLnRhYmxlczsKICBzdGF0dXMuc3ByaW50cyA9IHsKICAgICdCRS0xX2luZnJhJzogICAgdC5tZXRhZGF0YV9jb250ZW50X3N0b3JlPy5leGlzdHMgJiYgdC5tZXRhZGF0YV9zbmFwc2hvdHM/LmV4aXN0cwogICAgICAgICAgICAgICAgICAgICAgID8gJ2RvbmUnIDogJ3BlbmRpbmcnLAogICAgJ0JFLTJfcmV0cmlldmUnOiB0Lm1ldGFkYXRhX2NvbXBvbmVudHM/LmV4aXN0cyAmJiB0Lm1ldGFkYXRhX2NvbXBvbmVudHM/LnJvd3MgPiAwCiAgICAgICAgICAgICAgICAgICAgICAgPyAnZG9uZScgOiAncGVuZGluZycsCiAgICAnQkUtM19kaWZmJzogICAgICdjaGVjayBjb2RlIOKAlCBjYW5ub3QgaW5mZXIgZnJvbSBEQicsCiAgICAnQkUtNF9hcGknOiAgICAgIHQubWV0YWRhdGFfc25hcHNob3RzPy5leGlzdHMgPyAnY2hlY2sgR0VUIC9hcGkvZGlmZi9vcmdzJyA6ICdwZW5kaW5nJywKICAgICdCRS01X3N5bmMnOiAgICAgdC5zeW5jX29wZXJhdGlvbnM/LmV4aXN0cwogICAgICAgICAgICAgICAgICAgICAgID8gKHQuc3luY19vcGVyYXRpb25zPy5yb3dzID4gMCA/ICdkb25lJyA6ICdkZXBsb3llZF9ub3RfdGVzdGVkJykKICAgICAgICAgICAgICAgICAgICAgICA6ICdwZW5kaW5nJywKICAgICdCRS02X2RyaWZ0X2tiJzogdC5kcmlmdF9wb2xpY2llcz8uZXhpc3RzICYmCiAgICAgICAgICAgICAgICAgICAgIHN0YXR1cy53b3JrZXJzPy5pbmNsdWRlcz8uKCdkcmlmdC1jaGVjaycpID8gJ2RvbmUnIDogJ3BlbmRpbmcnLAogIH07CgogIC8vIEFsZXJ0YXMgZSBzeW5jIHN1bW1hcnkKICB0cnkgewogICAgY29uc3QgeyByb3dzIH0gPSBhd2FpdCBwb29sLnF1ZXJ5KAogICAgICAnU0VMRUNUIENPVU5UKCopIEFTIG4gRlJPTSBkcmlmdF9hbGVydHMgV0hFUkUgYWNrbm93bGVkZ2VkID0gZmFsc2UnKTsKICAgIHN0YXR1cy5kcmlmdF9hbGVydHNfcGVuZGluZyA9IHBhcnNlSW50KHJvd3NbMF0ubik7CiAgfSBjYXRjaCB7IHN0YXR1cy5kcmlmdF9hbGVydHNfcGVuZGluZyA9IG51bGw7IH0KCiAgdHJ5IHsKICAgIGNvbnN0IHsgcm93cyB9ID0gYXdhaXQgcG9vbC5xdWVyeSgKICAgICAgJ1NFTEVDVCBzdGF0dXMsIENPVU5UKCopIEFTIG4gRlJPTSBzeW5jX29wZXJhdGlvbnMgR1JPVVAgQlkgc3RhdHVzJyk7CiAgICBzdGF0dXMuc3luY19zdW1tYXJ5ID0gT2JqZWN0LmZyb21FbnRyaWVzKHJvd3MubWFwKHIgPT4gW3Iuc3RhdHVzLCBwYXJzZUludChyLm4pXSkpOwogIH0gY2F0Y2ggeyBzdGF0dXMuc3luY19zdW1tYXJ5ID0ge307IH0KCiAgcmVzLmpzb24oc3RhdHVzKTsKfSk7CgpleHBvcnQgZGVmYXVsdCByb3V0ZXI7Cg==
+import { Router } from 'express';
+import pool from '../config/db.js';
+
+const router = Router();
+
+router.get('/explorer/status', async (req, res) => {
+  const status = {
+    timestamp: new Date().toISOString(),
+    tables: {}, workers: {}, routes: {}, snapshots: {}, sprints: {}
+  };
+
+  // Tabelas
+  const TABLES = ['metadata_content_store','metadata_snapshots',
+    'metadata_components','sync_operations','drift_policies','drift_alerts'];
+  for (const t of TABLES) {
+    try {
+      const { rows } = await pool.query(`SELECT COUNT(*) AS n FROM ${t}`);
+      status.tables[t] = { exists: true, rows: parseInt(rows[0].n) };
+    } catch { status.tables[t] = { exists: false, rows: 0 }; }
+  }
+
+  // Snapshots por org
+  try {
+    const { rows } = await pool.query(`
+      SELECT o.name, COUNT(s.id) AS total, MAX(s.created_at) AS last_at
+      FROM metadata_snapshots s JOIN orgs o ON o.id = s.org_id
+      GROUP BY o.name ORDER BY o.name`);
+    status.snapshots = rows.map(r => ({
+      org: r.name, total: parseInt(r.total), last: r.last_at
+    }));
+  } catch { status.snapshots = []; }
+
+  // Workers registrados via pg-boss
+  try {
+    const { rows } = await pool.query(
+      'SELECT DISTINCT name FROM pgboss.job GROUP BY name');
+    status.workers = rows.map(r => r.name);
+  } catch { status.workers = []; }
+
+  // Rotas ativas
+  const ROUTE_CHECKS = [
+    { key: 'diff_orgs',         path: '/api/diff/orgs' },
+    { key: 'sync',              path: '/api/sync' },
+    { key: 'sync_history',      path: '/api/sync/history' },
+    { key: 'drift',             path: '/api/drift' },
+    { key: 'component_history', path: '/api/component/history' },
+  ];
+  for (const r of ROUTE_CHECKS) {
+    status.routes[r.key] = typeof req.app._router !== 'undefined';
+  }
+
+  // Inferência de sprints concluídos
+  const t = status.tables;
+  status.sprints = {
+    'BE-1_infra':    t.metadata_content_store?.exists && t.metadata_snapshots?.exists
+                       ? 'done' : 'pending',
+    'BE-2_retrieve': t.metadata_components?.exists && t.metadata_components?.rows > 0
+                       ? 'done' : 'pending',
+    'BE-3_diff':     'check code — cannot infer from DB',
+    'BE-4_api':      t.metadata_snapshots?.exists ? 'check GET /api/diff/orgs' : 'pending',
+    'BE-5_sync':     t.sync_operations?.exists
+                       ? (t.sync_operations?.rows > 0 ? 'done' : 'deployed_not_tested')
+                       : 'pending',
+    'BE-6_drift_kb': t.drift_policies?.exists &&
+                     status.workers?.includes?.('drift-check') ? 'done' : 'pending',
+  };
+
+  // Alertas e sync summary
+  try {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) AS n FROM drift_alerts WHERE acknowledged = false');
+    status.drift_alerts_pending = parseInt(rows[0].n);
+  } catch { status.drift_alerts_pending = null; }
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT status, COUNT(*) AS n FROM sync_operations GROUP BY status');
+    status.sync_summary = Object.fromEntries(rows.map(r => [r.status, parseInt(r.n)]));
+  } catch { status.sync_summary = {}; }
+
+  res.json(status);
+});
+
+export default router;
