@@ -1,5 +1,5 @@
 // src/routes/explorer.js
-// Sprint 1+2+3 — BE-1 to BE-8 (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift, Components, History, Log)
+// Sprint 1+2+3 — BE-1 to BE-8 + VA (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift, Components, History, Log, Vector Agent)
 
 import { Router } from 'express';
 import pool from '../config/db.js';
@@ -13,6 +13,7 @@ import {
   readComponentMeta
 } from '../services/sf-multi.js';
 import crypto from 'crypto';
+import { analyze as vectorAgentAnalyze } from '../vectorAgent/index.js';
 
 
 const router = Router();
@@ -1345,6 +1346,34 @@ router.get('/explorer/history/by-oe/:oeId', authMiddleware, async (req, res) => 
 
     res.json({ ok: true, deploy_run: rows[0], components: comps.rows });
   } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// SPRINT 5 — Vector Agent (VA-1 a VA-4, motor determinístico)
+// ============================================================
+
+
+
+// POST /api/explorer/vector-agent/analyze
+// Body: { component_name, component_type, gold_content, dest_content }
+router.post('/explorer/vector-agent/analyze', authMiddleware, async (req, res) => {
+  try {
+    const { component_name, component_type, gold_content, dest_content } = req.body || {};
+    if (!component_name || !component_type)
+      return res.status(400).json({ ok: false, error: 'component_name and component_type required' });
+
+    const result = vectorAgentAnalyze({
+      component_name,
+      component_type,
+      gold_content: gold_content || null,
+      dest_content: dest_content || null
+    });
+
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[vector-agent/analyze]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
