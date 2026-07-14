@@ -697,3 +697,37 @@ export async function deployMetadataPackage(org, zipBuffer, options = {}) {
     details
   };
 }
+
+/**
+ * Lê metadados de auditoria de um componente (created_date, last_modified, last_modified_by).
+ * Apex usa Tooling API; demais usam Metadata API read.
+ * @param {Object} org
+ * @param {string} type  Ex: 'ApexClass', 'Flow', 'PermissionSet'
+ * @param {string} fullName
+ * @returns {Promise<{created_date, last_modified, last_modified_by}|null>}
+ */
+export async function readComponentMeta(org, type, fullName) {
+  const conn = await connectToOrg(org);
+  if (['ApexClass', 'ApexTrigger'].includes(type)) {
+    const safeName = fullName.replace(/'/g, "\\'");
+    const res = await conn.tooling.query(
+      `SELECT Name, CreatedDate, LastModifiedDate, LastModifiedBy.Name FROM ${type} WHERE Name = '${safeName}' LIMIT 1`
+    );
+    if (!res.records || res.records.length === 0) return null;
+    const r = res.records[0];
+    return {
+      created_date: r.CreatedDate,
+      last_modified: r.LastModifiedDate,
+      last_modified_by: r.LastModifiedBy?.Name || null
+    };
+  }
+  // Demais tipos: Metadata API read
+  const md = await conn.metadata.read(type, [fullName]);
+  const item = Array.isArray(md) ? md[0] : md;
+  if (!item || !item.fullName) return null;
+  return {
+    created_date: null,
+    last_modified: item.lastModifiedDate || null,
+    last_modified_by: item.lastModifiedByName || null
+  };
+}
