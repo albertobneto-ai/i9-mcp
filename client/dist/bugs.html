@@ -788,12 +788,12 @@ function gpRenderKPIs(){
   const novos=cnt(b=>b.is_new);
   const mudou=cnt(b=>!b.is_new&&b.status_changed);
   document.getElementById('gp-kpis').innerHTML=`
-    <div class="kpi dark"><div class="kpi-label">Total Bugs</div><div class="kpi-value">${total}</div><div class="kpi-sub">todas as frentes</div></div>
-    <div class="kpi dark" style="border-top:2px solid #8B4545;"><div class="kpi-label">Em Correção</div><div class="kpi-value" style="color:#c07070;">${fix}</div><div class="kpi-sub">testes unitários</div></div>
-    <div class="kpi dark" style="border-top:2px solid #4A6A4A;"><div class="kpi-label">Homologados</div><div class="kpi-value" style="color:#6B8E6B;">${hom}</div><div class="kpi-sub">aprovados</div></div>
-    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>
-    <div class="kpi dark" style="border-top:2px solid #456080;"><div class="kpi-label">🆕 Novos</div><div class="kpi-value" style="color:#6B9BD8;">${novos}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>
-    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">↕ Status Alterado</div><div class="kpi-value" style="color:#c8a050;">${mudou}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>`;
+    <div class="kpi"><div class="kpi-label">Total Bugs</div><div class="kpi-value">${total}</div><div class="kpi-sub">todas as frentes</div></div>
+    <div class="kpi" style="border-top:2px solid #8B4545;"><div class="kpi-label">Em Correção</div><div class="kpi-value" style="color:#8B4545;">${fix}</div><div class="kpi-sub">testes unitários</div></div>
+    <div class="kpi" style="border-top:2px solid #4A6A4A;"><div class="kpi-label">Homologados</div><div class="kpi-value" style="color:#4A6A4A;">${hom}</div><div class="kpi-sub">aprovados</div></div>
+    <div class="kpi" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#7A6530;">${back}</div><div class="kpi-sub">sem priorização</div></div>
+    <div class="kpi" style="border-top:2px solid #456080;"><div class="kpi-label">🆕 Novos</div><div class="kpi-value" style="color:#456080;">${novos}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>
+    <div class="kpi" style="border-top:2px solid #7A6530;"><div class="kpi-label">↕ Status Alterado</div><div class="kpi-value" style="color:#7A6530;">${mudou}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>`;
   const alertEl=document.getElementById('gp-alert');
   if(alertEl){
     alertEl.style.display=ma>0?'block':'none';
@@ -837,10 +837,10 @@ function gpRenderCharts(){
     `<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Por Frente</div>${fBars}`;
 
   // Prios
-  const prios=[['Muito Alta','#c07070','🔴'],['Alta','#c09050','🟠'],['Média','#c8b050','🟡'],['Baixa','#70aa80','🟢']];
+  const prios=[['Muito Alta','#8B4545','🔴'],['Alta','#8a5a25','🟠'],['Média','#7A6530','🟡'],['Baixa','#4A6A4A','🟢']];
   document.getElementById('gp-prios').innerHTML=prios.map(([p,col,ic])=>{
     const c=d.filter(b=>b.prioridade===p).length;
-    return `<div class="kpi dark" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
+    return `<div class="kpi" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
       <div style="font-size:20px;">${ic}</div>
       <div><div style="font-size:24px;font-weight:800;color:${col};line-height:1;">${c}</div>
       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-m);margin-top:2px;">${p}</div></div>
@@ -854,25 +854,25 @@ function gpRenderCharts(){
   let mt=`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gray-m);margin-bottom:12px;">Matriz Frente × Status</div>
   <table style="width:100%;border-collapse:collapse;min-width:600px;font-size:10px;">
   <tr style="background:var(--black);">
-    <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:600;color:var(--gray-m);">Frente</th>
-    ${sh.map(s=>`<th style="padding:7px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--gray-m);white-space:nowrap;">${s}</th>`).join('')}
-    <th style="padding:7px 10px;text-align:center;font-size:9px;font-weight:700;color:var(--gray-s);">Total</th>
+    <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:600;color:var(--gray-s);">Frente</th>
+    ${sh.map(s=>`<th style="padding:7px 8px;text-align:center;font-size:9px;font-weight:600;color:var(--gray-s);white-space:nowrap;">${s}</th>`).join('')}
+    <th style="padding:7px 10px;text-align:center;font-size:9px;font-weight:700;color:var(--white);">Total</th>
   </tr>`;
   const totals=new Array(sk.length).fill(0); let grand=0;
   frentes.forEach(fr=>{
     const row=d.filter(b=>b.frente===fr); grand+=row.length;
-    mt+=`<tr style="border-bottom:1px solid var(--gray-d);">
-      <td style="padding:9px 10px;font-size:10px;font-weight:600;color:var(--gray-l);white-space:nowrap;">${fr.replace('Gestão de ','')}</td>`;
+    mt+=`<tr style="border-bottom:1px solid var(--gray-l);">
+      <td style="padding:9px 10px;font-size:10px;font-weight:600;color:var(--gray-d);white-space:nowrap;">${fr.replace('Gestão de ','')}</td>`;
     sk.forEach((s,i)=>{
       const c=row.filter(b=>b.status===s).length; totals[i]+=c;
-      mt+=`<td style="padding:9px 8px;text-align:center;font-weight:700;color:${c>0?(s==='Correção em testes unitários'?'#c07070':s==='Homologado'?'#6B8E6B':'var(--gray-s)'):'var(--gray-d)'};">${c||'—'}</td>`;
+      mt+=`<td style="padding:9px 8px;text-align:center;font-weight:700;color:${c>0?(s==='Correção em testes unitários'?'#c07070':s==='Homologado'?'#4A6A4A':'var(--gray-d)'):'var(--gray-l)'};">${c||'—'}</td>`;
     });
-    mt+=`<td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${row.length}</td></tr>`;
+    mt+=`<td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--gray-d);">${row.length}</td></tr>`;
   });
-  mt+=`<tr style="background:rgba(255,255,255,.02);">
-    <td style="padding:9px 10px;font-weight:800;color:var(--white);">TOTAL</td>
-    ${totals.map((c,i)=>`<td style="padding:9px 8px;text-align:center;font-weight:800;color:${i===0?'#c07070':i===1?'#6B8E6B':'var(--gray-s)'};">${c}</td>`).join('')}
-    <td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--white);">${grand}</td>
+  mt+=`<tr style="background:var(--ice);">
+    <td style="padding:9px 10px;font-weight:800;color:var(--gray-d);">TOTAL</td>
+    ${totals.map((c,i)=>`<td style="padding:9px 8px;text-align:center;font-weight:800;color:${i===0?'#c07070':i===1?'#4A6A4A':'var(--gray-d)'};">${c}</td>`).join('')}
+    <td style="padding:9px 10px;text-align:center;font-weight:800;color:var(--gray-d);">${grand}</td>
   </tr></table>`;
   document.getElementById('gp-matrix').innerHTML=mt;
 }
