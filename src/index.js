@@ -327,7 +327,12 @@ app.use('/api/chat', authMiddleware, async (req, res, next) => {
 
 // Static frontend
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
-app.use(express.static(clientDist));
+
+// Sprint 6: serve Explorer frontend
+const explorerDir = path.join(__dirname, '..', 'client', 'explorer');
+app.use('/explorer', express.static(explorerDir));
+
+  app.use(express.static(clientDist));
 // Bug Tracker page
 app.get('/bugs', (req, res) => {
   res.sendFile(path.join(clientDist, 'bugs.html'), err => {
