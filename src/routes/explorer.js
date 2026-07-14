@@ -1,5 +1,5 @@
 // src/routes/explorer.js
-// Sprint 1+2+3 — BE-1 to BE-6 (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift)
+// Sprint 1+2+3 — BE-1 to BE-8 (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift, Components, History, Log)
 
 import { Router } from 'express';
 import pool from '../config/db.js';
@@ -9,7 +9,8 @@ import { nextOeId } from '../utils/oeId.js';
 import { buildMetadataZip, buildPackageXml, metadataPath } from '../utils/metadataZip.js';
 import {
   listMetadataByTypes, readMetadataContent, deployMetadataPackage,
-  connectToOrg
+  connectToOrg,
+  readComponentMeta
 } from '../services/sf-multi.js';
 import crypto from 'crypto';
 
@@ -1079,6 +1080,271 @@ router.post('/explorer/drift/run', authMiddleware, async (req, res) => {
     res.json({ ok: true, orgs_processed: orgsProcessed, total_orgs: orgsProcessed.length });
   } catch (e) {
     console.error('[drift/run]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
+// ============================================================
+// SPRINT 4 — BE-7 (Picker de Componentes) + BE-8 (Log + Histórico)
+// ============================================================
+
+// ── BE-7: Components ──
+
+// GET /api/explorer/components/list?org_id=&type=
+router.get('/explorer/components/list', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.query.org_id);
+    if (!orgId) return res.status(400).json({ ok: false, error: 'org_id required' });
+
+    const org = await getOrg(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    const typeFilter = req.query.type;
+    const types = typeFilter ? [typeFilter] : DEFAULT_SCOPE_TYPES;
+
+    const metaList = await listMetadataByTypes(org, types);
+
+    // Join with component_meta from DB
+    const cmRes = await pool.query(
+      'SELECT * FROM component_meta WHERE org_id = $1', [orgId]
+    );
+    const cmMap = {};
+    for (const cm of cmRes.rows) cmMap[`${cm.component_type}::${cm.component_name}`] = cm;
+
+    const components = metaList.map(item => {
+      const cm = cmMap[`${item.type}::${item.fullName}`];
+      return {
+        name: item.fullName,
+        type: item.type,
+        id: item.id,
+        last_modified_date: item.lastModifiedDate || cm?.last_modified || null,
+        created_date: item.createdDate || cm?.created_date || null,
+        last_modified_by: cm?.last_modified_by || null,
+        last_snapshot_at: cm?.last_snapshot_at || null
+      };
+    });
+
+    res.json({ ok: true, org_id: orgId, total: components.length, components });
+  } catch (e) {
+    console.error('[components/list]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/components/refresh-snapshot
+// Body: { component_name, component_type, org_id }
+router.post('/explorer/components/refresh-snapshot', authMiddleware, async (req, res) => {
+  try {
+    const { component_name, component_type, org_id } = req.body || {};
+    if (!component_name || !org_id)
+      return res.status(400).json({ ok: false, error: 'component_name and org_id required' });
+
+    const org = await getOrg(org_id);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    // Read component content
+    const type = component_type || 'CustomField';
+    const contents = await readMetadataContent(org, type, [component_name]);
+    const content = contents[0] ? JSON.stringify(contents[0], null, 2) : '';
+    const hash = crypto.createHash('sha256').update(content).digest('hex');
+
+    // Upsert drift_snapshot
+    await pool.query(`
+      INSERT INTO drift_snapshots (org_id, component_name, component_type, content_hash, captured_at)
+      VALUES ($1, $2, $3, $4, NOW())
+    `, [org_id, component_name, type, hash]);
+
+    // Read meta info (created_date, last_modified, last_modified_by)
+    let meta = null;
+    try {
+      meta = await readComponentMeta(org, type, component_name);
+    } catch (e) { /* meta is optional */ }
+
+    // Upsert component_meta
+    await pool.query(`
+      INSERT INTO component_meta (component_name, component_type, org_id, created_date, last_modified, last_modified_by, last_snapshot_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ON CONFLICT (component_name, org_id)
+      DO UPDATE SET last_modified = $5, last_modified_by = $6, last_snapshot_at = NOW()
+    `, [component_name, type, org_id, meta?.created_date || null, meta?.last_modified || null, meta?.last_modified_by || null]);
+
+    res.json({ ok: true, last_snapshot_at: new Date().toISOString() });
+  } catch (e) {
+    console.error('[components/refresh-snapshot]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/us/prepare-deploy
+// Body: { jira_key, source_org_id, dest_org_id, component_names[] }
+router.post('/explorer/us/prepare-deploy', authMiddleware, async (req, res) => {
+  try {
+    const { jira_key, source_org_id, dest_org_id, component_names } = req.body || {};
+    if (!source_org_id || !dest_org_id || !component_names?.length)
+      return res.status(400).json({ ok: false, error: 'source_org_id, dest_org_id and component_names[] required' });
+
+    const srcOrg = await getOrg(source_org_id);
+    const destOrg = await getOrg(dest_org_id);
+    if (!srcOrg || !destOrg)
+      return res.status(404).json({ ok: false, error: 'Source or dest org not found' });
+
+    // For each component, identify type from component_meta or listMetadata
+    const srcList = await listMetadataByTypes(srcOrg, DEFAULT_SCOPE_TYPES);
+    const srcByName = {};
+    for (const item of srcList) srcByName[item.fullName] = item;
+
+    const results = [];
+    for (const name of component_names) {
+      const srcItem = srcByName[name];
+      if (!srcItem) {
+        results.push({ name, type: null, status: 'not_found_in_source', gold_content: null, dest_content: null, lcs_diff: null });
+        continue;
+      }
+
+      // Read source (gold) content
+      let goldContent = null;
+      try {
+        const items = await readMetadataContent(srcOrg, srcItem.type, [name]);
+        if (items.length) goldContent = JSON.stringify(items[0], null, 2);
+      } catch (e) { /* */ }
+
+      // Read dest content
+      let destContent = null;
+      try {
+        const items = await readMetadataContent(destOrg, srcItem.type, [name]);
+        if (items.length) destContent = JSON.stringify(items[0], null, 2);
+      } catch (e) { /* */ }
+
+      const status = diffStatus(goldContent, destContent);
+      const lcsDiff = status === 'diff' ? computeLcsDiff(goldContent, destContent) : null;
+
+      results.push({
+        name, type: srcItem.type, status,
+        gold_content: goldContent, dest_content: destContent,
+        lcs_diff: lcsDiff
+      });
+    }
+
+    res.json({ ok: true, jira_key: jira_key || null, components: results });
+  } catch (e) {
+    console.error('[us/prepare-deploy]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── BE-8: Log + Histórico ──
+
+// GET /api/explorer/log?limit=&status=&org_id=&from_date=&to_date=
+router.get('/explorer/log', authMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(toInt(req.query.limit, 100), 500);
+    const { status, org_id, from_date, to_date } = req.query;
+
+    const where = [];
+    const params = [];
+
+    if (status)    { params.push(status);           where.push(`dr.status = $${params.length}`); }
+    if (org_id)    { params.push(toInt(org_id));     where.push(`dr.tgt_org_id = $${params.length}`); }
+    if (from_date) { params.push(from_date);         where.push(`dr.created_at >= $${params.length}`); }
+    if (to_date)   { params.push(to_date);           where.push(`dr.created_at <= $${params.length}`); }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const { rows } = await pool.query(`
+      SELECT dr.*, u.name AS deployed_by_name,
+             o1.name AS src_org_name, o2.name AS tgt_org_name,
+             us.jira_key, us.title AS story_title
+        FROM deploy_runs dr
+        LEFT JOIN users u ON u.id = dr.deployed_by
+        LEFT JOIN orgs o1 ON o1.id = dr.src_org_id
+        LEFT JOIN orgs o2 ON o2.id = dr.tgt_org_id
+        LEFT JOIN user_stories us ON us.id = dr.us_id
+        ${whereSql}
+        ORDER BY dr.created_at DESC
+        LIMIT $${params.length + 1}
+    `, [...params, limit]);
+
+    res.json({ ok: true, total: rows.length, deploy_runs: rows });
+  } catch (e) {
+    console.error('[log]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/history/by-story/:jiraKey
+router.get('/explorer/history/by-story/:jiraKey', authMiddleware, async (req, res) => {
+  try {
+    const usRes = await pool.query('SELECT id FROM user_stories WHERE jira_key = $1', [req.params.jiraKey]);
+    if (!usRes.rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+
+    const { rows } = await pool.query(`
+      SELECT dr.*, u.name AS deployed_by_name,
+             o1.name AS src_org_name, o2.name AS tgt_org_name
+        FROM deploy_runs dr
+        LEFT JOIN users u ON u.id = dr.deployed_by
+        LEFT JOIN orgs o1 ON o1.id = dr.src_org_id
+        LEFT JOIN orgs o2 ON o2.id = dr.tgt_org_id
+       WHERE dr.us_id = $1
+       ORDER BY dr.created_at DESC
+    `, [usRes.rows[0].id]);
+
+    for (const run of rows) {
+      const comps = await pool.query(
+        'SELECT * FROM deploy_components WHERE deploy_run_id = $1 ORDER BY component_type, component_name',
+        [run.id]
+      );
+      run.components = comps.rows;
+    }
+
+    res.json({ ok: true, jira_key: req.params.jiraKey, total: rows.length, deploy_runs: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/history/by-component/:name
+router.get('/explorer/history/by-component/:name', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT dc.*, dr.oe_id, dr.type AS deploy_type, dr.status AS run_status,
+             dr.deployed_at, o.name AS tgt_org_name
+        FROM deploy_components dc
+        JOIN deploy_runs dr ON dr.id = dc.deploy_run_id
+        LEFT JOIN orgs o ON o.id = dr.tgt_org_id
+       WHERE dc.component_name = $1
+       ORDER BY dr.deployed_at DESC
+    `, [req.params.name]);
+
+    res.json({ ok: true, component_name: req.params.name, total: rows.length, history: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/history/by-oe/:oeId
+router.get('/explorer/history/by-oe/:oeId', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT dr.*, u.name AS deployed_by_name,
+             o1.name AS src_org_name, o2.name AS tgt_org_name,
+             us.jira_key, us.title AS story_title
+        FROM deploy_runs dr
+        LEFT JOIN users u ON u.id = dr.deployed_by
+        LEFT JOIN orgs o1 ON o1.id = dr.src_org_id
+        LEFT JOIN orgs o2 ON o2.id = dr.tgt_org_id
+        LEFT JOIN user_stories us ON us.id = dr.us_id
+       WHERE dr.oe_id = $1
+    `, [req.params.oeId]);
+    if (!rows.length) return res.status(404).json({ ok: false, error: 'Deploy run not found' });
+
+    const comps = await pool.query(
+      'SELECT * FROM deploy_components WHERE deploy_run_id = $1 ORDER BY component_type, component_name',
+      [rows[0].id]
+    );
+
+    res.json({ ok: true, deploy_run: rows[0], components: comps.rows });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
