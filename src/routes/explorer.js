@@ -1,5 +1,5 @@
 // src/routes/explorer.js
-// Sprint 1+2 — BE-1 to BE-4 (Stories, Board, Dashboard, Equalize, Merge, Deploy)
+// Sprint 1+2+3 — BE-1 to BE-6 (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift)
 
 import { Router } from 'express';
 import pool from '../config/db.js';
@@ -805,4 +805,282 @@ router.get('/explorer/deploy/status/:oeId', authMiddleware, async (req, res) => 
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+// ============================================================
+// SPRINT 3 — BE-5 (Rollback) + BE-6 (Drift Manual)
+// ============================================================
+
+// Default scope_types para drift (seção 7 da spec v2.1)
+const DEFAULT_SCOPE_TYPES = [
+  'Flow', 'ApexClass', 'ApexTrigger', 'LightningComponentBundle',
+  'PermissionSet', 'CustomField', 'Layout', 'ValidationRule',
+  'Bot', 'BotVersion'
+];
+
+// ============================================================
+// BE-5  ROLLBACK
+// ============================================================
+
+// GET /api/explorer/rollback/deploys/:orgId?limit=
+router.get('/explorer/rollback/deploys/:orgId', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.params.orgId);
+    const limit = Math.min(toInt(req.query.limit, 20), 100);
+
+    const { rows } = await pool.query(`
+      SELECT dr.*, u.name AS deployed_by_name,
+             o1.name AS src_org_name, o2.name AS tgt_org_name
+        FROM deploy_runs dr
+        LEFT JOIN users u  ON u.id = dr.deployed_by
+        LEFT JOIN orgs  o1 ON o1.id = dr.src_org_id
+        LEFT JOIN orgs  o2 ON o2.id = dr.tgt_org_id
+       WHERE dr.tgt_org_id = $1
+       ORDER BY dr.created_at DESC
+       LIMIT $2
+    `, [orgId, limit]);
+
+    // Join deploy_components per run
+    for (const run of rows) {
+      const comps = await pool.query(
+        'SELECT * FROM deploy_components WHERE deploy_run_id = $1 ORDER BY component_type, component_name',
+        [run.id]
+      );
+      run.components = comps.rows;
+    }
+
+    res.json({ ok: true, total: rows.length, deploy_runs: rows });
+  } catch (e) {
+    console.error('[rollback/deploys]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/rollback/start
+// Body: { deploy_run_id, source_org_id }
+router.post('/explorer/rollback/start', authMiddleware, async (req, res) => {
+  try {
+    const { deploy_run_id, source_org_id } = req.body || {};
+    if (!deploy_run_id || !source_org_id)
+      return res.status(400).json({ ok: false, error: 'deploy_run_id and source_org_id required' });
+
+    // 1. Read original deploy_run components
+    const drRes = await pool.query('SELECT * FROM deploy_runs WHERE id = $1', [deploy_run_id]);
+    if (!drRes.rows.length) return res.status(404).json({ ok: false, error: 'Deploy run not found' });
+    const deployRun = drRes.rows[0];
+
+    const compsRes = await pool.query(
+      'SELECT * FROM deploy_components WHERE deploy_run_id = $1',
+      [deploy_run_id]
+    );
+    if (!compsRes.rows.length) return res.status(404).json({ ok: false, error: 'No components in deploy run' });
+
+    // 2. For each component, read current content from source_org_id
+    const sourceOrg = await getOrg(source_org_id);
+    if (!sourceOrg) return res.status(404).json({ ok: false, error: 'Source org not found' });
+
+    const pendingMergeIds = [];
+    for (const comp of compsRes.rows) {
+      // Read content from source org (the version to rollback TO)
+      let rollbackContent = null;
+      try {
+        const items = await readMetadataContent(sourceOrg, comp.component_type, [comp.component_name]);
+        if (items.length) rollbackContent = JSON.stringify(items[0], null, 2);
+      } catch (readErr) {
+        console.warn(`[rollback] Could not read ${comp.component_name} from org ${source_org_id}:`, readErr.message);
+      }
+
+      if (rollbackContent === null) continue; // Skip if can't read source
+
+      // 3. Create pending_merge (same as equalization flow)
+      const pmRes = await pool.query(`
+        INSERT INTO pending_merges (component_name, component_type, dest_org_id, gold_org_id, merged_content, prepared_by, prepared_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        ON CONFLICT (component_name, dest_org_id)
+        DO UPDATE SET merged_content = $5, gold_org_id = $4, prepared_by = $6, prepared_at = NOW()
+        RETURNING id
+      `, [comp.component_name, comp.component_type, deployRun.tgt_org_id, source_org_id, rollbackContent, req.user.id]);
+
+      pendingMergeIds.push(pmRes.rows[0].id);
+    }
+
+    res.json({ ok: true, pending_merge_ids: pendingMergeIds, total: pendingMergeIds.length });
+  } catch (e) {
+    console.error('[rollback/start]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// BE-6  DRIFT DETECTION (Manual)
+// ============================================================
+
+// GET /api/explorer/drift/summary?gold_org_id=
+router.get('/explorer/drift/summary', authMiddleware, async (req, res) => {
+  try {
+    const goldOrgId = toInt(req.query.gold_org_id, null);
+
+    // Resolve gold
+    const goldRow = goldOrgId
+      ? await pool.query('SELECT id, name FROM orgs WHERE id = $1', [goldOrgId])
+      : await pool.query('SELECT id, name FROM orgs WHERE is_default_gold = true LIMIT 1');
+    const gold = goldRow.rows[0] || null;
+
+    // Return drift_summary from all explorer orgs
+    const { rows } = await pool.query(`
+      SELECT id, name, org_type, is_default_gold, drift_summary
+      FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
+    `);
+
+    res.json({ ok: true, gold_org: gold, orgs: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/drift/detail/:orgId?gold_org_id=&type=&status=
+router.get('/explorer/drift/detail/:orgId', authMiddleware, async (req, res) => {
+  try {
+    const destOrgId = toInt(req.params.orgId);
+    const goldOrgId = toInt(req.query.gold_org_id, null);
+    const { type, status } = req.query;
+
+    // Resolve gold
+    let goldId = goldOrgId;
+    if (!goldId) {
+      const gRow = await pool.query('SELECT id FROM orgs WHERE is_default_gold = true LIMIT 1');
+      goldId = gRow.rows[0]?.id;
+    }
+    if (!goldId) return res.status(400).json({ ok: false, error: 'No gold org found' });
+
+    const where = ['dr.gold_org_id = $1', 'dr.dest_org_id = $2'];
+    const params = [goldId, destOrgId];
+
+    if (type) { params.push(type); where.push(`dr.component_type = $${params.length}`); }
+    if (status) { params.push(status); where.push(`dr.status = $${params.length}`); }
+
+    const { rows } = await pool.query(`
+      SELECT dr.*
+      FROM drift_results dr
+      WHERE ${where.join(' AND ')}
+      ORDER BY dr.detected_at DESC
+    `, params);
+
+    res.json({ ok: true, gold_org_id: goldId, dest_org_id: destOrgId, total: rows.length, results: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/drift/run
+// Body: { gold_org_id, dest_org_ids[], scope_types[]? }
+router.post('/explorer/drift/run', authMiddleware, async (req, res) => {
+  try {
+    const { gold_org_id, dest_org_ids, scope_types } = req.body || {};
+    if (!gold_org_id || !dest_org_ids?.length)
+      return res.status(400).json({ ok: false, error: 'gold_org_id and dest_org_ids[] required' });
+
+    const types = scope_types?.length ? scope_types : DEFAULT_SCOPE_TYPES;
+
+    const goldOrg = await getOrg(gold_org_id);
+    if (!goldOrg) return res.status(404).json({ ok: false, error: 'Gold org not found' });
+
+    // 1. List + hash gold metadata
+    const goldList = await listMetadataByTypes(goldOrg, types);
+    const goldHashes = {};
+    for (const item of goldList) {
+      try {
+        const contents = await readMetadataContent(goldOrg, item.type, [item.fullName]);
+        const content = contents[0] ? JSON.stringify(contents[0], null, 2) : '';
+        goldHashes[`${item.type}::${item.fullName}`] = {
+          hash: crypto.createHash('sha256').update(content).digest('hex'),
+          type: item.type,
+          fullName: item.fullName
+        };
+      } catch (e) {
+        console.warn(`[drift] gold read fail: ${item.fullName}`, e.message);
+      }
+    }
+
+    const orgsProcessed = [];
+
+    // 2. For each dest org
+    for (const destOrgId of dest_org_ids) {
+      const destOrg = await getOrg(destOrgId);
+      if (!destOrg) continue;
+
+      const destList = await listMetadataByTypes(destOrg, types);
+      const destHashes = {};
+      for (const item of destList) {
+        try {
+          const contents = await readMetadataContent(destOrg, item.type, [item.fullName]);
+          const content = contents[0] ? JSON.stringify(contents[0], null, 2) : '';
+          destHashes[`${item.type}::${item.fullName}`] = {
+            hash: crypto.createHash('sha256').update(content).digest('hex'),
+            type: item.type,
+            fullName: item.fullName
+          };
+        } catch (e) {
+          console.warn(`[drift] dest read fail: ${item.fullName}`, e.message);
+        }
+      }
+
+      // Compare and record
+      const allKeys = new Set([...Object.keys(goldHashes), ...Object.keys(destHashes)]);
+      const summary = { ok: 0, diff: 0, absent: 0, extra: 0 };
+
+      // Clear previous results for this pair
+      await pool.query(
+        'DELETE FROM drift_results WHERE gold_org_id = $1 AND dest_org_id = $2',
+        [gold_org_id, destOrgId]
+      );
+
+      for (const key of allKeys) {
+        const g = goldHashes[key];
+        const d = destHashes[key];
+        const [type, fullName] = key.split('::');
+        let status;
+
+        if (g && !d) { status = 'absent'; }
+        else if (!g && d) { status = 'extra'; }
+        else if (g.hash === d.hash) { status = 'ok'; }
+        else { status = 'diff'; }
+
+        summary[status]++;
+
+        // Insert drift_result
+        await pool.query(`
+          INSERT INTO drift_results (gold_org_id, dest_org_id, component_name, component_type, status, detected_at)
+          VALUES ($1, $2, $3, $4, $5, NOW())
+        `, [gold_org_id, destOrgId, fullName, type, status]);
+
+        // Upsert drift_snapshot for dest
+        const hash = d ? d.hash : 'absent';
+        await pool.query(`
+          INSERT INTO drift_snapshots (org_id, component_name, component_type, content_hash, captured_at)
+          VALUES ($1, $2, $3, $4, NOW())
+        `, [destOrgId, fullName, type, hash]);
+      }
+
+      // Update drift_summary on org
+      const driftSummary = {
+        ...summary,
+        gold_org_id: gold_org_id,
+        last_check: new Date().toISOString(),
+        total_components: allKeys.size
+      };
+      await pool.query(
+        'UPDATE orgs SET drift_summary = $1 WHERE id = $2',
+        [JSON.stringify(driftSummary), destOrgId]
+      );
+
+      orgsProcessed.push(destOrgId);
+    }
+
+    res.json({ ok: true, orgs_processed: orgsProcessed, total_orgs: orgsProcessed.length });
+  } catch (e) {
+    console.error('[drift/run]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 export default router;
