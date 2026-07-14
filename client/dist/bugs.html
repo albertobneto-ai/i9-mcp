@@ -785,15 +785,19 @@ function gpRenderKPIs(){
   const back=cnt(b=>b.status==='BackLog');
   const ma=cnt(b=>b.prioridade==='Muito Alta');
   const synced=d.filter(b=>gpBoardMap[b.id]).length;
+  const novos=cnt(b=>b.is_new);
+  const mudou=cnt(b=>!b.is_new&&b.status_changed);
   document.getElementById('gp-kpis').innerHTML=`
     <div class="kpi dark"><div class="kpi-label">Total Bugs</div><div class="kpi-value">${total}</div><div class="kpi-sub">todas as frentes</div></div>
     <div class="kpi dark" style="border-top:2px solid #8B4545;"><div class="kpi-label">Em Correção</div><div class="kpi-value" style="color:#c07070;">${fix}</div><div class="kpi-sub">testes unitários</div></div>
     <div class="kpi dark" style="border-top:2px solid #4A6A4A;"><div class="kpi-label">Homologados</div><div class="kpi-value" style="color:#6B8E6B;">${hom}</div><div class="kpi-sub">aprovados</div></div>
-    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>`;
+    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">BackLog</div><div class="kpi-value" style="color:#c8a050;">${back}</div><div class="kpi-sub">sem priorização</div></div>
+    <div class="kpi dark" style="border-top:2px solid #456080;"><div class="kpi-label">🆕 Novos</div><div class="kpi-value" style="color:#6B9BD8;">${novos}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>
+    <div class="kpi dark" style="border-top:2px solid #7A6530;"><div class="kpi-label">↕ Status Alterado</div><div class="kpi-value" style="color:#c8a050;">${mudou}</div><div class="kpi-sub">vs. Gestão de Bugs_OLD</div></div>`;
   const alertEl=document.getElementById('gp-alert');
   if(alertEl){
     alertEl.style.display=ma>0?'block':'none';
-    alertEl.innerHTML=`⚠ <strong>${ma} bugs Muito Alta</strong> em aberto · <strong>${fix} em correção</strong> · ${synced}/${total} sincronizados com o board`;
+    alertEl.innerHTML=`⚠ <strong>${ma} bugs Muito Alta</strong> em aberto · <strong>${fix} em correção</strong> · ${synced}/${total} sincronizados com o board · <strong>${novos} novos</strong> e <strong>${mudou} com status alterado</strong> desde a última versão`;
   }
 }
 
@@ -883,7 +887,7 @@ function gpRenderTable(data){
   }
   tbody.innerHTML=data.map(b=>`
     <tr class="gp-trow" onclick="gpOpenModal('${b.id.replace(/'/g,"\\'")}')">
-      <td class="gp-td"><span class="gp-id">${gpEsc(b.id)}</span>${b.contestado&&b.contestado.resposta_algar?'<span style="color:#c07070;font-size:9px;margin-left:4px;" title="Devolutiva contestada">⚠</span>':''}</td>
+      <td class="gp-td"><span class="gp-id">${gpEsc(b.id)}</span>${b.contestado&&b.contestado.resposta_algar?'<span style="color:#c07070;font-size:9px;margin-left:4px;" title="Devolutiva contestada">⚠</span>':''}${b.is_new?'<span style="color:#6B9BD8;font-size:9px;margin-left:4px;font-weight:700;" title="Novo — não existia na versão anterior (Gestão de Bugs_OLD)">🆕</span>':''}${!b.is_new&&b.status_changed?`<span style="color:#c8a050;font-size:9px;margin-left:4px;" title="Status mudou desde a versão anterior: ${gpEsc(b.status_before)} → ${gpEsc(b.status)}">↕</span>`:''}</td>
       <td class="gp-td gp-desc">${gpEsc(b.descricao)}</td>
       <td class="gp-td">${gpStatusBadge(b.status)}</td>
       <td class="gp-td">${gpBoardBadge(b.id)}</td>
@@ -1097,18 +1101,63 @@ async function processUpload(){
         };
       });
     }
+    setProgress(70,'Lendo versão anterior para comparação...');
+
+    // 5b. Read previous snapshot (Gestão de Bugs_OLD) — used to flag "novo" / "status alterado"
+    // Mapeado por NOME de coluna (não posição), pois a aba principal e a _OLD compartilham o
+    // mesmo layout de cabeçalho.
+    function mapHeader(rows){
+      const header=(rows[0]||[]).map(h=>String(h||'').trim());
+      return name=>header.indexOf(name);
+    }
+    const oldMap={};
+    const wsOld=wb.Sheets['Gestão de Bugs_OLD'];
+    if(wsOld){
+      const oldRows=XLSX.utils.sheet_to_json(wsOld,{header:1,defval:''});
+      const oldCol=mapHeader(oldRows);
+      const oIdBug=oldCol('ID Bug'), oStatus=oldCol('Status');
+      oldRows.slice(1).forEach(r=>{
+        const raw=oIdBug>=0?r[oIdBug]:r[1];
+        if(!raw)return;
+        const cid=String(raw).trim();
+        if(!cid)return;
+        oldMap[cid]={ status:String((oStatus>=0?r[oStatus]:r[3])||'').trim() };
+      });
+    }
     setProgress(75,'Construindo registros...');
 
-    // 6. Build bug objects
+    // 6. Build bug objects — colunas mapeadas por NOME (robusto a inclusão/reordenação de colunas,
+    // como a coluna 'ID' sequencial que foi adicionada antes de 'ID Bug')
+    const mainCol=mapHeader(mainRows);
+    const IDX={
+      idBug:   mainCol('ID Bug'),
+      desc:    mainCol('Descrição'),
+      status:  mainCol('Status'),
+      prio:    mainCol('Prioridade'),
+      data:    mainCol('Data Criação'),
+      respCri: mainCol('Responsavel Criação'),
+      focal:   mainCol('Ponto focal'),
+      frente:  mainCol('Frente'),
+      us:      mainCol('US Impactada'),
+      descUs:  mainCol('Descrição da US'),
+      cnt:     mainCol('QTDE CNT Every'),
+      statusUs:mainCol('Status US'),
+      esforco: mainCol('Esforço de Correção'),
+      prazo:   mainCol('Prazo de Correção'),
+      respFix: mainCol('Responsável')
+    };
+    const gv=(r,i,fallback)=> i>=0 ? r[i] : (fallback!==undefined?r[fallback]:'');
+
     const bugs=[];
     mainRows.slice(1).forEach(r=>{
-      if(!r[0])return;
-      const id=String(r[0]).trim();
+      const idRaw=gv(r,IDX.idBug,1); // fallback posicional caso o cabeçalho não seja encontrado
+      if(!idRaw)return;
+      const id=String(idRaw).trim();
       if(!id)return;
 
       // Date handling — XLSX can return Date objects or serial numbers or strings
       let data='';
-      const rawDate=r[4];
+      const rawDate=gv(r,IDX.data,5);
       if(rawDate instanceof Date&&!isNaN(rawDate)){
         data=rawDate.toLocaleDateString('pt-BR');
       } else if(typeof rawDate==='number'&&rawDate>40000){
@@ -1121,25 +1170,30 @@ async function processUpload(){
 
       const det=detailMap[id]||{};
       const dev=devMap[id]||{};
+      const status=String(gv(r,IDX.status,3)||'').trim();
+      const oldEntry=oldMap[id];
 
       bugs.push({
         id,
-        descricao:          String(r[1]||'').trim(),
-        status:             String(r[2]||'').trim(),
-        prioridade:         String(r[3]||'').trim(),
+        descricao:          String(gv(r,IDX.desc,2)||'').trim(),
+        status,
+        prioridade:         String(gv(r,IDX.prio,4)||'').trim(),
         data,
-        responsavel_criacao:String(r[5]||'').trim(),
-        ponto_focal:        String(r[6]||'').trim(),
-        frente:             String(r[7]||'').trim(),
-        us:                 String(r[8]||'').trim(),
-        desc_us:            String(r[9]||'').trim(),
-        cnt_every:          String(r[10]===null||r[10]===undefined?'':r[10]).trim(),
-        status_us:          String(r[11]||'').trim(),
-        esforco:            String(r[12]===null||r[12]===undefined?'':r[12]).trim(),
-        prazo:              String(r[13]===null||r[13]===undefined?'':r[13]).trim(),
-        responsavel_fix:    String(r[14]||'').trim(),
+        responsavel_criacao:String(gv(r,IDX.respCri,6)||'').trim(),
+        ponto_focal:        String(gv(r,IDX.focal,7)||'').trim(),
+        frente:             String(gv(r,IDX.frente,8)||'').trim(),
+        us:                 String(gv(r,IDX.us,9)||'').trim(),
+        desc_us:            String(gv(r,IDX.descUs,10)||'').trim(),
+        cnt_every:          String(gv(r,IDX.cnt,11)??'').trim(),
+        status_us:          String(gv(r,IDX.statusUs,12)||'').trim(),
+        esforco:            String(gv(r,IDX.esforco,13)??'').trim(),
+        prazo:              String(gv(r,IDX.prazo,14)??'').trim(),
+        responsavel_fix:    String(gv(r,IDX.respFix,15)||'').trim(),
         detail:  det,
-        contestado: dev.resposta_algar ? dev : {}
+        contestado: dev.resposta_algar ? dev : {},
+        is_new:          !oldEntry,
+        status_before:   oldEntry ? oldEntry.status : null,
+        status_changed:  !!(oldEntry && oldEntry.status && oldEntry.status!==status)
       });
     });
 
@@ -1208,6 +1262,15 @@ function gpOpenModal(id){
     <div class="gm-field"><div class="gm-flbl">Status Planilha GP</div><div class="gm-fval">${gpStatusBadge(b.status)}</div></div>
     <div class="gm-field"><div class="gm-flbl">Status Board Bug Tracker</div><div class="gm-fval">${bc?`<span style="font-weight:700;color:var(--gray-l);">${gpEsc(BOARD_STATUS_LABEL[bc.status]||bc.status)}</span>`:'<span style="color:var(--gray-m);font-size:10px;">Não encontrado no board</span>'}</div></div>
   </div></div>`;
+
+  // Comparação com versão anterior (Gestão de Bugs_OLD)
+  if(b.is_new||b.status_changed){
+    body+=`<div class="gm-section"><div class="gm-section-lbl">Comparação com Versão Anterior (Gestão de Bugs_OLD)</div>
+    <div class="gm-grid">`;
+    if(b.is_new)body+=`<div class="gm-field full"><div class="gm-fval">🆕 <strong style="color:#6B9BD8;">Novo</strong> — este bug não constava na versão anterior da planilha.</div></div>`;
+    if(!b.is_new&&b.status_changed)body+=`<div class="gm-field full"><div class="gm-fval">↕ Status mudou: <strong>${gpEsc(b.status_before)}</strong> → <strong style="color:#c8a050;">${gpEsc(b.status)}</strong></div></div>`;
+    body+=`</div></div>`;
+  }
 
   // US
   body+=`<div class="gm-section"><div class="gm-section-lbl">US &amp; Rastreabilidade</div>
