@@ -291,7 +291,7 @@ body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--gray-bg);c
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v8M4 4l3-3 3 3M2 11h10"/></svg>
     Atualizar Planilha
   </button>
-  <button onclick="gpRefreshFromBoard()" title="Sincronizar com status do board" style="display:flex;align-items:center;gap:6px;background:var(--dark);color:var(--gray-s);border:1px solid var(--gray-d);border-radius:7px;padding:8px 12px;font-size:11px;cursor:pointer;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--gray-s)'">
+  <button onclick="gpSyncBoardAndRender()" title="Sincronizar com status do board" style="display:flex;align-items:center;gap:6px;background:var(--dark);color:var(--gray-s);border:1px solid var(--gray-d);border-radius:7px;padding:8px 12px;font-size:11px;cursor:pointer;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--gray-s)'">
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 6.5A5 5 0 0 1 11 3.5M11.5 6.5A5 5 0 0 1 2 9.5"/><path d="M9 3l2 .5.5-2M4 10l-2-.5-.5 2"/></svg>
     Sincronizar Board
   </button>
@@ -940,6 +940,15 @@ async function gpRefreshFromBoard(){
     boardCards.forEach(c=>{ if(c.code)gpBoardMap[c.code]=c; });
     gpSetSyncStatus(Object.keys(gpBoardMap).length);
   }catch(e){ console.warn('gpRefreshFromBoard:',e.message); }
+}
+// Chamado pelo botão "Sincronizar Board" — sincroniza E redesenha (tabela/KPIs) na hora,
+// para que o resultado seja visível imediatamente mesmo sem reprocessar a planilha.
+async function gpSyncBoardAndRender(){
+  await gpRefreshFromBoard();
+  if(gpData.length){
+    gpRenderKPIs();
+    gpRenderTable(gpActive.length?gpActive:gpData);
+  }
 }
 function gpSetSyncStatus(matched){
   const dot=document.getElementById('gp-sync-dot');
