@@ -1214,6 +1214,41 @@ async function processUpload(){
 
     // 8. Sync board (independent — don't let it fail the upload)
     try{ await gpRefreshFromBoard(); }catch(e){ console.warn('Board sync após upload:',e); }
+
+    // 8b. Regra fixa: todo bug NOVO ou em BACKLOG na planilha que ainda não tem card no
+    // Bug Tracker interno precisa ser criado lá automaticamente (status BACKLOG).
+    let autoCreated=0;
+    try{
+      const isBacklogStatus=s=>/backlog/i.test(String(s||'').trim());
+      const missing=bugs.filter(b=>(b.is_new||isBacklogStatus(b.status))&&!gpBoardMap[b.id]);
+      if(missing.length){
+        setProgress(96,`Criando ${missing.length} card(s) no board...`);
+        const sectionFor=fr=> fr==='Gestão de Contas' ? 'Conta — Backlog'
+                             : fr==='Gestão de Contatos' ? 'Contato — Backlog'
+                             : 'Lead — Backlog';
+        const items=missing.map(b=>({
+          code: b.id,
+          name: (b.descricao||b.id).slice(0,395),
+          obj: '',
+          section: sectionFor(b.frente),
+          problem: b.descricao||'',
+          status: 'BACKLOG',
+          notes: `Criado automaticamente ao carregar a planilha GP (${new Date().toLocaleString('pt-BR')}) — ${b.is_new?'bug novo na planilha':'status Backlog na planilha'} sem card no board.`
+        }));
+        const cr=await fetch(API+'/bulk-create',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({items})
+        });
+        if(cr.ok){
+          const crData=await cr.json();
+          autoCreated=crData.inserted||0;
+          await gpRefreshFromBoard(); // recarrega o mapa para os badges já refletirem os novos cards
+        } else {
+          console.warn('Auto-create board cards falhou:', await cr.text());
+        }
+      }
+    }catch(e){ console.warn('Auto-create board cards erro:',e); }
+
     setProgress(100,`✓ ${bugs.length} bugs carregados com sucesso!`);
 
     // 9. Render — single call after everything is set
@@ -1223,7 +1258,7 @@ async function processUpload(){
     const dot=document.getElementById('gp-sync-dot');
     const lbl=document.getElementById('gp-sync-label');
     if(dot)dot.style.background='#4A6A4A';
-    if(lbl)lbl.textContent=`${file.name} · ${bugs.length} bugs · ${new Date().toLocaleTimeString('pt-BR')}`;
+    lbl && (lbl.textContent=`${file.name} · ${bugs.length} bugs${autoCreated?` · ${autoCreated} card(s) novo(s) no board`:''} · ${new Date().toLocaleTimeString('pt-BR')}`);
 
     setTimeout(closeUploadModal,1500);
 
