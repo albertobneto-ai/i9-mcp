@@ -1,10 +1,18 @@
 // src/routes/explorer.js
-// Sprint 1 — BE-1 (Stories CRUD + Board) e BE-2 (Dashboard)
-// Rewrite completo — substitui v1 que consultava tabelas obsoletas.
+// Sprint 1+2 — BE-1 to BE-4 (Stories, Board, Dashboard, Equalize, Merge, Deploy)
 
 import { Router } from 'express';
 import pool from '../config/db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { computeLcsDiff, diffStatus, groupOpsIntoSegments } from '../utils/diff.js';
+import { nextOeId } from '../utils/oeId.js';
+import { buildMetadataZip, buildPackageXml, metadataPath } from '../utils/metadataZip.js';
+import {
+  listMetadataByTypes, readMetadataContent, deployMetadataPackage,
+  connectToOrg
+} from '../services/sf-multi.js';
+import crypto from 'crypto';
+
 
 const router = Router();
 
@@ -294,4 +302,507 @@ router.get('/explorer/dashboard', authMiddleware, async (req, res) => {
   }
 });
 
+// ============================================================
+// SPRINT 2 — BE-3 (Equalização) + BE-4 (Merge Staged + Deploy)
+// ============================================================
+
+
+// ── helper: buscar org do banco ──
+async function getOrg(orgId) {
+  const { rows } = await pool.query('SELECT * FROM orgs WHERE id = $1', [orgId]);
+  return rows[0] || null;
+}
+
+// ============================================================
+// BE-3  EQUALIZE
+// ============================================================
+
+// POST /api/explorer/equalize/analyze
+// Body: { gold_org_id, dest_org_ids[], scope_types[] }
+router.post('/explorer/equalize/analyze', authMiddleware, async (req, res) => {
+  try {
+    const { gold_org_id, dest_org_ids, scope_types } = req.body || {};
+    if (!gold_org_id || !dest_org_ids?.length || !scope_types?.length)
+      return res.status(400).json({ ok: false, error: 'gold_org_id, dest_org_ids[] and scope_types[] required' });
+
+    const goldOrg = await getOrg(gold_org_id);
+    if (!goldOrg) return res.status(404).json({ ok: false, error: 'Gold org not found' });
+
+    // 1. List metadata from gold
+    const goldList = await listMetadataByTypes(goldOrg, scope_types);
+    const goldNames = goldList.map(c => ({ type: c.type, fullName: c.fullName }));
+
+    // 2. Collect all unique fullNames across types
+    const byType = {};
+    for (const c of goldList) {
+      if (!byType[c.type]) byType[c.type] = [];
+      byType[c.type].push(c.fullName);
+    }
+
+    // 3. Read gold content
+    const goldContents = {};
+    for (const [type, names] of Object.entries(byType)) {
+      const items = await readMetadataContent(goldOrg, type, names);
+      for (const item of items) {
+        const key = `${type}::${item.fullName}`;
+        goldContents[key] = JSON.stringify(item, null, 2);
+      }
+    }
+
+    // 4. For each dest org: list, read, compare
+    const components = [];
+    for (const destOrgId of dest_org_ids) {
+      const destOrg = await getOrg(destOrgId);
+      if (!destOrg) continue;
+
+      const destList = await listMetadataByTypes(destOrg, scope_types);
+      const destByType = {};
+      for (const c of destList) {
+        if (!destByType[c.type]) destByType[c.type] = [];
+        destByType[c.type].push(c.fullName);
+      }
+
+      // Read dest content
+      const destContents = {};
+      for (const [type, names] of Object.entries(destByType)) {
+        const items = await readMetadataContent(destOrg, type, names);
+        for (const item of items) {
+          destContents[`${type}::${item.fullName}`] = JSON.stringify(item, null, 2);
+        }
+      }
+
+      // All unique keys (gold + dest)
+      const allKeys = new Set([...Object.keys(goldContents), ...Object.keys(destContents)]);
+
+      // Check pending merges for this dest
+      const pmRes = await pool.query(
+        'SELECT component_name, component_type FROM pending_merges WHERE dest_org_id = $1',
+        [destOrgId]
+      );
+      const mergedSet = new Set(pmRes.rows.map(r => `${r.component_type}::${r.component_name}`));
+
+      for (const key of allKeys) {
+        const [type, fullName] = key.split('::');
+        const goldContent = goldContents[key] || null;
+        const destContent = destContents[key] || null;
+
+        // Se tem pending merge, status = 'merged'
+        let status = mergedSet.has(key) ? 'merged' : diffStatus(goldContent, destContent);
+
+        let lcsDiff = null;
+        if (status === 'diff') {
+          lcsDiff = computeLcsDiff(goldContent, destContent);
+        }
+
+        // Find or append component in results
+        let comp = components.find(c => c.name === fullName && c.type === type);
+        if (!comp) {
+          comp = {
+            name: fullName, type,
+            statuses: {},
+            gold_content: goldContent,
+            dest_contents: {},
+            lcs_diff: {}
+          };
+          components.push(comp);
+        }
+        comp.statuses[destOrgId] = status;
+        comp.dest_contents[destOrgId] = destContent;
+        if (lcsDiff) comp.lcs_diff[destOrgId] = lcsDiff;
+      }
+    }
+
+    res.json({ ok: true, components });
+  } catch (e) {
+    console.error('[equalize/analyze]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/equalize/run
+// Body: { gold_org_id, dest_org_ids[], scope_types[], only_diff }
+router.post('/explorer/equalize/run', authMiddleware, async (req, res) => {
+  try {
+    const { gold_org_id, dest_org_ids, scope_types, only_diff = false } = req.body || {};
+    if (!gold_org_id || !dest_org_ids?.length || !scope_types?.length)
+      return res.status(400).json({ ok: false, error: 'gold_org_id, dest_org_ids[] and scope_types[] required' });
+
+    // Create eq_job
+    const { rows } = await pool.query(`
+      INSERT INTO eq_jobs (gold_org_id, dest_org_ids, scope_types, only_diff, status, executed_by, started_at, created_at)
+      VALUES ($1, $2, $3, $4, 'running', $5, NOW(), NOW())
+      RETURNING id
+    `, [gold_org_id, dest_org_ids, scope_types, only_diff, req.user.id]);
+    const eqJobId = rows[0].id;
+
+    // Launch async (não bloqueia o request)
+    runEqualization(eqJobId, gold_org_id, dest_org_ids, scope_types, only_diff)
+      .catch(e => console.error('[equalize/run async]', e.message));
+
+    res.json({ ok: true, eq_job_id: eqJobId, status: 'running' });
+  } catch (e) {
+    console.error('[equalize/run]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Async equalization worker
+async function runEqualization(eqJobId, goldOrgId, destOrgIds, scopeTypes, onlyDiff) {
+  try {
+    const goldOrg = await getOrg(goldOrgId);
+    const goldList = await listMetadataByTypes(goldOrg, scopeTypes);
+    const byType = {};
+    for (const c of goldList) {
+      if (!byType[c.type]) byType[c.type] = [];
+      byType[c.type].push(c.fullName);
+    }
+    const goldContents = {};
+    for (const [type, names] of Object.entries(byType)) {
+      const items = await readMetadataContent(goldOrg, type, names);
+      for (const item of items) goldContents[`${type}::${item.fullName}`] = JSON.stringify(item, null, 2);
+    }
+
+    let totalComps = 0, syncedComps = 0;
+
+    for (const destOrgId of destOrgIds) {
+      const destOrg = await getOrg(destOrgId);
+      if (!destOrg) continue;
+
+      // Check pending merges — skip those
+      const pmRes = await pool.query(
+        'SELECT component_name, component_type FROM pending_merges WHERE dest_org_id = $1',
+        [destOrgId]
+      );
+      const mergedSet = new Set(pmRes.rows.map(r => `${r.component_type}::${r.component_name}`));
+
+      const destList = await listMetadataByTypes(destOrg, scopeTypes);
+      const destByType = {};
+      for (const c of destList) {
+        if (!destByType[c.type]) destByType[c.type] = [];
+        destByType[c.type].push(c.fullName);
+      }
+      const destContents = {};
+      for (const [type, names] of Object.entries(destByType)) {
+        const items = await readMetadataContent(destOrg, type, names);
+        for (const item of items) destContents[`${type}::${item.fullName}`] = JSON.stringify(item, null, 2);
+      }
+
+      const allKeys = new Set([...Object.keys(goldContents), ...Object.keys(destContents)]);
+
+      for (const key of allKeys) {
+        const [type, fullName] = key.split('::');
+        if (mergedSet.has(key)) continue; // Respeita pending merges
+
+        const goldContent = goldContents[key] || null;
+        const destContent = destContents[key] || null;
+        const status = diffStatus(goldContent, destContent);
+
+        if (onlyDiff && status === 'ok') continue;
+
+        totalComps++;
+        const actionTaken = status === 'ok' ? 'skipped' : 'synced';
+
+        await pool.query(`
+          INSERT INTO eq_components (eq_job_id, component_name, component_type, dest_org_id, status_before, action_taken, snap_gold, snap_dest, synced_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        `, [eqJobId, fullName, type, destOrgId, status, actionTaken,
+            goldContent?.substring(0, 10000), destContent?.substring(0, 10000)]);
+
+        if (actionTaken === 'synced') syncedComps++;
+      }
+    }
+
+    await pool.query(`
+      UPDATE eq_jobs SET status = 'done', total_comps = $1, synced_comps = $2, finished_at = NOW()
+      WHERE id = $3
+    `, [totalComps, syncedComps, eqJobId]);
+  } catch (e) {
+    console.error('[runEqualization]', e.message);
+    await pool.query(`UPDATE eq_jobs SET status = 'failed', result_json = $1, finished_at = NOW() WHERE id = $2`,
+      [JSON.stringify({ error: e.message }), eqJobId]);
+  }
+}
+
+// GET /api/explorer/equalize/status/:eqJobId
+router.get('/explorer/equalize/status/:eqJobId', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM eq_jobs WHERE id = $1', [req.params.eqJobId]);
+    if (!rows.length) return res.status(404).json({ ok: false, error: 'Job not found' });
+
+    const comps = await pool.query(`
+      SELECT ec.*, o.name AS dest_org_name
+      FROM eq_components ec
+      LEFT JOIN orgs o ON o.id = ec.dest_org_id
+      WHERE ec.eq_job_id = $1
+      ORDER BY ec.component_type, ec.component_name
+    `, [req.params.eqJobId]);
+
+    res.json({ ok: true, job: rows[0], components: comps.rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// BE-4  MERGE STAGED
+// ============================================================
+
+// POST /api/explorer/merge/stage
+router.post('/explorer/merge/stage', authMiddleware, async (req, res) => {
+  try {
+    const { component_name, component_type, dest_org_id, gold_org_id, merged_content } = req.body || {};
+    if (!component_name || !component_type || !dest_org_id || !gold_org_id || merged_content === undefined)
+      return res.status(400).json({ ok: false, error: 'component_name, component_type, dest_org_id, gold_org_id, merged_content required' });
+
+    const { rows } = await pool.query(`
+      INSERT INTO pending_merges (component_name, component_type, dest_org_id, gold_org_id, merged_content, prepared_by, prepared_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ON CONFLICT (component_name, dest_org_id)
+      DO UPDATE SET merged_content = $5, gold_org_id = $4, prepared_by = $6, prepared_at = NOW()
+      RETURNING id, prepared_at
+    `, [component_name, component_type, dest_org_id, gold_org_id, merged_content, req.user.id]);
+
+    res.json({ ok: true, pending_merge_id: rows[0].id, staged_at: rows[0].prepared_at });
+  } catch (e) {
+    console.error('[merge/stage]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/merge/pending?dest_org_id=
+router.get('/explorer/merge/pending', authMiddleware, async (req, res) => {
+  try {
+    const where = [];
+    const params = [];
+    if (req.query.dest_org_id) {
+      params.push(toInt(req.query.dest_org_id));
+      where.push(`pm.dest_org_id = $${params.length}`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const { rows } = await pool.query(`
+      SELECT pm.*, o1.name AS dest_org_name, o2.name AS gold_org_name, u.name AS prepared_by_name
+      FROM pending_merges pm
+      LEFT JOIN orgs o1 ON o1.id = pm.dest_org_id
+      LEFT JOIN orgs o2 ON o2.id = pm.gold_org_id
+      LEFT JOIN users u ON u.id = pm.prepared_by
+      ${whereSql}
+      ORDER BY pm.prepared_at DESC
+    `, params);
+
+    res.json({ ok: true, total: rows.length, items: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// DELETE /api/explorer/merge/cancel/:id
+router.delete('/explorer/merge/cancel/:id', authMiddleware, async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM pending_merges WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ ok: false, error: 'Pending merge not found' });
+    res.json({ ok: true, deleted: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// BE-4  DEPLOY (via merge staged)
+// ============================================================
+
+// POST /api/explorer/merge/deploy
+// Body: { pending_merge_ids: [id1, id2, ...] }
+router.post('/explorer/merge/deploy', authMiddleware, async (req, res) => {
+  try {
+    const { pending_merge_ids } = req.body || {};
+    if (!pending_merge_ids?.length)
+      return res.status(400).json({ ok: false, error: 'pending_merge_ids[] required' });
+
+    // Load pending merges
+    const { rows: merges } = await pool.query(
+      `SELECT * FROM pending_merges WHERE id = ANY($1)`,
+      [pending_merge_ids]
+    );
+    if (!merges.length) return res.status(404).json({ ok: false, error: 'No pending merges found' });
+
+    // Group by dest_org_id (deploy one batch per org)
+    const byOrg = {};
+    for (const m of merges) {
+      if (!byOrg[m.dest_org_id]) byOrg[m.dest_org_id] = [];
+      byOrg[m.dest_org_id].push(m);
+    }
+
+    const oeId = await nextOeId(pool);
+    const allResults = [];
+    let successCount = 0, failedCount = 0;
+
+    for (const [destOrgId, orgMerges] of Object.entries(byOrg)) {
+      const destOrg = await getOrg(parseInt(destOrgId));
+      if (!destOrg) {
+        for (const m of orgMerges) {
+          allResults.push({ component_name: m.component_name, status: 'failed', error_message: 'Org not found' });
+          failedCount++;
+        }
+        continue;
+      }
+
+      // Create deploy_run
+      const drRes = await pool.query(`
+        INSERT INTO deploy_runs (oe_id, us_id, type, src_org_id, tgt_org_id, status, deployed_by, deployed_at, created_at)
+        VALUES ($1, NULL, 'RELEASE', $2, $3, 'running', $4, NOW(), NOW())
+        RETURNING id
+      `, [oeId, orgMerges[0].gold_org_id, destOrgId, req.user.id]);
+      const deployRunId = drRes.rows[0].id;
+
+      // Build ZIP
+      const zipFiles = [
+        { path: 'package.xml', content: buildPackageXml(orgMerges.map(m => ({ type: m.component_type, fullName: m.component_name }))) }
+      ];
+      for (const m of orgMerges) {
+        const p = metadataPath(m.component_type, m.component_name);
+        zipFiles.push({ path: p, content: m.merged_content });
+      }
+      const zipBuffer = buildMetadataZip(zipFiles);
+
+      try {
+        const deployResult = await deployMetadataPackage(destOrg, zipBuffer, {
+          rollbackOnError: true,
+          pollTimeoutMs: 300000
+        });
+
+        const runStatus = deployResult.success ? 'success' : 'failed';
+        const duration = Math.round((Date.now() - drRes.rows[0]?.created_at?.getTime?.() || Date.now()) / 1000);
+
+        await pool.query(
+          `UPDATE deploy_runs SET status = $1, duration_sec = $2 WHERE id = $3`,
+          [runStatus, duration, deployRunId]
+        );
+
+        // Process per-component results
+        const failures = {};
+        if (deployResult.details?.componentFailures) {
+          const cf = Array.isArray(deployResult.details.componentFailures)
+            ? deployResult.details.componentFailures
+            : [deployResult.details.componentFailures];
+          for (const f of cf) {
+            failures[f.fullName || f.fileName] = f.problem || f.problemType || 'Unknown error';
+          }
+        }
+
+        for (const m of orgMerges) {
+          const compFailed = failures[m.component_name] || null;
+          const compStatus = compFailed ? 'failed' : 'success';
+
+          await pool.query(`
+            INSERT INTO deploy_components (deploy_run_id, component_name, component_type, action, snap_before, snap_after, result, error_message)
+            VALUES ($1, $2, $3, 'replaced', NULL, $4, $5, $6)
+          `, [deployRunId, m.component_name, m.component_type, m.merged_content?.substring(0, 10000), compStatus, compFailed]);
+
+          if (compStatus === 'success') {
+            // Remove from pending_merges on success
+            await pool.query('DELETE FROM pending_merges WHERE id = $1', [m.id]);
+            successCount++;
+          } else {
+            // Keep in pending_merges for retry
+            failedCount++;
+          }
+
+          allResults.push({ component_name: m.component_name, status: compStatus, error_message: compFailed });
+        }
+      } catch (deployErr) {
+        // Whole deploy failed
+        await pool.query('UPDATE deploy_runs SET status = $1 WHERE id = $2', ['failed', deployRunId]);
+        for (const m of orgMerges) {
+          allResults.push({ component_name: m.component_name, status: 'failed', error_message: deployErr.message });
+          failedCount++;
+        }
+      }
+    }
+
+    res.json({
+      ok: true,
+      oe_id: oeId,
+      total: allResults.length,
+      success_count: successCount,
+      failed_count: failedCount,
+      percent_success: allResults.length ? Math.round((successCount / allResults.length) * 100) : 0,
+      results: allResults
+    });
+  } catch (e) {
+    console.error('[merge/deploy]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// DEPLOY SNAPSHOT (captura estado atual para drift/rollback)
+// ============================================================
+
+// POST /api/explorer/deploy/snapshot
+// Body: { org_id, scope_types[] }
+router.post('/explorer/deploy/snapshot', authMiddleware, async (req, res) => {
+  try {
+    const { org_id, scope_types } = req.body || {};
+    if (!org_id || !scope_types?.length)
+      return res.status(400).json({ ok: false, error: 'org_id and scope_types[] required' });
+
+    const org = await getOrg(org_id);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    const metaList = await listMetadataByTypes(org, scope_types);
+    let snapshotCount = 0;
+
+    for (const item of metaList) {
+      const contents = await readMetadataContent(org, item.type, [item.fullName]);
+      const content = contents[0] ? JSON.stringify(contents[0], null, 2) : '';
+      const hash = crypto.createHash('sha256').update(content).digest('hex');
+
+      await pool.query(`
+        INSERT INTO drift_snapshots (org_id, component_name, component_type, content_hash, captured_at)
+        VALUES ($1, $2, $3, $4, NOW())
+      `, [org_id, item.fullName, item.type, hash]);
+
+      // Upsert component_meta
+      await pool.query(`
+        INSERT INTO component_meta (component_name, component_type, org_id, last_modified, last_snapshot_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (component_name, org_id)
+        DO UPDATE SET last_modified = $4, last_snapshot_at = NOW()
+      `, [item.fullName, item.type, org_id, item.lastModifiedDate]);
+
+      snapshotCount++;
+    }
+
+    res.json({ ok: true, org_id, snapshot_count: snapshotCount });
+  } catch (e) {
+    console.error('[deploy/snapshot]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/deploy/status/:oeId
+router.get('/explorer/deploy/status/:oeId', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT dr.*, u.name AS deployed_by_name,
+             o1.name AS src_org_name, o2.name AS tgt_org_name
+      FROM deploy_runs dr
+      LEFT JOIN users u ON u.id = dr.deployed_by
+      LEFT JOIN orgs o1 ON o1.id = dr.src_org_id
+      LEFT JOIN orgs o2 ON o2.id = dr.tgt_org_id
+      WHERE dr.oe_id = $1
+    `, [req.params.oeId]);
+    if (!rows.length) return res.status(404).json({ ok: false, error: 'Deploy run not found' });
+
+    const comps = await pool.query(`
+      SELECT * FROM deploy_components WHERE deploy_run_id = $1
+      ORDER BY component_type, component_name
+    `, [rows[0].id]);
+
+    res.json({ ok: true, deploy_run: rows[0], components: comps.rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 export default router;
