@@ -98,7 +98,8 @@
   .gr-val{ font-family:'IBM Plex Mono'; font-size:10px; color:var(--ink); text-align:right; }
   .seg-arq{ background:var(--ink); }
   .seg-dev{ background:var(--steel); }
-  .seg-hml{ background:repeating-linear-gradient(45deg, var(--ink) 0 3px, transparent 3px 6px); }
+  .seg-uat{ background:repeating-linear-gradient(45deg, var(--ink) 0 3px, transparent 3px 6px); }
+  .seg-prod{ background-image:radial-gradient(var(--ink) 1px, transparent 1.4px); background-size:5px 5px; background-color:var(--white); }
 
   .gadget-agg{ margin-top:12px; display:flex; flex-direction:column; gap:5px; }
   .gadget-agg-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--fog); }
@@ -376,505 +377,184 @@
 <div class="toastwrap" id="toastwrap"></div>
 
 <script>
-/* ============ STATE ============ */
-let orgs = [
-  { id:100, name:'HOMOL',     synced:41, diff:3, absent:2, extra:0, check:'nunca', total:46 },
-  { id:133, name:'DEVEVERY',  synced:41, diff:0, absent:0, extra:0, check:'nunca', total:41 },
-];
+// ============================================================
+// API Layer — Sprint 6: substitui todos os mocks por fetch real
+// ============================================================
+const API_BASE = window.location.origin + '/api/explorer';
+let API_TOKEN = localStorage.getItem('i9_token') || '';
 
-let boardData = {
-  todo:    [ {jira:'CRMB2B-201', type:'RELEASE', title:'Regra de validação para CNPJ em Oportunidade', dev:'AB'},
-             {jira:'CRMB2B-214', type:'BUGFIX',  title:'Flow de aprovação duplicando tarefa', dev:'LM'} ],
-  prog:    [ {jira:'CRMB2B-198', type:'RELEASE', title:'LWC de painel de contratos B2B', dev:'AB'},
-             {jira:'CRMB2B-207', type:'HOTFIX',  title:'Trigger de conta lançando null pointer', dev:'RS'} ],
-  review:  [ {jira:'CRMB2B-190', type:'RELEASE', title:'PermSet para squad de faturamento', dev:'LM'} ],
-  deploy:  [ {jira:'CRMB2B-183', type:'BUGFIX',  title:'Layout de caso não exibindo campo SLA', dev:'AB', oe:'OE-0041'} ],
-  done:    [ {jira:'CRMB2B-176', type:'RELEASE', title:'Apex batch de reconciliação de contratos', dev:'RS', oe:'OE-0039'},
-             {jira:'CRMB2B-171', type:'HOTFIX',  title:'Correção de fuso em data de vigência', dev:'LM', oe:'OE-0038'} ],
-};
+async function api(path, opts = {}) {
+  if (!API_TOKEN) {
+    // Auto-login (admin para dev; em prod teria tela de login)
+    try {
+      const r = await fetch(window.location.origin + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'admin@everi9.com', password: 'admin2026' })
+      });
+      const d = await r.json();
+      API_TOKEN = d.token || '';
+      localStorage.setItem('i9_token', API_TOKEN);
+    } catch (e) { console.error('Auto-login failed:', e); }
+  }
+  const url = API_BASE + path;
+  const headers = { 'Authorization': 'Bearer ' + API_TOKEN, 'Content-Type': 'application/json', ...opts.headers };
+  const resp = await fetch(url, { ...opts, headers });
+  if (resp.status === 401) { API_TOKEN = ''; localStorage.removeItem('i9_token'); throw new Error('Auth expired'); }
+  return resp.json();
+}
+
+// ── State (carregado da API) ──
+let orgs = [];
+let boardData = { todo:[], prog:[], review:[], deploy:[], done:[] };
 const colTitles = { todo:'To do', prog:'Em progresso', review:'Em revisão', deploy:'Deploy', done:'Concluído' };
-let nextOe = 42;
-
-const recentDeploys = [
-  { oe:'OE-0041', jira:'CRMB2B-183', tgt:'HOMOL',     tgtId:100, status:'success', dur:'2m14s', components:['CaseSLALayout'] },
-  { oe:'OE-0040', jira:'CRMB2B-179', tgt:'DEVEVERY',  tgtId:133, status:'success', dur:'4m02s', components:['ContractReconciliationBatch','AccountTriggerHandler'] },
-  { oe:'OE-0039', jira:'CRMB2B-176', tgt:'DEVEVERY',  tgtId:133, status:'success', dur:'3m48s', components:['ContractApprovalFlow'] },
-  { oe:'OE-0038', jira:'CRMB2B-171', tgt:'HOMOL',     tgtId:100, status:'failed',  dur:'0m51s', components:['Billing_Squad_Access','CNPJ_Validation_Rule'] },
-];
-
-const ARQ_ID = 36;
-function orgName(id){ if(id===ARQ_ID) return 'ORG ARQUITETURA'; const o=orgs.find(o=>o.id===id); return o ? o.name : '\u2014'; }
-
-/* Gold sandbox do Dashboard/Drift — por padrão é a ORG ARQUITETURA, mas
-   pode ser trocada por qualquer org cadastrada. Independente da gold
-   escolhida na aba Equalização (que é só pra uma análise pontual). */
-let dashboardGoldOrgId = ARQ_ID;
-let arqStats = { id: ARQ_ID, name:'ORG ARQUITETURA', diff:0, absent:0, extra:0, synced:41, total:41, check:'nunca' };
-function statsFor(id){ return id === ARQ_ID ? arqStats : orgs.find(o=>o.id===id); }
-function dashboardDestOrgs(){ return eqAllOrgs().filter(o=>o.id !== dashboardGoldOrgId); }
-function eqAllOrgs(){ return [{id:ARQ_ID, name:'ORG ARQUITETURA'}].concat(orgs); }
-
-/* pipeline de equalizacao: qualquer org pode ser gold; as demais sao destino */
-let eqGoldOrgId = ARQ_ID;
-let eqSelectedOrgs = new Set(orgs.map(o=>o.id)); // destinos por padrao: dev, uat, prod
-
-/* Merges preparados (mergeados) mas ainda não deployados.
-   Chave: "nomeDoComponente::orgDestinoId" -> conteúdo já mesclado. */
+let recentDeploys = [];
+let dashboardGoldOrgId = 36;
+let dashboardData = {};
 let pendingMerges = {};
-function pendingKey(name, destId){ return name + '::' + destId; }
-
-/* Log de deploys — histórico consultável, com motivo em caso de falha. */
 let deployLog = [];
+let componentListCache = {};
+let eqGoldOrgId = 36;
+let eqSelectedOrgs = new Set();
+let eqAnalyzeResult = null;
+
+// ── Compatibility stubs (gradual migration) ──
+let contentByOrg = {}; // Populado por equalize/analyze
+let snapshotDates = {};
+function snapshotKey(name, orgId) { return name + '::' + orgId; }
+function refreshSnapshot(name, orgId) { snapshotDates[snapshotKey(name, orgId)] = new Date().toISOString(); }
+function getComponentMeta(name, orgId) { return null; }
+let envData = {};
+let componentList = [];
+function computeStatus(name, destId, goldId) {
+  const key = pendingKey(name, destId);
+  if (pendingMerges[key]) return 'merged';
+  if (!contentByOrg[goldId] || !contentByOrg[goldId][name]) return 'absent';
+  if (!contentByOrg[destId] || !contentByOrg[destId][name]) return 'absent';
+  return contentByOrg[goldId][name] === contentByOrg[destId][name] ? 'ok' : 'diff';
+}
+let nextOe = 1;
 let deployLogSeq = 1;
+function logDeploy(name, destId, outcome) {
+  deployLog.unshift({ id: deployLogSeq++, component: name, dest: orgName(destId), destId, status: outcome.status, ts: new Date().toISOString(), error: outcome.message || null });
+}
+function orgState(o) { return (o.diff > 0 || o.absent > 0 || o.extra > 0) ? 'drift' : 'synced'; }
+function orgSubLabel(o) {
+  if (o.check === 'nunca') return 'nunca verificado';
+  const parts = [];
+  if (o.diff) parts.push(o.diff + ' diff');
+  if (o.absent) parts.push(o.absent + ' absent');
+  if (o.extra) parts.push(o.extra + ' extra');
+  return parts.length ? parts.join(', ') : 'sincronizado';
+}
+function countPending() { return Object.keys(pendingMerges).length; }
+function simulateDeployOutcome() { return { status: 'success', message: null }; }
 
-const DEPLOY_ERROR_MESSAGES = [
-  'Cobertura de testes Apex abaixo do mínimo exigido (68%, necessário 75%).',
-  'Falha de compilação: referência a campo inexistente Contract.Amount__c.',
-  'Violação de FLS: usuário de deploy sem acesso ao campo CNPJ__c.',
-  'Timeout ao conectar na org de destino (SOAP login excedeu 20s).',
-  'Conflito de merge: componente foi alterado na org destino após o snapshot ser tirado.',
-];
 
-/* Simula o resultado real de um deploy (a maior parte tem sucesso,
-   uma fração falha com um motivo plausível de Salesforce/Heroku). */
-function simulateDeployOutcome(){
-  const ok = Math.random() > 0.22;
-  if(ok) return { status:'success', message:'Deploy concluído com sucesso.' };
-  const message = DEPLOY_ERROR_MESSAGES[Math.floor(Math.random()*DEPLOY_ERROR_MESSAGES.length)];
-  return { status:'failed', message };
+function orgName(id) {
+  if (!id) return '—';
+  const o = orgs.find(o => o.id === id);
+  return o ? o.name : 'Org #' + id;
+}
+function eqAllOrgs() { return orgs; }
+function dashboardDestOrgs() { return orgs.filter(o => o.id !== dashboardGoldOrgId); }
+function pendingKey(name, destId) { return name + '::' + destId; }
+function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Data loaders ──
+async function loadOrgs() {
+  const d = await api('/dashboard?gold_org_id=' + dashboardGoldOrgId);
+  if (!d.ok) return;
+  dashboardData = d;
+  orgs = (d.explorer_orgs || []).map(o => ({
+    id: o.id, name: o.name, org_type: o.org_type,
+    is_default_gold: o.is_default_gold,
+    ...(o.drift_summary || { diff:0, absent:0, extra:0, ok:0, total_components:0 }),
+    synced: o.drift_summary?.ok || 0,
+    total: o.drift_summary?.total_components || 0,
+    check: o.drift_summary?.last_check || 'nunca'
+  }));
+  if (!eqSelectedOrgs.size) eqSelectedOrgs = new Set(orgs.filter(o=>o.id !== eqGoldOrgId).map(o=>o.id));
 }
 
-function logDeploy(name, destId, outcome){
-  deployLog.unshift({
-    id: deployLogSeq++,
-    timestamp: new Date().toLocaleString('pt-BR',{ day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit' }),
-    component: name,
-    destOrg: orgName(destId),
-    status: outcome.status,
-    message: outcome.message,
-  });
+async function loadBoard() {
+  const d = await api('/board');
+  if (d.ok) {
+    boardData = d.board;
+    // Map fields for compatibility
+    for (const col of Object.values(boardData)) {
+      for (const item of col) {
+        item.jira = item.jira_key;
+        item.dev = item.assigned_name || '—';
+        item.oe = item.oe_id || '';
+      }
+    }
+  }
 }
 
-function openDeployLog(){
-  const rows = deployLog.length ? deployLog.map(e=>`
-    <div class="hunkitem" style="align-items:flex-start;">
-      <span class="swatch ${e.status==='success' ? 'ok' : 'diff'}" style="margin-top:3px;"></span>
-      <div style="flex:1;">
-        <div style="display:flex; justify-content:space-between; gap:10px;">
-          <strong>${e.component}</strong>
-          <span class="mono" style="color:var(--fog); font-size:10px; white-space:nowrap;">${e.timestamp}</span>
-        </div>
-        <div style="color:var(--fog); font-size:10.5px; margin-top:2px;">destino: ${e.destOrg} · ${e.status==='success' ? 'sucesso' : ('falha — ' + e.message)}</div>
-      </div>
-    </div>
-  `).join('') : `<p style="color:var(--fog);">Nenhum deploy registrado ainda.</p>`;
-  openModal('Log de deploys', `<div class="hunklist" style="max-height:55vh; overflow-y:auto;">${rows}</div>`,
-    `<button class="btn" onclick="closeModal()">Fechar</button>`, true);
+async function loadPendingMerges() {
+  const d = await api('/merge/pending');
+  if (!d.ok) return;
+  pendingMerges = {};
+  for (const pm of d.items) {
+    pendingMerges[pendingKey(pm.component_name, pm.dest_org_id)] = {
+      id: pm.id, content: pm.merged_content, name: pm.component_name,
+      type: pm.component_type, destId: pm.dest_org_id, goldId: pm.gold_org_id
+    };
+  }
 }
 
-/* Modal de resumo pós-deploy: percentual de implementação + lista
-   componente a componente, com atalho pro log em caso de falha. */
-function renderBatchSummaryModal(title, results){
-  const total = results.length;
-  const successCount = results.filter(r=>r.status==='success').length;
-  const failCount = total - successCount;
-  const pct = total ? Math.round(successCount/total*100) : 100;
-  const rows = results.length ? results.map(r=>`
-    <div class="hunkitem" style="align-items:center;">
-      <span class="swatch ${r.status==='success' ? 'ok' : 'diff'}" style="margin-top:3px;"></span>
-      <div style="flex:1;"><strong>${r.name}</strong> <span style="color:var(--fog)">→ ${orgName(r.destId)}</span><br>
-      <span style="color:var(--fog); font-size:10.5px;">${r.status==='success' ? 'sucesso' : r.message}</span></div>
-    </div>
-  `).join('') : `<p style="color:var(--fog);">Nenhum componente precisou de ação nesta leva.</p>`;
+async function loadDeployLog() {
+  const d = await api('/log?limit=50');
+  if (!d.ok) return;
+  deployLog = d.deploy_runs.map(r => ({
+    id: r.id, oe: r.oe_id, jira: r.jira_key || '—',
+    component: r.tgt_org_name || '', dest: r.tgt_org_name || '',
+    destId: r.tgt_org_id, status: r.status, ts: r.deployed_at || r.created_at,
+    error: r.status === 'failed' ? 'Ver detalhes' : null
+  }));
+}
 
-  openModal(title, `
-    <p style="color:var(--fog); font-size:12px; margin:0 0 10px;">${successCount} de ${total} componente(s) implementados com sucesso${failCount>0 ? `, ${failCount} com falha` : ''}.</p>
-    <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
-    <p style="color:var(--fog); font-size:11px; margin:8px 0 14px;">${pct}% de implementação</p>
-    <div class="hunklist">${rows}</div>
-  `, `
-    <button class="btn" onclick="closeModal()">Fechar</button>
-    ${failCount>0 ? `<button class="btn primary" onclick="closeModal(); openDeployLog();">Ver logs de erro</button>` : ''}
-  `, true);
+async function loadRecentDeploys() {
+  const d = await api('/log?limit=10');
+  if (!d.ok) return;
+  recentDeploys = d.deploy_runs.map(r => ({
+    oe: r.oe_id, jira: r.jira_key || '—', tgt: r.tgt_org_name || '',
+    tgtId: r.tgt_org_id, status: r.status,
+    dur: r.duration_sec ? r.duration_sec + 's' : '—',
+    components: []
+  }));
+}
+
+// ── Init ──
+async function initApp() {
+  try {
+    await loadOrgs();
+    await loadBoard();
+    await loadPendingMerges();
+    await loadRecentDeploys();
+    renderAll();
+  } catch (e) { console.error('Init failed:', e); }
+}
+function renderAll() {
+  try { renderPipeline(); } catch(e){}
+  try { renderGlobalBadge(); } catch(e){}
+  try { renderBoard(); } catch(e){}
+  try { renderDashGoldSelect(); } catch(e){}
+  try { renderGadgets(); } catch(e){}
+  try { renderDrift(); } catch(e){}
+  try { renderRecentDeploys(); } catch(e){}
+  try { renderGoldSelect(); } catch(e){}
+  try { renderEqPipeline(); } catch(e){}
+  try { renderMatrix(); } catch(e){}
+  try { renderDeployPendingButton(); } catch(e){}
+  try { renderRollbackOrgSelect(); } catch(e){}
 }
 
 
-const componentList = [
-  { name:'ContractApprovalFlow', type:'Flow' },
-  { name:'AccountTriggerHandler', type:'ApexClass' },
-  { name:'b2bContractPanel', type:'LWC' },
-  { name:'Billing_Squad_Access', type:'PermissionSet' },
-  { name:'CaseSLALayout', type:'Layout' },
-  { name:'ContractReconciliationBatch', type:'ApexClass' },
-  { name:'CNPJ_Validation_Rule', type:'ValidationRule' },
-];
-
-/* Data de última coleta (snapshot) por componente+org. Chave igual à
-   de pendingMerges. Sem entrada = nunca coletado. */
-let snapshotDates = {
-  'ContractApprovalFlow::36': '13/07/2026 06:00', 'ContractApprovalFlow::100': '13/07/2026 06:00', 'ContractApprovalFlow::133': '12/07/2026 22:14', 'ContractApprovalFlow::133': '13/07/2026 06:00',
-  'AccountTriggerHandler::36': '13/07/2026 06:00', 'AccountTriggerHandler::100': '13/07/2026 06:00', 'AccountTriggerHandler::133': '13/07/2026 06:00', 'AccountTriggerHandler::133': '11/07/2026 18:40',
-  'b2bContractPanel::36': '13/07/2026 06:00', 'b2bContractPanel::100': '12/07/2026 09:30', 'b2bContractPanel::133': '13/07/2026 06:00',
-  'Billing_Squad_Access::36': '13/07/2026 06:00', 'Billing_Squad_Access::100': '10/07/2026 14:05', 'Billing_Squad_Access::133': '12/07/2026 22:14', 'Billing_Squad_Access::133': '13/07/2026 06:00',
-  'CaseSLALayout::133': '09/07/2026 11:00',
-  'ContractReconciliationBatch::36': '13/07/2026 06:00', 'ContractReconciliationBatch::100': '13/07/2026 06:00', 'ContractReconciliationBatch::133': '13/07/2026 06:00', 'ContractReconciliationBatch::133': '13/07/2026 06:00',
-  'CNPJ_Validation_Rule::36': '13/07/2026 06:00', 'CNPJ_Validation_Rule::100': '13/07/2026 06:00', 'CNPJ_Validation_Rule::133': '08/07/2026 17:22',
-};
-function snapshotKey(name, orgId){ return name + '::' + orgId; }
-function refreshSnapshot(name, orgId){
-  snapshotDates[snapshotKey(name, orgId)] = new Date().toLocaleString('pt-BR',{ day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit' });
-  renderPickerGrid();
-  toast(`Snapshot de ${name} atualizado`);
-}
-
-/* Metadados de auditoria por componente+org: quem criou, quando, e
-   quem fez a última modificação. Chave igual à de snapshotDates. */
-const componentMeta = {
-  'ContractApprovalFlow::36': { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
-  'ContractApprovalFlow::100':  { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
-  'ContractApprovalFlow::133':  { created:'12/01/2026', modified:'12/07/2026 22:14', by:'Lucas Martins' },
-  'ContractApprovalFlow::133':  { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
-  'AccountTriggerHandler::36':{ created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
-  'AccountTriggerHandler::100': { created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
-  'AccountTriggerHandler::133': { created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
-  'AccountTriggerHandler::133': { created:'03/02/2026', modified:'11/07/2026 18:40', by:'Rafaela Souza' },
-  'b2bContractPanel::36':     { created:'20/02/2026', modified:'08/07/2026 10:00', by:'Lucas Martins' },
-  'b2bContractPanel::100':      { created:'20/02/2026', modified:'12/07/2026 09:30', by:'Rafaela Souza' },
-  'b2bContractPanel::133':      { created:'20/02/2026', modified:'08/07/2026 10:00', by:'Lucas Martins' },
-  'Billing_Squad_Access::36': { created:'15/01/2026', modified:'09/07/2026 11:20', by:'Alberto Bottaro' },
-  'Billing_Squad_Access::100':  { created:'15/01/2026', modified:'10/07/2026 14:05', by:'Lucas Martins' },
-  'Billing_Squad_Access::133':  { created:'15/01/2026', modified:'12/07/2026 22:14', by:'Rafaela Souza' },
-  'Billing_Squad_Access::133':  { created:'15/01/2026', modified:'09/07/2026 11:20', by:'Alberto Bottaro' },
-  'CaseSLALayout::133':         { created:'28/06/2026', modified:'09/07/2026 11:00', by:'Rafaela Souza' },
-  'ContractReconciliationBatch::36': { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
-  'ContractReconciliationBatch::100':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
-  'ContractReconciliationBatch::133':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
-  'ContractReconciliationBatch::133':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
-  'CNPJ_Validation_Rule::36': { created:'18/01/2026', modified:'06/07/2026 13:10', by:'Alberto Bottaro' },
-  'CNPJ_Validation_Rule::100':  { created:'18/01/2026', modified:'06/07/2026 13:10', by:'Alberto Bottaro' },
-  'CNPJ_Validation_Rule::133':  { created:'18/01/2026', modified:'08/07/2026 17:22', by:'Lucas Martins' },
-};
-function getComponentMeta(name, orgId){
-  return componentMeta[snapshotKey(name, orgId)] || { created:'—', modified:'—', by:'—' };
-}
-
-const FLOW_BASE =
-`<?xml version="1.0" encoding="UTF-8"?>
-<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
-    <label>Contract Approval Flow</label>
-    <processType>Flow</processType>
-    <status>Active</status>
-    <decisions>
-        <name>checkValue</name>
-        <label>Check Contract Value</label>
-        <defaultConnector>
-            <targetReference>Send_To_Regional_Manager</targetReference>
-        </defaultConnector>
-        <rules>
-            <name>Above_Threshold</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>Contract.Amount__c</leftValueReference>
-                <operator>GreaterThanOrEqualTo</operator>
-                <rightValue>
-                    <numberValue>50000.0</numberValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>Send_To_Director</targetReference>
-            </connector>
-        </rules>
-    </decisions>
-    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <connector>
-            <targetReference>checkValue</targetReference>
-        </connector>
-    </start>
-</Flow>`;
-const FLOW_DEV =
-`<?xml version="1.0" encoding="UTF-8"?>
-<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>62.0</apiVersion>
-    <label>Contract Approval Flow</label>
-    <processType>Flow</processType>
-    <status>Draft</status>
-    <decisions>
-        <name>checkValue</name>
-        <label>Check Contract Value</label>
-        <defaultConnector>
-            <targetReference>Send_To_Regional_Manager</targetReference>
-        </defaultConnector>
-        <rules>
-            <name>Above_Threshold</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>Contract.Amount__c</leftValueReference>
-                <operator>GreaterThanOrEqualTo</operator>
-                <rightValue>
-                    <numberValue>50000.0</numberValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>Send_To_Director</targetReference>
-            </connector>
-        </rules>
-    </decisions>
-    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <connector>
-            <targetReference>checkValue</targetReference>
-        </connector>
-    </start>
-</Flow>`;
-const FLOW_UAT =
-`<?xml version="1.0" encoding="UTF-8"?>
-<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>60.0</apiVersion>
-    <label>Contract Approval Flow</label>
-    <processType>Flow</processType>
-    <status>Active</status>
-    <decisions>
-        <name>checkValue</name>
-        <label>Check Contract Value</label>
-        <defaultConnector>
-            <targetReference>Send_To_Regional_Manager</targetReference>
-        </defaultConnector>
-        <rules>
-            <name>Above_Threshold</name>
-            <conditionLogic>and</conditionLogic>
-            <conditions>
-                <leftValueReference>Contract.Amount__c</leftValueReference>
-                <operator>GreaterThanOrEqualTo</operator>
-                <rightValue>
-                    <numberValue>30000.0</numberValue>
-                </rightValue>
-            </conditions>
-            <connector>
-                <targetReference>Send_To_Regional_Manager</targetReference>
-            </connector>
-        </rules>
-    </decisions>
-    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <start>
-        <connector>
-            <targetReference>checkValue</targetReference>
-        </connector>
-    </start>
-</Flow>`;
-
-const APEX_BASE =
-`public class AccountTriggerHandler {
-
-    public static void validateCNPJ(List<Account> accounts) {
-        for (Account acc : accounts) {
-            if (acc.RecordType.DeveloperName == 'B2B' && acc.CNPJ__c == null) {
-                throw new ValidationException('CNPJ obrigatorio para contas B2B');
-            }
-        }
-    }
-
-    public static void enrichBillingData(List<Account> accounts) {
-        for (Account acc : accounts) {
-            if (acc.CNPJ__c != null) {
-                acc.Billing_Status__c = 'Validated';
-            }
-        }
-    }
-
-    public class ValidationException extends Exception {}
-}`;
-/* variante com DOIS trechos divergentes (dois hunks separados),
-   boa pra testar o merge seletivo trecho a trecho */
-const APEX_PROD =
-`public class AccountTriggerHandler {
-
-    public static void validateCNPJ(List<Account> accounts) {
-        for (Account acc : accounts) {
-            if (acc.RecordType.DeveloperName == 'B2B' && acc.CNPJ__c == null) {
-                System.debug('CNPJ vazio para conta ' + acc.Id);
-            }
-        }
-    }
-
-    public static void enrichBillingData(List<Account> accounts) {
-        for (Account acc : accounts) {
-            if (acc.CNPJ__c != null) {
-                acc.Billing_Status__c = 'Pending';
-            }
-        }
-    }
-}`;
-
-const LWC_BASE =
-`import { LightningElement, api, wire } from 'lwc';
-import getContracts from '@salesforce/apex/ContractPanelController.getContracts';
-
-export default class B2bContractPanel extends LightningElement {
-    @api recordId;
-    contracts;
-    error;
-
-    @wire(getContracts, { accountId: '$recordId' })
-    wiredContracts({ error, data }) {
-        if (data) {
-            this.contracts = data;
-            this.error = undefined;
-        } else if (error) {
-            this.error = error;
-            this.contracts = undefined;
-        }
-    }
-
-    get hasContracts() {
-        return this.contracts && this.contracts.length > 0;
-    }
-}`;
-const LWC_DEV =
-`import { LightningElement, api, wire } from 'lwc';
-import getContracts from '@salesforce/apex/ContractPanelController.getContracts';
-
-export default class B2bContractPanel extends LightningElement {
-    @api recordId;
-    contracts;
-    error;
-
-    @wire(getContracts, { accountId: '$recordId' })
-    wiredContracts({ error, data }) {
-        if (data) {
-            this.contracts = data;
-            this.error = undefined;
-        } else if (error) {
-            this.error = error;
-            this.contracts = undefined;
-        }
-    }
-
-    get hasContracts() {
-        return !!(this.contracts && this.contracts.length > 0);
-    }
-}`;
-
-const PERMSET_BASE =
-`<?xml version="1.0" encoding="UTF-8"?>
-<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>Billing Squad Access</label>
-    <permissionSetGroup>false</permissionSetGroup>
-    <classAccesses>
-        <apexClass>AccountTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <objectPermissions>
-        <object>Contract</object>
-        <allowRead>true</allowRead>
-        <allowEdit>true</allowEdit>
-        <viewAllRecords>true</viewAllRecords>
-    </objectPermissions>
-</PermissionSet>`;
-const PERMSET_DEV =
-`<?xml version="1.0" encoding="UTF-8"?>
-<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>Billing Squad Access</label>
-    <permissionSetGroup>false</permissionSetGroup>
-    <classAccesses>
-        <apexClass>AccountTriggerHandler</apexClass>
-        <enabled>false</enabled>
-    </classAccesses>
-    <objectPermissions>
-        <object>Contract</object>
-        <allowRead>true</allowRead>
-        <allowEdit>true</allowEdit>
-        <viewAllRecords>true</viewAllRecords>
-    </objectPermissions>
-</PermissionSet>`;
-const PERMSET_UAT =
-`<?xml version="1.0" encoding="UTF-8"?>
-<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>Billing Squad Access</label>
-    <permissionSetGroup>false</permissionSetGroup>
-    <classAccesses>
-        <apexClass>AccountTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <objectPermissions>
-        <object>Contract</object>
-        <allowRead>true</allowRead>
-        <allowEdit>false</allowEdit>
-        <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
-</PermissionSet>`;
-
-const LAYOUT_PROD =
-`<?xml version="1.0" encoding="UTF-8"?>
-<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-    <layoutSections>
-        <label>SLA Info</label>
-        <layoutColumns>
-            <layoutItems>
-                <field>SLA_Deadline__c</field>
-                <behavior>Edit</behavior>
-            </layoutItems>
-            <layoutItems>
-                <field>SLA_Breached__c</field>
-                <behavior>Readonly</behavior>
-            </layoutItems>
-        </layoutColumns>
-    </layoutSections>
-</Layout>`;
-
-const BATCH_BASE =
-`global class ContractReconciliationBatch implements Database.Batchable<sObject> {
-
-    global Database.QueryLocator start(Database.BatchableContext bc) {
-        return Database.getQueryLocator([
-            SELECT Id, Status, Amount__c FROM Contract WHERE Status = 'Draft'
-        ]);
-    }
-
-    global void execute(Database.BatchableContext bc, List<Contract> scope) {
-        for (Contract c : scope) {
-            c.Status = 'Reconciled';
-        }
-        update scope;
-    }
-
-    global void finish(Database.BatchableContext bc) {
-        System.debug('Reconciliation batch finished');
-    }
-}`;
-
-const VR_BASE =
-`<?xml version="1.0" encoding="UTF-8"?>
-<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>CNPJ_Validation_Rule</fullName>
-    <active>true</active>
-    <errorConditionFormula>
-        AND(RecordType.DeveloperName = "B2B", ISBLANK(CNPJ__c))
-    </errorConditionFormula>
-    <errorMessage>CNPJ e obrigatorio para contas do tipo B2B.</errorMessage>
-</ValidationRule>`;
-const VR_PROD =
-`<?xml version="1.0" encoding="UTF-8"?>
-<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>CNPJ_Validation_Rule</fullName>
-    <active>true</active>
-    <errorConditionFormula>
-        AND(RecordType.DeveloperName = "B2B", ISBLANK(CNPJ__c))
-    </errorConditionFormula>
-    <errorMessage>CNPJ e obrigatorio para contas do tipo B2B (revisado).</errorMessage>
-</ValidationRule>`;
-
-const contentByOrg = {
-  ContractApprovalFlow:        { 36: FLOW_BASE,  100: FLOW_DEV,  133: FLOW_BASE },
-  AccountTriggerHandler:       { 36: APEX_BASE,  100: APEX_BASE, 133: APEX_PROD },
-  b2bContractPanel:            { 36: LWC_BASE,   100: LWC_DEV,   133: LWC_BASE },
-  Billing_Squad_Access:        { 36: PERMSET_BASE, 100: PERMSET_DEV, 133: PERMSET_BASE },
-  CaseSLALayout:                { 36: null,        100: null,      133: LAYOUT_PROD },
-  ContractReconciliationBatch: { 36: BATCH_BASE,  100: BATCH_BASE, 133: BATCH_BASE },
-  CNPJ_Validation_Rule:        { 36: VR_BASE,     100: VR_BASE,   133: VR_PROD },
-};
-
+// ============================================================
+// Render & Logic (do protótipo v2, adaptado)
+// ============================================================
 function computeStatus(name, destId, goldId){
   if(pendingKey(name,destId) in pendingMerges) return 'merged';
   goldId = (goldId !== undefined) ? goldId : eqGoldOrgId;
@@ -1065,7 +745,7 @@ document.getElementById('btnNewUS').addEventListener('click', ()=>{
 let pickerState = null; // { usJira, originId, destId, filterType, selected:Set }
 
 function openComponentPicker(usJira){
-  pickerState = { usJira, originId: ARQ_ID, destId: 100, filterType:'Todos', selected: new Set() };
+  pickerState = { usJira, originId: 36, destId: 1, filterType:'Todos', selected: new Set() };
   renderPickerGrid();
 }
 
@@ -1259,28 +939,33 @@ function createAndDeployQueued(name, destId, goldId){
 
 
 /* ============ DASHBOARD — gadgets de ambientes ============ */
-const envAbbr = { 36:'ARQ', 100:'HML', 133:'DEV' };
-const envSeg  = { 36:'seg-arq', 100:'seg-hml', 133:'seg-dev' };
-const envIds  = [36,100,133];
+const envAbbr = { 99:'ARQ', 1:'DEV', 2:'UAT', 3:'PROD' };
+const envSeg  = { 99:'seg-arq', 1:'seg-dev', 2:'seg-uat', 3:'seg-prod' };
+const envIds  = [99,1,2,3];
 
 /* Dados consolidados por ambiente cadastrado. Números fictícios pra
    representar usuários, objetos, componentes e governança de cada org. */
 const envData = {
-  36: { name:'ORG ARQUITETURA',
+  99: { name:'ORG ARQUITETURA',
     users:{ total:18, byLicense:{ 'Salesforce':12, 'Partner Community':4, 'Chatter Free':2 } },
     objects:{ total:64, custom:22, standardWithFields:42 },
     components:{ total:41, byType:{ ApexClass:9, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:4 } },
     governance:{ apiUsed:12, dataStorage:8, fileStorage:5, codeCoverage:87 } },
-  100: { name:'HOMOL',
+  1: { name:orgName(orgs[0]?.id),
     users:{ total:24, byLicense:{ 'Salesforce':16, 'Partner Community':6, 'Chatter Free':2 } },
     objects:{ total:61, custom:20, standardWithFields:41 },
     components:{ total:41, byType:{ ApexClass:8, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:5 } },
     governance:{ apiUsed:18, dataStorage:11, fileStorage:6, codeCoverage:84 } },
-  133: { name:'DEVEVERY',
+  2: { name:'ORG HOMOLOGACAO',
     users:{ total:31, byLicense:{ 'Salesforce':20, 'Partner Community':9, 'Chatter Free':2 } },
     objects:{ total:66, custom:23, standardWithFields:43 },
     components:{ total:46, byType:{ ApexClass:9, Flow:7, LWC:5, PermissionSet:4, Layout:9, ValidationRule:6, Outro:6 } },
     governance:{ apiUsed:34, dataStorage:22, fileStorage:14, codeCoverage:81 } },
+  3: { name:'DEVEVERY',
+    users:{ total:142, byLicense:{ 'Salesforce':98, 'Partner Community':38, 'Chatter Free':6 } },
+    objects:{ total:70, custom:26, standardWithFields:44 },
+    components:{ total:47, byType:{ ApexClass:10, Flow:7, LWC:5, PermissionSet:5, Layout:9, ValidationRule:6, Outro:5 } },
+    governance:{ apiUsed:61, dataStorage:48, fileStorage:37, codeCoverage:79 } },
 };
 
 let expandedGadgets = new Set(); // gadgets abertos no momento (podem ser vários)
@@ -1464,7 +1149,7 @@ document.getElementById('btnRunDrift').addEventListener('click', ()=>{
   });
 });
 
-function runDriftForOrgs(orgIds){
+async function runDriftForOrgs(orgIds){
   const names = orgs.filter(o=>orgIds.includes(o.id)).map(o=>o.name).join(', ');
   openModal('Executando Drift', `
     <p style="color:var(--fog); margin:0 0 10px;">Analisando: ${names}</p>
@@ -1934,7 +1619,7 @@ function applyAllHunks(){
    pendente. A matrix passa a mostrar "mergeado" nessa célula até
    alguém clicar em Deploy. Se estiver dentro de uma fila (vindo da
    escolha de componentes da US), avança pro próximo automaticamente. */
-function commitHunkMerge(){
+async function commitHunkMerge(){
   const { name, destId, working } = currentDiff;
   pendingMerges[pendingKey(name, destId)] = working;
   renderMatrix(); renderDrift(); renderPipeline();
@@ -2034,7 +1719,7 @@ function reopenMergeEditor(name, destId){
 
 /* Deploy de um único componente: só agora a mudança é de fato
    aplicada na org, com um loading simulando o processamento real. */
-function deployComponent(name, destId){
+async function deployComponent(name, destId){
   const key = pendingKey(name, destId);
   if(!(key in pendingMerges)){ toast('Nada pendente para deploy'); return; }
   openModal(`Deploy · ${name} → ${orgName(destId)}`, `
