@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>I9 Org Explorer — Protótipo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rail-bg:#141518;
+    --rail-line:#2a2b30;
+    --rail-fog:#8b8d96;
+    --rail-ice:#f7f8fa;
+
+    --paper:#e7e8ec;      /* fundo cinza claro */
+    --ice:#f7f8fa;         /* superfície de cards */
+    --white:#ffffff;
+    --line:#d3d5da;
+    --steel:#8b8d96;       /* cinza médio */
+    --fog:#6b6d75;         /* texto secundário */
+    --ink:#1a1b1e;         /* texto principal / preto */
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em; margin:0; }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  .shell{ display:grid; grid-template-columns:56px 1fr; min-height:100vh; }
+
+  /* rail — permanece escuro, contraste do Copado */
+  .rail{ background:var(--rail-bg); border-right:1px solid var(--rail-line); display:flex; flex-direction:column; align-items:center; padding:16px 0; gap:4px; }
+  .rail-logo{ width:28px;height:28px;border:1px solid var(--rail-fog); display:flex;align-items:center;justify-content:center; font-family:'Space Grotesk';font-weight:700;font-size:12px; margin-bottom:22px; color:var(--rail-ice); }
+  .rail-btn{ width:36px;height:36px;border-radius:var(--radius); display:flex;align-items:center;justify-content:center; color:var(--rail-fog); cursor:pointer; font-size:16px; border:1px solid transparent; }
+  .rail-btn:hover{ color:var(--rail-ice); border-color:var(--rail-line); }
+  .rail-btn.active{ color:var(--rail-bg); background:var(--rail-ice); }
+  .rail-spacer{flex:1;}
+  .rail-avatar{ width:26px;height:26px;border-radius:50%; background:var(--rail-fog); font-size:10.5px; display:flex;align-items:center;justify-content:center; color:var(--rail-bg); font-weight:700; }
+
+  .main{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .topbar{ border-bottom:1px solid var(--rail-line); background:var(--rail-bg); padding:14px 26px; display:flex; align-items:center; gap:28px; }
+  .brandblock{ display:flex; flex-direction:column; gap:2px; min-width:170px;}
+  .brandblock .eyebrow{ color:var(--rail-fog); font-size:10.5px; text-transform:uppercase; letter-spacing:.12em; }
+  .brandblock h1{ font-size:17px; font-weight:600; color:var(--rail-ice); }
+
+  .pipeline{ display:flex; align-items:center; flex:1; }
+  .pnode{ display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; min-width:96px;}
+  .pnode-dot{ width:13px;height:13px;border-radius:50%; border:1.5px solid var(--rail-fog); display:flex; align-items:center; justify-content:center; background:transparent; transition:all .3s; }
+  .pnode-dot.synced{ background:var(--rail-ice); border-color:var(--rail-ice); }
+  .pnode-dot.drift{ background:repeating-linear-gradient(135deg, var(--rail-ice) 0 2px, transparent 2px 4px); border-color:var(--rail-ice); }
+  .pnode-label{ font-size:11px; color:var(--rail-ice); font-weight:500; }
+  .pnode-sub{ font-size:10px; color:var(--rail-fog); }
+  .pconnector{ flex:1; height:1px; background:var(--rail-line); position:relative; top:-13px; min-width:24px; }
+  .pconnector.drift-edge{ background:repeating-linear-gradient(90deg, var(--rail-fog) 0 4px, transparent 4px 8px); }
+
+  .globalbadge{ display:flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--white); padding:6px 12px; border-radius:var(--radius); font-size:11.5px; color:var(--ink); cursor:pointer; white-space:nowrap; transition:border-color .2s;}
+  .globalbadge:hover{ border-color:var(--steel); }
+  .globalbadge .n{ font-family:'IBM Plex Mono'; font-weight:600;}
+
+  .view{ display:none; padding:26px; flex:1; }
+  .view.active{ display:block; }
+  .viewhead{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;}
+  .viewhead h2{ font-size:20px; font-weight:600; }
+  .viewhead .sub{ color:var(--fog); font-size:12px; margin-top:4px; }
+
+  .btn{ border:1px solid var(--line); background:var(--white); color:var(--ink); padding:8px 14px; border-radius:var(--radius); font-size:12px; cursor:pointer; font-family:'Inter'; font-weight:500; transition:all .15s;}
+  .btn:hover{ border-color:var(--steel); background:var(--ice); }
+  .btn.primary{ background:var(--ink); color:var(--ice); border-color:var(--ink); }
+  .btn.primary:hover{ background:#000; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.small{ padding:5px 10px; font-size:11px; }
+
+  .gadgets{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:24px; align-items:start; }
+  .gadget{ background:var(--ice); padding:16px 18px; cursor:pointer; transition:background .15s; }
+  .gadget:hover{ background:var(--white); }
+  .gadget-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .gadget-icon{ font-size:15px; color:var(--fog); }
+  .gadget-toggle{ font-family:'IBM Plex Mono'; font-size:13px; color:var(--fog); width:18px; height:18px; border:1px solid var(--line); border-radius:3px; display:flex; align-items:center; justify-content:center; }
+  .gadget-value{ font-family:'Space Grotesk'; font-size:26px; font-weight:600; }
+  .gadget-label{ color:var(--ink); font-size:11.5px; font-weight:600; margin-top:2px; }
+  .gadget-sub{ color:var(--fog); font-size:10.5px; margin-top:2px; text-transform:uppercase; letter-spacing:.06em; }
+
+  .gadget-detail{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .gadget-rows{ display:flex; flex-direction:column; gap:7px; }
+  .gadget-row{ display:grid; grid-template-columns:34px 1fr 40px; align-items:center; gap:8px; }
+  .gr-abbr{ font-family:'IBM Plex Mono'; font-size:9.5px; color:var(--fog); }
+  .gr-bar-wrap{ height:6px; background:var(--line); border-radius:3px; overflow:hidden; }
+  .gr-bar{ display:block; height:100%; }
+  .gr-val{ font-family:'IBM Plex Mono'; font-size:10px; color:var(--ink); text-align:right; }
+  .seg-arq{ background:var(--ink); }
+  .seg-dev{ background:var(--steel); }
+  .seg-hml{ background:repeating-linear-gradient(45deg, var(--ink) 0 3px, transparent 3px 6px); }
+
+  .gadget-agg{ margin-top:12px; display:flex; flex-direction:column; gap:5px; }
+  .gadget-agg-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--fog); }
+  .gadget-agg-row b{ color:var(--ink); font-family:'IBM Plex Mono'; font-weight:600; }
+  .gadget-metric-label{ font-size:10px; color:var(--fog); text-transform:uppercase; letter-spacing:.05em; margin:10px 0 5px; }
+
+  .panel{ border:1px solid var(--line); background:var(--ice); border-radius:var(--radius); margin-bottom:20px; }
+  .panel-head{ padding:14px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .panel-head h3{ font-size:13.5px; font-weight:600; }
+  .panel-head .note{ color:var(--fog); font-size:10.5px; }
+  .panel-body{ padding:14px 18px; }
+
+  .driftrow{ display:grid; grid-template-columns:150px 1fr auto; gap:16px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); transition:opacity .2s;}
+  .driftrow:last-child{ border-bottom:none; }
+  .driftrow .orgname{ font-weight:600; font-size:13px; }
+  .driftrow .lastcheck{ color:var(--fog); font-size:10.5px; margin-top:2px;}
+  .driftmeter{ display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .driftbit{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--fog); }
+  .driftbit b{ color:var(--ink); font-family:'IBM Plex Mono'; font-weight:600;}
+  .swatch{ width:9px;height:9px; border:1.3px solid var(--steel); border-radius:2px; display:inline-block; flex-shrink:0;}
+  .swatch.ok{ background:var(--ink); border-color:var(--ink);}
+  .swatch.diff{ background:repeating-linear-gradient(135deg,var(--ink) 0 2px, transparent 2px 4px); border-color:var(--ink);}
+  .swatch.absent{ background:transparent; border-style:dashed;}
+  .swatch.extra{ background:var(--steel); border-color:var(--steel);}
+  .swatch.na{ background:transparent; border-color:var(--line); }
+  .swatch.merged{ background:linear-gradient(135deg, var(--ink) 50%, transparent 50%); border-color:var(--ink); }
+  .rowbtns{ display:flex; gap:8px; }
+
+  .progress-wrap{ width:100%; height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:6px;}
+  .progress-bar{ height:100%; background:var(--ink); width:0%; transition:width .25s linear; }
+
+  .board{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .col{ background:var(--ice); border:1px solid var(--line); border-radius:var(--radius); min-height:60vh; transition:border-color .15s;}
+  .col.dragover{ border-color:var(--ink); border-style:dashed; }
+  .col-head{ padding:12px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .col-head span.title{ font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--fog); font-weight:600;}
+  .col-head span.count{ font-family:'IBM Plex Mono'; font-size:11px; color:var(--ink); border:1px solid var(--line); padding:1px 6px; border-radius:10px;}
+  .col-body{ padding:10px; display:flex; flex-direction:column; gap:9px; min-height:120px;}
+  .card{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:10px 11px; cursor:grab; transition:box-shadow .15s, border-color .15s;}
+  .card:hover{ border-color:var(--steel); box-shadow:0 2px 6px rgba(0,0,0,.06); }
+  .card.dragging{ opacity:.4; }
+  .card-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;}
+  .jira{ font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--fog); }
+  .typetag{ font-size:9px; text-transform:uppercase; letter-spacing:.06em; padding:2px 6px; border:1px solid var(--steel); color:var(--ink); border-radius:2px;}
+  .typetag.hotfix{ background:var(--ink); color:var(--ice); border-color:var(--ink); }
+  .typetag.bugfix{ border-style:dashed; }
+  .card-title{ font-size:12.5px; line-height:1.4; margin-bottom:8px; color:var(--ink);}
+  .card-foot{ display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--fog);}
+  .avatar-mini{ width:18px;height:18px;border-radius:50%; background:var(--steel); color:var(--white); font-size:8.5px; display:flex;align-items:center;justify-content:center; font-weight:600;}
+  .oe{ font-family:'IBM Plex Mono'; color:var(--fog); font-size:10px;}
+
+  .matrixwrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius);}
+  table.matrix{ border-collapse:collapse; width:100%; background:var(--ice); }
+  table.matrix th, table.matrix td{ border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:10px 12px; font-size:12px; text-align:left; white-space:nowrap;}
+  table.matrix th{ background:var(--white); color:var(--fog); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;}
+  table.matrix td.comp{ font-family:'IBM Plex Mono'; font-size:11.5px; }
+  table.matrix td.comp .ctype{ color:var(--fog); font-size:10px; display:block; margin-top:2px; font-family:'Inter';}
+  td.statuscell{ text-align:center !important; cursor:pointer; }
+  td.statuscell:hover{ background:var(--white); }
+  .legend{ display:flex; gap:18px; margin:14px 2px 18px; }
+  .legend .item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--fog);}
+
+  /* seletor único de gold */
+  .goldselect{ display:flex; gap:8px; flex-wrap:wrap; }
+  .goldselect button{ border:1px solid var(--line); background:var(--white); color:var(--ink); padding:9px 16px; border-radius:20px; font-size:12px; cursor:pointer; font-family:'Inter'; font-weight:500; transition:all .15s; }
+  .goldselect button:hover{ border-color:var(--steel); }
+  .goldselect button.active{ background:var(--ink); color:var(--ice); border-color:var(--ink); font-weight:600; }
+
+  /* pipeline de destinos (equalização) — tema claro */
+  .eqpick-block{ margin-bottom:20px; }
+  .eqpick-caption{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--fog); margin-bottom:10px; }
+  .eqpick-row{ display:flex; align-items:center; background:var(--ice); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; }
+  .eqpick-node{ display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; min-width:110px; user-select:none; }
+  .eqpick-dot{ width:15px;height:15px;border-radius:50%; border:1.5px solid var(--steel); background:var(--white); display:flex;align-items:center;justify-content:center; font-size:9px; color:var(--ice); font-weight:700; transition:all .15s; cursor:pointer; }
+  .eqpick-node.selected .eqpick-dot{ background:var(--ink); border-color:var(--ink); }
+  .eqpick-node.excluded .eqpick-dot{ background:var(--white); border-style:dashed; border-color:var(--steel); }
+  .eqpick-dot:hover{ border-color:var(--ink); }
+  .eqpick-label{ font-size:11.5px; font-weight:600; color:var(--ink); }
+  .eqpick-node.excluded .eqpick-label{ color:var(--fog); font-weight:500; }
+  .eqpick-sub{ font-size:10px; color:var(--fog); }
+  .eqpick-connector{ flex:1; height:1px; background:var(--line); min-width:30px; position:relative; top:-14px; }
+
+  /* MODAL */
+  .overlay{ position:fixed; inset:0; background:rgba(20,21,24,.45); display:none; align-items:center; justify-content:center; z-index:100; }
+  .overlay.open{ display:flex; }
+  .modal{ background:var(--ice); border:1px solid var(--line); border-radius:var(--radius); width:520px; max-width:92vw; max-height:84vh; display:flex; flex-direction:column; box-shadow:0 12px 32px rgba(0,0,0,.18);}
+  .modal.wide{ width:760px; }
+  .modal-head{ padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .modal-head h3{ font-size:14.5px; font-weight:600;}
+  .modal-close{ cursor:pointer; color:var(--fog); font-size:16px; border:none; background:none;}
+  .modal-close:hover{ color:var(--ink); }
+  .modal-body{ padding:18px 20px; overflow-y:auto; }
+  .modal-foot{ padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
+
+  .formrow{ margin-bottom:14px; }
+  .formrow label{ display:block; font-size:11px; color:var(--fog); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;}
+  .formrow input, .formrow select{ width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink); font-family:'Inter'; font-size:13px;}
+  .formrow input:focus, .formrow select:focus{ outline:none; border-color:var(--ink); }
+
+  .diffgrid{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line);}
+  .diffcol{ background:var(--white); padding:10px; }
+  .diffcol h4{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--fog); margin-bottom:8px; font-weight:600;}
+  .diffcode{ font-family:'IBM Plex Mono'; font-size:11px; line-height:1.7; white-space:pre-wrap;}
+  .diffcode .rm{ background:var(--paper); text-decoration:line-through; color:var(--fog); display:block; }
+  .diffcode .add{ background:var(--ink); color:var(--ice); display:block; }
+
+  /* diff com merge seletivo por hunk */
+  .hunkdiff-head{ display:grid; grid-template-columns:1fr 34px 1fr; padding:0 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--fog); font-weight:600; }
+  .hunkdiff{ border:1px solid var(--line); border-radius:var(--radius); background:var(--white); font-family:'IBM Plex Mono'; font-size:11px; max-height:48vh; overflow-y:auto; }
+  .hrow{ display:grid; grid-template-columns:1fr 34px 1fr; align-items:stretch; }
+  .hrow .hcell{ padding:2px 10px; white-space:pre-wrap; word-break:break-word; line-height:1.6; }
+  .hrow.hunk .hcell-gold{ background:var(--white); border-left:2px solid var(--ink); }
+  .hrow.hunk .hcell-dest{ background:var(--paper); border-left:2px solid var(--steel); color:var(--fog); }
+  .harrow{ display:flex; align-items:flex-start; justify-content:center; padding-top:2px; background:var(--ice); }
+  .harrow-btn{ border:1px solid var(--ink); background:var(--ink); color:var(--ice); width:22px; height:20px; border-radius:3px; cursor:pointer; font-size:11px; line-height:1; font-family:'Inter'; }
+  .harrow-btn:hover{ background:#000; }
+
+  /* Vector Agent */
+  .vector-agent-btn{ white-space:nowrap; flex-shrink:0; }
+  .vectoragent-output{ font-family:'IBM Plex Mono'; font-size:11px; line-height:1.7; white-space:pre-wrap; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:14px; max-height:52vh; overflow-y:auto; color:var(--ink); }
+
+  .hunklist{ display:flex; flex-direction:column; gap:8px; }
+  .hunkitem{ display:flex; align-items:flex-start; gap:9px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); font-family:'IBM Plex Mono'; font-size:11px;}
+  .hunkitem input{ margin-top:2px; }
+
+  /* escolha de componentes (nova US) — picklist */
+  .pickhead{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .pickgrid-head{ display:grid; grid-template-columns:1fr 140px 140px 90px; gap:10px; padding:8px 4px; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--fog); font-weight:600; border-bottom:1px solid var(--line); margin-top:6px; }
+  .pickgrid{ max-height:34vh; overflow-y:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); }
+  .pickrow{ display:grid; grid-template-columns:1fr 140px 140px 90px; gap:10px; align-items:center; padding:8px 8px; border-bottom:1px solid var(--line); }
+  .pickrow:last-child{ border-bottom:none; }
+  .pickrow-name{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--ink); }
+  .pickrow-type{ font-size:10px; color:var(--fog); margin-top:1px; }
+  .pickrow-snap{ font-size:10.5px; color:var(--fog); }
+  .pickrow-meta{ font-size:10px; color:var(--fog); margin-top:3px; }
+
+  .toastwrap{ position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:200;}
+  .toast{ background:var(--ink); color:var(--ice); padding:10px 16px; border-radius:var(--radius); font-size:12px; box-shadow:0 6px 18px rgba(0,0,0,.2); animation:slidein .2s ease-out;}
+  @keyframes slidein{ from{ transform:translateY(8px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="rail">
+    <div class="rail-logo">i9</div>
+    <div class="rail-btn active" data-view="board" title="Board">▤</div>
+    <div class="rail-btn" data-view="dashboard" title="Dashboard">◫</div>
+    <div class="rail-btn" data-view="equalizacao" title="Equalização">≋</div>
+    <div class="rail-btn" data-view="rollback" title="Rollback">↺</div>
+    <div class="rail-spacer"></div>
+    <div class="rail-avatar">AB</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="brandblock">
+        <div class="eyebrow">Algar Telecom · CRMB2B</div>
+        <h1>Org Explorer</h1>
+      </div>
+      <div class="pipeline" id="pipeline"></div>
+      <div class="globalbadge" id="globalDriftBadge"></div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="view active" id="view-board">
+      <div class="viewhead">
+        <div>
+          <h2>Board</h2>
+          <div class="sub" id="boardSub"></div>
+        </div>
+        <button class="btn primary" id="btnNewUS">+ Nova US</button>
+      </div>
+      <div class="board" id="boardCols"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view" id="view-dashboard">
+      <div class="viewhead">
+        <div>
+          <h2>Dashboard</h2>
+          <div class="sub">Dados consolidados dos ambientes cadastrados · clique num gadget para expandir</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="btnRefreshDash">Atualizar</button>
+          <button class="btn primary" id="btnRunDrift">Executar Drift</button>
+        </div>
+      </div>
+      <div class="eqpick-block">
+        <div class="eqpick-caption">Gold sandbox · referência usada no Drift deste Dashboard</div>
+        <div class="goldselect" id="dashGoldSelect"></div>
+      </div>
+      <div class="gadgets" id="envGadgets"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Estado dos ambientes (Drift)</h3>
+          <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · coleta manual, sob demanda</span>
+        </div>
+        <div class="panel-body" id="driftpanel"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Deploys recentes</h3><span class="note">clique na US para ver os componentes</span></div>
+        <div class="panel-body" id="recentdeploys"></div>
+      </div>
+    </div>
+
+    <!-- ROLLBACK -->
+    <div class="view" id="view-rollback">
+      <div class="viewhead">
+        <div>
+          <h2>Rollback</h2>
+          <div class="sub">Escolha a org afetada, veja os últimos deploys e reverta a partir de outra org</div>
+        </div>
+      </div>
+      <div class="eqpick-block">
+        <div class="eqpick-caption">Org afetada (destino dos deploys)</div>
+        <div class="formrow" style="max-width:280px;"><select id="rb_org"></select></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Últimos deploys nesta org</h3>
+          <span class="note">selecione um para iniciar o rollback</span>
+        </div>
+        <div class="panel-body" id="rollbackList"></div>
+      </div>
+    </div>
+
+    <!-- EQUALIZAÇÃO -->
+    <div class="view" id="view-equalizacao">
+      <div class="viewhead">
+        <div>
+          <h2>Equalização</h2>
+          <div class="sub">Escolha a gold e depois os destinos que vão receber a atualização</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="btnViewLog">Ver logs</button>
+          <button class="btn" id="btnDeployPending" disabled>Deploy pendências</button>
+          <button class="btn primary" id="btnAnalyzeEq">Analisar agora</button>
+        </div>
+      </div>
+
+      <div class="eqpick-block">
+        <div class="eqpick-caption">Gold · fonte da comparação</div>
+        <div class="goldselect" id="goldSelect"></div>
+      </div>
+
+      <div class="eqpick-block">
+        <div class="eqpick-caption">Destinos · orgs que vão sofrer a atualização (clique para incluir/excluir)</div>
+        <div class="eqpick-row" id="eqPipeline"></div>
+      </div>
+
+      <div class="legend">
+        <div class="item"><span class="swatch ok"></span> sincronizado</div>
+        <div class="item"><span class="swatch diff"></span> divergente (clique para ver diff)</div>
+        <div class="item"><span class="swatch absent"></span> ausente</div>
+        <div class="item"><span class="swatch extra"></span> extra</div>
+        <div class="item"><span class="swatch merged"></span> mergeado (aguardando deploy)</div>
+      </div>
+      <div class="matrixwrap"><table class="matrix" id="eqMatrix"></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle"></h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toastwrap" id="toastwrap"></div>
+
+<script>
+/* ============ STATE ============ */
+let orgs = [
+  { id:100, name:'HOMOL',     synced:41, diff:3, absent:2, extra:0, check:'nunca', total:46 },
+  { id:133, name:'DEVEVERY',  synced:41, diff:0, absent:0, extra:0, check:'nunca', total:41 },
+];
+
+let boardData = {
+  todo:    [ {jira:'CRMB2B-201', type:'RELEASE', title:'Regra de validação para CNPJ em Oportunidade', dev:'AB'},
+             {jira:'CRMB2B-214', type:'BUGFIX',  title:'Flow de aprovação duplicando tarefa', dev:'LM'} ],
+  prog:    [ {jira:'CRMB2B-198', type:'RELEASE', title:'LWC de painel de contratos B2B', dev:'AB'},
+             {jira:'CRMB2B-207', type:'HOTFIX',  title:'Trigger de conta lançando null pointer', dev:'RS'} ],
+  review:  [ {jira:'CRMB2B-190', type:'RELEASE', title:'PermSet para squad de faturamento', dev:'LM'} ],
+  deploy:  [ {jira:'CRMB2B-183', type:'BUGFIX',  title:'Layout de caso não exibindo campo SLA', dev:'AB', oe:'OE-0041'} ],
+  done:    [ {jira:'CRMB2B-176', type:'RELEASE', title:'Apex batch de reconciliação de contratos', dev:'RS', oe:'OE-0039'},
+             {jira:'CRMB2B-171', type:'HOTFIX',  title:'Correção de fuso em data de vigência', dev:'LM', oe:'OE-0038'} ],
+};
+const colTitles = { todo:'To do', prog:'Em progresso', review:'Em revisão', deploy:'Deploy', done:'Concluído' };
+let nextOe = 42;
+
+const recentDeploys = [
+  { oe:'OE-0041', jira:'CRMB2B-183', tgt:'HOMOL',     tgtId:100, status:'success', dur:'2m14s', components:['CaseSLALayout'] },
+  { oe:'OE-0040', jira:'CRMB2B-179', tgt:'DEVEVERY',  tgtId:133, status:'success', dur:'4m02s', components:['ContractReconciliationBatch','AccountTriggerHandler'] },
+  { oe:'OE-0039', jira:'CRMB2B-176', tgt:'DEVEVERY',  tgtId:133, status:'success', dur:'3m48s', components:['ContractApprovalFlow'] },
+  { oe:'OE-0038', jira:'CRMB2B-171', tgt:'HOMOL',     tgtId:100, status:'failed',  dur:'0m51s', components:['Billing_Squad_Access','CNPJ_Validation_Rule'] },
+];
+
+const ARQ_ID = 36;
+function orgName(id){ if(id===ARQ_ID) return 'ORG ARQUITETURA'; const o=orgs.find(o=>o.id===id); return o ? o.name : '\u2014'; }
+
+/* Gold sandbox do Dashboard/Drift — por padrão é a ORG ARQUITETURA, mas
+   pode ser trocada por qualquer org cadastrada. Independente da gold
+   escolhida na aba Equalização (que é só pra uma análise pontual). */
+let dashboardGoldOrgId = ARQ_ID;
+let arqStats = { id: ARQ_ID, name:'ORG ARQUITETURA', diff:0, absent:0, extra:0, synced:41, total:41, check:'nunca' };
+function statsFor(id){ return id === ARQ_ID ? arqStats : orgs.find(o=>o.id===id); }
+function dashboardDestOrgs(){ return eqAllOrgs().filter(o=>o.id !== dashboardGoldOrgId); }
+function eqAllOrgs(){ return [{id:ARQ_ID, name:'ORG ARQUITETURA'}].concat(orgs); }
+
+/* pipeline de equalizacao: qualquer org pode ser gold; as demais sao destino */
+let eqGoldOrgId = ARQ_ID;
+let eqSelectedOrgs = new Set(orgs.map(o=>o.id)); // destinos por padrao: dev, uat, prod
+
+/* Merges preparados (mergeados) mas ainda não deployados.
+   Chave: "nomeDoComponente::orgDestinoId" -> conteúdo já mesclado. */
+let pendingMerges = {};
+function pendingKey(name, destId){ return name + '::' + destId; }
+
+/* Log de deploys — histórico consultável, com motivo em caso de falha. */
+let deployLog = [];
+let deployLogSeq = 1;
+
+const DEPLOY_ERROR_MESSAGES = [
+  'Cobertura de testes Apex abaixo do mínimo exigido (68%, necessário 75%).',
+  'Falha de compilação: referência a campo inexistente Contract.Amount__c.',
+  'Violação de FLS: usuário de deploy sem acesso ao campo CNPJ__c.',
+  'Timeout ao conectar na org de destino (SOAP login excedeu 20s).',
+  'Conflito de merge: componente foi alterado na org destino após o snapshot ser tirado.',
+];
+
+/* Simula o resultado real de um deploy (a maior parte tem sucesso,
+   uma fração falha com um motivo plausível de Salesforce/Heroku). */
+function simulateDeployOutcome(){
+  const ok = Math.random() > 0.22;
+  if(ok) return { status:'success', message:'Deploy concluído com sucesso.' };
+  const message = DEPLOY_ERROR_MESSAGES[Math.floor(Math.random()*DEPLOY_ERROR_MESSAGES.length)];
+  return { status:'failed', message };
+}
+
+function logDeploy(name, destId, outcome){
+  deployLog.unshift({
+    id: deployLogSeq++,
+    timestamp: new Date().toLocaleString('pt-BR',{ day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit' }),
+    component: name,
+    destOrg: orgName(destId),
+    status: outcome.status,
+    message: outcome.message,
+  });
+}
+
+function openDeployLog(){
+  const rows = deployLog.length ? deployLog.map(e=>`
+    <div class="hunkitem" style="align-items:flex-start;">
+      <span class="swatch ${e.status==='success' ? 'ok' : 'diff'}" style="margin-top:3px;"></span>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; gap:10px;">
+          <strong>${e.component}</strong>
+          <span class="mono" style="color:var(--fog); font-size:10px; white-space:nowrap;">${e.timestamp}</span>
+        </div>
+        <div style="color:var(--fog); font-size:10.5px; margin-top:2px;">destino: ${e.destOrg} · ${e.status==='success' ? 'sucesso' : ('falha — ' + e.message)}</div>
+      </div>
+    </div>
+  `).join('') : `<p style="color:var(--fog);">Nenhum deploy registrado ainda.</p>`;
+  openModal('Log de deploys', `<div class="hunklist" style="max-height:55vh; overflow-y:auto;">${rows}</div>`,
+    `<button class="btn" onclick="closeModal()">Fechar</button>`, true);
+}
+
+/* Modal de resumo pós-deploy: percentual de implementação + lista
+   componente a componente, com atalho pro log em caso de falha. */
+function renderBatchSummaryModal(title, results){
+  const total = results.length;
+  const successCount = results.filter(r=>r.status==='success').length;
+  const failCount = total - successCount;
+  const pct = total ? Math.round(successCount/total*100) : 100;
+  const rows = results.length ? results.map(r=>`
+    <div class="hunkitem" style="align-items:center;">
+      <span class="swatch ${r.status==='success' ? 'ok' : 'diff'}" style="margin-top:3px;"></span>
+      <div style="flex:1;"><strong>${r.name}</strong> <span style="color:var(--fog)">→ ${orgName(r.destId)}</span><br>
+      <span style="color:var(--fog); font-size:10.5px;">${r.status==='success' ? 'sucesso' : r.message}</span></div>
+    </div>
+  `).join('') : `<p style="color:var(--fog);">Nenhum componente precisou de ação nesta leva.</p>`;
+
+  openModal(title, `
+    <p style="color:var(--fog); font-size:12px; margin:0 0 10px;">${successCount} de ${total} componente(s) implementados com sucesso${failCount>0 ? `, ${failCount} com falha` : ''}.</p>
+    <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
+    <p style="color:var(--fog); font-size:11px; margin:8px 0 14px;">${pct}% de implementação</p>
+    <div class="hunklist">${rows}</div>
+  `, `
+    <button class="btn" onclick="closeModal()">Fechar</button>
+    ${failCount>0 ? `<button class="btn primary" onclick="closeModal(); openDeployLog();">Ver logs de erro</button>` : ''}
+  `, true);
+}
+
+
+const componentList = [
+  { name:'ContractApprovalFlow', type:'Flow' },
+  { name:'AccountTriggerHandler', type:'ApexClass' },
+  { name:'b2bContractPanel', type:'LWC' },
+  { name:'Billing_Squad_Access', type:'PermissionSet' },
+  { name:'CaseSLALayout', type:'Layout' },
+  { name:'ContractReconciliationBatch', type:'ApexClass' },
+  { name:'CNPJ_Validation_Rule', type:'ValidationRule' },
+];
+
+/* Data de última coleta (snapshot) por componente+org. Chave igual à
+   de pendingMerges. Sem entrada = nunca coletado. */
+let snapshotDates = {
+  'ContractApprovalFlow::36': '13/07/2026 06:00', 'ContractApprovalFlow::100': '13/07/2026 06:00', 'ContractApprovalFlow::133': '12/07/2026 22:14', 'ContractApprovalFlow::133': '13/07/2026 06:00',
+  'AccountTriggerHandler::36': '13/07/2026 06:00', 'AccountTriggerHandler::100': '13/07/2026 06:00', 'AccountTriggerHandler::133': '13/07/2026 06:00', 'AccountTriggerHandler::133': '11/07/2026 18:40',
+  'b2bContractPanel::36': '13/07/2026 06:00', 'b2bContractPanel::100': '12/07/2026 09:30', 'b2bContractPanel::133': '13/07/2026 06:00',
+  'Billing_Squad_Access::36': '13/07/2026 06:00', 'Billing_Squad_Access::100': '10/07/2026 14:05', 'Billing_Squad_Access::133': '12/07/2026 22:14', 'Billing_Squad_Access::133': '13/07/2026 06:00',
+  'CaseSLALayout::133': '09/07/2026 11:00',
+  'ContractReconciliationBatch::36': '13/07/2026 06:00', 'ContractReconciliationBatch::100': '13/07/2026 06:00', 'ContractReconciliationBatch::133': '13/07/2026 06:00', 'ContractReconciliationBatch::133': '13/07/2026 06:00',
+  'CNPJ_Validation_Rule::36': '13/07/2026 06:00', 'CNPJ_Validation_Rule::100': '13/07/2026 06:00', 'CNPJ_Validation_Rule::133': '08/07/2026 17:22',
+};
+function snapshotKey(name, orgId){ return name + '::' + orgId; }
+function refreshSnapshot(name, orgId){
+  snapshotDates[snapshotKey(name, orgId)] = new Date().toLocaleString('pt-BR',{ day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit' });
+  renderPickerGrid();
+  toast(`Snapshot de ${name} atualizado`);
+}
+
+/* Metadados de auditoria por componente+org: quem criou, quando, e
+   quem fez a última modificação. Chave igual à de snapshotDates. */
+const componentMeta = {
+  'ContractApprovalFlow::36': { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
+  'ContractApprovalFlow::100':  { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
+  'ContractApprovalFlow::133':  { created:'12/01/2026', modified:'12/07/2026 22:14', by:'Lucas Martins' },
+  'ContractApprovalFlow::133':  { created:'12/01/2026', modified:'10/07/2026 09:15', by:'Alberto Bottaro' },
+  'AccountTriggerHandler::36':{ created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
+  'AccountTriggerHandler::100': { created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
+  'AccountTriggerHandler::133': { created:'03/02/2026', modified:'05/07/2026 16:40', by:'Alberto Bottaro' },
+  'AccountTriggerHandler::133': { created:'03/02/2026', modified:'11/07/2026 18:40', by:'Rafaela Souza' },
+  'b2bContractPanel::36':     { created:'20/02/2026', modified:'08/07/2026 10:00', by:'Lucas Martins' },
+  'b2bContractPanel::100':      { created:'20/02/2026', modified:'12/07/2026 09:30', by:'Rafaela Souza' },
+  'b2bContractPanel::133':      { created:'20/02/2026', modified:'08/07/2026 10:00', by:'Lucas Martins' },
+  'Billing_Squad_Access::36': { created:'15/01/2026', modified:'09/07/2026 11:20', by:'Alberto Bottaro' },
+  'Billing_Squad_Access::100':  { created:'15/01/2026', modified:'10/07/2026 14:05', by:'Lucas Martins' },
+  'Billing_Squad_Access::133':  { created:'15/01/2026', modified:'12/07/2026 22:14', by:'Rafaela Souza' },
+  'Billing_Squad_Access::133':  { created:'15/01/2026', modified:'09/07/2026 11:20', by:'Alberto Bottaro' },
+  'CaseSLALayout::133':         { created:'28/06/2026', modified:'09/07/2026 11:00', by:'Rafaela Souza' },
+  'ContractReconciliationBatch::36': { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
+  'ContractReconciliationBatch::100':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
+  'ContractReconciliationBatch::133':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
+  'ContractReconciliationBatch::133':  { created:'05/01/2026', modified:'02/07/2026 08:00', by:'Alberto Bottaro' },
+  'CNPJ_Validation_Rule::36': { created:'18/01/2026', modified:'06/07/2026 13:10', by:'Alberto Bottaro' },
+  'CNPJ_Validation_Rule::100':  { created:'18/01/2026', modified:'06/07/2026 13:10', by:'Alberto Bottaro' },
+  'CNPJ_Validation_Rule::133':  { created:'18/01/2026', modified:'08/07/2026 17:22', by:'Lucas Martins' },
+};
+function getComponentMeta(name, orgId){
+  return componentMeta[snapshotKey(name, orgId)] || { created:'—', modified:'—', by:'—' };
+}
+
+const FLOW_BASE =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <label>Contract Approval Flow</label>
+    <processType>Flow</processType>
+    <status>Active</status>
+    <decisions>
+        <name>checkValue</name>
+        <label>Check Contract Value</label>
+        <defaultConnector>
+            <targetReference>Send_To_Regional_Manager</targetReference>
+        </defaultConnector>
+        <rules>
+            <name>Above_Threshold</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Contract.Amount__c</leftValueReference>
+                <operator>GreaterThanOrEqualTo</operator>
+                <rightValue>
+                    <numberValue>50000.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Send_To_Director</targetReference>
+            </connector>
+        </rules>
+    </decisions>
+    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <connector>
+            <targetReference>checkValue</targetReference>
+        </connector>
+    </start>
+</Flow>`;
+const FLOW_DEV =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <label>Contract Approval Flow</label>
+    <processType>Flow</processType>
+    <status>Draft</status>
+    <decisions>
+        <name>checkValue</name>
+        <label>Check Contract Value</label>
+        <defaultConnector>
+            <targetReference>Send_To_Regional_Manager</targetReference>
+        </defaultConnector>
+        <rules>
+            <name>Above_Threshold</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Contract.Amount__c</leftValueReference>
+                <operator>GreaterThanOrEqualTo</operator>
+                <rightValue>
+                    <numberValue>50000.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Send_To_Director</targetReference>
+            </connector>
+        </rules>
+    </decisions>
+    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <connector>
+            <targetReference>checkValue</targetReference>
+        </connector>
+    </start>
+</Flow>`;
+const FLOW_UAT =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <label>Contract Approval Flow</label>
+    <processType>Flow</processType>
+    <status>Active</status>
+    <decisions>
+        <name>checkValue</name>
+        <label>Check Contract Value</label>
+        <defaultConnector>
+            <targetReference>Send_To_Regional_Manager</targetReference>
+        </defaultConnector>
+        <rules>
+            <name>Above_Threshold</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Contract.Amount__c</leftValueReference>
+                <operator>GreaterThanOrEqualTo</operator>
+                <rightValue>
+                    <numberValue>30000.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Send_To_Regional_Manager</targetReference>
+            </connector>
+        </rules>
+    </decisions>
+    <interviewLabel>Contract Approval Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <start>
+        <connector>
+            <targetReference>checkValue</targetReference>
+        </connector>
+    </start>
+</Flow>`;
+
+const APEX_BASE =
+`public class AccountTriggerHandler {
+
+    public static void validateCNPJ(List<Account> accounts) {
+        for (Account acc : accounts) {
+            if (acc.RecordType.DeveloperName == 'B2B' && acc.CNPJ__c == null) {
+                throw new ValidationException('CNPJ obrigatorio para contas B2B');
+            }
+        }
+    }
+
+    public static void enrichBillingData(List<Account> accounts) {
+        for (Account acc : accounts) {
+            if (acc.CNPJ__c != null) {
+                acc.Billing_Status__c = 'Validated';
+            }
+        }
+    }
+
+    public class ValidationException extends Exception {}
+}`;
+/* variante com DOIS trechos divergentes (dois hunks separados),
+   boa pra testar o merge seletivo trecho a trecho */
+const APEX_PROD =
+`public class AccountTriggerHandler {
+
+    public static void validateCNPJ(List<Account> accounts) {
+        for (Account acc : accounts) {
+            if (acc.RecordType.DeveloperName == 'B2B' && acc.CNPJ__c == null) {
+                System.debug('CNPJ vazio para conta ' + acc.Id);
+            }
+        }
+    }
+
+    public static void enrichBillingData(List<Account> accounts) {
+        for (Account acc : accounts) {
+            if (acc.CNPJ__c != null) {
+                acc.Billing_Status__c = 'Pending';
+            }
+        }
+    }
+}`;
+
+const LWC_BASE =
+`import { LightningElement, api, wire } from 'lwc';
+import getContracts from '@salesforce/apex/ContractPanelController.getContracts';
+
+export default class B2bContractPanel extends LightningElement {
+    @api recordId;
+    contracts;
+    error;
+
+    @wire(getContracts, { accountId: '$recordId' })
+    wiredContracts({ error, data }) {
+        if (data) {
+            this.contracts = data;
+            this.error = undefined;
+        } else if (error) {
+            this.error = error;
+            this.contracts = undefined;
+        }
+    }
+
+    get hasContracts() {
+        return this.contracts && this.contracts.length > 0;
+    }
+}`;
+const LWC_DEV =
+`import { LightningElement, api, wire } from 'lwc';
+import getContracts from '@salesforce/apex/ContractPanelController.getContracts';
+
+export default class B2bContractPanel extends LightningElement {
+    @api recordId;
+    contracts;
+    error;
+
+    @wire(getContracts, { accountId: '$recordId' })
+    wiredContracts({ error, data }) {
+        if (data) {
+            this.contracts = data;
+            this.error = undefined;
+        } else if (error) {
+            this.error = error;
+            this.contracts = undefined;
+        }
+    }
+
+    get hasContracts() {
+        return !!(this.contracts && this.contracts.length > 0);
+    }
+}`;
+
+const PERMSET_BASE =
+`<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Billing Squad Access</label>
+    <permissionSetGroup>false</permissionSetGroup>
+    <classAccesses>
+        <apexClass>AccountTriggerHandler</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <object>Contract</object>
+        <allowRead>true</allowRead>
+        <allowEdit>true</allowEdit>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>`;
+const PERMSET_DEV =
+`<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Billing Squad Access</label>
+    <permissionSetGroup>false</permissionSetGroup>
+    <classAccesses>
+        <apexClass>AccountTriggerHandler</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <object>Contract</object>
+        <allowRead>true</allowRead>
+        <allowEdit>true</allowEdit>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>`;
+const PERMSET_UAT =
+`<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Billing Squad Access</label>
+    <permissionSetGroup>false</permissionSetGroup>
+    <classAccesses>
+        <apexClass>AccountTriggerHandler</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <object>Contract</object>
+        <allowRead>true</allowRead>
+        <allowEdit>false</allowEdit>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>`;
+
+const LAYOUT_PROD =
+`<?xml version="1.0" encoding="UTF-8"?>
+<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <layoutSections>
+        <label>SLA Info</label>
+        <layoutColumns>
+            <layoutItems>
+                <field>SLA_Deadline__c</field>
+                <behavior>Edit</behavior>
+            </layoutItems>
+            <layoutItems>
+                <field>SLA_Breached__c</field>
+                <behavior>Readonly</behavior>
+            </layoutItems>
+        </layoutColumns>
+    </layoutSections>
+</Layout>`;
+
+const BATCH_BASE =
+`global class ContractReconciliationBatch implements Database.Batchable<sObject> {
+
+    global Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator([
+            SELECT Id, Status, Amount__c FROM Contract WHERE Status = 'Draft'
+        ]);
+    }
+
+    global void execute(Database.BatchableContext bc, List<Contract> scope) {
+        for (Contract c : scope) {
+            c.Status = 'Reconciled';
+        }
+        update scope;
+    }
+
+    global void finish(Database.BatchableContext bc) {
+        System.debug('Reconciliation batch finished');
+    }
+}`;
+
+const VR_BASE =
+`<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CNPJ_Validation_Rule</fullName>
+    <active>true</active>
+    <errorConditionFormula>
+        AND(RecordType.DeveloperName = "B2B", ISBLANK(CNPJ__c))
+    </errorConditionFormula>
+    <errorMessage>CNPJ e obrigatorio para contas do tipo B2B.</errorMessage>
+</ValidationRule>`;
+const VR_PROD =
+`<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CNPJ_Validation_Rule</fullName>
+    <active>true</active>
+    <errorConditionFormula>
+        AND(RecordType.DeveloperName = "B2B", ISBLANK(CNPJ__c))
+    </errorConditionFormula>
+    <errorMessage>CNPJ e obrigatorio para contas do tipo B2B (revisado).</errorMessage>
+</ValidationRule>`;
+
+const contentByOrg = {
+  ContractApprovalFlow:        { 36: FLOW_BASE,  100: FLOW_DEV,  133: FLOW_BASE },
+  AccountTriggerHandler:       { 36: APEX_BASE,  100: APEX_BASE, 133: APEX_PROD },
+  b2bContractPanel:            { 36: LWC_BASE,   100: LWC_DEV,   133: LWC_BASE },
+  Billing_Squad_Access:        { 36: PERMSET_BASE, 100: PERMSET_DEV, 133: PERMSET_BASE },
+  CaseSLALayout:                { 36: null,        100: null,      133: LAYOUT_PROD },
+  ContractReconciliationBatch: { 36: BATCH_BASE,  100: BATCH_BASE, 133: BATCH_BASE },
+  CNPJ_Validation_Rule:        { 36: VR_BASE,     100: VR_BASE,   133: VR_PROD },
+};
+
+function computeStatus(name, destId, goldId){
+  if(pendingKey(name,destId) in pendingMerges) return 'merged';
+  goldId = (goldId !== undefined) ? goldId : eqGoldOrgId;
+  const gold = contentByOrg[name][goldId];
+  const dest = contentByOrg[name][destId];
+  const goldNull = (gold === null || gold === undefined);
+  const destNull = (dest === null || dest === undefined);
+  if (goldNull && destNull) return 'na';
+  if (!goldNull && destNull) return 'absent';
+  if (goldNull && !destNull) return 'extra';
+  return gold === dest ? 'ok' : 'diff';
+}
+
+
+/* Algoritmo de diff por LCS (mesma lógica da seção 6 da especificação) */
+function computeLcsDiff(a, b){
+  const A = (a||'').split('\n'), B = (b||'').split('\n');
+  const m = A.length, n = B.length;
+  const dp = Array.from({length:m+1}, () => new Array(n+1).fill(0));
+  for (let i=m-1; i>=0; i--)
+    for (let j=n-1; j>=0; j--)
+      dp[i][j] = A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const ops=[]; let i=0, j=0;
+  while (i<m && j<n){
+    if (A[i]===B[j]) { ops.push(['eq', A[i]]); i++; j++; }
+    else if (dp[i+1][j] >= dp[i][j+1]) { ops.push(['del', A[i]]); i++; }
+    else { ops.push(['add', B[j]]); j++; }
+  }
+  while (i<m) ops.push(['del', A[i++]]);
+  while (j<n) ops.push(['add', B[j++]]);
+  return ops;
+}
+
+
+/* ============ TOAST ============ */
+function toast(msg){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toastwrap').appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+
+/* ============ MODAL ============ */
+function openModal(title, bodyHtml, footHtml, wide){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalFoot').innerHTML = footHtml || '';
+  document.getElementById('modal').classList.toggle('wide', !!wide);
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+
+/* ============ PIPELINE ============ */
+function orgState(o){ return (o.diff>0 || o.absent>0 || o.extra>0) ? 'drift' : 'synced'; }
+function orgSubLabel(o){
+  if(orgState(o)==='synced') return `${o.synced} componentes ok`;
+  const parts=[];
+  if(o.diff) parts.push(`${o.diff} diff`);
+  if(o.absent) parts.push(`${o.absent} ausentes`);
+  if(o.extra) parts.push(`${o.extra} extras`);
+  return parts.join(' · ');
+}
+function renderPipeline(){
+  const el = document.getElementById('pipeline');
+  const destOrgs = dashboardDestOrgs();
+  const stages = [{ name: orgName(dashboardGoldOrgId), sub:'gold · sandbox', state:'synced' }].concat(
+    destOrgs.map(o=>{ const s = statsFor(o.id); return { name:o.name, sub:orgSubLabel(s), state:orgState(s) }; })
+  );
+  let html='';
+  stages.forEach((s,i)=>{
+    html += `<div class="pnode">
+      <div class="pnode-dot ${s.state}"></div>
+      <div class="pnode-label">${s.name}</div>
+      <div class="pnode-sub">${s.sub}</div>
+    </div>`;
+    if(i < stages.length-1){
+      const edgeDrift = stages[i+1].state === 'drift' ? 'drift-edge' : '';
+      html += `<div class="pconnector ${edgeDrift}"></div>`;
+    }
+  });
+  el.innerHTML = html;
+  renderGlobalBadge();
+}
+function renderGlobalBadge(){
+  const bad = dashboardDestOrgs().filter(o=>orgState(statsFor(o.id))==='drift').length;
+  const el = document.getElementById('globalDriftBadge');
+  if(bad===0){
+    el.innerHTML = `<span class="swatch ok"></span><span>Todas as orgs sincronizadas</span>`;
+  } else {
+    el.innerHTML = `<span class="swatch diff"></span><span><span class="n">${bad}</span> org${bad>1?'s':''} fora de sync</span>`;
+  }
+}
+document.getElementById('globalDriftBadge').addEventListener('click', ()=> switchView('dashboard'));
+
+/* ============ NAV ============ */
+function switchView(view){
+  document.querySelectorAll('.rail-btn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id === 'view-'+view));
+}
+document.querySelectorAll('.rail-btn[data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=> switchView(btn.dataset.view));
+});
+
+/* ============ BOARD (drag & drop funcional) ============ */
+function renderBoard(){
+  const el = document.getElementById('boardCols');
+  const total = Object.values(boardData).reduce((a,c)=>a+c.length,0);
+  document.getElementById('boardSub').textContent = `${total} user stories · sprint atual: 2026.14`;
+  let html='';
+  Object.keys(boardData).forEach(col=>{
+    const cards = boardData[col];
+    html += `<div class="col" data-col="${col}">
+      <div class="col-head"><span class="title">${colTitles[col]}</span><span class="count">${cards.length}</span></div>
+      <div class="col-body" data-col="${col}">`;
+    cards.forEach((c,idx)=>{
+      html += `<div class="card" draggable="true" data-col="${col}" data-idx="${idx}">
+        <div class="card-top">
+          <span class="jira">${c.jira}</span>
+          <span class="typetag ${c.type.toLowerCase()}">${c.type}</span>
+        </div>
+        <div class="card-title">${c.title}</div>
+        <div class="card-foot">
+          <span class="avatar-mini">${c.dev}</span>
+          <span class="oe">${c.oe ? c.oe : '—'}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  el.innerHTML = html;
+  attachDnD();
+}
+
+let dragSrc = null;
+function attachDnD(){
+  document.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('dragstart', e=>{
+      dragSrc = { col: card.dataset.col, idx: parseInt(card.dataset.idx) };
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.col-body').forEach(body=>{
+    body.addEventListener('dragover', e=>{ e.preventDefault(); body.closest('.col').classList.add('dragover'); });
+    body.addEventListener('dragleave', ()=> body.closest('.col').classList.remove('dragover'));
+    body.addEventListener('drop', e=>{
+      e.preventDefault();
+      body.closest('.col').classList.remove('dragover');
+      if(!dragSrc) return;
+      const destCol = body.dataset.col;
+      const card = boardData[dragSrc.col].splice(dragSrc.idx,1)[0];
+      if(destCol === 'deploy' && !card.oe){ card.oe = 'OE-' + String(nextOe++).padStart(4,'0'); }
+      boardData[destCol].push(card);
+      dragSrc = null;
+      renderBoard();
+      toast(`${card.jira} movida para "${colTitles[destCol]}"`);
+    });
+  });
+}
+
+/* Nova US */
+document.getElementById('btnNewUS').addEventListener('click', ()=>{
+  openModal('Nova User Story', `
+    <div class="formrow"><label>Jira Key</label><input id="f_jira" placeholder="CRMB2B-XXX"></div>
+    <div class="formrow"><label>Título</label><input id="f_title" placeholder="Descreva a US"></div>
+    <div class="formrow"><label>Tipo</label>
+      <select id="f_type"><option>RELEASE</option><option>BUGFIX</option><option>HOTFIX</option></select>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" id="f_submit">Criar e escolher componentes</button>
+  `);
+  document.getElementById('f_submit').addEventListener('click', ()=>{
+    const jira = document.getElementById('f_jira').value.trim() || `CRMB2B-${Math.floor(Math.random()*900+100)}`;
+    const title = document.getElementById('f_title').value.trim() || 'Nova user story';
+    const type = document.getElementById('f_type').value;
+    boardData.todo.push({ jira, type, title, dev:'AB' });
+    renderBoard();
+    toast(`US ${jira} criada em "To do"`);
+    openComponentPicker(jira);
+  });
+});
+
+/* ============ NOVA US → ESCOLHA DE COMPONENTES ============ */
+let pickerState = null; // { usJira, originId, destId, filterType, selected:Set }
+
+function openComponentPicker(usJira){
+  pickerState = { usJira, originId: ARQ_ID, destId: 100, filterType:'Todos', selected: new Set() };
+  renderPickerGrid();
+}
+
+function pickerAvailableComponents(){
+  const { originId } = pickerState;
+  return componentList.filter(c=>{
+    return contentByOrg[c.name][originId] !== null && contentByOrg[c.name][originId] !== undefined;
+  });
+}
+
+function pickerAdd(name){
+  if(name) pickerState.selected.add(name);
+  renderPickerGrid();
+}
+function pickerRemove(name){
+  pickerState.selected.delete(name);
+  renderPickerGrid();
+}
+
+function renderPickerGrid(){
+  const { usJira, originId, destId, selected, filterType } = pickerState;
+  const orgOptions = eqAllOrgs().map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+  const available = pickerAvailableComponents();
+  const addable = available.filter(c => !selected.has(c.name));
+  const chosen = available.filter(c => selected.has(c.name));
+
+  const types = ['Todos', ...Array.from(new Set(addable.map(c=>c.type))).sort()];
+  if(!types.includes(filterType)) pickerState.filterType = 'Todos';
+  const typeOptions = types.map(t=>`<option value="${t}" ${t===pickerState.filterType?'selected':''}>${t}</option>`).join('');
+  const filteredAddable = pickerState.filterType === 'Todos' ? addable : addable.filter(c=>c.type===pickerState.filterType);
+  const componentOptions = filteredAddable.length
+    ? filteredAddable.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')
+    : `<option value="">Nenhum componente deste tipo</option>`;
+
+  const rowsHtml = chosen.length ? chosen.map(c=>{
+    const snap = snapshotDates[snapshotKey(c.name, originId)] || 'nunca coletado';
+    const meta = getComponentMeta(c.name, originId);
+    return `<div class="pickrow">
+      <div>
+        <div class="pickrow-name">${c.name}</div>
+        <div class="pickrow-type">${c.type}</div>
+        <div class="pickrow-meta">Criado ${meta.created} · modificado ${meta.modified} por ${meta.by}</div>
+      </div>
+      <div class="pickrow-snap">${snap}</div>
+      <button class="btn small" onclick="refreshSnapshot('${c.name}', ${originId})">Atualizar snapshot</button>
+      <button class="btn small" onclick="pickerRemove('${c.name}')">Remover</button>
+    </div>`;
+  }).join('') : `<p style="color:var(--fog); padding:10px 0;">Nenhum componente adicionado ainda — escolha ao lado.</p>`;
+
+  const n = selected.size;
+  openModal(`Escolha de componentes · ${usJira}`, `
+    <div class="pickhead">
+      <div class="formrow"><label>Org de origem</label>
+        <select id="pk_origin">${orgOptions}</select>
+      </div>
+      <div class="formrow"><label>Org de destino</label>
+        <select id="pk_dest">${orgOptions}</select>
+      </div>
+    </div>
+    <div class="pickhead">
+      <div class="formrow"><label>Tipo de componente</label>
+        <select id="pk_typeselect">${typeOptions}</select>
+      </div>
+      <div class="formrow"><label>Componente</label>
+        <div style="display:flex; gap:8px;">
+          <select id="pk_addselect" style="flex:1;">${componentOptions}</select>
+          <button class="btn" id="pk_addbtn" ${filteredAddable.length===0?'disabled':''}>Adicionar</button>
+        </div>
+      </div>
+    </div>
+    <div class="pickgrid-head">
+      <span>Componente</span><span>Último snapshot</span><span></span><span></span>
+    </div>
+    <div class="pickgrid">${rowsHtml}</div>
+  `, `
+    <button class="btn" onclick="closeModal()">Fazer depois</button>
+    <button class="btn primary" id="pk_submit" ${n===0?'disabled':''}>Realizar Deploy (${n})</button>
+  `, true);
+
+  document.getElementById('pk_origin').value = originId;
+  document.getElementById('pk_dest').value = destId;
+  document.getElementById('pk_origin').addEventListener('change', (e)=>{
+    pickerState.originId = parseInt(e.target.value);
+    pickerState.selected = new Set(); // origem mudou, seleção anterior não é mais garantidamente válida
+    pickerState.filterType = 'Todos';
+    renderPickerGrid();
+  });
+  document.getElementById('pk_dest').addEventListener('change', (e)=>{
+    pickerState.destId = parseInt(e.target.value);
+    renderPickerGrid();
+  });
+  document.getElementById('pk_typeselect').addEventListener('change', (e)=>{
+    pickerState.filterType = e.target.value;
+    renderPickerGrid();
+  });
+  document.getElementById('pk_addbtn').addEventListener('click', ()=>{
+    const val = document.getElementById('pk_addselect').value;
+    pickerAdd(val);
+  });
+  const submitBtn = document.getElementById('pk_submit');
+  if(submitBtn) submitBtn.addEventListener('click', startComponentQueue);
+}
+
+/* ============ FILA DE PROCESSAMENTO (merge/deploy por componente) ============ */
+let componentQueue = null; // { items:[...], index, goldId, destId }
+
+function startComponentQueue(){
+  const items = Array.from(pickerState.selected);
+  const { originId, destId } = pickerState;
+  componentQueue = { items, index:0, goldId: originId, destId, results: [] };
+  processNextInQueue();
+}
+
+function processNextInQueue(){
+  if(!componentQueue) return;
+  while(componentQueue.index < componentQueue.items.length){
+    const name = componentQueue.items[componentQueue.index];
+    const st = computeStatus(name, componentQueue.destId, componentQueue.goldId);
+    if(st === 'diff' || st === 'absent'){
+      openDiff(name, componentQueue.destId, componentQueue.goldId);
+      return; // espera a ação do usuário nesse componente
+    }
+    componentQueue.index++; // já sincronizado ou não aplicável — pula
+  }
+  const results = componentQueue.results;
+  componentQueue = null;
+  renderBatchSummaryModal('Resumo do deploy', results);
+}
+
+function advanceQueue(){
+  if(!componentQueue) return;
+  componentQueue.index++;
+  processNextInQueue();
+}
+
+/* Deploy imediato (com loading), usado só pela leva vinda da Nova US —
+   aqui não passa por "mergeado pendente": resolve e já aplica na org
+   se der certo. Se falhar, não aplica nada e registra o erro no log. */
+function runDeployLoading(name, destId, content, onDone){
+  openModal(`Deploy · ${name} → ${orgName(destId)}`, `
+    <p style="color:var(--fog); margin:0 0 10px;">Aplicando a alteração diretamente na org...</p>
+    <div class="progress-wrap"><div class="progress-bar" id="depProgress"></div></div>
+    <p id="depStatusText" style="color:var(--fog); font-size:11.5px; margin-top:8px;">Iniciando...</p>
+  `, `<button class="btn" disabled>Processando...</button>`);
+
+  let pct = 0;
+  const bar = document.getElementById('depProgress');
+  const txt = document.getElementById('depStatusText');
+  const steps = ['Montando pacote de deploy...', 'Executando metadata.deploy()...', 'Validando resultado...'];
+  let stepIdx = 0;
+  const iv = setInterval(()=>{
+    pct += 10;
+    bar.style.width = Math.min(pct,100) + '%';
+    if(pct % 33 < 10 && stepIdx < steps.length-1){ stepIdx++; }
+    txt.textContent = steps[stepIdx];
+    if(pct >= 100){
+      clearInterval(iv);
+      const outcome = simulateDeployOutcome();
+      logDeploy(name, destId, outcome);
+      if(outcome.status === 'success'){
+        contentByOrg[name][destId] = content;
+        recomputeOrgDriftFromMatrix(destId);
+        renderMatrix(); renderDrift(); renderPipeline();
+      }
+      closeModal();
+      toast(outcome.status === 'success'
+        ? `Deploy concluído — ${name} atualizado em ${orgName(destId)}`
+        : `Falha no deploy de ${name} — veja o log para detalhes`);
+      if(onDone) onDone(outcome);
+    }
+  }, 230);
+}
+
+function commitAndDeployQueued(){
+  const { name, destId, working } = currentDiff;
+  currentDiff = null;
+  closeModal();
+  runDeployLoading(name, destId, working, (outcome)=>{
+    if(componentQueue) componentQueue.results.push({ name, destId, status:outcome.status, message:outcome.message });
+    advanceQueue();
+  });
+}
+
+function createAndDeployQueued(name, destId, goldId){
+  const content = contentByOrg[name][goldId];
+  runDeployLoading(name, destId, content, (outcome)=>{
+    if(componentQueue) componentQueue.results.push({ name, destId, status:outcome.status, message:outcome.message });
+    advanceQueue();
+  });
+}
+
+
+/* ============ DASHBOARD — gadgets de ambientes ============ */
+const envAbbr = { 36:'ARQ', 100:'HML', 133:'DEV' };
+const envSeg  = { 36:'seg-arq', 100:'seg-hml', 133:'seg-dev' };
+const envIds  = [36,100,133];
+
+/* Dados consolidados por ambiente cadastrado. Números fictícios pra
+   representar usuários, objetos, componentes e governança de cada org. */
+const envData = {
+  36: { name:'ORG ARQUITETURA',
+    users:{ total:18, byLicense:{ 'Salesforce':12, 'Partner Community':4, 'Chatter Free':2 } },
+    objects:{ total:64, custom:22, standardWithFields:42 },
+    components:{ total:41, byType:{ ApexClass:9, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:4 } },
+    governance:{ apiUsed:12, dataStorage:8, fileStorage:5, codeCoverage:87 } },
+  100: { name:'HOMOL',
+    users:{ total:24, byLicense:{ 'Salesforce':16, 'Partner Community':6, 'Chatter Free':2 } },
+    objects:{ total:61, custom:20, standardWithFields:41 },
+    components:{ total:41, byType:{ ApexClass:8, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:5 } },
+    governance:{ apiUsed:18, dataStorage:11, fileStorage:6, codeCoverage:84 } },
+  133: { name:'DEVEVERY',
+    users:{ total:31, byLicense:{ 'Salesforce':20, 'Partner Community':9, 'Chatter Free':2 } },
+    objects:{ total:66, custom:23, standardWithFields:43 },
+    components:{ total:46, byType:{ ApexClass:9, Flow:7, LWC:5, PermissionSet:4, Layout:9, ValidationRule:6, Outro:6 } },
+    governance:{ apiUsed:34, dataStorage:22, fileStorage:14, codeCoverage:81 } },
+};
+
+let expandedGadgets = new Set(); // gadgets abertos no momento (podem ser vários)
+
+function sumField(cat, field){ return envIds.reduce((a,id)=>a+envData[id][cat][field],0); }
+function avgField(cat, field){ return Math.round(sumField(cat,field)/envIds.length); }
+function sumMap(cat, mapField){
+  const out = {};
+  envIds.forEach(id=>{
+    const m = envData[id][cat][mapField];
+    Object.keys(m).forEach(k=>{ out[k] = (out[k]||0) + m[k]; });
+  });
+  return out;
+}
+function miniRows(cat, field, isPercent){
+  return `<div class="gadget-rows">` + envIds.map(id=>{
+    const v = envData[id][cat][field];
+    const max = isPercent ? 100 : Math.max(...envIds.map(x=>envData[x][cat][field]));
+    const pct = max ? (v/max*100) : 0;
+    return `<div class="gadget-row">
+      <span class="gr-abbr">${envAbbr[id]}</span>
+      <span class="gr-bar-wrap"><span class="gr-bar ${envSeg[id]}" style="width:${pct}%"></span></span>
+      <span class="gr-val">${v}${isPercent?'%':''}</span>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function gadgetDetail(key){
+  if(key === 'users'){
+    const byLicense = sumMap('users','byLicense');
+    return `<div class="gadget-detail">
+      ${miniRows('users','total')}
+      <div class="gadget-agg">
+        <div class="gadget-metric-label">Licenças (consolidado)</div>
+        ${Object.keys(byLicense).map(k=>`<div class="gadget-agg-row"><span>${k}</span><b>${byLicense[k]}</b></div>`).join('')}
+      </div>
+    </div>`;
+  }
+  if(key === 'objects'){
+    return `<div class="gadget-detail">
+      ${miniRows('objects','total')}
+      <div class="gadget-agg">
+        <div class="gadget-metric-label">Consolidado</div>
+        <div class="gadget-agg-row"><span>Objetos customizados</span><b>${sumField('objects','custom')}</b></div>
+        <div class="gadget-agg-row"><span>Padrão com campos customizados</span><b>${sumField('objects','standardWithFields')}</b></div>
+      </div>
+    </div>`;
+  }
+  if(key === 'components'){
+    const byType = sumMap('components','byType');
+    return `<div class="gadget-detail">
+      ${miniRows('components','total')}
+      <div class="gadget-agg">
+        <div class="gadget-metric-label">Por tipo (consolidado)</div>
+        ${Object.keys(byType).map(k=>`<div class="gadget-agg-row"><span>${k}</span><b>${byType[k]}</b></div>`).join('')}
+      </div>
+    </div>`;
+  }
+  if(key === 'governance'){
+    return `<div class="gadget-detail">
+      <div class="gadget-metric-label">Uso de API</div>
+      ${miniRows('governance','apiUsed', true)}
+      <div class="gadget-metric-label">Armazenamento de dados</div>
+      ${miniRows('governance','dataStorage', true)}
+      <div class="gadget-metric-label">Armazenamento de arquivos</div>
+      ${miniRows('governance','fileStorage', true)}
+      <div class="gadget-metric-label">Cobertura de código Apex</div>
+      ${miniRows('governance','codeCoverage', true)}
+    </div>`;
+  }
+  return '';
+}
+
+function renderGadgets(){
+  const el = document.getElementById('envGadgets');
+  const cats = [
+    { key:'users', icon:'◍', label:'Usuários', sub:'licenças ativas', value: sumField('users','total') },
+    { key:'objects', icon:'▦', label:'Objetos', sub:'padrão + customizados', value: sumField('objects','total') },
+    { key:'components', icon:'▤', label:'Componentes', sub:'metadados rastreados', value: sumField('components','total') },
+    { key:'governance', icon:'◎', label:'Governança', sub:'uso médio de API', value: avgField('governance','apiUsed') + '%' },
+  ];
+  el.innerHTML = cats.map(c=>{
+    const isExp = expandedGadgets.has(c.key);
+    return `<div class="gadget" data-gadget="${c.key}">
+      <div class="gadget-top">
+        <span class="gadget-icon">${c.icon}</span>
+        <span class="gadget-toggle">${isExp ? '−' : '+'}</span>
+      </div>
+      <div class="gadget-value">${c.value}</div>
+      <div class="gadget-label">${c.label}</div>
+      <div class="gadget-sub">${c.sub}</div>
+      ${isExp ? gadgetDetail(c.key) : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.gadget').forEach(g=>{
+    g.addEventListener('click', ()=>{
+      const key = g.dataset.gadget;
+      if(expandedGadgets.has(key)) expandedGadgets.delete(key); else expandedGadgets.add(key);
+      renderGadgets();
+    });
+  });
+}
+
+document.getElementById('btnRefreshDash').addEventListener('click', function(){
+  this.disabled = true; this.textContent = 'Atualizando...';
+  setTimeout(()=>{ renderDrift(); renderPipeline(); renderGadgets(); this.disabled=false; this.textContent='Atualizar'; toast('Dashboard atualizado'); }, 700);
+});
+
+function renderDrift(){
+  const el = document.getElementById('driftpanel');
+  el.innerHTML = dashboardDestOrgs().map(orgRef=>{
+    const o = statsFor(orgRef.id);
+    const hasIssue = orgState(o)==='drift';
+    return `<div class="driftrow" data-org="${o.id}">
+      <div>
+        <div class="orgname">${o.name}</div>
+        <div class="lastcheck">Última análise: ${o.check}</div>
+      </div>
+      <div class="driftmeter">
+        <div class="driftbit"><span class="swatch ok"></span><b>${o.synced}</b> sincronizados</div>
+        <div class="driftbit"><span class="swatch diff"></span><b>${o.diff}</b> divergentes</div>
+        <div class="driftbit"><span class="swatch absent"></span><b>${o.absent}</b> ausentes</div>
+        <div class="driftbit"><span class="swatch extra"></span><b>${o.extra}</b> extras</div>
+      </div>
+      <div class="rowbtns">
+        <button class="btn small" onclick="viewDriftDetail(${o.id})">Ver detalhes</button>
+        ${hasIssue ? `<button class="btn primary small" onclick="equalizeOrg(${o.id})">Equalizar agora</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function recomputeOrgDriftFromMatrix(orgId){
+  const org = statsFor(orgId);
+  if(!org) return;
+  let diff=0, absent=0, extra=0;
+  componentList.forEach(c=>{
+    const st = computeStatus(c.name, orgId, dashboardGoldOrgId); // drift do dashboard é sempre vs. a gold sandbox escolhida
+    if(st==='diff' || st==='merged') diff++; else if(st==='absent') absent++; else if(st==='extra') extra++;
+  });
+  org.diff = diff; org.absent = absent; org.extra = extra;
+  org.synced = org.total - diff - absent - extra;
+  org.check = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* Troca a gold sandbox usada pelo Dashboard/Drift e recalcula tudo. */
+function setDashboardGold(id){
+  dashboardGoldOrgId = parseInt(id);
+  dashboardDestOrgs().forEach(o=>recomputeOrgDriftFromMatrix(o.id));
+  renderDashGoldSelect();
+  renderPipeline(); renderDrift(); renderGadgets();
+  const note = document.getElementById('driftGoldNote');
+  if(note) note.textContent = `gold: ${orgName(dashboardGoldOrgId)} · coleta manual, sob demanda`;
+  toast(`Gold sandbox definida como ${orgName(dashboardGoldOrgId)}`);
+}
+function renderDashGoldSelect(){
+  const el = document.getElementById('dashGoldSelect');
+  if(!el) return;
+  el.innerHTML = eqAllOrgs().map(o=>
+    `<button class="${o.id===dashboardGoldOrgId ? 'active' : ''}" onclick="setDashboardGold(${o.id})">${o.name}</button>`
+  ).join('');
+}
+
+document.getElementById('btnRunDrift').addEventListener('click', ()=>{
+  const checks = orgs.map(o=>`
+    <label class="hunkitem" style="cursor:pointer;">
+      <input type="checkbox" class="driftOrgCheck" value="${o.id}" checked>
+      <div><strong>${o.name}</strong><br><span style="color:var(--fog); font-size:10.5px;">última análise: ${o.check}</span></div>
+    </label>`).join('');
+  openModal('Executar Drift — selecionar orgs', `
+    <p style="color:var(--fog); margin:0 0 12px;">Escolha quais orgs destino devem ser analisadas contra a gold (ORG ARQUITETURA). A coleta é sempre sob demanda.</p>
+    <div class="hunklist">${checks}</div>
+  `, `
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" id="btnConfirmDrift">Executar</button>
+  `);
+  document.getElementById('btnConfirmDrift').addEventListener('click', ()=>{
+    const selected = Array.from(document.querySelectorAll('.driftOrgCheck:checked')).map(el=>parseInt(el.value));
+    if(selected.length===0){ toast('Selecione pelo menos uma org'); return; }
+    runDriftForOrgs(selected);
+  });
+});
+
+function runDriftForOrgs(orgIds){
+  const names = orgs.filter(o=>orgIds.includes(o.id)).map(o=>o.name).join(', ');
+  openModal('Executando Drift', `
+    <p style="color:var(--fog); margin:0 0 10px;">Analisando: ${names}</p>
+    <div class="progress-wrap"><div class="progress-bar" id="driftProgress"></div></div>
+    <p id="driftStatusText" style="color:var(--fog); font-size:11.5px; margin-top:8px;">Iniciando...</p>
+  `, `<button class="btn" disabled>Executando...</button>`);
+
+  let pct = 0;
+  const bar = document.getElementById('driftProgress');
+  const txt = document.getElementById('driftStatusText');
+  const steps = ['Conectando nas orgs selecionadas...', 'Listando metadados (listMetadataByTypes)...', 'Calculando hash SHA-256 por componente...', 'Comparando com a gold org...', 'Gravando drift_results...'];
+  let stepIdx = 0;
+  const iv = setInterval(()=>{
+    pct += 7;
+    bar.style.width = Math.min(pct,100) + '%';
+    if(pct % 20 < 7 && stepIdx < steps.length-1){ stepIdx++; }
+    txt.textContent = steps[stepIdx];
+    if(pct >= 100){
+      clearInterval(iv);
+      orgIds.forEach(id => recomputeOrgDriftFromMatrix(id));
+      renderDrift(); renderPipeline();
+      closeModal();
+      toast(`Drift executado para ${orgIds.length} org(s)`);
+    }
+  }, 200);
+}
+
+function viewDriftDetail(orgId){
+  const org = statsFor(orgId);
+  const rows = componentList.filter(c => computeStatus(c.name, orgId, dashboardGoldOrgId) !== 'ok' && computeStatus(c.name, orgId, dashboardGoldOrgId) !== 'na');
+  const statusLabel = { diff:'divergente', absent:'ausente', extra:'extra', merged:'mergeado — aguardando deploy' };
+  const body = rows.length ? rows.map(c=>{
+    const st = computeStatus(c.name, orgId, dashboardGoldOrgId);
+    const canPrepare = st === 'diff' || st === 'absent';
+    let actionBtn = '';
+    if(canPrepare){
+      actionBtn = `<button class="btn primary small" onclick="equalizeComponent('${c.name}', ${orgId}, ${dashboardGoldOrgId}); closeModal(); viewDriftDetail(${orgId});">Preparar</button>`;
+    } else if(st === 'merged'){
+      actionBtn = `<button class="btn primary small" onclick="closeModal(); deployComponent('${c.name}', ${orgId});">Deploy</button>`;
+    }
+    return `<div class="hunkitem" style="align-items:center;">
+      <span class="swatch ${st}" style="margin-top:3px;"></span>
+      <div style="flex:1;"><strong>${c.name}</strong> <span style="color:var(--fog)">· ${c.type}</span><br>
+      <span style="color:var(--fog); font-size:10.5px;">${statusLabel[st]}</span></div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn small" onclick="closeModal(); switchView('equalizacao'); setTimeout(()=>openDiff('${c.name}', ${orgId}, ${dashboardGoldOrgId}),150);">Ver código</button>
+        ${actionBtn}
+      </div>
+    </div>`;
+  }).join('') : `<p style="color:var(--fog)">Nenhuma divergência — org sincronizada com a gold.</p>`;
+  openModal(`Snapshot do drift · ${org.name}`, `<div class="hunklist">${body}</div>`,
+    `<button class="btn" onclick="closeModal()">Fechar</button>
+     ${rows.length ? `<button class="btn primary" onclick="equalizeOrg(${orgId})">Equalizar todos (imediato)</button>` : ''}`);
+}
+
+function equalizeOrg(orgId){
+  const org = statsFor(orgId);
+  const total = org.diff + org.absent;
+  openModal(`Equalizando ${org.name}`, `
+    <p style="color:var(--fog); margin:0 0 10px;">Aplicando ${total} componente(s) da gold sandbox (${orgName(dashboardGoldOrgId)})...</p>
+    <div class="progress-wrap"><div class="progress-bar" id="eqProgress"></div></div>
+    <p id="eqStatusText" style="color:var(--fog); font-size:11.5px; margin-top:8px;">Iniciando...</p>
+  `, `<button class="btn" id="eqCancelBtn" onclick="closeModal()">Cancelar</button>`);
+
+  let pct = 0;
+  const bar = document.getElementById('eqProgress');
+  const txt = document.getElementById('eqStatusText');
+  const steps = ['Conectando nas orgs...', 'Lendo metadados da gold...', 'Montando pacote de deploy...', 'Executando metadata.deploy()...', 'Validando resultado...'];
+  let stepIdx = 0;
+  const iv = setInterval(()=>{
+    pct += 8;
+    bar.style.width = Math.min(pct,100) + '%';
+    if(pct % 20 < 8 && stepIdx < steps.length-1){ stepIdx++; }
+    txt.textContent = steps[stepIdx];
+    if(pct >= 100){
+      clearInterval(iv);
+      const results = [];
+      componentList.forEach(c=>{
+        const st = computeStatus(c.name, orgId, dashboardGoldOrgId);
+        if(st === 'diff' || st === 'absent'){
+          const outcome = simulateDeployOutcome();
+          logDeploy(c.name, orgId, outcome);
+          if(outcome.status === 'success') contentByOrg[c.name][orgId] = contentByOrg[c.name][dashboardGoldOrgId];
+          results.push({ name:c.name, destId:orgId, status:outcome.status, message:outcome.message });
+        }
+      });
+      recomputeOrgDriftFromMatrix(orgId);
+      renderDrift(); renderPipeline(); renderMatrix();
+      closeModal();
+      renderBatchSummaryModal(`Resumo · ${org.name}`, results);
+    }
+  }, 220);
+}
+
+function renderRecentDeploys(){
+  const el = document.getElementById('recentdeploys');
+  el.innerHTML = `<table style="width:100%; border-collapse:collapse;">
+    <thead><tr style="color:var(--fog); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;">
+      <td style="padding:6px 0;">OE</td><td>User Story</td><td>Destino</td><td>Status</td><td>Duração</td>
+    </tr></thead><tbody>` +
+    recentDeploys.map(d=>`
+      <tr style="border-top:1px solid var(--line); font-size:12px;">
+        <td class="mono" style="padding:9px 0;">${d.oe}</td>
+        <td class="mono" style="color:var(--ink); cursor:pointer; text-decoration:underline dotted; text-underline-offset:3px;" onclick="openDeployDetail('${d.oe}')">${d.jira}</td>
+        <td>${d.tgt}</td>
+        <td>${d.status === 'success' ? '<span class="swatch ok"></span> sucesso' : '<span class="swatch diff"></span> falhou'}</td>
+        <td class="mono" style="color:var(--fog);">${d.dur}</td>
+      </tr>`).join('') + `</tbody></table>`;
+}
+
+/* Mostra quais componentes foram deployados numa execução, ao clicar
+   na User Story em "Deploys recentes". */
+function openDeployDetail(oe){
+  const d = recentDeploys.find(x=>x.oe===oe);
+  if(!d) return;
+  const rows = d.components.map(name=>{
+    const meta = componentList.find(c=>c.name===name);
+    return `<div class="hunkitem" style="align-items:center;">
+      <span class="swatch ${d.status==='success' ? 'ok' : 'diff'}" style="margin-top:3px;"></span>
+      <div><strong>${name}</strong><br><span style="color:var(--fog); font-size:10.5px;">${meta ? meta.type : '—'}</span></div>
+    </div>`;
+  }).join('');
+  openModal(`${d.oe} · ${d.jira}`, `
+    <p style="color:var(--fog); font-size:12px; margin:0 0 12px;">Destino: <strong>${d.tgt}</strong> · Status: ${d.status==='success' ? 'sucesso' : 'falhou'} · Duração: ${d.dur}</p>
+    <div class="hunklist">${rows}</div>
+  `, `<button class="btn" onclick="closeModal()">Fechar</button>`);
+}
+
+/* ============ ROLLBACK ============ */
+function orgIdByName(name){ const o = eqAllOrgs().find(o=>o.name===name); return o ? o.id : null; }
+
+function renderRollbackOrgSelect(){
+  const sel = document.getElementById('rb_org');
+  const targetNames = Array.from(new Set(recentDeploys.map(d=>d.tgt)));
+  sel.innerHTML = targetNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+  sel.addEventListener('change', renderRollbackList);
+}
+
+function renderRollbackList(){
+  const sel = document.getElementById('rb_org');
+  const orgName_ = sel.value;
+  const el = document.getElementById('rollbackList');
+  const deploys = recentDeploys.filter(d=>d.tgt === orgName_);
+  el.innerHTML = deploys.length ? deploys.map(d=>`
+    <div class="driftrow">
+      <div>
+        <div class="orgname">${d.oe} · <span class="mono" style="color:var(--fog); font-weight:400;">${d.jira}</span></div>
+        <div class="lastcheck">${d.components.join(', ')} · ${d.dur}</div>
+      </div>
+      <div class="driftmeter">
+        <div class="driftbit">${d.status==='success' ? '<span class="swatch ok"></span> sucesso' : '<span class="swatch diff"></span> falhou'}</div>
+      </div>
+      <div class="rowbtns">
+        <button class="btn primary small" onclick="openRollbackSourcePicker('${d.oe}')">Rollback</button>
+      </div>
+    </div>
+  `).join('') : `<p style="color:var(--fog); padding:6px 0;">Nenhum deploy registrado para esta org ainda.</p>`;
+}
+
+function openRollbackSourcePicker(oe){
+  const d = recentDeploys.find(x=>x.oe===oe);
+  if(!d) return;
+  const destId = d.tgtId;
+  const sourceOptions = eqAllOrgs().filter(o=>o.id !== destId).map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+  openModal(`Rollback · ${d.oe}`, `
+    <p style="color:var(--fog); font-size:12px; margin:0 0 12px;">Componentes deste deploy: <strong>${d.components.join(', ')}</strong><br>Escolha de qual org vamos puxar a versão para fazer o merge de rollback em <strong>${d.tgt}</strong>.</p>
+    <div class="formrow"><label>Org de origem (versão a restaurar)</label><select id="rb_source">${sourceOptions}</select></div>
+  `, `
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" id="rb_start">Iniciar rollback</button>
+  `);
+  document.getElementById('rb_start').addEventListener('click', ()=>{
+    const sourceId = parseInt(document.getElementById('rb_source').value);
+    closeModal();
+    startRollbackQueue(d, sourceId);
+  });
+}
+
+function startRollbackQueue(deploy, sourceOrgId){
+  componentQueue = { items: deploy.components.slice(), index:0, goldId: sourceOrgId, destId: deploy.tgtId, results: [] };
+  processNextInQueue();
+}
+
+/* ============ EQUALIZAÇÃO — gold (único) + pipeline de destinos ============ */
+function setGold(id){
+  if(id === eqGoldOrgId) return;
+  const oldGold = eqGoldOrgId;
+  eqGoldOrgId = id;
+  eqSelectedOrgs.delete(id);              // a nova gold não pode ser destino de si mesma
+  if(!eqSelectedOrgs.has(oldGold)) eqSelectedOrgs.add(oldGold); // a gold antiga volta como destino disponível
+  renderGoldSelect();
+  renderEqPipeline();
+  renderMatrix();
+  toast(`${orgName(id)} definida como gold da equalização`);
+}
+
+function renderGoldSelect(){
+  const el = document.getElementById('goldSelect');
+  el.innerHTML = eqAllOrgs().map(o=>
+    `<button class="${o.id===eqGoldOrgId ? 'active' : ''}" onclick="setGold(${o.id})">${o.name}</button>`
+  ).join('');
+}
+
+function renderEqPipeline(){
+  const el = document.getElementById('eqPipeline');
+  const destOrgs = eqAllOrgs().filter(o => o.id !== eqGoldOrgId);
+  let html = '';
+  destOrgs.forEach((o,i)=>{
+    if(i>0) html += `<div class="eqpick-connector"></div>`;
+    const sel = eqSelectedOrgs.has(o.id);
+    html += `<div class="eqpick-node ${sel ? 'selected' : 'excluded'}">
+        <div class="eqpick-dot" data-org="${o.id}">${sel ? '✓' : ''}</div>
+        <div class="eqpick-label">${o.name}</div>
+        <div class="eqpick-sub">${sel ? 'incluído' : 'excluído'}</div>
+      </div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('.eqpick-dot[data-org]').forEach(dot=>{
+    dot.addEventListener('click', ()=>{
+      const id = parseInt(dot.dataset.org);
+      if(eqSelectedOrgs.has(id)) eqSelectedOrgs.delete(id); else eqSelectedOrgs.add(id);
+      renderEqPipeline();
+      renderMatrix();
+    });
+  });
+}
+
+/* ============ EQUALIZAÇÃO ============ */
+function renderMatrix(){
+  const el = document.getElementById('eqMatrix');
+  const activeOrgs = eqAllOrgs().filter(o => o.id !== eqGoldOrgId && eqSelectedOrgs.has(o.id));
+  if(activeOrgs.length === 0){
+    el.innerHTML = `<tr><td style="padding:16px; color:var(--fog);">Selecione ao menos uma org destino no pipeline acima para ver a matrix.</td></tr>`;
+    return;
+  }
+  const statusLabel = { ok:'ok', diff:'diff', absent:'ausente', extra:'extra', na:'não aplicável', merged:'mergeado — aguardando deploy' };
+  let head = `<tr><th>Componente</th>` + activeOrgs.map(o=>`<th>${o.name}</th>`).join('') + `</tr>`;
+  let rows = componentList.map(c=>{
+    let cells = activeOrgs.map(o=>{
+      const st = computeStatus(c.name, o.id);
+      const clickable = st !== 'ok' && st !== 'na';
+      const handler = st === 'merged' ? `openMergedActions('${c.name}', ${o.id})` : `openDiff('${c.name}', ${o.id})`;
+      return `<td class="statuscell" ${clickable ? `onclick="${handler}"` : ''} title="${statusLabel[st]}${clickable ? ' — clique para ver o componente' : ''}">
+        <span class="swatch ${st}"></span>
+      </td>`;
+    }).join('');
+    return `<tr><td class="comp">${c.name}<span class="ctype">${c.type}</span></td>${cells}</tr>`;
+  }).join('');
+  el.innerHTML = head + rows;
+  renderDeployPendingButton();
+}
+
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Agrupa as ops de LCS em segmentos: trechos iguais ('eq') e trechos
+   divergentes ('hunk', com as linhas da gold em .dels e as do destino
+   em .adds). Cada hunk vira uma unidade que pode ser mergeada sozinha. */
+function groupOpsIntoSegments(ops){
+  const segments = [];
+  let i = 0;
+  while(i < ops.length){
+    if(ops[i][0] === 'eq'){
+      const lines = [];
+      while(i < ops.length && ops[i][0] === 'eq'){ lines.push(ops[i][1]); i++; }
+      segments.push({ type:'eq', lines });
+    } else {
+      const dels = [], adds = [];
+      while(i < ops.length && ops[i][0] !== 'eq'){
+        if(ops[i][0] === 'del') dels.push(ops[i][1]); else adds.push(ops[i][1]);
+        i++;
+      }
+      segments.push({ type:'hunk', dels, adds });
+    }
+  }
+  return segments;
+}
+
+let currentDiff = null; // { name, destId, goldId, working, segments }
+
+/* ============ VECTOR AGENT ============
+   Simulação, no protótipo, do agente Python determinístico descrito:
+   sem IA — só parsing de padrão (regex) + regras if/elif, igual a um
+   motor real feito com xmltodict/difflib + base de conhecimento. */
+let vectorAgentContext = null; // { mode:'diff'|'absent', name, goldId, destId, segments|goldLines }
+
+function vectorAgentDescribeHunk(h){
+  const dels = h.dels, adds = h.adds;
+  if(dels.length && !adds.length){
+    return dels.map(l=>`- Linha ausente no destino: \`${l.trim()}\``).join('\n');
+  }
+  if(!dels.length && adds.length){
+    return adds.map(l=>`- Linha extra no destino (não existe na gold): \`${l.trim()}\``).join('\n');
+  }
+  const out = [];
+  const max = Math.max(dels.length, adds.length);
+  for(let i=0; i<max; i++){
+    const a = dels[i], b = adds[i];
+    if(a !== undefined && b !== undefined){
+      const tagA = a.match(/^\s*<(\w+)>(.*)<\/\1>\s*$/);
+      const tagB = b.match(/^\s*<(\w+)>(.*)<\/\1>\s*$/);
+      if(tagA && tagB && tagA[1] === tagB[1]){
+        out.push(`- Campo \`${tagA[1]}\` alterado de \`${tagA[2]}\` para \`${tagB[2]}\``);
+        continue;
+      }
+      const assignA = a.match(/=\s*'([^']*)'/);
+      const assignB = b.match(/=\s*'([^']*)'/);
+      if(assignA && assignB){
+        out.push(`- Valor alterado de \`'${assignA[1]}'\` para \`'${assignB[1]}'\` (linha: \`${b.trim()}\`)`);
+        continue;
+      }
+      const throwA = /throw new/.test(a), debugB = /System\.debug/.test(b);
+      if(throwA && debugB){
+        out.push(`- Regra de validação enfraquecida: exceção (\`throw\`) substituída por log (\`System.debug\`)`);
+        continue;
+      }
+      out.push(`- Linha alterada:\n    - antes: \`${a.trim()}\`\n    - depois: \`${b.trim()}\``);
+    } else if(a !== undefined){
+      out.push(`- Linha removida: \`${a.trim()}\``);
+    } else if(b !== undefined){
+      out.push(`- Linha adicionada: \`${b.trim()}\``);
+    }
+  }
+  return out.join('\n');
+}
+
+function vectorAgentBuildReport(ctx){
+  const goldLabel = orgName(ctx.goldId);
+  const destLabel = orgName(ctx.destId);
+  const lines = [];
+  lines.push(`# Relatório Vector Agent — ${ctx.name}`);
+  lines.push('');
+  lines.push(`Motor determinístico (parsing + regras, sem IA) · Gold: **${goldLabel}** → Destino: **${destLabel}**`);
+  lines.push('');
+  if(ctx.mode === 'absent'){
+    lines.push(`Componente **ausente** em ${destLabel}. Será criado a partir da gold com ${ctx.goldLines.length} linha(s) de conteúdo.`);
+    lines.push('');
+    lines.push('## Conteúdo a ser criado');
+    lines.push('```');
+    lines.push(ctx.goldLines.join('\n'));
+    lines.push('```');
+    return lines.join('\n');
+  }
+  const hunks = ctx.segments.filter(s=>s.type==='hunk');
+  if(hunks.length === 0){
+    lines.push('Nenhuma divergência detectada.');
+  } else {
+    lines.push(`Foram detectados **${hunks.length}** trecho(s) divergente(s):`);
+    lines.push('');
+    hunks.forEach((h,i)=>{
+      lines.push(`## Trecho ${i+1}`);
+      lines.push(vectorAgentDescribeHunk(h));
+      lines.push('');
+    });
+  }
+  return lines.join('\n');
+}
+
+function openVectorAgentReport(){
+  if(!vectorAgentContext) return;
+  const md = vectorAgentBuildReport(vectorAgentContext);
+  vectorAgentContext.lastReport = md;
+  const backAction = vectorAgentContext.mode === 'diff' ? 'renderHunkModal()' : 'openDiff(vectorAgentContext.name, vectorAgentContext.destId, vectorAgentContext.goldId)';
+  openModal(`⚙ Vector Agent · ${vectorAgentContext.name}`, `
+    <p style="color:var(--fog); font-size:11px; margin:0 0 10px;">Análise 100% determinística (parsing de padrão + regras if/elif) a partir do diff já calculado — nenhum modelo de IA envolvido.</p>
+    <pre class="vectoragent-output">${escapeHtml(md)}</pre>
+  `, `
+    <button class="btn" onclick="${backAction}">Voltar ao diff</button>
+    <button class="btn primary" onclick="downloadVectorAgentReport()">Baixar .md</button>
+  `, true);
+}
+
+function downloadVectorAgentReport(){
+  if(!vectorAgentContext || !vectorAgentContext.lastReport) return;
+  const blob = new Blob([vectorAgentContext.lastReport], { type:'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vector-agent-${vectorAgentContext.name}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Relatório baixado');
+}
+
+
+function buildHunkDiffHtml(){
+  const gold = contentByOrg[currentDiff.name][currentDiff.goldId];
+  const ops = computeLcsDiff(gold, currentDiff.working);
+  const segments = groupOpsIntoSegments(ops);
+  currentDiff.segments = segments;
+
+  let rows = '';
+  let hunkIdx = 0;
+  segments.forEach(seg=>{
+    if(seg.type === 'eq'){
+      seg.lines.forEach(l=>{
+        rows += `<div class="hrow"><div class="hcell">${escapeHtml(l)}</div><div class="harrow"></div><div class="hcell">${escapeHtml(l)}</div></div>`;
+      });
+    } else {
+      const hid = hunkIdx++;
+      const maxLen = Math.max(seg.dels.length, seg.adds.length, 1);
+      for(let r=0; r<maxLen; r++){
+        const goldLine = seg.dels[r] !== undefined ? escapeHtml(seg.dels[r]) : '';
+        const destLine = seg.adds[r] !== undefined ? escapeHtml(seg.adds[r]) : '';
+        const arrowCell = r === 0 ? `<button class="harrow-btn" title="Trazer este trecho da gold" onclick="applyHunk(${hid})">→</button>` : '';
+        rows += `<div class="hrow hunk"><div class="hcell hcell-gold">${goldLine}</div><div class="harrow">${arrowCell}</div><div class="hcell hcell-dest">${destLine}</div></div>`;
+      }
+    }
+  });
+  return rows;
+}
+
+function countRemainingHunks(){
+  return currentDiff.segments.filter(s=>s.type==='hunk').length;
+}
+
+function renderHunkModal(){
+  const { name, destId, goldId } = currentDiff;
+  const rowsHtml = buildHunkDiffHtml();
+  const remaining = countRemainingHunks();
+  vectorAgentContext = { mode:'diff', name, goldId, destId, segments: currentDiff.segments };
+  const inQueue = !!componentQueue;
+  const queueNote = inQueue ? `<p style="color:var(--fog); font-size:10.5px; margin:0 0 8px;">Componente ${componentQueue.index+1} de ${componentQueue.items.length} nesta leva. Salvar aqui já faz o deploy direto — não fica pendente na Equalização.</p>` : '';
+  openModal(`${name} · merge seletivo (${orgName(goldId)} → ${orgName(destId)})`, `
+    ${queueNote}
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+      <p style="color:var(--fog); font-size:11px; margin:0;">Clique na seta de um trecho pra trazer só aquela parte da gold para o destino. ${remaining} trecho${remaining===1?'':'s'} ainda divergente${remaining===1?'':'s'}. ${inQueue ? '' : 'Salvar não aplica nada na org — só prepara; o deploy é uma ação separada.'}</p>
+      <button class="btn small vector-agent-btn" title="Vector Agent — relatório determinístico do diff (sem IA)" onclick="openVectorAgentReport()">⚙ Vector Agent</button>
+    </div>
+    <div class="hunkdiff-head">
+      <span>Gold (${orgName(goldId)})</span><span></span><span>${orgName(destId)}</span>
+    </div>
+    <div class="hunkdiff">${rowsHtml}</div>
+  `, `
+    <button class="btn" onclick="closeModal(); ${inQueue ? 'advanceQueue();' : ''}">${inQueue ? 'Pular este' : 'Cancelar'}</button>
+    ${remaining > 0 ? `<button class="btn" onclick="applyAllHunks()">Aplicar tudo</button>` : ''}
+    <button class="btn primary" onclick="${inQueue ? 'commitAndDeployQueued()' : 'commitHunkMerge()'}">${inQueue ? 'Salvar e fazer deploy' : 'Salvar merge'}</button>
+  `, true);
+}
+
+/* Aplica só o hunk clicado: reconstrói o conteúdo de trabalho trocando
+   apenas aquele trecho pela versão da gold, mantendo o resto do destino
+   como está (inclusive outros trechos ainda divergentes). */
+function applyHunk(hid){
+  const segments = currentDiff.segments;
+  let newLines = [];
+  let hunkCounter = 0;
+  segments.forEach(seg=>{
+    if(seg.type === 'eq'){ newLines.push(...seg.lines); }
+    else {
+      newLines.push(...(hunkCounter === hid ? seg.dels : seg.adds));
+      hunkCounter++;
+    }
+  });
+  currentDiff.working = newLines.join('\n');
+  renderHunkModal();
+  toast('Trecho aplicado — revise o restante ou salve');
+}
+
+function applyAllHunks(){
+  currentDiff.working = contentByOrg[currentDiff.name][currentDiff.goldId];
+  renderHunkModal();
+}
+
+/* Não aplica nada na org — só guarda o resultado do merge como
+   pendente. A matrix passa a mostrar "mergeado" nessa célula até
+   alguém clicar em Deploy. Se estiver dentro de uma fila (vindo da
+   escolha de componentes da US), avança pro próximo automaticamente. */
+function commitHunkMerge(){
+  const { name, destId, working } = currentDiff;
+  pendingMerges[pendingKey(name, destId)] = working;
+  renderMatrix(); renderDrift(); renderPipeline();
+  closeModal();
+  toast(`${name} mergeado para ${orgName(destId)} — aguardando deploy`);
+  currentDiff = null;
+  if(componentQueue) advanceQueue();
+}
+
+function openDiff(name, destId, goldId){
+  goldId = (goldId !== undefined) ? goldId : eqGoldOrgId;
+  const status = computeStatus(name, destId, goldId);
+  const goldContent = contentByOrg[name][goldId];
+  const destContent = contentByOrg[name][destId];
+  const goldLabel = orgName(goldId);
+  const destLabel = orgName(destId);
+
+  if(status === 'ok' || status === 'na'){
+    toast('Componente sincronizado — nada para exibir');
+    return;
+  }
+
+  if(status === 'diff'){
+    currentDiff = { name, destId, goldId, working: destContent };
+    renderHunkModal();
+    return;
+  }
+
+  if(status === 'absent'){
+    const goldLines = (goldContent || '').split('\n');
+    vectorAgentContext = { mode:'absent', name, goldId, destId, goldLines };
+    const inQueue = !!componentQueue;
+    let rows = goldLines.map((l,i)=>{
+      const createCall = inQueue
+        ? `createAndDeployQueued('${name}', ${destId}, ${goldId})`
+        : `equalizeComponent('${name}', ${destId}, ${goldId})`;
+      const arrowCell = i === 0
+        ? `<button class="harrow-btn" title="Criar componente nesta org" onclick="closeModal(); ${createCall};">→</button>`
+        : '';
+      return `<div class="hrow hunk"><div class="hcell hcell-gold">${escapeHtml(l)}</div><div class="harrow">${arrowCell}</div><div class="hcell hcell-dest">${i===0 ? 'não existe nesta org' : ''}</div></div>`;
+    }).join('');
+    const queueNote = inQueue ? `<p style="color:var(--fog); font-size:10.5px; margin:0 0 8px;">Componente ${componentQueue.index+1} de ${componentQueue.items.length} nesta leva. Criar aqui já faz o deploy direto.</p>` : '';
+    openModal(`${name} · ausente em ${destLabel}`, `
+      ${queueNote}
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px;">
+        <p style="color:var(--fog); font-size:11px; margin:0;">Esse componente não existe em ${destLabel}. Clique na seta para ${inQueue ? 'criar e já fazer o deploy' : 'preparar a criação'} a partir da gold (${goldLabel}).</p>
+        <button class="btn small vector-agent-btn" title="Vector Agent — relatório determinístico (sem IA)" onclick="openVectorAgentReport()">⚙ Vector Agent</button>
+      </div>
+      <div class="hunkdiff-head"><span>Gold (${goldLabel})</span><span></span><span>${destLabel}</span></div>
+      <div class="hunkdiff">${rows}</div>
+    `, `
+      <button class="btn" onclick="closeModal(); ${inQueue ? 'advanceQueue();' : ''}">${inQueue ? 'Pular este' : 'Fechar'}</button>
+    `, true);
+    return;
+  }
+
+  if(status === 'extra'){
+    openModal(`${name} · existe apenas em ${destLabel}`, `
+      <div class="diffgrid">
+        <div class="diffcol"><h4>Gold (${goldLabel})</h4><div class="diffcode" style="color:var(--fog)">Não existe na gold selecionada.</div></div>
+        <div class="diffcol"><h4>${destLabel}</h4><div class="diffcode">${escapeHtml(destContent)}</div></div>
+      </div>
+    `, `
+      <button class="btn" onclick="closeModal()">Fechar</button>
+    `, true);
+    return;
+  }
+}
+
+/* Prepara a equalização total de um componente (sem entrar em hunks) —
+   usada pelo snapshot do Drift e pelo caso ausente/criação. Não aplica
+   nada na org ainda: só marca como "mergeado", igual ao merge seletivo. */
+function equalizeComponent(name, destId, goldId){
+  goldId = (goldId !== undefined) ? goldId : eqGoldOrgId;
+  pendingMerges[pendingKey(name, destId)] = contentByOrg[name][goldId];
+  renderMatrix(); renderDrift(); renderPipeline();
+  closeModal();
+  toast(`${name} preparado para ${orgName(destId)} — aguardando deploy`);
+}
+
+/* Ação chamada ao clicar numa célula já "mergeada": deixa escolher
+   entre reabrir o merge pra ajustar, ou já mandar pro deploy. */
+function openMergedActions(name, destId){
+  openModal(`${name} · pronto para deploy`, `
+    <p style="color:var(--fog); font-size:12px; margin:0;">Esse componente já tem uma alteração preparada para <strong>${orgName(destId)}</strong>, aguardando deploy.</p>
+  `, `
+    <button class="btn" onclick="closeModal()">Fechar</button>
+    <button class="btn" onclick="closeModal(); reopenMergeEditor('${name}', ${destId});">Editar merge</button>
+    <button class="btn primary" onclick="closeModal(); deployComponent('${name}', ${destId});">Fazer deploy</button>
+  `);
+}
+
+function reopenMergeEditor(name, destId){
+  currentDiff = { name, destId, goldId: eqGoldOrgId, working: pendingMerges[pendingKey(name, destId)] };
+  renderHunkModal();
+}
+
+/* Deploy de um único componente: só agora a mudança é de fato
+   aplicada na org, com um loading simulando o processamento real. */
+function deployComponent(name, destId){
+  const key = pendingKey(name, destId);
+  if(!(key in pendingMerges)){ toast('Nada pendente para deploy'); return; }
+  openModal(`Deploy · ${name} → ${orgName(destId)}`, `
+    <p style="color:var(--fog); margin:0 0 10px;">Aplicando a alteração preparada neste componente...</p>
+    <div class="progress-wrap"><div class="progress-bar" id="depProgress"></div></div>
+    <p id="depStatusText" style="color:var(--fog); font-size:11.5px; margin-top:8px;">Iniciando...</p>
+  `, `<button class="btn" disabled>Processando...</button>`);
+
+  let pct = 0;
+  const bar = document.getElementById('depProgress');
+  const txt = document.getElementById('depStatusText');
+  const steps = ['Montando pacote de deploy...', 'Executando metadata.deploy()...', 'Validando resultado...'];
+  let stepIdx = 0;
+  const iv = setInterval(()=>{
+    pct += 10;
+    bar.style.width = Math.min(pct,100) + '%';
+    if(pct % 33 < 10 && stepIdx < steps.length-1){ stepIdx++; }
+    txt.textContent = steps[stepIdx];
+    if(pct >= 100){
+      clearInterval(iv);
+      const outcome = simulateDeployOutcome();
+      logDeploy(name, destId, outcome);
+      if(outcome.status === 'success'){
+        contentByOrg[name][destId] = pendingMerges[key];
+        delete pendingMerges[key];
+        recomputeOrgDriftFromMatrix(destId);
+        renderMatrix(); renderDrift(); renderPipeline();
+      }
+      closeModal();
+      renderBatchSummaryModal('Resultado do deploy', [{ name, destId, status:outcome.status, message:outcome.message }]);
+    }
+  }, 230);
+}
+
+function countPending(){ return Object.keys(pendingMerges).length; }
+
+function renderDeployPendingButton(){
+  const btn = document.getElementById('btnDeployPending');
+  if(!btn) return;
+  const n = countPending();
+  btn.textContent = n > 0 ? `Deploy pendências (${n})` : 'Deploy pendências';
+  btn.disabled = (n === 0);
+}
+
+/* Deploy em lote de tudo que estiver mergeado no momento. Componentes
+   que falharem continuam pendentes (pra poder tentar de novo depois). */
+function deployAllPending(){
+  const keys = Object.keys(pendingMerges);
+  if(keys.length === 0){ toast('Nada pendente para deploy'); return; }
+  openModal('Deploy de pendências', `
+    <p style="color:var(--fog); margin:0 0 10px;">Aplicando ${keys.length} componente(s) pendente(s)...</p>
+    <div class="progress-wrap"><div class="progress-bar" id="depAllProgress"></div></div>
+    <p id="depAllStatusText" style="color:var(--fog); font-size:11.5px; margin-top:8px;">Iniciando...</p>
+  `, `<button class="btn" disabled>Processando...</button>`);
+
+  let pct = 0;
+  const bar = document.getElementById('depAllProgress');
+  const txt = document.getElementById('depAllStatusText');
+  const iv = setInterval(()=>{
+    pct += 9;
+    bar.style.width = Math.min(pct,100) + '%';
+    txt.textContent = `Aplicando pacote de deploy... (${Math.min(pct,100)}%)`;
+    if(pct >= 100){
+      clearInterval(iv);
+      const results = keys.map(k=>{
+        const idx = k.lastIndexOf('::');
+        const name = k.slice(0, idx);
+        const destId = parseInt(k.slice(idx+2));
+        const outcome = simulateDeployOutcome();
+        logDeploy(name, destId, outcome);
+        if(outcome.status === 'success'){
+          contentByOrg[name][destId] = pendingMerges[k];
+          delete pendingMerges[k];
+          recomputeOrgDriftFromMatrix(destId);
+        }
+        return { name, destId, status:outcome.status, message:outcome.message };
+      });
+      renderMatrix(); renderDrift(); renderPipeline();
+      closeModal();
+      renderBatchSummaryModal('Resumo do deploy em lote', results);
+    }
+  }, 200);
+}
+
+document.getElementById('btnDeployPending').addEventListener('click', deployAllPending);
+document.getElementById('btnViewLog').addEventListener('click', openDeployLog);
+
+document.getElementById('btnAnalyzeEq').addEventListener('click', function(){
+  if(eqSelectedOrgs.size === 0){ toast('Selecione ao menos uma org no pipeline para analisar'); return; }
+  this.disabled = true; this.textContent = 'Analisando...';
+  setTimeout(()=>{
+    renderMatrix();
+    this.disabled = false; this.textContent = 'Analisar agora';
+    toast(`Análise concluída em ${eqSelectedOrgs.size} org(s)`);
+  }, 900);
+});
+
+/* ============ INIT ============ */
+renderDashGoldSelect();
+renderPipeline();
+renderGoldSelect();
+renderEqPipeline();
+renderBoard();
+renderGadgets();
+renderDrift();
+renderRecentDeploys();
+renderMatrix();
+renderRollbackOrgSelect();
+renderRollbackList();
+</script>
+
+</body>
+</html>
