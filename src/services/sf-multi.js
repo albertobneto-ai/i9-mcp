@@ -597,3 +597,103 @@ export async function getOutboundIP() {
     }).on('error', () => resolve('error'));
   });
 }
+
+// ============================================================
+// SPRINT 1 — Extensões para Explorer (BE-1 / BE-2)
+// ============================================================
+
+/**
+ * Lista metadados de múltiplos tipos (chunks de 3 por chamada).
+ * @param {Object} org
+ * @param {string[]} types  Ex: ['CustomObject','CustomField','Flow','PermissionSet']
+ * @returns {Promise<Array<{type, fullName, id, lastModifiedDate}>>}
+ */
+export async function listMetadataByTypes(org, types) {
+  const conn = await connectToOrg(org);
+  const out = [];
+  for (let i = 0; i < types.length; i += 3) {
+    const chunk = types.slice(i, i + 3).map(t => ({ type: t }));
+    const items = await conn.metadata.list(chunk, conn.version || '62.0');
+    const arr = Array.isArray(items) ? items : (items ? [items] : []);
+    for (const it of arr) {
+      out.push({
+        type: it.type,
+        fullName: it.fullName,
+        id: it.id || null,
+        lastModifiedDate: it.lastModifiedDate || null,
+        createdDate: it.createdDate || null,
+        manageableState: it.manageableState || null
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Lê o conteúdo (metadata read) de N componentes do mesmo tipo (chunks de 10).
+ * @param {Object} org
+ * @param {string} type
+ * @param {string[]} fullNames
+ * @returns {Promise<Array<Object>>}
+ */
+export async function readMetadataContent(org, type, fullNames) {
+  const conn = await connectToOrg(org);
+  const result = [];
+  for (let i = 0; i < fullNames.length; i += 10) {
+    const chunk = fullNames.slice(i, i + 10);
+    const r = await conn.metadata.read(type, chunk);
+    const arr = Array.isArray(r) ? r : [r];
+    for (const item of arr) {
+      if (item && item.fullName) result.push(item);
+    }
+  }
+  return result;
+}
+
+/**
+ * Deploy síncrono de um pacote ZIP (Buffer) via Metadata API com polling.
+ * @param {Object} org
+ * @param {Buffer} zipBuffer
+ * @param {Object} [options]
+ * @returns {Promise<Object>}
+ */
+export async function deployMetadataPackage(org, zipBuffer, options = {}) {
+  const conn = await connectToOrg(org);
+  const {
+    checkOnly = false,
+    rollbackOnError = true,
+    singlePackage = true,
+    pollIntervalMs = 3000,
+    pollTimeoutMs = 600000
+  } = options;
+
+  const deployJob = conn.metadata.deploy(zipBuffer, {
+    checkOnly,
+    rollbackOnError,
+    singlePackage,
+    allowMissingFiles: false,
+    autoUpdatePackage: false
+  });
+
+  const start = Date.now();
+  let result = await deployJob.check();
+  while (!result.done) {
+    if (Date.now() - start > pollTimeoutMs) {
+      throw new Error(`Deploy timeout after ${pollTimeoutMs}ms (id: ${result.id})`);
+    }
+    await new Promise(r => setTimeout(r, pollIntervalMs));
+    result = await deployJob.check();
+  }
+
+  const details = await conn.metadata.checkDeployStatus(result.id, true);
+  return {
+    id: result.id,
+    done: true,
+    status: details.status,
+    success: details.success,
+    numberComponentErrors: details.numberComponentErrors,
+    numberComponentsDeployed: details.numberComponentsDeployed,
+    numberComponentsTotal: details.numberComponentsTotal,
+    details
+  };
+}
