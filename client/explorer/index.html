@@ -445,12 +445,14 @@ function logDeploy(name, destId, outcome) {
 }
 function orgState(o) { return (o.diff > 0 || o.absent > 0 || o.extra > 0) ? 'drift' : 'synced'; }
 function orgSubLabel(o) {
-  if (o.check === 'nunca') return 'nunca verificado';
+  if (!o) return '—';
+  if (!o.check || o.check === 'nunca') return o.last_sync ? 'sincronizado' : 'nunca verificado';
   const parts = [];
   if (o.diff) parts.push(o.diff + ' diff');
-  if (o.absent) parts.push(o.absent + ' absent');
-  if (o.extra) parts.push(o.extra + ' extra');
-  return parts.length ? parts.join(', ') : 'sincronizado';
+  if (o.absent) parts.push(o.absent + ' ausentes');
+  if (o.extra) parts.push(o.extra + ' extras');
+  if (parts.length) return parts.join(' · ');
+  return (o.synced || 0) + ' componentes ok';
 }
 function countPending() { return Object.keys(pendingMerges).length; }
 function simulateDeployOutcome() { return { status: 'success', message: null }; }
@@ -898,15 +900,7 @@ document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
 
 /* ============ PIPELINE ============ */
-function orgState(o){ return (o.diff>0 || o.absent>0 || o.extra>0) ? 'drift' : 'synced'; }
-function orgSubLabel(o){
-  if(orgState(o)==='synced') return `${o.synced} componentes ok`;
-  const parts=[];
-  if(o.diff) parts.push(`${o.diff} diff`);
-  if(o.absent) parts.push(`${o.absent} ausentes`);
-  if(o.extra) parts.push(`${o.extra} extras`);
-  return parts.join(' · ');
-}
+// orgState e orgSubLabel definidos acima (fix: remover duplicata que causava crash)
 function renderPipeline(){
   const el = document.getElementById('pipeline');
   const destOrgs = dashboardDestOrgs();
@@ -1398,12 +1392,18 @@ async function startMultiSync() {
 
   try {
     await Promise.allSettled(promises);
-    await loadOrgs();
-    renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
-    setTimeout(() => closeModal(), 1500);
+    try { await loadOrgs(); } catch(e) { console.error('loadOrgs fail:', e); }
+    try { renderDrift(); } catch(e) { console.error('renderDrift fail:', e); }
+    try { renderPipeline(); } catch(e) { console.error('renderPipeline fail:', e); }
+    try { renderGadgets(); } catch(e) { console.error('renderGadgets fail:', e); }
+    try { renderDashGoldSelect(); } catch(e) { console.error('renderDashGoldSelect fail:', e); }
   } catch(e) {
+    console.error('startMultiSync fail:', e);
     toast('Erro geral: ' + e.message);
   }
+  const btn = document.getElementById('btnStartSync');
+  if (btn) { btn.disabled = false; btn.textContent = 'Sincronizar selecionadas'; }
+  setTimeout(() => closeModal(), 1500);
 }
 
 async function syncOneOrg(orgId) {
