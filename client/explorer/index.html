@@ -1082,18 +1082,66 @@ function renderGadgets(){
 }
 
 document.getElementById('btnRefreshDash').addEventListener('click', async function(){
-  this.disabled = true; this.textContent = 'Sincronizando ARQ...';
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Iniciando sync ARQ...';
+
   try {
-    const result = await api('/sync/metadata', { method: 'POST', body: JSON.stringify({ org_id: 36 }) });
-    if (result.ok) {
-      toast('ARQ sincronizada: ' + result.total_components + ' componentes (' + result.types_found + ' tipos)');
-      await loadOrgs();
-      renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
-    } else {
-      toast('Erro: ' + (result.error || 'falha na sincronização'));
+    const trigger = await api('/sync/metadata', { method: 'POST', body: JSON.stringify({ org_id: 36 }) });
+    if (!trigger.ok) {
+      toast('Erro: ' + (trigger.error || 'falha ao iniciar'));
+      btn.disabled = false; btn.textContent = 'Atualizar';
+      return;
     }
-  } catch(e) { toast('Erro de conexão: ' + e.message); }
-  this.disabled = false; this.textContent = 'Atualizar';
+    if (trigger.already_running) {
+      toast('Sync já em execução — aguardando...');
+    } else {
+      toast('Sync iniciada — consultando 34 tipos de metadado...');
+    }
+
+    // Polling do job a cada 3s
+    btn.textContent = 'Sincronizando ARQ...';
+    const startedAt = Date.now();
+    const maxWaitMs = 300000; // 5min
+
+    const pollJob = async () => {
+      const elapsed = Math.round((Date.now() - startedAt) / 1000);
+      const s = await api('/sync/job/36');
+      if (!s.ok) return true; // Stop on error
+
+      if (s.status === 'running') {
+        btn.textContent = 'Sincronizando ARQ... (' + elapsed + 's)';
+        if (Date.now() - startedAt > maxWaitMs) {
+          toast('Timeout — job continua rodando em background');
+          return true;
+        }
+        return false;
+      }
+      if (s.status === 'done') {
+        toast('ARQ sincronizada: ' + s.total_components + ' componentes (' + s.types_found + ' tipos, ' + elapsed + 's)');
+        await loadOrgs();
+        renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
+        return true;
+      }
+      if (s.status === 'failed') {
+        toast('Sync falhou: ' + (s.error || 'erro desconhecido'));
+        return true;
+      }
+      return false;
+    };
+
+    const interval = setInterval(async () => {
+      const done = await pollJob();
+      if (done) {
+        clearInterval(interval);
+        btn.disabled = false;
+        btn.textContent = 'Atualizar';
+      }
+    }, 3000);
+
+  } catch(e) {
+    toast('Erro de conexão: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Atualizar';
+  }
 });
 
 function renderDrift(){
