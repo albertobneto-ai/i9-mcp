@@ -1434,15 +1434,24 @@ async function runSyncMetadataJob(orgId) {
       [JSON.stringify(cache), now, orgId]
     );
 
+    // Deduplicar por (fullName + type) — API às vezes retorna duplicatas
+    const seen = new Map();
+    for (const m of metaList) {
+      const key = m.type + '::' + m.fullName;
+      if (!seen.has(key)) seen.set(key, m);
+    }
+    const deduped = Array.from(seen.values());
+
     // Upsert component_meta em batch (usa UNNEST para performance)
-    if (metaList.length > 0) {
-      const names = metaList.map(m => m.fullName);
-      const types = metaList.map(m => m.type);
-      const modDates = metaList.map(m => m.lastModifiedDate || null);
-      const orgIds = metaList.map(() => orgId);
+    if (deduped.length > 0) {
+      const names = deduped.map(m => m.fullName);
+      const types = deduped.map(m => m.type);
+      const modDates = deduped.map(m => m.lastModifiedDate || null);
+      const orgIds = deduped.map(() => orgId);
       await pool.query(`
         INSERT INTO component_meta (component_name, component_type, org_id, last_modified, last_snapshot_at)
-        SELECT * FROM UNNEST($1::text[], $2::text[], $3::int[], $4::timestamptz[]) AS t(cn, ct, oi, lm), (SELECT NOW()) AS s
+        SELECT cn, ct, oi, lm, NOW()
+        FROM UNNEST($1::text[], $2::text[], $3::int[], $4::timestamptz[]) AS t(cn, ct, oi, lm)
         ON CONFLICT (component_name, org_id)
         DO UPDATE SET component_type = EXCLUDED.component_type, last_modified = EXCLUDED.last_modified, last_snapshot_at = NOW()
       `, [names, types, orgIds, modDates]);
