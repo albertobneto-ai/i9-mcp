@@ -1883,6 +1883,21 @@ function deployAllPending(){
 }
 
 document.getElementById('btnDeployPending').addEventListener('click', deployAllPending);
+
+function openDeployLog(){
+  const rows = deployLog.length ? deployLog.map(e=>
+    `<div class="hunkitem" style="align-items:center;">
+      <span class="swatch ${e.status==='success'?'ok':'diff'}" style="margin-top:3px;"></span>
+      <div>
+        <strong>${e.oe || '—'}</strong> · ${e.jira || '—'}
+        <br><span style="color:var(--fog); font-size:10.5px;">${e.dest || '—'} · ${e.status} · ${e.ts ? new Date(e.ts).toLocaleString('pt-BR') : '—'}</span>
+        ${e.error ? '<br><span style="color:#c0392b; font-size:10.5px;">'+e.error+'</span>' : ''}
+      </div>
+    </div>`
+  ).join('') : '<p style="color:var(--fog); font-size:12px;">Nenhum deploy registrado ainda.</p>';
+  openModal('Deploy Log', '<div class="hunklist">'+rows+'</div>', '<button class="btn" onclick="closeModal()">Fechar</button>');
+}
+
 document.getElementById('btnViewLog').addEventListener('click', openDeployLog);
 
 document.getElementById('btnAnalyzeEq').addEventListener('click', function(){
