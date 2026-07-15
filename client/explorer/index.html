@@ -1384,7 +1384,9 @@ document.getElementById('btnRefreshDash').addEventListener('click', async functi
       if (s.status === 'running') {
         btn.textContent = 'Sincronizando ARQ... (' + elapsed + 's)';
         if (Date.now() - startedAt > maxWaitMs) {
-          toast('Timeout — job continua rodando em background');
+          toast('Timeout — verifique o Dashboard para o estado atual');
+          await loadOrgs();
+          renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
           return true;
         }
         return false;
@@ -1398,6 +1400,26 @@ document.getElementById('btnRefreshDash').addEventListener('click', async functi
       if (s.status === 'failed') {
         toast('Sync falhou: ' + (s.error || 'erro desconhecido'));
         return true;
+      }
+      // status === 'idle' (server restart perdeu o job) — checar se o banco atualizou
+      if (s.status === 'idle') {
+        await loadOrgs();
+        const goldOrg = orgs.find(o => o.id === 36);
+        if (goldOrg && goldOrg.last_sync) {
+          const syncTime = new Date(goldOrg.last_sync).getTime();
+          if (syncTime > startedAt - 60000) {
+            toast('ARQ sincronizada (dados do banco): ' + (goldOrg.metadata_cache?.total || 0) + ' componentes');
+            renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
+            return true;
+          }
+        }
+        // idle mas nunca rodou — parar após 15s
+        if (elapsed > 15) {
+          toast('Sync não iniciou. Tente novamente.');
+          return true;
+        }
+        btn.textContent = 'Aguardando início... (' + elapsed + 's)';
+        return false;
       }
       return false;
     };
