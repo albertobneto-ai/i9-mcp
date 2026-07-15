@@ -611,21 +611,43 @@ export async function getOutboundIP() {
 export async function listMetadataByTypes(org, types) {
   const conn = await connectToOrg(org);
   const out = [];
+  const failedTypes = [];
+  // Tenta chunks de 3 primeiro; se falhar, cai pra 1-por-1 pra identificar o tipo problemático
   for (let i = 0; i < types.length; i += 3) {
-    const chunk = types.slice(i, i + 3).map(t => ({ type: t }));
-    const items = await conn.metadata.list(chunk, conn.version || '62.0');
-    const arr = Array.isArray(items) ? items : (items ? [items] : []);
-    for (const it of arr) {
-      out.push({
-        type: it.type,
-        fullName: it.fullName,
-        id: it.id || null,
-        lastModifiedDate: it.lastModifiedDate || null,
-        createdDate: it.createdDate || null,
-        manageableState: it.manageableState || null
-      });
+    const chunk = types.slice(i, i + 3);
+    try {
+      const items = await conn.metadata.list(chunk.map(t => ({ type: t })), conn.version || '62.0');
+      const arr = Array.isArray(items) ? items : (items ? [items] : []);
+      for (const it of arr) {
+        out.push({
+          type: it.type, fullName: it.fullName, id: it.id || null,
+          lastModifiedDate: it.lastModifiedDate || null,
+          createdDate: it.createdDate || null,
+          manageableState: it.manageableState || null
+        });
+      }
+    } catch (chunkErr) {
+      // Chunk falhou — tenta um tipo por vez
+      for (const t of chunk) {
+        try {
+          const items = await conn.metadata.list([{ type: t }], conn.version || '62.0');
+          const arr = Array.isArray(items) ? items : (items ? [items] : []);
+          for (const it of arr) {
+            out.push({
+              type: it.type, fullName: it.fullName, id: it.id || null,
+              lastModifiedDate: it.lastModifiedDate || null,
+              createdDate: it.createdDate || null,
+              manageableState: it.manageableState || null
+            });
+          }
+        } catch (singleErr) {
+          console.warn(`[listMetadataByTypes] Skipping ${t}: ${singleErr.message}`);
+          failedTypes.push({ type: t, error: singleErr.message });
+        }
+      }
     }
   }
+  if (failedTypes.length) out.__failed_types = failedTypes;
   return out;
 }
 
