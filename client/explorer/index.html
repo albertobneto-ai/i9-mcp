@@ -642,6 +642,70 @@ function openModal(title, bodyHtml, footHtml, wide){
   document.getElementById('overlay').classList.add('open');
 }
 function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+// ── Componente Explorer (Preview / Lista) ──
+async function openTypeList(orgId, type) {
+  try {
+    const d = await api(`/components/list-cached?org_id=${orgId}&type=${encodeURIComponent(type)}`);
+    if (!d.ok || !d.total) {
+      openModal(type + ' — ' + orgName(orgId),
+        '<p style="color:var(--fog); font-size:12px;">Nenhum componente encontrado no cache.</p>',
+        '<button class="btn" onclick="closeModal()">Fechar</button>');
+      return;
+    }
+    const rows = d.components.slice(0, 500).map(c => {
+      const mod = c.lastModifiedDate ? new Date(c.lastModifiedDate).toLocaleDateString('pt-BR') : '—';
+      const safeName = c.fullName.replace(/'/g, "\\'");
+      return `<div class="hunkitem" style="cursor:pointer;" onclick="openComponentPreview(${orgId}, '${type}', '${safeName}')">
+        <span class="swatch ok" style="margin-top:3px;"></span>
+        <div>
+          <strong>${escapeHtml(c.fullName)}</strong>
+          <br><span style="color:var(--fog); font-size:10.5px;">modificado: ${mod}</span>
+        </div>
+      </div>`;
+    }).join('');
+    const header = `<p style="color:var(--fog); font-size:11px; margin-bottom:8px;">${d.total} componentes · clique num para ver o conteúdo</p>`;
+    const footer = d.total > 500 ? `<p style="color:var(--fog); font-size:10.5px; margin-top:6px;">Mostrando primeiros 500 de ${d.total}</p>` : '';
+    openModal(type + ' — ' + orgName(orgId),
+      header + '<div class="hunklist">' + rows + '</div>' + footer,
+      '<button class="btn" onclick="closeModal()">Fechar</button>');
+  } catch(e) {
+    toast('Erro ao carregar lista: ' + e.message);
+  }
+}
+
+async function openComponentPreview(orgId, type, fullName) {
+  openModal(fullName,
+    '<p style="color:var(--fog); font-size:12px;">Lendo componente da org...</p>',
+    '<button class="btn" onclick="closeModal()">Fechar</button>');
+  try {
+    const d = await api(`/components/preview?org_id=${orgId}&type=${encodeURIComponent(type)}&fullName=${encodeURIComponent(fullName)}`);
+    if (!d.ok || !d.found) {
+      openModal(fullName,
+        '<p style="color:var(--fog); font-size:12px;">Componente não encontrado na org.</p>',
+        '<button class="btn" onclick="closeModal()">Fechar</button>');
+      return;
+    }
+    const mod = d.last_modified ? new Date(d.last_modified).toLocaleString('pt-BR') : '—';
+    const cre = d.created_date ? new Date(d.created_date).toLocaleString('pt-BR') : '—';
+    const sizeKb = (d.content_size / 1024).toFixed(1);
+    const body = `
+      <div style="font-size:11px; color:var(--fog); margin-bottom:8px;">
+        Tipo: <strong style="color:var(--ink);">${d.type}</strong> ·
+        Org: <strong style="color:var(--ink);">${d.org_name}</strong> ·
+        Modificado: <strong style="color:var(--ink);">${mod}</strong> ·
+        Tamanho: <strong style="color:var(--ink);">${sizeKb} KB</strong>
+      </div>
+      <pre style="background:#0f172a; color:#e2e8f0; padding:12px; border-radius:6px; font-size:11px; line-height:1.5; max-height:60vh; overflow:auto; white-space:pre-wrap; word-break:break-all;">${escapeHtml(d.content_json)}</pre>
+    `;
+    openModal(fullName, body,
+      '<button class="btn" onclick="navigator.clipboard.writeText(document.querySelector(\'#modalContent pre\').textContent).then(()=>toast(\'Copiado\'))">Copiar</button>' +
+      '<button class="btn" onclick="closeModal()">Fechar</button>');
+  } catch(e) {
+    toast('Erro ao ler componente: ' + e.message);
+  }
+}
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
 
@@ -1008,6 +1072,25 @@ function miniRows(cat, field, isPercent){
 }
 
 function gadgetDetail(key){
+  if(key === 'components' && orgs.length > 0){
+    const goldOrg = orgs.find(o => o.id === dashboardGoldOrgId) || orgs[0];
+    const byType = goldOrg.metadata_cache?.by_type || {};
+    const types = Object.entries(byType)
+      .map(([t, d]) => ({type: t, count: d.count || 0}))
+      .filter(x => x.count > 0)
+      .sort((a,b) => b.count - a.count);
+    if (!types.length) return '<p style="color:var(--fog); font-size:12px;">Sincronize a org primeiro (botão Atualizar).</p>';
+    return '<div class="gadget-rows">' + types.map(t => {
+      const max = types[0].count;
+      const pct = (t.count/max*100);
+      const safeType = t.type.replace(/'/g, "\\'");
+      return `<div class="gadget-row" style="cursor:pointer;" onclick="openTypeList(${goldOrg.id}, '${safeType}')" title="Clique para ver a lista">
+        <span class="gr-abbr" style="width:150px; text-align:left;">${t.type}</span>
+        <span class="gr-bar-wrap"><span class="gr-bar seg-arq" style="width:${pct}%"></span></span>
+        <span class="gr-val">${t.count}</span>
+      </div>`;
+    }).join('') + '</div>';
+  }
   if(key === 'users'){
     const byLicense = sumMap('users','byLicense');
     return `<div class="gadget-detail">
