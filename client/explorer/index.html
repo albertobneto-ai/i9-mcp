@@ -569,15 +569,15 @@ async function initApp() {
     await loadPendingMerges();
     await loadRecentDeploys();
     renderAll();
-  } catch (e) { console.error('Init failed:', e); }
+  } catch (e) { console.error('Init failed:', e); toast('Erro no carregamento: ' + e.message); }
 }
 function renderAll() {
-  try { renderPipeline(); } catch(e){}
+  try { renderPipeline(); } catch(e){ console.error('renderPipeline fail:', e); }
   try { renderGlobalBadge(); } catch(e){}
-  try { renderBoard(); } catch(e){}
-  try { renderDashGoldSelect(); } catch(e){}
-  try { renderGadgets(); } catch(e){}
-  try { renderDrift(); } catch(e){}
+  try { renderBoard(); } catch(e){ console.error('renderBoard fail:', e); }
+  try { renderDashGoldSelect(); } catch(e){ console.error('renderDashGoldSelect fail:', e); }
+  try { renderGadgets(); } catch(e){ console.error('renderGadgets fail:', e); }
+  try { renderDrift(); } catch(e){ console.error('renderDrift fail:', e); }
   try { renderRecentDeploys(); } catch(e){}
   try { renderGoldSelect(); } catch(e){}
   try { renderEqPipeline(); } catch(e){}
@@ -987,15 +987,17 @@ function avgField(cat, field){ const n = envIds.filter(id => typeof envData[id]?
 function sumMap(cat, mapField){
   const out = {};
   envIds.forEach(id=>{
-    const m = envData[id][cat][mapField];
-    Object.keys(m).forEach(k=>{ out[k] = (out[k]||0) + m[k]; });
+    const m = envData[id]?.[cat]?.[mapField];
+    if (m && typeof m === 'object') {
+      Object.keys(m).forEach(k=>{ out[k] = (out[k]||0) + (typeof m[k] === 'number' ? m[k] : 0); });
+    }
   });
   return out;
 }
 function miniRows(cat, field, isPercent){
   return `<div class="gadget-rows">` + envIds.map(id=>{
     const v = envData[id]?.[cat]?.[field] ?? 0; if (typeof v !== 'number') return `<div class="gadget-row"><span class="gr-abbr">${envAbbr[id]}</span><span class="gr-val">—</span></div>`;
-    const max = isPercent ? 100 : Math.max(...envIds.map(x=>envData[x][cat][field]));
+    const max = isPercent ? 100 : Math.max(...envIds.map(x=>{ const val = envData[x]?.[cat]?.[field]; return typeof val === 'number' ? val : 0; }));
     const pct = max ? (v/max*100) : 0;
     return `<div class="gadget-row">
       <span class="gr-abbr">${envAbbr[id]}</span>
@@ -1054,10 +1056,10 @@ function gadgetDetail(key){
 function renderGadgets(){
   const el = document.getElementById('envGadgets');
   const cats = [
-    { key:'users', icon:'◍', label:'Usuários', sub:'licenças ativas', value: sumField('users','total') },
+    { key:'users', icon:'◍', label:'Usuários', sub:'licenças ativas (2ª onda)', value: '—' },
     { key:'objects', icon:'▦', label:'Objetos', sub:'padrão + customizados', value: sumField('objects','total') },
     { key:'components', icon:'▤', label:'Componentes', sub:'metadados rastreados', value: sumField('components','total') },
-    { key:'governance', icon:'◎', label:'Governança', sub:'uso médio de API', value: avgField('governance','apiUsed') + '%' },
+    { key:'governance', icon:'◎', label:'Governança', sub:'uso médio de API (2ª onda)', value: '—' },
   ];
   el.innerHTML = cats.map(c=>{
     const isExp = expandedGadgets.has(c.key);
