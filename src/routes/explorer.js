@@ -1434,11 +1434,12 @@ async function runSyncMetadataJob(orgId) {
       [JSON.stringify(cache), now, orgId]
     );
 
-    // Deduplicar por (fullName + type) — API às vezes retorna duplicatas
+    // Deduplicar por fullName — o UNIQUE de component_meta é (component_name, org_id)
+    // sem incluir type. Se dois tipos retornam o mesmo fullName (ex: CustomLabels
+    // container vs CustomLabel individual), mantém o primeiro.
     const seen = new Map();
     for (const m of metaList) {
-      const key = m.type + '::' + m.fullName;
-      if (!seen.has(key)) seen.set(key, m);
+      if (!seen.has(m.fullName)) seen.set(m.fullName, m);
     }
     const deduped = Array.from(seen.values());
 
