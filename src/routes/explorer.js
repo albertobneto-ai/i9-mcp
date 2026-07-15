@@ -1,5 +1,5 @@
 // src/routes/explorer.js
-// Sprint 1+2+3 — BE-1 to BE-8 + VA (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift, Components, History, Log, Vector Agent)
+// Sprint 1+2+3 — BE-1 to BE-8 + VA + Dashboard Wiring (Stories, Board, Dashboard, Equalize, Merge, Deploy, Rollback, Drift, Components, History, Log, Vector Agent)
 
 import { Router } from 'express';
 import pool from '../config/db.js';
@@ -282,7 +282,7 @@ router.get('/explorer/dashboard', authMiddleware, async (req, res) => {
 
     // Orgs do Explorer
     const orgsRes = await pool.query(`
-      SELECT id, name, org_type, is_default_gold, drift_summary
+      SELECT id, name, org_type, is_default_gold, drift_summary, last_metadata_sync, metadata_cache
       FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
     `);
 
@@ -929,7 +929,7 @@ router.get('/explorer/drift/summary', authMiddleware, async (req, res) => {
 
     // Return drift_summary from all explorer orgs
     const { rows } = await pool.query(`
-      SELECT id, name, org_type, is_default_gold, drift_summary
+      SELECT id, name, org_type, is_default_gold, drift_summary, last_metadata_sync, metadata_cache
       FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
     `);
 
@@ -1374,6 +1374,117 @@ router.post('/explorer/vector-agent/analyze', authMiddleware, async (req, res) =
     res.json({ ok: true, ...result });
   } catch (e) {
     console.error('[vector-agent/analyze]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
+// ============================================================
+// SPRINT 6b — Dashboard Wiring (cache + last_sync)
+// ============================================================
+
+const DASHBOARD_SCOPE_TYPES = [
+  'Flow', 'ApexClass', 'ApexTrigger', 'LightningComponentBundle',
+  'PermissionSet', 'CustomField', 'Layout', 'ValidationRule',
+  'Bot', 'BotVersion', 'CustomObject', 'Profile', 'RecordType',
+  'NamedCredential', 'ExternalCredential', 'CustomPermission',
+  'FlexiPage', 'QuickAction', 'ConnectedApp', 'CustomMetadataType',
+  'ApprovalProcess', 'DuplicateRule', 'MatchingRules',
+  'CustomApplication', 'CustomTab', 'CustomLabels',
+  'EmailTemplate', 'Role', 'Queue',
+  'GlobalValueSet', 'StandardValueSet',
+  'Network', 'CustomSite', 'ExperienceBundle'
+];
+
+// POST /api/explorer/sync/metadata
+// Body: { org_id } — consulta a org, grava cache, atualiza timestamp
+router.post('/explorer/sync/metadata', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.body?.org_id);
+    if (!orgId) return res.status(400).json({ ok: false, error: 'org_id required' });
+
+    const org = await getOrg(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    // listMetadata pra todos os tipos (chunks de 3)
+    const metaList = await listMetadataByTypes(org, DASHBOARD_SCOPE_TYPES);
+
+    // Montar cache: contagem por tipo + lista de componentes
+    const byType = {};
+    let totalCount = 0;
+    for (const item of metaList) {
+      if (!byType[item.type]) byType[item.type] = { count: 0, components: [] };
+      byType[item.type].count++;
+      byType[item.type].components.push({
+        fullName: item.fullName,
+        lastModifiedDate: item.lastModifiedDate || null,
+        createdDate: item.createdDate || null
+      });
+      totalCount++;
+    }
+
+    const cache = {
+      total: totalCount,
+      by_type: Object.fromEntries(
+        Object.entries(byType).map(([type, data]) => [type, {
+          count: data.count,
+          components: data.components
+        }])
+      ),
+      types_queried: DASHBOARD_SCOPE_TYPES.length
+    };
+
+    // Gravar no banco
+    const now = new Date().toISOString();
+    await pool.query(
+      `UPDATE orgs SET metadata_cache = $1, last_metadata_sync = $2 WHERE id = $3`,
+      [JSON.stringify(cache), now, orgId]
+    );
+
+    // Upsert component_meta pra cada componente
+    for (const item of metaList) {
+      await pool.query(`
+        INSERT INTO component_meta (component_name, component_type, org_id, last_modified, last_snapshot_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (component_name, org_id)
+        DO UPDATE SET component_type = $2, last_modified = $4, last_snapshot_at = NOW()
+      `, [item.fullName, item.type, orgId, item.lastModifiedDate || null]);
+    }
+
+    res.json({
+      ok: true,
+      org_id: orgId,
+      org_name: org.name,
+      total_components: totalCount,
+      types_found: Object.keys(byType).length,
+      synced_at: now,
+      by_type: Object.fromEntries(Object.entries(byType).map(([t, d]) => [t, d.count]))
+    });
+  } catch (e) {
+    console.error('[sync/metadata]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/sync/status
+// Retorna last_metadata_sync de cada org do Explorer
+router.get('/explorer/sync/status', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT id, name, last_metadata_sync, metadata_cache
+      FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
+    `);
+    const orgs = rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      last_sync: r.last_metadata_sync,
+      total_components: r.metadata_cache?.total || 0,
+      by_type: r.metadata_cache?.by_type
+        ? Object.fromEntries(Object.entries(r.metadata_cache.by_type).map(([t, d]) => [t, d.count]))
+        : null
+    }));
+    res.json({ ok: true, orgs });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
