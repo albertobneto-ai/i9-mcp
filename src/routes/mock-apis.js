@@ -59,6 +59,87 @@ router.get('/rf/cnpj/:cnpj', (req, res) => {
   res.json(mock);
 });
 
+// ── SERASA (via MuleSoft PartyManagement): GET /serasa/parties/:cnpj/data-registration ──
+// Contrato = parser de SerasaConsultaPorCnpj.cls / SerasaCalloutService.cls (body.organization.*)
+// Uso temporario: NC MuleSoftPartyManagementProcessAPIv1 aponta aqui enquanto Mule HML esta 500
+router.get('/serasa/parties/:cnpj/data-registration', (req, res) => {
+  const cnpj = req.params.cnpj.replace(/\D/g, '');
+
+  if (cnpj === '88888888000188') {
+    return setTimeout(() => res.status(504).json({ error: 'Gateway Timeout' }), 16000);
+  }
+  if (cnpj === '00000000000000') {
+    return res.status(404).json({ error: 'Party not found', documentNumber: cnpj });
+  }
+
+  const mocks = {
+    '71208516000174': { // Algar Telecom — cenario completo
+      organization: {
+        legalName: 'ALGAR TELECOM S/A',
+        tradeName: 'ALGAR TELECOM',
+        situation: 'ATIVA',
+        situationDate: '2005-11-03',
+        specialSituation: null,
+        openingDate: '1954-11-05',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '61.10-8', text: 'Servicos de telecomunicacoes por fio' },
+        legalNature: { code: '2054', text: 'Sociedade Anonima Fechada' },
+        tax: {
+          sintegra: { code: '702235524', state: 'MG', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rua Jose Alves Garcia', number: '415', district: 'Brasil',
+          complement: null, zipCode: '38400-668', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
+    '99999999000199': { // BAIXADA — LWC deve bloquear save (get inativa)
+      organization: {
+        legalName: 'EMPRESA BAIXADA LTDA',
+        tradeName: 'BAIXADA',
+        situation: 'BAIXADA',
+        situationDate: '2020-06-30',
+        specialSituation: null,
+        openingDate: '2001-02-15',
+        size: 'PEQUENO',
+        branchType: 'M',
+        mainActivity: { code: '47.11-3', text: 'Comercio varejista' },
+        legalNature: { code: '2062', text: 'Sociedade Empresaria Limitada' },
+        tax: {
+          sintegra: { code: '000111222', state: 'SP', situation: 'BAIXADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rua Encerrada', number: '99', district: 'Centro',
+          complement: null, zipCode: '01000-000', city: 'Sao Paulo', state: 'SP'
+        }
+      }
+    },
+    '11111111000111': { // Parcial — testa nulls no LWC
+      organization: {
+        legalName: 'EMPRESA TESTE LTDA',
+        tradeName: null,
+        situation: 'ATIVA',
+        openingDate: null,
+        size: 'MICRO',
+        branchType: 'M'
+      }
+    }
+  };
+
+  const mock = mocks[cnpj];
+  if (!mock) {
+    // Espelha o Mule HML atual: 500 generico — batch noturno se comporta igual a hoje
+    return res.status(500).json({
+      message: 'Internal Server Error',
+      correlationId: 'mock-' + Date.now().toString(36)
+    });
+  }
+  res.json(mock);
+});
+
 // ── BLACKLIST ANATEL: GET /blacklist/telefone/:phone/elegibilidade ──
 router.get('/blacklist/telefone/:phone/elegibilidade', (req, res) => {
   const phone = req.params.phone.replace(/\D/g, '');
@@ -153,7 +234,8 @@ router.get('/health', (req, res) => {
       'POST /whatsapp/lead',
       'POST /landingpage/lead',
       'POST /portal/lead',
-      'GET /microsoft/me'
+      'GET /microsoft/me',
+      'GET /serasa/parties/:cnpj/data-registration'
     ],
     mock_cnpjs: {
       '71208516000174': 'Algar Telecom (ATIVA, Grande)',
