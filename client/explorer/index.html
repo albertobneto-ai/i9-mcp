@@ -1001,24 +1001,70 @@ function attachDnD(){
 
 /* Nova US */
 document.getElementById('btnNewUS').addEventListener('click', ()=>{
+  const currentSprint = new Date().toISOString().slice(0,7).replace('-','.'); // ex: 2026.07
   openModal('Nova User Story', `
-    <div class="formrow"><label>Jira Key</label><input id="f_jira" placeholder="CRMB2B-XXX"></div>
-    <div class="formrow"><label>Título</label><input id="f_title" placeholder="Descreva a US"></div>
-    <div class="formrow"><label>Tipo</label>
-      <select id="f_type"><option>RELEASE</option><option>BUGFIX</option><option>HOTFIX</option></select>
+    <div class="formrow"><label>Jira Key <span style="color:#c0392b;">*</span></label><input id="f_jira" placeholder="CRMB2B-XXX" autofocus></div>
+    <div class="formrow"><label>Título <span style="color:#c0392b;">*</span></label><input id="f_title" placeholder="Descreva a US"></div>
+    <div class="formrow" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div><label style="font-size:11px; color:var(--fog);">Tipo</label>
+        <select id="f_type" style="width:100%;">
+          <option value="RELEASE">RELEASE</option>
+          <option value="BUGFIX">BUGFIX</option>
+          <option value="CONFIG">CONFIG</option>
+          <option value="HOTFIX">HOTFIX</option>
+        </select>
+      </div>
+      <div><label style="font-size:11px; color:var(--fog);">Prioridade</label>
+        <select id="f_priority" style="width:100%;">
+          <option value="media">Média</option>
+          <option value="alta">Alta</option>
+          <option value="baixa">Baixa</option>
+        </select>
+      </div>
     </div>
+    <div class="formrow"><label style="font-size:11px; color:var(--fog);">Sprint (opcional)</label><input id="f_sprint" placeholder="ex: ${currentSprint}"></div>
+    <p style="color:var(--fog); font-size:10.5px; margin-top:12px;">
+      Após criar, você poderá vincular componentes clicando no card do board.
+    </p>
   `, `
     <button class="btn" onclick="closeModal()">Cancelar</button>
-    <button class="btn primary" id="f_submit">Criar e escolher componentes</button>
+    <button class="btn primary" id="f_submit">Criar US</button>
   `);
-  document.getElementById('f_submit').addEventListener('click', ()=>{
-    const jira = document.getElementById('f_jira').value.trim() || `CRMB2B-${Math.floor(Math.random()*900+100)}`;
-    const title = document.getElementById('f_title').value.trim() || 'Nova user story';
+  document.getElementById('f_submit').addEventListener('click', async ()=>{
+    const jira = document.getElementById('f_jira').value.trim();
+    const title = document.getElementById('f_title').value.trim();
+    if (!jira) { toast('Jira Key é obrigatório'); return; }
+    if (!title) { toast('Título é obrigatório'); return; }
     const type = document.getElementById('f_type').value;
-    boardData.todo.push({ jira, type, title, dev:'AB' });
-    renderBoard();
-    toast(`US ${jira} criada em "To do"`);
-    openComponentPicker(jira);
+    const priority = document.getElementById('f_priority').value;
+    const sprint = document.getElementById('f_sprint').value.trim() || null;
+
+    const btn = document.getElementById('f_submit');
+    btn.disabled = true; btn.textContent = 'Criando...';
+    try {
+      const d = await api('/stories', {
+        method: 'POST',
+        body: JSON.stringify({ jira_key: jira, title, type, priority, sprint, board_status: 'todo' })
+      });
+      if (!d.ok) {
+        if (d.error && d.error.includes('exists')) {
+          toast('Já existe uma US com esta Jira Key');
+        } else {
+          toast('Erro: ' + (d.error || 'falha'));
+        }
+        btn.disabled = false; btn.textContent = 'Criar US';
+        return;
+      }
+      toast(`US ${jira} criada`);
+      closeModal();
+      await loadBoard();
+      renderBoard();
+      // Abre detalhe pra vincular componentes
+      openStoryDetail(jira);
+    } catch(e) {
+      toast('Erro: ' + e.message);
+      btn.disabled = false; btn.textContent = 'Criar US';
+    }
   });
 });
 
