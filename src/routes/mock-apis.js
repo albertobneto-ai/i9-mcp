@@ -95,6 +95,94 @@ router.get('/serasa/parties/:cnpj/data-registration', (req, res) => {
         }
       }
     },
+    '33444555000181': { // Caminho feliz limpo — Ltda ATIVA, sem duplicado na org
+      organization: {
+        legalName: 'TECNOVA SOLUCOES DIGITAIS LTDA',
+        tradeName: 'TECNOVA',
+        situation: 'ATIVA',
+        situationDate: '2018-04-10',
+        specialSituation: null,
+        openingDate: '2015-08-20',
+        size: 'MEDIO',
+        branchType: 'M',
+        mainActivity: { code: '62.01-5', text: 'Desenvolvimento de programas de computador sob encomenda' },
+        legalNature: { code: '2062', text: 'Sociedade Empresaria Limitada' },
+        tax: {
+          sintegra: { code: '312445678', state: 'MG', situation: 'HABILITADO' },
+          simples: { situation: 'P' }
+        },
+        address: {
+          street: 'Av Joao Naves de Avila', number: '1331', district: 'Tibery',
+          complement: 'Sala 402', zipCode: '38408-100', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
+    '71208516000255': { // Algar FILIAL — testa branchType F -> nivelConta Filial
+      organization: {
+        legalName: 'ALGAR TELECOM S/A',
+        tradeName: 'ALGAR TELECOM FILIAL UBERABA',
+        situation: 'ATIVA',
+        situationDate: '2010-05-12',
+        specialSituation: null,
+        openingDate: '2010-05-12',
+        size: 'GRANDE',
+        branchType: 'F',
+        mainActivity: { code: '61.10-8', text: 'Servicos de telecomunicacoes por fio' },
+        legalNature: { code: '2054', text: 'Sociedade Anonima Fechada' },
+        tax: {
+          sintegra: { code: '702998877', state: 'MG', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av Leopoldino de Oliveira', number: '2500', district: 'Centro',
+          complement: null, zipCode: '38010-000', city: 'Uberaba', state: 'MG'
+        }
+      }
+    },
+    '44555666000181': { // GOVERNO — NJ 1023 deriva TipoCliente GOVERNO ESTADUAL
+      organization: {
+        legalName: 'SECRETARIA DE ESTADO DE FAZENDA DE MINAS GERAIS',
+        tradeName: 'SEF-MG',
+        situation: 'ATIVA',
+        situationDate: '1995-01-01',
+        specialSituation: null,
+        openingDate: '1975-03-01',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '84.11-6', text: 'Administracao publica em geral' },
+        legalNature: { code: '1023', text: 'Orgao Publico do Poder Executivo Estadual' },
+        tax: {
+          sintegra: { code: null, state: 'MG', situation: 'ISENTO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rodovia Papa Joao Paulo II', number: '4001', district: 'Serra Verde',
+          complement: 'Cidade Administrativa', zipCode: '31630-901', city: 'Belo Horizonte', state: 'MG'
+        }
+      }
+    },
+    '55666777000181': { // SUSPENSA — outro sabor de inativa (LWC bloqueia save)
+      organization: {
+        legalName: 'COMERCIAL SUSPENSA EIRELI',
+        tradeName: 'SUSPENSA COM',
+        situation: 'SUSPENSA',
+        situationDate: '2024-11-20',
+        specialSituation: null,
+        openingDate: '2019-07-04',
+        size: 'PEQUENO',
+        branchType: 'M',
+        mainActivity: { code: '47.11-3', text: 'Comercio varejista' },
+        legalNature: { code: '2305', text: 'Empresa Individual de Responsabilidade Limitada' },
+        tax: {
+          sintegra: { code: '445001122', state: 'SP', situation: 'SUSPENSO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rua Suspensa', number: '77', district: 'Centro',
+          complement: null, zipCode: '01310-100', city: 'Sao Paulo', state: 'SP'
+        }
+      }
+    },
     '99999999000199': { // BAIXADA — LWC deve bloquear save (get inativa)
       organization: {
         legalName: 'EMPRESA BAIXADA LTDA',
@@ -242,6 +330,10 @@ router.get('/health', (req, res) => {
       '11111111000111': 'Empresa parcial (ATIVA, Micro)',
       '99999999000199': 'Empresa BAIXADA',
       '88888888000188': 'Timeout 16s',
+      '33444555000181': 'Serasa: TECNOVA Ltda ATIVA (caminho feliz)',
+      '71208516000255': 'Serasa: Algar FILIAL',
+      '44555666000181': 'Serasa: Governo Estadual (SEF-MG)',
+      '55666777000181': 'Serasa: SUSPENSA',
       '00000000000000': '404 Not Found'
     },
     timestamp: new Date().toISOString()
