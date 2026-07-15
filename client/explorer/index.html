@@ -381,7 +381,8 @@
 // API Layer — Sprint 6: substitui todos os mocks por fetch real
 // ============================================================
 const API_BASE = window.location.origin + '/api/explorer';
-let API_TOKEN = localStorage.getItem('i9_token') || '';
+let API_TOKEN = '';
+try { API_TOKEN = localStorage.getItem('i9_token') || ''; } catch(e) {}
 
 async function api(path, opts = {}) {
   if (!API_TOKEN) {
@@ -394,13 +395,13 @@ async function api(path, opts = {}) {
       });
       const d = await r.json();
       API_TOKEN = d.token || '';
-      localStorage.setItem('i9_token', API_TOKEN);
+      try { localStorage.setItem('i9_token', API_TOKEN); } catch(e) {}
     } catch (e) { console.error('Auto-login failed:', e); }
   }
   const url = API_BASE + path;
   const headers = { 'Authorization': 'Bearer ' + API_TOKEN, 'Content-Type': 'application/json', ...opts.headers };
   const resp = await fetch(url, { ...opts, headers });
-  if (resp.status === 401) { API_TOKEN = ''; localStorage.removeItem('i9_token'); throw new Error('Auth expired'); }
+  if (resp.status === 401) { API_TOKEN = ''; try { localStorage.removeItem('i9_token'); } catch(e) {} throw new Error('Auth expired'); }
   return resp.json();
 }
 
@@ -1829,6 +1830,13 @@ renderRecentDeploys();
 renderMatrix();
 renderRollbackOrgSelect();
 renderRollbackList();
+
+// ── Bootstrap ──
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+  switchView('board');
+});
+
 </script>
 
 </body>
