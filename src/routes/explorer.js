@@ -1396,20 +1396,17 @@ const DASHBOARD_SCOPE_TYPES = [
   'Network', 'CustomSite', 'ExperienceBundle'
 ];
 
-// POST /api/explorer/sync/metadata
-// Body: { org_id } — consulta a org, grava cache, atualiza timestamp
-router.post('/explorer/sync/metadata', authMiddleware, async (req, res) => {
+// Estado in-memory dos jobs de sync (evita bater no timeout do Heroku)
+const syncJobsState = new Map(); // orgId → { status, started_at, error }
+
+async function runSyncMetadataJob(orgId) {
+  syncJobsState.set(orgId, { status: 'running', started_at: new Date().toISOString(), error: null });
   try {
-    const orgId = toInt(req.body?.org_id);
-    if (!orgId) return res.status(400).json({ ok: false, error: 'org_id required' });
-
     const org = await getOrg(orgId);
-    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+    if (!org) throw new Error('Org not found');
 
-    // listMetadata pra todos os tipos (chunks de 3)
     const metaList = await listMetadataByTypes(org, DASHBOARD_SCOPE_TYPES);
 
-    // Montar cache: contagem por tipo + lista de componentes
     const byType = {};
     let totalCount = 0;
     for (const item of metaList) {
@@ -1426,44 +1423,85 @@ router.post('/explorer/sync/metadata', authMiddleware, async (req, res) => {
     const cache = {
       total: totalCount,
       by_type: Object.fromEntries(
-        Object.entries(byType).map(([type, data]) => [type, {
-          count: data.count,
-          components: data.components
-        }])
+        Object.entries(byType).map(([type, data]) => [type, { count: data.count, components: data.components }])
       ),
       types_queried: DASHBOARD_SCOPE_TYPES.length
     };
 
-    // Gravar no banco
     const now = new Date().toISOString();
     await pool.query(
       `UPDATE orgs SET metadata_cache = $1, last_metadata_sync = $2 WHERE id = $3`,
       [JSON.stringify(cache), now, orgId]
     );
 
-    // Upsert component_meta pra cada componente
-    for (const item of metaList) {
+    // Upsert component_meta em batch (usa UNNEST para performance)
+    if (metaList.length > 0) {
+      const names = metaList.map(m => m.fullName);
+      const types = metaList.map(m => m.type);
+      const modDates = metaList.map(m => m.lastModifiedDate || null);
+      const orgIds = metaList.map(() => orgId);
       await pool.query(`
         INSERT INTO component_meta (component_name, component_type, org_id, last_modified, last_snapshot_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        SELECT * FROM UNNEST($1::text[], $2::text[], $3::int[], $4::timestamptz[]) AS t(cn, ct, oi, lm), (SELECT NOW()) AS s
         ON CONFLICT (component_name, org_id)
-        DO UPDATE SET component_type = $2, last_modified = $4, last_snapshot_at = NOW()
-      `, [item.fullName, item.type, orgId, item.lastModifiedDate || null]);
+        DO UPDATE SET component_type = EXCLUDED.component_type, last_modified = EXCLUDED.last_modified, last_snapshot_at = NOW()
+      `, [names, types, orgIds, modDates]);
     }
 
-    res.json({
-      ok: true,
-      org_id: orgId,
-      org_name: org.name,
+    syncJobsState.set(orgId, {
+      status: 'done',
+      started_at: syncJobsState.get(orgId).started_at,
+      finished_at: now,
       total_components: totalCount,
       types_found: Object.keys(byType).length,
-      synced_at: now,
-      by_type: Object.fromEntries(Object.entries(byType).map(([t, d]) => [t, d.count]))
+      by_type: Object.fromEntries(Object.entries(byType).map(([t, d]) => [t, d.count])),
+      error: null
     });
   } catch (e) {
-    console.error('[sync/metadata]', e.message);
+    console.error('[sync/metadata job]', e.message);
+    syncJobsState.set(orgId, {
+      status: 'failed',
+      started_at: syncJobsState.get(orgId)?.started_at,
+      finished_at: new Date().toISOString(),
+      error: e.message
+    });
+  }
+}
+
+// POST /api/explorer/sync/metadata
+// Body: { org_id }
+// Retorna imediatamente { ok, job_started, org_id } e roda em background
+router.post('/explorer/sync/metadata', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.body?.org_id);
+    if (!orgId) return res.status(400).json({ ok: false, error: 'org_id required' });
+
+    const org = await getOrg(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    // Se já tem job rodando pra essa org, avisa
+    const current = syncJobsState.get(orgId);
+    if (current?.status === 'running') {
+      return res.json({ ok: true, job_started: false, already_running: true, org_id: orgId, started_at: current.started_at });
+    }
+
+    // Dispara background — NÃO faz await
+    runSyncMetadataJob(orgId).catch(e => console.error('[sync job unhandled]', e.message));
+
+    res.json({ ok: true, job_started: true, org_id: orgId, org_name: org.name, poll_url: '/api/explorer/sync/job/' + orgId });
+  } catch (e) {
+    console.error('[sync/metadata trigger]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+// GET /api/explorer/sync/job/:orgId
+// Consulta status do último job de sync pra uma org
+router.get('/explorer/sync/job/:orgId', authMiddleware, async (req, res) => {
+  const orgId = toInt(req.params.orgId);
+  const state = syncJobsState.get(orgId);
+  if (!state) return res.json({ ok: true, status: 'idle', has_previous: false });
+  res.json({ ok: true, ...state });
 });
 
 // GET /api/explorer/sync/status
