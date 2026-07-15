@@ -1388,8 +1388,8 @@ const DASHBOARD_SCOPE_TYPES = [
   'PermissionSet', 'CustomField', 'Layout', 'ValidationRule',
   'Bot', 'BotVersion', 'CustomObject', 'Profile', 'RecordType',
   'NamedCredential', 'ExternalCredential', 'CustomPermission',
-  'FlexiPage', 'QuickAction', 'ConnectedApp', 'CustomMetadataType',
-  'ApprovalProcess', 'DuplicateRule', 'MatchingRules',
+  'FlexiPage', 'QuickAction', 'ConnectedApp', 'CustomMetadata',
+  'ApprovalProcess', 'DuplicateRule', 'MatchingRule',
   'CustomApplication', 'CustomTab', 'CustomLabels',
   'EmailTemplate', 'Role', 'Queue',
   'GlobalValueSet', 'StandardValueSet',
@@ -1455,6 +1455,7 @@ async function runSyncMetadataJob(orgId) {
       total_components: totalCount,
       types_found: Object.keys(byType).length,
       by_type: Object.fromEntries(Object.entries(byType).map(([t, d]) => [t, d.count])),
+      failed_types: metaList.__failed_types || [],
       error: null
     });
   } catch (e) {
