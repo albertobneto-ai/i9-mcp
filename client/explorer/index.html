@@ -93,6 +93,10 @@
   .gadget-rows{ display:flex; flex-direction:column; gap:7px; }
   .gadget-row{ display:grid; grid-template-columns:34px 1fr 40px; align-items:center; gap:8px; }
   .gr-abbr{ font-family:'IBM Plex Mono'; font-size:9.5px; color:var(--fog); }
+  .gadget-row.wide{ grid-template-columns: 140px 1fr 60px; }
+  .gadget-row.wide .gr-abbr{ font-family:'Inter'; font-size:11.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gadget-row.wide:hover{ background:rgba(0,0,0,0.03); }
+
   .gr-bar-wrap{ height:6px; background:var(--line); border-radius:3px; overflow:hidden; }
   .gr-bar{ display:block; height:100%; }
   .gr-val{ font-family:'IBM Plex Mono'; font-size:10px; color:var(--ink); text-align:right; }
@@ -1084,8 +1088,8 @@ function gadgetDetail(key){
       const max = types[0].count;
       const pct = (t.count/max*100);
       const safeType = t.type.replace(/'/g, "\\'");
-      return `<div class="gadget-row" style="cursor:pointer;" onclick="openTypeList(${goldOrg.id}, '${safeType}')" title="Clique para ver a lista">
-        <span class="gr-abbr" style="width:150px; text-align:left;">${t.type}</span>
+      return `<div class="gadget-row wide" style="cursor:pointer;" onclick="openTypeList(${goldOrg.id}, '${safeType}')" title="Clique para ver ${t.count} componentes">
+        <span class="gr-abbr" title="${t.type}">${t.type}</span>
         <span class="gr-bar-wrap"><span class="gr-bar seg-arq" style="width:${pct}%"></span></span>
         <span class="gr-val">${t.count}</span>
       </div>`;
