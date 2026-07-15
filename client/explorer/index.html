@@ -710,6 +710,190 @@ async function openComponentPreview(orgId, type, fullName) {
   }
 }
 
+
+// ── US Detail / Component Management ──
+let currentPickerState = null;
+
+async function openStoryDetail(jiraKey) {
+  try {
+    const d = await api('/stories/' + encodeURIComponent(jiraKey));
+    if (!d.ok) { toast('Erro: ' + (d.error || 'US nao encontrada')); return; }
+    const s = d.story;
+    const comps = d.components || [];
+
+    const srcName = s.src_org_name || (s.src_org_id ? orgName(s.src_org_id) : 'ORG ARQUITETURA');
+    const tgtName = s.tgt_org_name || (s.tgt_org_id ? orgName(s.tgt_org_id) : '—');
+
+    const compsHtml = comps.length ? comps.map(c =>
+      `<div class="hunkitem" style="align-items:center;">
+        <span class="swatch ok" style="margin-top:3px;"></span>
+        <div style="flex:1;">
+          <strong>${escapeHtml(c.component_name)}</strong>
+          <br><span style="color:var(--fog); font-size:10.5px;">${c.component_type} · ${c.action || 'deploy'} · adicionado por ${c.added_by_name || '—'}</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" style="padding:4px 8px; font-size:10px;" onclick="openComponentPreview(36, '${c.component_type}', '${c.component_name.replace(/'/g, "\\'")}')">Preview</button>
+          <button class="btn" style="padding:4px 8px; font-size:10px;" onclick="removeStoryComponent('${jiraKey}', ${c.id})">Remover</button>
+        </div>
+      </div>`
+    ).join('') : '<p style="color:var(--fog); font-size:12px;">Nenhum componente vinculado ainda.</p>';
+
+    const body = `
+      <div style="font-size:11px; color:var(--fog); margin-bottom:12px;">
+        <strong style="color:var(--ink);">${s.jira_key}</strong> · ${s.type} · ${s.priority} · ${s.board_status}
+        <br>Origem: <strong style="color:var(--ink);">${srcName}</strong>
+        · Destino: <strong style="color:var(--ink);">${tgtName}</strong>
+      </div>
+      <h4 style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--fog); margin:16px 0 8px;">
+        Componentes vinculados (${comps.length})
+      </h4>
+      <div class="hunklist">${compsHtml}</div>
+    `;
+
+    const footer = `
+      <button class="btn primary" onclick="openComponentPicker('${jiraKey}')">+ Adicionar componente</button>
+      <button class="btn" onclick="closeModal()">Fechar</button>
+    `;
+    openModal(s.title || jiraKey, body, footer);
+  } catch(e) {
+    toast('Erro ao abrir US: ' + e.message);
+  }
+}
+
+async function openComponentPicker(jiraKey) {
+  currentPickerState = { jiraKey, selectedType: null, selectedNames: new Set(), allComponents: [] };
+  const srcOrgId = 36;
+  const goldOrg = orgs.find(o => o.id === srcOrgId);
+  const byType = goldOrg?.metadata_cache?.by_type || {};
+  const types = Object.entries(byType).map(([t, d]) => ({type: t, count: d.count || 0})).filter(x => x.count > 0).sort((a,b) => b.count - a.count);
+
+  if (!types.length) {
+    openModal('Adicionar componentes',
+      '<p style="color:var(--fog); font-size:12px;">Sincronize a ARQ primeiro no Dashboard.</p>',
+      '<button class="btn" onclick="closeModal()">Fechar</button>');
+    return;
+  }
+
+  const typeOpts = types.map(t => `<option value="${t.type}">${t.type} (${t.count})</option>`).join('');
+  const body = `
+    <p style="color:var(--fog); font-size:11px; margin-bottom:8px;">
+      Selecione componentes da <strong style="color:var(--ink);">ORG ARQUITETURA</strong> para vincular a <strong style="color:var(--ink);">${jiraKey}</strong>
+    </p>
+    <label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">Tipo de metadado</label>
+    <select id="pickerType" style="width:100%; padding:6px; font-size:12px; margin-bottom:12px; border:1px solid var(--line); border-radius:4px;" onchange="pickerLoadComponents()">
+      <option value="">— escolha um tipo —</option>
+      ${typeOpts}
+    </select>
+    <input id="pickerSearch" type="text" placeholder="Filtrar por nome..."
+      style="width:100%; padding:6px; font-size:12px; margin-bottom:8px; border:1px solid var(--line); border-radius:4px;"
+      oninput="pickerFilterList()" />
+    <div id="pickerList" style="max-height:45vh; overflow:auto; border:1px solid var(--line); border-radius:4px;">
+      <p style="color:var(--fog); font-size:11px; padding:12px;">Escolha um tipo acima para listar componentes.</p>
+    </div>
+    <div id="pickerCount" style="font-size:11px; color:var(--fog); margin-top:8px;">0 selecionado(s)</div>
+  `;
+  const footer = `
+    <button class="btn primary" onclick="pickerSave('${jiraKey}')">Adicionar selecionados</button>
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+  `;
+  openModal('Adicionar componentes — ' + jiraKey, body, footer);
+}
+
+async function pickerLoadComponents() {
+  const type = document.getElementById('pickerType').value;
+  if (!type) return;
+  const listEl = document.getElementById('pickerList');
+  listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Carregando...</p>';
+  try {
+    const d = await api('/components/list-cached?org_id=36&type=' + encodeURIComponent(type));
+    if (!d.ok || !d.total) {
+      listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Nenhum componente encontrado.</p>';
+      return;
+    }
+    currentPickerState.selectedType = type;
+    currentPickerState.allComponents = d.components;
+    currentPickerState.selectedNames = new Set();
+    renderPickerList(d.components);
+  } catch(e) {
+    listEl.innerHTML = '<p style="color:#c0392b; font-size:11px; padding:12px;">Erro: ' + e.message + '</p>';
+  }
+}
+
+function renderPickerList(components) {
+  const listEl = document.getElementById('pickerList');
+  const rows = components.slice(0, 500).map(c => {
+    const mod = c.lastModifiedDate ? new Date(c.lastModifiedDate).toLocaleDateString('pt-BR') : '—';
+    const checked = currentPickerState.selectedNames.has(c.fullName) ? 'checked' : '';
+    const safeName = c.fullName.replace(/'/g, "\\'");
+    return `<label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid var(--line); cursor:pointer; font-size:11.5px;">
+      <input type="checkbox" ${checked} onchange="pickerToggle('${safeName}')" />
+      <span style="flex:1;">${escapeHtml(c.fullName)}</span>
+      <span style="color:var(--fog); font-size:10px;">${mod}</span>
+    </label>`;
+  }).join('');
+  listEl.innerHTML = rows;
+  updatePickerCount();
+  if (components.length > 500) {
+    listEl.innerHTML += `<p style="color:var(--fog); font-size:10.5px; padding:8px;">Mostrando primeiros 500 de ${components.length}. Use o filtro.</p>`;
+  }
+}
+
+function pickerToggle(name) {
+  if (currentPickerState.selectedNames.has(name)) currentPickerState.selectedNames.delete(name);
+  else currentPickerState.selectedNames.add(name);
+  updatePickerCount();
+}
+
+function updatePickerCount() {
+  const el = document.getElementById('pickerCount');
+  if (el) el.textContent = currentPickerState.selectedNames.size + ' selecionado(s)';
+}
+
+function pickerFilterList() {
+  const q = document.getElementById('pickerSearch').value.toLowerCase();
+  if (!currentPickerState?.allComponents) return;
+  const filtered = q
+    ? currentPickerState.allComponents.filter(c => c.fullName.toLowerCase().includes(q))
+    : currentPickerState.allComponents;
+  renderPickerList(filtered);
+}
+
+async function pickerSave(jiraKey) {
+  if (!currentPickerState || !currentPickerState.selectedNames.size) {
+    toast('Selecione ao menos um componente');
+    return;
+  }
+  const components = Array.from(currentPickerState.selectedNames).map(name => ({
+    component_name: name,
+    component_type: currentPickerState.selectedType
+  }));
+  try {
+    const d = await api('/stories/' + encodeURIComponent(jiraKey) + '/components', {
+      method: 'POST', body: JSON.stringify({ components })
+    });
+    if (d.ok) {
+      toast(d.added_count + ' componente(s) adicionado(s)');
+      closeModal();
+      openStoryDetail(jiraKey);
+    } else {
+      toast('Erro: ' + (d.error || '?'));
+    }
+  } catch(e) { toast('Erro: ' + e.message); }
+}
+
+async function removeStoryComponent(jiraKey, componentId) {
+  if (!confirm('Remover este componente da US?')) return;
+  try {
+    const d = await api('/stories/' + encodeURIComponent(jiraKey) + '/components/' + componentId, {
+      method: 'DELETE'
+    });
+    if (d.ok) {
+      toast('Removido');
+      openStoryDetail(jiraKey);
+    }
+  } catch(e) { toast('Erro: ' + e.message); }
+}
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
 
@@ -776,7 +960,7 @@ function renderBoard(){
       <div class="col-head"><span class="title">${colTitles[col]}</span><span class="count">${cards.length}</span></div>
       <div class="col-body" data-col="${col}">`;
     cards.forEach((c,idx)=>{
-      html += `<div class="card" draggable="true" data-col="${col}" data-idx="${idx}">
+      html += `<div class="card" draggable="true" data-col="${col}" data-idx="${idx}" data-jira="${c.jira}" style="cursor:pointer;" onclick="if(!event.target.closest('.dragging')) openStoryDetail('${c.jira}')">
         <div class="card-top">
           <span class="jira">${c.jira}</span>
           <span class="typetag ${c.type.toLowerCase()}">${c.type}</span>
