@@ -108,7 +108,16 @@ router.get('/explorer/stories/:jiraKey', authMiddleware, async (req, res) => {
        ORDER BY dr.created_at DESC
     `, [rows[0].id]);
 
-    res.json({ ok: true, story: rows[0], deploy_runs: deploys.rows });
+    // Componentes vinculados
+    const compsRes = await pool.query(`
+      SELECT uc.*, u.name AS added_by_name
+      FROM us_components uc
+      LEFT JOIN users u ON u.id = uc.added_by
+      WHERE uc.us_id = $1
+      ORDER BY uc.component_type, uc.component_name
+    `, [rows[0].id]);
+
+    res.json({ ok: true, story: rows[0], components: compsRes.rows, deploy_runs: deploys.rows });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -1609,6 +1618,80 @@ router.get('/explorer/components/list-cached', authMiddleware, async (req, res) 
       components,
       cached_at: rows[0].last_metadata_sync
     });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
+// ============================================================
+// US COMPONENTS (agrupador de componentes por US)
+// ============================================================
+
+// GET /api/explorer/stories/:jiraKey/components
+router.get('/explorer/stories/:jiraKey/components', authMiddleware, async (req, res) => {
+  try {
+    const usRes = await pool.query('SELECT id FROM user_stories WHERE jira_key = $1', [req.params.jiraKey]);
+    if (!usRes.rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+
+    const { rows } = await pool.query(`
+      SELECT uc.*, u.name AS added_by_name
+      FROM us_components uc
+      LEFT JOIN users u ON u.id = uc.added_by
+      WHERE uc.us_id = $1
+      ORDER BY uc.component_type, uc.component_name
+    `, [usRes.rows[0].id]);
+
+    res.json({ ok: true, total: rows.length, components: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /api/explorer/stories/:jiraKey/components
+// Body: { components: [{ component_name, component_type }, ...] }
+// Adiciona um ou mais componentes à US (batch, ignora duplicatas)
+router.post('/explorer/stories/:jiraKey/components', authMiddleware, async (req, res) => {
+  try {
+    const { components } = req.body || {};
+    if (!Array.isArray(components) || !components.length)
+      return res.status(400).json({ ok: false, error: 'components[] required' });
+
+    const usRes = await pool.query('SELECT id FROM user_stories WHERE jira_key = $1', [req.params.jiraKey]);
+    if (!usRes.rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+    const usId = usRes.rows[0].id;
+
+    const added = [];
+    for (const c of components) {
+      if (!c.component_name || !c.component_type) continue;
+      const r = await pool.query(`
+        INSERT INTO us_components (us_id, component_name, component_type, action, added_by, added_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (us_id, component_name, component_type) DO NOTHING
+        RETURNING id
+      `, [usId, c.component_name, c.component_type, c.action || 'deploy', req.user.id]);
+      if (r.rows.length) added.push({ id: r.rows[0].id, name: c.component_name, type: c.component_type });
+    }
+
+    res.json({ ok: true, added_count: added.length, added });
+  } catch (e) {
+    console.error('[stories/:jiraKey/components POST]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// DELETE /api/explorer/stories/:jiraKey/components/:componentId
+router.delete('/explorer/stories/:jiraKey/components/:componentId', authMiddleware, async (req, res) => {
+  try {
+    const usRes = await pool.query('SELECT id FROM user_stories WHERE jira_key = $1', [req.params.jiraKey]);
+    if (!usRes.rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+
+    const r = await pool.query(
+      'DELETE FROM us_components WHERE id = $1 AND us_id = $2',
+      [toInt(req.params.componentId), usRes.rows[0].id]
+    );
+    if (!r.rowCount) return res.status(404).json({ ok: false, error: 'Component not found' });
+    res.json({ ok: true, deleted: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
