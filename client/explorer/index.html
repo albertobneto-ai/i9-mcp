@@ -1354,15 +1354,30 @@ function renderGadgets(){
   });
 }
 
+let __syncInProgress = false;
+let __syncInterval = null;
+
 document.getElementById('btnRefreshDash').addEventListener('click', async function(){
   const btn = this;
+  if (__syncInProgress) {
+    toast('Sync já em andamento — aguarde');
+    return;
+  }
+  __syncInProgress = true;
   btn.disabled = true; btn.textContent = 'Iniciando sync ARQ...';
+
+  const finish = (msg) => {
+    if (__syncInterval) { clearInterval(__syncInterval); __syncInterval = null; }
+    __syncInProgress = false;
+    btn.disabled = false;
+    btn.textContent = 'Atualizar';
+    if (msg) toast(msg);
+  };
 
   try {
     const trigger = await api('/sync/metadata', { method: 'POST', body: JSON.stringify({ org_id: 36 }) });
     if (!trigger.ok) {
-      toast('Erro: ' + (trigger.error || 'falha ao iniciar'));
-      btn.disabled = false; btn.textContent = 'Atualizar';
+      finish('Erro: ' + (trigger.error || 'falha ao iniciar'));
       return;
     }
     if (trigger.already_running) {
@@ -1371,71 +1386,59 @@ document.getElementById('btnRefreshDash').addEventListener('click', async functi
       toast('Sync iniciada — consultando 34 tipos de metadado...');
     }
 
-    // Polling do job a cada 3s
     btn.textContent = 'Sincronizando ARQ...';
     const startedAt = Date.now();
-    const maxWaitMs = 300000; // 5min
+    const maxWaitMs = 300000;
 
     const pollJob = async () => {
+      if (!__syncInProgress) return;
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
-      const s = await api('/sync/job/36');
-      if (!s.ok) return true; // Stop on error
 
-      if (s.status === 'running') {
-        btn.textContent = 'Sincronizando ARQ... (' + elapsed + 's)';
-        if (Date.now() - startedAt > maxWaitMs) {
-          toast('Timeout — verifique o Dashboard para o estado atual');
+      try {
+        const s = await api('/sync/job/36');
+        if (!s.ok) { finish('Erro no polling'); return; }
+
+        if (s.status === 'running') {
+          btn.textContent = 'Sincronizando ARQ... (' + elapsed + 's)';
+          if (Date.now() - startedAt > maxWaitMs) {
+            await loadOrgs();
+            renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
+            finish('Timeout — verifique o Dashboard para o estado atual');
+          }
+          return;
+        }
+        if (s.status === 'done') {
           await loadOrgs();
           renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
-          return true;
+          finish('ARQ sincronizada: ' + s.total_components + ' componentes (' + s.types_found + ' tipos, ' + elapsed + 's)');
+          return;
         }
-        return false;
-      }
-      if (s.status === 'done') {
-        toast('ARQ sincronizada: ' + s.total_components + ' componentes (' + s.types_found + ' tipos, ' + elapsed + 's)');
-        await loadOrgs();
-        renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
-        return true;
-      }
-      if (s.status === 'failed') {
-        toast('Sync falhou: ' + (s.error || 'erro desconhecido'));
-        return true;
-      }
-      // status === 'idle' (server restart perdeu o job) — checar se o banco atualizou
-      if (s.status === 'idle') {
-        await loadOrgs();
-        const goldOrg = orgs.find(o => o.id === 36);
-        if (goldOrg && goldOrg.last_sync) {
-          const syncTime = new Date(goldOrg.last_sync).getTime();
-          if (syncTime > startedAt - 60000) {
-            toast('ARQ sincronizada (dados do banco): ' + (goldOrg.metadata_cache?.total || 0) + ' componentes');
-            renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
-            return true;
+        if (s.status === 'failed') {
+          finish('Sync falhou: ' + (s.error || 'erro desconhecido'));
+          return;
+        }
+        if (s.status === 'idle') {
+          await loadOrgs();
+          const goldOrg = orgs.find(o => o.id === 36);
+          if (goldOrg && goldOrg.last_sync) {
+            const syncTime = new Date(goldOrg.last_sync).getTime();
+            if (syncTime > startedAt - 60000) {
+              renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
+              finish('ARQ sincronizada: ' + (goldOrg.metadata_cache?.total || 0) + ' componentes');
+              return;
+            }
           }
+          if (elapsed > 15) { finish('Sync não iniciou. Tente novamente.'); return; }
+          btn.textContent = 'Aguardando início... (' + elapsed + 's)';
         }
-        // idle mas nunca rodou — parar após 15s
-        if (elapsed > 15) {
-          toast('Sync não iniciou. Tente novamente.');
-          return true;
-        }
-        btn.textContent = 'Aguardando início... (' + elapsed + 's)';
-        return false;
-      }
-      return false;
+      } catch(e) { finish('Erro: ' + e.message); }
     };
 
-    const interval = setInterval(async () => {
-      const done = await pollJob();
-      if (done) {
-        clearInterval(interval);
-        btn.disabled = false;
-        btn.textContent = 'Atualizar';
-      }
-    }, 3000);
+    __syncInterval = setInterval(pollJob, 3000);
+    pollJob();
 
   } catch(e) {
-    toast('Erro de conexão: ' + e.message);
-    btn.disabled = false; btn.textContent = 'Atualizar';
+    finish('Erro de conexão: ' + e.message);
   }
 });
 
