@@ -183,6 +183,226 @@ router.get('/serasa/parties/:cnpj/data-registration', (req, res) => {
         }
       }
     },
+    '10111213000144': { // Distribuidora SP — caminho feliz GRANDE
+      organization: {
+        legalName: 'DISTRIBUIDORA PAULISTA DE ALIMENTOS S/A',
+        tradeName: 'DISPAL',
+        situation: 'ATIVA',
+        situationDate: '2012-03-15',
+        specialSituation: null,
+        openingDate: '1998-06-22',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '46.39-7', text: 'Comercio atacadista de produtos alimenticios em geral' },
+        legalNature: { code: '2054', text: 'Sociedade Anonima Fechada' },
+        tax: {
+          sintegra: { code: '110042998877', state: 'SP', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av dos Bandeirantes', number: '3500', district: 'Vila Olimpia',
+          complement: 'Galpao 12', zipCode: '04553-900', city: 'Sao Paulo', state: 'SP'
+        }
+      }
+    },
+    '20212223000120': { // Industria MG — caminho feliz MEDIO
+      organization: {
+        legalName: 'METALURGICA TRIANGULO MINEIRO LTDA',
+        tradeName: 'METALTRI',
+        situation: 'ATIVA',
+        situationDate: '2016-09-01',
+        specialSituation: null,
+        openingDate: '2008-02-14',
+        size: 'MEDIO',
+        branchType: 'M',
+        mainActivity: { code: '25.11-0', text: 'Fabricacao de estruturas metalicas' },
+        legalNature: { code: '2062', text: 'Sociedade Empresaria Limitada' },
+        tax: {
+          sintegra: { code: '312998877', state: 'MG', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Distrito Industrial', number: '850', district: 'Industrial',
+          complement: null, zipCode: '38402-349', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
+    '30313233000105': { // Logistica RJ — caminho feliz GRANDE
+      organization: {
+        legalName: 'TRANSPORTES E LOGISTICA CARIOCA S/A',
+        tradeName: 'LOGCARIOCA',
+        situation: 'ATIVA',
+        situationDate: '2010-11-30',
+        specialSituation: null,
+        openingDate: '2003-05-10',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '49.30-2', text: 'Transporte rodoviario de carga' },
+        legalNature: { code: '2054', text: 'Sociedade Anonima Fechada' },
+        tax: {
+          sintegra: { code: '78556644', state: 'RJ', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av Brasil', number: '15000', district: 'Ramos',
+          complement: 'Patio 3', zipCode: '21030-001', city: 'Rio de Janeiro', state: 'RJ'
+        }
+      }
+    },
+    '40414243000190': { // Empresario Individual — MICRO Simples Participante
+      organization: {
+        legalName: 'JOSE CARLOS FERREIRA ME',
+        tradeName: 'JC INFORMATICA',
+        situation: 'ATIVA',
+        situationDate: '2021-01-10',
+        specialSituation: null,
+        openingDate: '2021-01-10',
+        size: 'MICRO',
+        branchType: 'M',
+        mainActivity: { code: '95.11-8', text: 'Reparacao e manutencao de computadores' },
+        legalNature: { code: '2135', text: 'Empresario Individual' },
+        tax: {
+          sintegra: { code: null, state: 'GO', situation: 'ISENTO' },
+          simples: { situation: 'P' }
+        },
+        address: {
+          street: 'Rua 7', number: '120', district: 'Setor Central',
+          complement: null, zipCode: '74023-010', city: 'Goiania', state: 'GO'
+        }
+      }
+    },
+    '50515253000176': { // GOVERNO MUNICIPAL — NJ 1244 Municipio
+      organization: {
+        legalName: 'MUNICIPIO DE UBERLANDIA',
+        tradeName: 'PREFEITURA DE UBERLANDIA',
+        situation: 'ATIVA',
+        situationDate: '1990-01-01',
+        specialSituation: null,
+        openingDate: '1970-01-01',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '84.11-6', text: 'Administracao publica em geral' },
+        legalNature: { code: '1244', text: 'Municipio' },
+        tax: {
+          sintegra: { code: null, state: 'MG', situation: 'ISENTO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av Anselmo Alves dos Santos', number: '600', district: 'Santa Monica',
+          complement: 'Centro Administrativo', zipCode: '38408-150', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
+    '60616263000151': { // GOVERNO FEDERAL — NJ 1104 Autarquia Federal
+      organization: {
+        legalName: 'AGENCIA NACIONAL DE TELECOMUNICACOES',
+        tradeName: 'ANATEL',
+        situation: 'ATIVA',
+        situationDate: '1997-11-05',
+        specialSituation: null,
+        openingDate: '1997-11-05',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '84.11-6', text: 'Administracao publica em geral' },
+        legalNature: { code: '1104', text: 'Autarquia Federal' },
+        tax: {
+          sintegra: { code: null, state: 'DF', situation: 'ISENTO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'SAUS Quadra 6', number: 'Bloco F', district: 'Asa Sul',
+          complement: null, zipCode: '70070-940', city: 'Brasilia', state: 'DF'
+        }
+      }
+    },
+    '70717273000137': { // INAPTA — bloqueia save (outro sabor de inativa)
+      organization: {
+        legalName: 'COMERCIO INAPTO DE ROUPAS LTDA',
+        tradeName: 'INAPTA MODAS',
+        situation: 'INAPTA',
+        situationDate: '2023-08-15',
+        specialSituation: null,
+        openingDate: '2017-04-20',
+        size: 'PEQUENO',
+        branchType: 'M',
+        mainActivity: { code: '47.81-4', text: 'Comercio varejista de vestuario' },
+        legalNature: { code: '2062', text: 'Sociedade Empresaria Limitada' },
+        tax: {
+          sintegra: { code: '445887766', state: 'PR', situation: 'CANCELADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rua XV de Novembro', number: '890', district: 'Centro',
+          complement: null, zipCode: '80020-310', city: 'Curitiba', state: 'PR'
+        }
+      }
+    },
+    '80818283000112': { // RECUPERACAO JUDICIAL — ATIVA com specialSituation
+      organization: {
+        legalName: 'CONSTRUTORA HORIZONTE EM RECUPERACAO S/A',
+        tradeName: 'HORIZONTE',
+        situation: 'ATIVA',
+        situationDate: '2025-02-28',
+        specialSituation: 'RECUPERACAO JUDICIAL',
+        openingDate: '1995-07-18',
+        size: 'GRANDE',
+        branchType: 'M',
+        mainActivity: { code: '41.20-4', text: 'Construcao de edificios' },
+        legalNature: { code: '2054', text: 'Sociedade Anonima Fechada' },
+        tax: {
+          sintegra: { code: '062334455', state: 'BA', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av Tancredo Neves', number: '1632', district: 'Caminho das Arvores',
+          complement: 'Torre Sul', zipCode: '41820-020', city: 'Salvador', state: 'BA'
+        }
+      }
+    },
+    '90919293000106': { // Cooperativa — NJ 2143
+      organization: {
+        legalName: 'COOPERATIVA AGROPECUARIA DO CERRADO',
+        tradeName: 'COOPCERRADO',
+        situation: 'ATIVA',
+        situationDate: '2005-06-12',
+        specialSituation: null,
+        openingDate: '1989-10-05',
+        size: 'MEDIO',
+        branchType: 'M',
+        mainActivity: { code: '01.13-0', text: 'Cultivo de cana-de-acucar' },
+        legalNature: { code: '2143', text: 'Cooperativa' },
+        tax: {
+          sintegra: { code: '103445566', state: 'MG', situation: 'HABILITADO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Rodovia BR-050 km 78', number: 'SN', district: 'Zona Rural',
+          complement: null, zipCode: '38400-974', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
+    '12131415000183': { // Associacao Privada — NJ 3999, IE isenta
+      organization: {
+        legalName: 'ASSOCIACAO COMERCIAL E INDUSTRIAL DE UBERLANDIA',
+        tradeName: 'ACIUB',
+        situation: 'ATIVA',
+        situationDate: '1985-03-20',
+        specialSituation: null,
+        openingDate: '1933-08-15',
+        size: 'PEQUENO',
+        branchType: 'M',
+        mainActivity: { code: '94.11-1', text: 'Atividades de organizacoes associativas patronais' },
+        legalNature: { code: '3999', text: 'Associacao Privada' },
+        tax: {
+          sintegra: { code: null, state: 'MG', situation: 'ISENTO' },
+          simples: { situation: 'N' }
+        },
+        address: {
+          street: 'Av Afonso Pena', number: '777', district: 'Centro',
+          complement: '5 andar', zipCode: '38400-128', city: 'Uberlandia', state: 'MG'
+        }
+      }
+    },
     '99999999000199': { // BAIXADA — LWC deve bloquear save (get inativa)
       organization: {
         legalName: 'EMPRESA BAIXADA LTDA',
@@ -334,6 +554,11 @@ router.get('/health', (req, res) => {
       '71208516000255': 'Serasa: Algar FILIAL',
       '44555666000181': 'Serasa: Governo Estadual (SEF-MG)',
       '55666777000181': 'Serasa: SUSPENSA',
+      '10111213000144': 'Serasa: Distribuidora SP', '20212223000120': 'Serasa: Industria MG',
+      '30313233000105': 'Serasa: Logistica RJ', '40414243000190': 'Serasa: MEI Simples',
+      '50515253000176': 'Serasa: Gov Municipal', '60616263000151': 'Serasa: Gov Federal ANATEL',
+      '70717273000137': 'Serasa: INAPTA', '80818283000112': 'Serasa: Recuperacao Judicial',
+      '90919293000106': 'Serasa: Cooperativa', '12131415000183': 'Serasa: Associacao',
       '00000000000000': '404 Not Found'
     },
     timestamp: new Date().toISOString()
