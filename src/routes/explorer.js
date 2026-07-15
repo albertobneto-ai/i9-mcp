@@ -1538,4 +1538,80 @@ router.get('/explorer/sync/status', authMiddleware, async (req, res) => {
   }
 });
 
+
+// GET /api/explorer/components/preview?org_id=&type=&fullName=
+// Lê o conteúdo real do componente via metadata.read
+router.get('/explorer/components/preview', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.query.org_id);
+    const { type, fullName } = req.query;
+    if (!orgId || !type || !fullName)
+      return res.status(400).json({ ok: false, error: 'org_id, type and fullName required' });
+
+    const org = await getOrg(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    const items = await readMetadataContent(org, type, [fullName]);
+    if (!items.length)
+      return res.json({ ok: true, found: false, content: null });
+
+    // Retorna JSON estruturado (jsforce já parseia XML pra objeto)
+    const item = items[0];
+    const contentJson = JSON.stringify(item, null, 2);
+
+    res.json({
+      ok: true,
+      found: true,
+      org_id: orgId,
+      org_name: org.name,
+      type,
+      fullName,
+      last_modified: item.lastModifiedDate || null,
+      created_date: item.createdDate || null,
+      content_json: contentJson,
+      content_size: contentJson.length
+    });
+  } catch (e) {
+    console.error('[components/preview]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/components/list-cached?org_id=&type=
+// Lista componentes do CACHE (sem chamar org) — usa metadata_cache da tabela orgs
+router.get('/explorer/components/list-cached', authMiddleware, async (req, res) => {
+  try {
+    const orgId = toInt(req.query.org_id);
+    const type = req.query.type;
+    if (!orgId || !type)
+      return res.status(400).json({ ok: false, error: 'org_id and type required' });
+
+    const { rows } = await pool.query(
+      'SELECT metadata_cache, last_metadata_sync FROM orgs WHERE id = $1',
+      [orgId]
+    );
+    if (!rows.length) return res.status(404).json({ ok: false, error: 'Org not found' });
+
+    const cache = rows[0].metadata_cache;
+    if (!cache || !cache.by_type || !cache.by_type[type]) {
+      return res.json({ ok: true, total: 0, components: [], cached_at: rows[0].last_metadata_sync });
+    }
+
+    const components = cache.by_type[type].components || [];
+    // Ordenar por lastModifiedDate desc
+    components.sort((a, b) => (b.lastModifiedDate || '').localeCompare(a.lastModifiedDate || ''));
+
+    res.json({
+      ok: true,
+      org_id: orgId,
+      type,
+      total: components.length,
+      components,
+      cached_at: rows[0].last_metadata_sync
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 export default router;
