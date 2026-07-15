@@ -1071,7 +1071,9 @@ document.getElementById('btnNewUS').addEventListener('click', ()=>{
 /* ============ NOVA US → ESCOLHA DE COMPONENTES ============ */
 let pickerState = null; // { usJira, originId, destId, filterType, selected:Set }
 
-function openComponentPicker(usJira){
+function _legacy_openComponentPicker(usJira){
+  // Fluxo antigo do protótipo, mantido como referência histórica.
+  // O botão "+ Adicionar componente" agora usa a versão async do topo (linha ~765).
   pickerState = { usJira, originId: 36, destId: 1, filterType:'Todos', selected: new Set() };
   renderPickerGrid();
 }
