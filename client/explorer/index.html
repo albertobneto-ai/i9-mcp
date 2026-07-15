@@ -296,7 +296,7 @@
       <div class="panel">
         <div class="panel-head">
           <h3>Estado dos ambientes (Drift)</h3>
-          <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · coleta manual, sob demanda</span>
+          <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · coleta manual, sob demanda · sync: carregando...</span>
         </div>
         <div class="panel-body" id="driftpanel"></div>
       </div>
@@ -473,9 +473,43 @@ async function loadOrgs() {
     ...(o.drift_summary || { diff:0, absent:0, extra:0, ok:0, total_components:0 }),
     synced: o.drift_summary?.ok || 0,
     total: o.drift_summary?.total_components || 0,
-    check: o.drift_summary?.last_check || 'nunca'
+    check: o.drift_summary?.last_check || 'nunca',
+    last_sync: o.last_metadata_sync || null,
+    metadata_cache: o.metadata_cache || null
   }));
   if (!eqSelectedOrgs.size) eqSelectedOrgs = new Set(orgs.filter(o=>o.id !== eqGoldOrgId).map(o=>o.id));
+  // Rebuild envData from metadata_cache
+  rebuildEnvData();
+}
+
+function rebuildEnvData() {
+  envIds = orgs.map(o => o.id);
+  envAbbr = {};
+  envSeg = {};
+  envData = {};
+  orgs.forEach((o, i) => {
+    const abbr = o.name.replace(/^ORG\s*/i,'').substring(0,4).toUpperCase();
+    envAbbr[o.id] = abbr;
+    envSeg[o.id] = 'seg-' + ['arq','hml','dev'][i] || 'seg-other';
+    const mc = o.metadata_cache;
+    const byType = mc?.by_type || {};
+    const compTotal = mc?.total || 0;
+    const compByType = {};
+    Object.entries(byType).forEach(([t, d]) => { compByType[t] = d.count || 0; });
+    envData[o.id] = {
+      name: o.name,
+      users: { total: '—', byLicense: {} },
+      objects: { total: '—', custom: '—', standardWithFields: '—' },
+      components: { total: compTotal, byType: compByType },
+      governance: { apiUsed: '—', dataStorage: '—', fileStorage: '—', codeCoverage: '—' }
+    };
+  });
+}
+
+function formatSyncDate(isoStr) {
+  if (!isoStr) return 'nunca sincronizado';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 }
 
 async function loadBoard() {
@@ -940,39 +974,16 @@ function createAndDeployQueued(name, destId, goldId){
 
 
 /* ============ DASHBOARD — gadgets de ambientes ============ */
-const envAbbr = { 99:'ARQ', 1:'DEV', 2:'UAT', 3:'PROD' };
-const envSeg  = { 99:'seg-arq', 1:'seg-dev', 2:'seg-uat', 3:'seg-prod' };
-const envIds  = [99,1,2,3];
-
-/* Dados consolidados por ambiente cadastrado. Números fictícios pra
-   representar usuários, objetos, componentes e governança de cada org. */
-const envData = {
-  99: { name:'ORG ARQUITETURA',
-    users:{ total:18, byLicense:{ 'Salesforce':12, 'Partner Community':4, 'Chatter Free':2 } },
-    objects:{ total:64, custom:22, standardWithFields:42 },
-    components:{ total:41, byType:{ ApexClass:9, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:4 } },
-    governance:{ apiUsed:12, dataStorage:8, fileStorage:5, codeCoverage:87 } },
-  1: { name:orgName(orgs[0]?.id),
-    users:{ total:24, byLicense:{ 'Salesforce':16, 'Partner Community':6, 'Chatter Free':2 } },
-    objects:{ total:61, custom:20, standardWithFields:41 },
-    components:{ total:41, byType:{ ApexClass:8, Flow:6, LWC:5, PermissionSet:4, Layout:8, ValidationRule:5, Outro:5 } },
-    governance:{ apiUsed:18, dataStorage:11, fileStorage:6, codeCoverage:84 } },
-  2: { name:'ORG HOMOLOGACAO',
-    users:{ total:31, byLicense:{ 'Salesforce':20, 'Partner Community':9, 'Chatter Free':2 } },
-    objects:{ total:66, custom:23, standardWithFields:43 },
-    components:{ total:46, byType:{ ApexClass:9, Flow:7, LWC:5, PermissionSet:4, Layout:9, ValidationRule:6, Outro:6 } },
-    governance:{ apiUsed:34, dataStorage:22, fileStorage:14, codeCoverage:81 } },
-  3: { name:'DEVEVERY',
-    users:{ total:142, byLicense:{ 'Salesforce':98, 'Partner Community':38, 'Chatter Free':6 } },
-    objects:{ total:70, custom:26, standardWithFields:44 },
-    components:{ total:47, byType:{ ApexClass:10, Flow:7, LWC:5, PermissionSet:5, Layout:9, ValidationRule:6, Outro:5 } },
-    governance:{ apiUsed:61, dataStorage:48, fileStorage:37, codeCoverage:79 } },
-};
+// envAbbr, envSeg, envIds, envData — agora dinâmicos, populados por rebuildEnvData()
+let envAbbr = {};
+let envSeg = {};
+let envIds = [];
+// envData já declarado acima como stub
 
 let expandedGadgets = new Set(); // gadgets abertos no momento (podem ser vários)
 
-function sumField(cat, field){ return envIds.reduce((a,id)=>a+envData[id][cat][field],0); }
-function avgField(cat, field){ return Math.round(sumField(cat,field)/envIds.length); }
+function sumField(cat, field){ return envIds.reduce((a,id)=>{ const v = envData[id]?.[cat]?.[field]; return a + (typeof v === 'number' ? v : 0); },0); }
+function avgField(cat, field){ const n = envIds.filter(id => typeof envData[id]?.[cat]?.[field] === 'number').length; return n ? Math.round(sumField(cat,field)/n) : '—'; }
 function sumMap(cat, mapField){
   const out = {};
   envIds.forEach(id=>{
@@ -983,7 +994,7 @@ function sumMap(cat, mapField){
 }
 function miniRows(cat, field, isPercent){
   return `<div class="gadget-rows">` + envIds.map(id=>{
-    const v = envData[id][cat][field];
+    const v = envData[id]?.[cat]?.[field] ?? 0; if (typeof v !== 'number') return `<div class="gadget-row"><span class="gr-abbr">${envAbbr[id]}</span><span class="gr-val">—</span></div>`;
     const max = isPercent ? 100 : Math.max(...envIds.map(x=>envData[x][cat][field]));
     const pct = max ? (v/max*100) : 0;
     return `<div class="gadget-row">
@@ -1070,9 +1081,19 @@ function renderGadgets(){
   });
 }
 
-document.getElementById('btnRefreshDash').addEventListener('click', function(){
-  this.disabled = true; this.textContent = 'Atualizando...';
-  setTimeout(()=>{ renderDrift(); renderPipeline(); renderGadgets(); this.disabled=false; this.textContent='Atualizar'; toast('Dashboard atualizado'); }, 700);
+document.getElementById('btnRefreshDash').addEventListener('click', async function(){
+  this.disabled = true; this.textContent = 'Sincronizando ARQ...';
+  try {
+    const result = await api('/sync/metadata', { method: 'POST', body: JSON.stringify({ org_id: 36 }) });
+    if (result.ok) {
+      toast('ARQ sincronizada: ' + result.total_components + ' componentes (' + result.types_found + ' tipos)');
+      await loadOrgs();
+      renderDrift(); renderPipeline(); renderGadgets(); renderDashGoldSelect();
+    } else {
+      toast('Erro: ' + (result.error || 'falha na sincronização'));
+    }
+  } catch(e) { toast('Erro de conexão: ' + e.message); }
+  this.disabled = false; this.textContent = 'Atualizar';
 });
 
 function renderDrift(){
@@ -1128,6 +1149,12 @@ function renderDashGoldSelect(){
   el.innerHTML = eqAllOrgs().map(o=>
     `<button class="${o.id===dashboardGoldOrgId ? 'active' : ''}" onclick="setDashboardGold(${o.id})">${o.name}</button>`
   ).join('');
+  // Atualizar nota de sync
+  const note = document.getElementById('driftGoldNote');
+  const goldOrg = orgs.find(o => o.id === dashboardGoldOrgId);
+  if(note && goldOrg) {
+    note.textContent = 'gold: ' + goldOrg.name + ' · última sincronização: ' + formatSyncDate(goldOrg.last_sync);
+  }
 }
 
 document.getElementById('btnRunDrift').addEventListener('click', ()=>{
