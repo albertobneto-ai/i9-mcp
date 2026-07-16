@@ -1430,13 +1430,9 @@ router.get('/explorer/components/preview', authMiddleware, async (req, res) => {
     const org = await getOrg(orgId);
     if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
 
-    const items = await readMetadataContent(org, type, [fullName]);
-    if (!items.length)
+    const ret = await readCompareContent(org, type, fullName);
+    if (!ret)
       return res.json({ ok: true, found: false, content: null });
-
-    // Retorna JSON estruturado (jsforce já parseia XML pra objeto)
-    const item = items[0];
-    const contentJson = JSON.stringify(item, null, 2);
 
     res.json({
       ok: true,
@@ -1445,10 +1441,10 @@ router.get('/explorer/components/preview', authMiddleware, async (req, res) => {
       org_name: org.name,
       type,
       fullName,
-      last_modified: item.lastModifiedDate || null,
-      created_date: item.createdDate || null,
-      content_json: contentJson,
-      content_size: contentJson.length
+      last_modified: ret.last_modified,
+      created_date: ret.created_date,
+      content_json: ret.content,
+      content_size: (ret.content || '').length
     });
   } catch (e) {
     console.error('[components/preview]', e.message);
@@ -1461,6 +1457,48 @@ router.get('/explorer/components/list-cached', authMiddleware, (_req, res) => {
   res.status(410).json({ ok: false, gone: true, error: USCENTRIC_GONE });
 });
 
+
+// ── Leitor híbrido p/ preview & compare ──
+// Metadata API readMetadata NÃO suporta ApexClass/ApexTrigger/LWC/Aura
+// (INVALID_TYPE). Esses vão via Tooling (Body/Source); o resto via metadata.read.
+const CODE_NAME_RX = /^[A-Za-z][A-Za-z0-9_]{0,79}$/;
+
+async function readCompareContent(org, type, fullName) {
+  if (type === 'ApexClass' || type === 'ApexTrigger') {
+    if (!CODE_NAME_RX.test(fullName)) throw new Error('fullName inválido para ' + type);
+    const r = await runToolingQuery(org,
+      `SELECT Id, Name, Body, ApiVersion, Status, CreatedDate, LastModifiedDate FROM ${type} WHERE Name = '${fullName}' LIMIT 1`);
+    if (!r.records || !r.records.length) return null;
+    const x = r.records[0];
+    return { content: x.Body || '', last_modified: x.LastModifiedDate || null, created_date: x.CreatedDate || null };
+  }
+  if (type === 'LightningComponentBundle') {
+    if (!CODE_NAME_RX.test(fullName)) throw new Error('fullName inválido para LWC');
+    const r = await runToolingQuery(org,
+      `SELECT FilePath, Source, LastModifiedDate FROM LightningComponentResource WHERE LightningComponentBundle.DeveloperName = '${fullName}' ORDER BY FilePath`);
+    if (!r.records || !r.records.length) return null;
+    const content = r.records.map(x => `// ══ ${x.FilePath} ══\n${x.Source || ''}`).join('\n\n');
+    const lm = r.records.map(x => x.LastModifiedDate || '').sort().pop() || null;
+    return { content, last_modified: lm, created_date: null };
+  }
+  if (type === 'AuraDefinitionBundle') {
+    if (!CODE_NAME_RX.test(fullName)) throw new Error('fullName inválido para Aura');
+    const r = await runToolingQuery(org,
+      `SELECT DefType, Source, LastModifiedDate FROM AuraDefinition WHERE AuraDefinitionBundle.DeveloperName = '${fullName}' ORDER BY DefType`);
+    if (!r.records || !r.records.length) return null;
+    const content = r.records.map(x => `// ══ ${x.DefType} ══\n${x.Source || ''}`).join('\n\n');
+    const lm = r.records.map(x => x.LastModifiedDate || '').sort().pop() || null;
+    return { content, last_modified: lm, created_date: null };
+  }
+  const items = await readMetadataContent(org, type, [fullName]);
+  if (!items.length) return null;
+  const item = items[0];
+  return {
+    content: JSON.stringify(item, null, 2),
+    last_modified: item.lastModifiedDate || null,
+    created_date: item.createdDate || null
+  };
+}
 
 // ============================================================
 // US-CENTRIC — Listagem AO VIVO + Comparação por componente
@@ -1596,13 +1634,12 @@ router.post('/explorer/components/compare-across-orgs', authMiddleware, async (r
         continue;
       }
       try {
-        const items = await readMetadataContent(org, component_type, [full_name]);
-        if (items.length) {
-          const item = items[0];
+        const ret = await readCompareContent(org, component_type, full_name);
+        if (ret) {
           results.push({
             org_id: oid, org_name: org.name, found: true,
-            content_json: JSON.stringify(item, null, 2),
-            last_modified: item.lastModifiedDate || null,
+            content_json: ret.content,
+            last_modified: ret.last_modified,
             error: null
           });
         } else {
