@@ -10,7 +10,8 @@ import { buildMetadataZip, buildPackageXml, metadataPath } from '../utils/metada
 import {
   listMetadataByTypes, readMetadataContent, deployMetadataPackage,
   connectToOrg,
-  readComponentMeta
+  readComponentMeta,
+  runSoql, runToolingQuery
 } from '../services/sf-multi.js';
 import crypto from 'crypto';
 import { analyze as vectorAgentAnalyze } from '../vectorAgent/index.js';
@@ -289,11 +290,18 @@ router.get('/explorer/dashboard', authMiddleware, async (req, res) => {
       latestDrifts = ld.rows;
     }
 
-    // Orgs do Explorer
+    // Orgs do Explorer (US-centric: sem metadata_cache/last_metadata_sync)
     const orgsRes = await pool.query(`
-      SELECT id, name, org_type, is_default_gold, drift_summary, last_metadata_sync, metadata_cache
+      SELECT id, name, org_type, is_default_gold, drift_summary
       FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
     `);
+
+    // Componentes vinculados a US (fonte do gadget "Componentes" no Dashboard)
+    const usCompsByType = await pool.query(`
+      SELECT component_type, COUNT(*)::int AS total
+      FROM us_components GROUP BY component_type ORDER BY total DESC
+    `);
+    const usCompsTotal = usCompsByType.rows.reduce((s, r) => s + r.total, 0);
 
     res.json({
       ok: true,
@@ -305,7 +313,9 @@ router.get('/explorer/dashboard', authMiddleware, async (req, res) => {
       pending_merges:    pendingRes.rows[0].total,
       drift_summary:     gold?.drift_summary || null,
       latest_drifts:     latestDrifts,
-      explorer_orgs:     orgsRes.rows
+      explorer_orgs:     orgsRes.rows,
+      us_components_total:   usCompsTotal,
+      us_components_by_type: usCompsByType.rows
     });
   } catch (e) {
     console.error('[explorer/dashboard]', e.message);
@@ -1389,160 +1399,190 @@ router.post('/explorer/vector-agent/analyze', authMiddleware, async (req, res) =
 
 
 // ============================================================
-// SPRINT 6b — Dashboard Wiring (cache + last_sync)
+// SPRINT 7 — Arquitetura US-centric (decisão 16/jul/2026)
+// Sem full sync de org. Postgres NÃO guarda espelho de metadata.
+// Listagem: sob demanda, escopada por tipo (e por objeto quando o
+// tipo é grande). Comparação entre orgs: por componente vinculado à US.
 // ============================================================
 
-const DASHBOARD_SCOPE_TYPES = [
-  'Flow', 'ApexClass', 'ApexTrigger', 'LightningComponentBundle',
-  'PermissionSet', 'CustomField', 'Layout', 'ValidationRule',
-  'Bot', 'BotVersion', 'CustomObject', 'Profile', 'RecordType',
-  'NamedCredential', 'ExternalCredential', 'CustomPermission',
-  'FlexiPage', 'QuickAction', 'ConnectedApp', 'CustomMetadata',
-  'ApprovalProcess', 'DuplicateRule', 'MatchingRule',
-  'CustomApplication', 'CustomTab', 'CustomLabels',
-  'EmailTemplate', 'Role', 'Queue',
-  'GlobalValueSet', 'StandardValueSet',
-  'Network', 'CustomSite', 'ExperienceBundle'
-];
+const SYNC_GONE_MSG = 'Endpoint desativado — arquitetura US-centric (16/jul/2026). ' +
+  'O Explorer não faz mais full sync de metadata. Use GET /api/explorer/components/list-live?type=X&object=Y ' +
+  'para listar componentes sob demanda e POST /api/explorer/components/compare-across-orgs para comparar orgs.';
 
-// Estado in-memory dos jobs de sync (evita bater no timeout do Heroku)
-const syncJobsState = new Map(); // orgId → { status, started_at, error }
+// POST /api/explorer/sync/metadata — DESATIVADO (410 Gone)
+router.post('/explorer/sync/metadata', authMiddleware, (req, res) => {
+  res.status(410).json({ ok: false, gone: true, error: SYNC_GONE_MSG });
+});
 
-async function runSyncMetadataJob(orgId) {
-  syncJobsState.set(orgId, { status: 'running', started_at: new Date().toISOString(), error: null });
-  try {
-    const org = await getOrg(orgId);
-    if (!org) throw new Error('Org not found');
+// GET /api/explorer/sync/job/:orgId — DESATIVADO (410 Gone)
+router.get('/explorer/sync/job/:orgId', authMiddleware, (req, res) => {
+  res.status(410).json({ ok: false, gone: true, error: SYNC_GONE_MSG });
+});
 
-    const metaList = await listMetadataByTypes(org, DASHBOARD_SCOPE_TYPES);
+// GET /api/explorer/sync/status — DESATIVADO (410 Gone)
+router.get('/explorer/sync/status', authMiddleware, (req, res) => {
+  res.status(410).json({ ok: false, gone: true, error: SYNC_GONE_MSG });
+});
 
-    const byType = {};
-    let totalCount = 0;
-    for (const item of metaList) {
-      if (!byType[item.type]) byType[item.type] = { count: 0, components: [] };
-      byType[item.type].count++;
-      byType[item.type].components.push({
-        fullName: item.fullName,
-        lastModifiedDate: item.lastModifiedDate || null,
-        createdDate: item.createdDate || null
-      });
-      totalCount++;
-    }
+// Tipos cuja listagem completa é inviável (CustomField ~35k, Layout ~1k):
+// exigem escolher o OBJETO primeiro — listagem via SOQL/Tooling escopada.
+const PER_OBJECT_TYPES = ['CustomField', 'Layout', 'ValidationRule', 'RecordType'];
 
-    const cache = {
-      total: totalCount,
-      by_type: Object.fromEntries(
-        Object.entries(byType).map(([type, data]) => [type, { count: data.count, components: data.components }])
-      ),
-      types_queried: DASHBOARD_SCOPE_TYPES.length
-    };
-
-    const now = new Date().toISOString();
-    await pool.query(
-      `UPDATE orgs SET metadata_cache = $1, last_metadata_sync = $2 WHERE id = $3`,
-      [JSON.stringify(cache), now, orgId]
-    );
-
-    // Deduplicar por fullName — o UNIQUE de component_meta é (component_name, org_id)
-    // sem incluir type. Se dois tipos retornam o mesmo fullName (ex: CustomLabels
-    // container vs CustomLabel individual), mantém o primeiro.
-    const seen = new Map();
-    for (const m of metaList) {
-      if (!seen.has(m.fullName)) seen.set(m.fullName, m);
-    }
-    const deduped = Array.from(seen.values());
-
-    // Upsert component_meta em batch (usa UNNEST para performance)
-    if (deduped.length > 0) {
-      const names = deduped.map(m => m.fullName);
-      const types = deduped.map(m => m.type);
-      const modDates = deduped.map(m => m.lastModifiedDate || null);
-      const orgIds = deduped.map(() => orgId);
-      await pool.query(`
-        INSERT INTO component_meta (component_name, component_type, org_id, last_modified, last_snapshot_at)
-        SELECT cn, ct, oi, lm, NOW()
-        FROM UNNEST($1::text[], $2::text[], $3::int[], $4::timestamptz[]) AS t(cn, ct, oi, lm)
-        ON CONFLICT (component_name, org_id)
-        DO UPDATE SET component_type = EXCLUDED.component_type, last_modified = EXCLUDED.last_modified, last_snapshot_at = NOW()
-      `, [names, types, orgIds, modDates]);
-    }
-
-    syncJobsState.set(orgId, {
-      status: 'done',
-      started_at: syncJobsState.get(orgId).started_at,
-      finished_at: now,
-      total_components: totalCount,
-      types_found: Object.keys(byType).length,
-      by_type: Object.fromEntries(Object.entries(byType).map(([t, d]) => [t, d.count])),
-      failed_types: metaList.__failed_types || [],
-      error: null
-    });
-  } catch (e) {
-    console.error('[sync/metadata job]', e.message);
-    syncJobsState.set(orgId, {
-      status: 'failed',
-      started_at: syncJobsState.get(orgId)?.started_at,
-      finished_at: new Date().toISOString(),
-      error: e.message
-    });
-  }
+// Resolve TableEnumOrId para a Tooling API: objetos standard usam o próprio
+// nome; objetos custom (__c/__mdt/__e) usam o Id do CustomObject.
+async function resolveTableEnumOrId(org, objectName) {
+  const m = objectName.match(/^(.+?)__(c|mdt|e)$/);
+  if (!m) return objectName; // standard
+  const devName = m[1];
+  const r = await runToolingQuery(org, `SELECT Id FROM CustomObject WHERE DeveloperName = '${devName}' LIMIT 1`);
+  if (!r.records?.length) throw new Error(`CustomObject ${objectName} não encontrado na org`);
+  return r.records[0].Id;
 }
 
-// POST /api/explorer/sync/metadata
-// Body: { org_id }
-// Retorna imediatamente { ok, job_started, org_id } e roda em background
-router.post('/explorer/sync/metadata', authMiddleware, async (req, res) => {
+// GET /api/explorer/components/list-live?org_id=&type=&object=
+// Lista componentes AO VIVO na org: 1 chamada listMetadata escopada ao tipo,
+// ou SOQL/Tooling escopada por objeto para tipos grandes. NADA é persistido
+// no Postgres — o cache de 1h vive no browser (frontend).
+router.get('/explorer/components/list-live', authMiddleware, async (req, res) => {
   try {
-    const orgId = toInt(req.body?.org_id);
-    if (!orgId) return res.status(400).json({ ok: false, error: 'org_id required' });
+    const orgId = toInt(req.query.org_id, 36);
+    const type = (req.query.type || '').trim();
+    const object = (req.query.object || '').trim();
+    if (!type) return res.status(400).json({ ok: false, error: 'type required' });
+    if (object && !/^[A-Za-z0-9_]+$/.test(object))
+      return res.status(400).json({ ok: false, error: 'object inválido' });
 
     const org = await getOrg(orgId);
     if (!org) return res.status(404).json({ ok: false, error: 'Org not found' });
 
-    // Se já tem job rodando pra essa org, avisa
-    const current = syncJobsState.get(orgId);
-    if (current?.status === 'running') {
-      return res.json({ ok: true, job_started: false, already_running: true, org_id: orgId, started_at: current.started_at });
+    let components = [];
+
+    if (PER_OBJECT_TYPES.includes(type)) {
+      if (!object)
+        return res.status(400).json({ ok: false, requires_object: true, error: `type ${type} exige o parâmetro object (ex: object=Account)` });
+
+      if (type === 'RecordType') {
+        const r = await runSoql(org, `SELECT Id, DeveloperName, Name, IsActive, CreatedDate, LastModifiedDate FROM RecordType WHERE SobjectType = '${object}' ORDER BY DeveloperName`);
+        components = (r.records || []).map(x => ({
+          fullName: `${object}.${x.DeveloperName}`,
+          label: x.Name, active: x.IsActive,
+          lastModifiedDate: x.LastModifiedDate || null, createdDate: x.CreatedDate || null
+        }));
+      } else if (type === 'ValidationRule') {
+        const r = await runToolingQuery(org, `SELECT Id, ValidationName, Active, CreatedDate, LastModifiedDate FROM ValidationRule WHERE EntityDefinition.QualifiedApiName = '${object}' ORDER BY ValidationName`);
+        components = (r.records || []).map(x => ({
+          fullName: `${object}.${x.ValidationName}`,
+          label: x.ValidationName, active: x.Active,
+          lastModifiedDate: x.LastModifiedDate || null, createdDate: x.CreatedDate || null
+        }));
+      } else if (type === 'CustomField') {
+        const tableId = await resolveTableEnumOrId(org, object);
+        const r = await runToolingQuery(org, `SELECT Id, DeveloperName, CreatedDate, LastModifiedDate FROM CustomField WHERE TableEnumOrId = '${tableId}' ORDER BY DeveloperName`);
+        components = (r.records || []).map(x => ({
+          fullName: `${object}.${x.DeveloperName}__c`,
+          label: x.DeveloperName,
+          lastModifiedDate: x.LastModifiedDate || null, createdDate: x.CreatedDate || null
+        }));
+      } else if (type === 'Layout') {
+        const tableId = await resolveTableEnumOrId(org, object);
+        const r = await runToolingQuery(org, `SELECT Id, Name, CreatedDate, LastModifiedDate FROM Layout WHERE TableEnumOrId = '${tableId}' ORDER BY Name`);
+        components = (r.records || []).map(x => ({
+          fullName: `${object}-${x.Name}`,
+          label: x.Name,
+          lastModifiedDate: x.LastModifiedDate || null, createdDate: x.CreatedDate || null
+        }));
+      }
+    } else {
+      // 1 chamada listMetadata escopada só a este tipo (~1-2s)
+      const metaList = await listMetadataByTypes(org, [type]);
+      components = metaList.map(it => ({
+        fullName: it.fullName,
+        label: it.fullName,
+        lastModifiedDate: it.lastModifiedDate || null,
+        createdDate: it.createdDate || null
+      }));
     }
 
-    // Dispara background — NÃO faz await
-    runSyncMetadataJob(orgId).catch(e => console.error('[sync job unhandled]', e.message));
-
-    res.json({ ok: true, job_started: true, org_id: orgId, org_name: org.name, poll_url: '/api/explorer/sync/job/' + orgId });
+    components.sort((a, b) => (b.lastModifiedDate || '').localeCompare(a.lastModifiedDate || ''));
+    res.json({
+      ok: true, org_id: orgId, org_name: org.name, type, object: object || null,
+      total: components.length, components, fetched_at: new Date().toISOString()
+    });
   } catch (e) {
-    console.error('[sync/metadata trigger]', e.message);
+    console.error('[components/list-live]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// GET /api/explorer/sync/job/:orgId
-// Consulta status do último job de sync pra uma org
-router.get('/explorer/sync/job/:orgId', authMiddleware, async (req, res) => {
-  const orgId = toInt(req.params.orgId);
-  const state = syncJobsState.get(orgId);
-  if (!state) return res.json({ ok: true, status: 'idle', has_previous: false });
-  res.json({ ok: true, ...state });
+// POST /api/explorer/components/compare-across-orgs
+// Body: { component_type, full_name, org_ids: [36,100,133] }
+// Lê o MESMO componente em N orgs (metadata.read — SOMENTE LEITURA, seguro
+// para HOMOL/DEVEVERY) e devolve os conteúdos lado a lado + diff LCS
+// contra a primeira org com conteúdo (base).
+router.post('/explorer/components/compare-across-orgs', authMiddleware, async (req, res) => {
+  try {
+    const { component_type, full_name } = req.body || {};
+    const orgIds = (Array.isArray(req.body?.org_ids) && req.body.org_ids.length)
+      ? req.body.org_ids.map(x => toInt(x)).filter(Boolean)
+      : [36, 100, 133];
+    if (!component_type || !full_name)
+      return res.status(400).json({ ok: false, error: 'component_type and full_name required' });
+
+    const results = [];
+    for (const orgId of orgIds) {
+      const org = await getOrg(orgId);
+      if (!org) { results.push({ org_id: orgId, org_name: null, found: false, content_json: null, error: 'Org not found' }); continue; }
+      try {
+        const items = await readMetadataContent(org, component_type, [full_name]);
+        if (items.length) {
+          const contentJson = JSON.stringify(items[0], null, 2);
+          results.push({
+            org_id: orgId, org_name: org.name, found: true,
+            content_json: contentJson, content_size: contentJson.length,
+            last_modified: items[0].lastModifiedDate || null, error: null
+          });
+        } else {
+          results.push({ org_id: orgId, org_name: org.name, found: false, content_json: null, error: null });
+        }
+      } catch (e) {
+        results.push({ org_id: orgId, org_name: org.name, found: false, content_json: null, error: e.message });
+      }
+    }
+
+    // Diff contra a base (primeira org com conteúdo)
+    const base = results.find(r => r.found) || null;
+    const comparisons = [];
+    if (base) {
+      for (const r of results) {
+        if (r.org_id === base.org_id) { comparisons.push({ org_id: r.org_id, vs_base: 'base', lcs_diff: null }); continue; }
+        if (!r.found) { comparisons.push({ org_id: r.org_id, vs_base: 'absent', lcs_diff: null }); continue; }
+        const status = diffStatus(base.content_json, r.content_json);
+        comparisons.push({
+          org_id: r.org_id,
+          vs_base: status,
+          lcs_diff: status === 'diff' ? computeLcsDiff(base.content_json, r.content_json) : null
+        });
+      }
+    }
+
+    res.json({ ok: true, component_type, full_name, base_org_id: base?.org_id || null, results, comparisons });
+  } catch (e) {
+    console.error('[components/compare-across-orgs]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
-// GET /api/explorer/sync/status
-// Retorna last_metadata_sync de cada org do Explorer
-router.get('/explorer/sync/status', authMiddleware, async (req, res) => {
+// POST /api/explorer/admin/us-centric-cleanup
+// One-shot idempotente: TRUNCATE component_meta + limpa
+// metadata_cache/last_metadata_sync das orgs do Explorer.
+router.post('/explorer/admin/us-centric-cleanup', authMiddleware, async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT id, name, last_metadata_sync, metadata_cache
-      FROM orgs WHERE id IN (36, 100, 133) ORDER BY id
-    `);
-    const orgs = rows.map(r => ({
-      id: r.id,
-      name: r.name,
-      last_sync: r.last_metadata_sync,
-      total_components: r.metadata_cache?.total || 0,
-      by_type: r.metadata_cache?.by_type
-        ? Object.fromEntries(Object.entries(r.metadata_cache.by_type).map(([t, d]) => [t, d.count]))
-        : null
-    }));
-    res.json({ ok: true, orgs });
+    const before = await pool.query('SELECT COUNT(*)::int AS total FROM component_meta');
+    await pool.query('TRUNCATE TABLE component_meta');
+    const orgsUpd = await pool.query(`UPDATE orgs SET metadata_cache = NULL, last_metadata_sync = NULL WHERE id IN (36, 100, 133)`);
+    res.json({ ok: true, component_meta_removed: before.rows[0].total, orgs_cache_cleared: orgsUpd.rowCount });
   } catch (e) {
+    console.error('[admin/us-centric-cleanup]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
@@ -1586,42 +1626,7 @@ router.get('/explorer/components/preview', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/explorer/components/list-cached?org_id=&type=
-// Lista componentes do CACHE (sem chamar org) — usa metadata_cache da tabela orgs
-router.get('/explorer/components/list-cached', authMiddleware, async (req, res) => {
-  try {
-    const orgId = toInt(req.query.org_id);
-    const type = req.query.type;
-    if (!orgId || !type)
-      return res.status(400).json({ ok: false, error: 'org_id and type required' });
-
-    const { rows } = await pool.query(
-      'SELECT metadata_cache, last_metadata_sync FROM orgs WHERE id = $1',
-      [orgId]
-    );
-    if (!rows.length) return res.status(404).json({ ok: false, error: 'Org not found' });
-
-    const cache = rows[0].metadata_cache;
-    if (!cache || !cache.by_type || !cache.by_type[type]) {
-      return res.json({ ok: true, total: 0, components: [], cached_at: rows[0].last_metadata_sync });
-    }
-
-    const components = cache.by_type[type].components || [];
-    // Ordenar por lastModifiedDate desc
-    components.sort((a, b) => (b.lastModifiedDate || '').localeCompare(a.lastModifiedDate || ''));
-
-    res.json({
-      ok: true,
-      org_id: orgId,
-      type,
-      total: components.length,
-      components,
-      cached_at: rows[0].last_metadata_sync
-    });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
+// (removido) GET /components/list-cached — arquitetura US-centric usa /components/list-live
 
 
 // ============================================================
