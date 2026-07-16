@@ -288,7 +288,6 @@
           <div class="sub">Dados consolidados dos ambientes cadastrados · clique num gadget para expandir</div>
         </div>
         <div style="display:flex; gap:10px;">
-          <button class="btn" id="btnRefreshDash">Atualizar</button>
           <button class="btn primary" id="btnRunDrift">Executar Drift</button>
         </div>
       </div>
@@ -300,7 +299,7 @@
       <div class="panel">
         <div class="panel-head">
           <h3>Estado dos ambientes (Drift)</h3>
-          <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · coleta manual, sob demanda · sync: carregando...</span>
+          <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · comparação sob demanda, por componente</span>
         </div>
         <div class="panel-body" id="driftpanel"></div>
       </div>
@@ -446,7 +445,7 @@ function logDeploy(name, destId, outcome) {
 function orgState(o) { return (o.diff > 0 || o.absent > 0 || o.extra > 0) ? 'drift' : 'synced'; }
 function orgSubLabel(o) {
   if (!o) return '—';
-  if (!o.check || o.check === 'nunca') return o.last_sync ? 'sincronizado' : 'nunca verificado';
+  if (!o.check || o.check === 'nunca') return 'nunca verificado';
   const parts = [];
   if (o.diff) parts.push(o.diff + ' diff');
   if (o.absent) parts.push(o.absent + ' ausentes');
@@ -479,12 +478,10 @@ async function loadOrgs() {
     ...(o.drift_summary || { diff:0, absent:0, extra:0, ok:0, total_components:0 }),
     synced: o.drift_summary?.ok || 0,
     total: o.drift_summary?.total_components || 0,
-    check: o.drift_summary?.last_check || 'nunca',
-    last_sync: o.last_metadata_sync || null,
-    metadata_cache: o.metadata_cache || null
+    check: o.drift_summary?.last_check || 'nunca'
   }));
   if (!eqSelectedOrgs.size) eqSelectedOrgs = new Set(orgs.filter(o=>o.id !== eqGoldOrgId).map(o=>o.id));
-  // Rebuild envData from metadata_cache
+  // Rebuild envData (US-centric: sem espelho de metadata)
   rebuildEnvData();
 }
 
@@ -497,25 +494,14 @@ function rebuildEnvData() {
     const abbr = o.name.replace(/^ORG\s*/i,'').substring(0,4).toUpperCase();
     envAbbr[o.id] = abbr;
     envSeg[o.id] = 'seg-' + ['arq','hml','dev'][i] || 'seg-other';
-    const mc = o.metadata_cache;
-    const byType = mc?.by_type || {};
-    const compTotal = mc?.total || 0;
-    const compByType = {};
-    Object.entries(byType).forEach(([t, d]) => { compByType[t] = d.count || 0; });
     envData[o.id] = {
       name: o.name,
       users: { total: '—', byLicense: {} },
       objects: { total: '—', custom: '—', standardWithFields: '—' },
-      components: { total: compTotal, byType: compByType },
+      components: { total: 0, byType: {} },
       governance: { apiUsed: '—', dataStorage: '—', fileStorage: '—', codeCoverage: '—' }
     };
   });
-}
-
-function formatSyncDate(isoStr) {
-  if (!isoStr) return 'nunca sincronizado';
-  const d = new Date(isoStr);
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 }
 
 async function loadBoard() {
@@ -649,37 +635,7 @@ function openModal(title, bodyHtml, footHtml, wide){
 }
 function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
 
-// ── Componente Explorer (Preview / Lista) ──
-async function openTypeList(orgId, type) {
-  try {
-    const d = await api(`/components/list-cached?org_id=${orgId}&type=${encodeURIComponent(type)}`);
-    if (!d.ok || !d.total) {
-      openModal(type + ' — ' + orgName(orgId),
-        '<p style="color:var(--fog); font-size:12px;">Nenhum componente encontrado no cache.</p>',
-        '<button class="btn" onclick="closeModal()">Fechar</button>');
-      return;
-    }
-    const rows = d.components.slice(0, 500).map(c => {
-      const mod = c.lastModifiedDate ? new Date(c.lastModifiedDate).toLocaleDateString('pt-BR') : '—';
-      const safeName = c.fullName.replace(/'/g, "\\'");
-      return `<div class="hunkitem" style="cursor:pointer;" onclick="openComponentPreview(${orgId}, '${type}', '${safeName}')">
-        <span class="swatch ok" style="margin-top:3px;"></span>
-        <div>
-          <strong>${escapeHtml(c.fullName)}</strong>
-          <br><span style="color:var(--fog); font-size:10.5px;">modificado: ${mod}</span>
-        </div>
-      </div>`;
-    }).join('');
-    const header = `<p style="color:var(--fog); font-size:11px; margin-bottom:8px;">${d.total} componentes · clique num para ver o conteúdo</p>`;
-    const footer = d.total > 500 ? `<p style="color:var(--fog); font-size:10.5px; margin-top:6px;">Mostrando primeiros 500 de ${d.total}</p>` : '';
-    openModal(type + ' — ' + orgName(orgId),
-      header + '<div class="hunklist">' + rows + '</div>' + footer,
-      '<button class="btn" onclick="closeModal()">Fechar</button>');
-  } catch(e) {
-    toast('Erro ao carregar lista: ' + e.message);
-  }
-}
-
+// ── Componente Explorer (Preview ao vivo via metadata.read) ──
 async function openComponentPreview(orgId, type, fullName) {
   openModal(fullName,
     '<p style="color:var(--fog); font-size:12px;">Lendo componente da org...</p>',
@@ -713,6 +669,59 @@ async function openComponentPreview(orgId, type, fullName) {
 }
 
 
+// ── Comparação entre orgs por componente (US-centric, leitura ao vivo) ──
+function compareStoryComponent(ci){
+  const c = (window.__storyComps || [])[ci];
+  if (c) compareComponentAcrossOrgs(c.component_type, c.component_name);
+}
+
+async function compareComponentAcrossOrgs(type, fullName) {
+  openModal('Comparar orgs — ' + fullName,
+    '<p style="color:var(--fog); font-size:12px;">Lendo componente nas orgs (ARQ · HOMOL · DEVEVERY)...</p>',
+    '<button class="btn" onclick="closeModal()">Fechar</button>', true);
+  try {
+    const d = await api('/components/compare-across-orgs', {
+      method: 'POST',
+      body: JSON.stringify({ component_type: type, full_name: fullName, org_ids: [36, 100, 133] })
+    });
+    if (!d.ok) {
+      openModal('Comparar orgs — ' + fullName,
+        '<p style="color:#c0392b; font-size:12px;">Erro: ' + escapeHtml(d.error || '?') + '</p>',
+        '<button class="btn" onclick="closeModal()">Fechar</button>', true);
+      return;
+    }
+    const compBy = {};
+    (d.comparisons || []).forEach(c => compBy[c.org_id] = c);
+    const badge = (r) => {
+      const c = compBy[r.org_id];
+      if (c?.vs_base === 'base') return '<span style="background:#1d4ed8; color:#fff; padding:2px 8px; border-radius:10px; font-size:10px;">base</span>';
+      if (!r.found) return '<span style="background:#c0392b; color:#fff; padding:2px 8px; border-radius:10px; font-size:10px;">ausente</span>';
+      if (c?.vs_base === 'diff') return '<span style="background:#d97706; color:#fff; padding:2px 8px; border-radius:10px; font-size:10px;">divergente</span>';
+      return '<span style="background:#059669; color:#fff; padding:2px 8px; border-radius:10px; font-size:10px;">idêntico</span>';
+    };
+    const cols = d.results.map(r => `
+      <div style="flex:1; min-width:280px; border:1px solid var(--line); border-radius:6px; overflow:hidden;">
+        <div style="padding:8px 10px; background:#0f172a; color:#e2e8f0; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
+          <strong>${escapeHtml(r.org_name || ('Org #' + r.org_id))}</strong>
+          ${badge(r)}
+        </div>
+        ${r.found
+          ? `<pre style="margin:0; background:#0b1220; color:#cbd5e1; padding:10px; font-size:10px; line-height:1.45; max-height:52vh; overflow:auto; white-space:pre-wrap; word-break:break-all;">${escapeHtml(r.content_json)}</pre>`
+          : `<div style="padding:14px; font-size:11px; color:var(--fog);">${r.error ? 'Erro: ' + escapeHtml(r.error) : 'Componente não existe nesta org.'}</div>`}
+      </div>`).join('');
+    const body = `
+      <div style="font-size:11px; color:var(--fog); margin-bottom:8px;">
+        Tipo: <strong style="color:var(--ink);">${escapeHtml(type)}</strong> · leitura ao vivo (metadata.read) · base do diff: primeira org com conteúdo
+      </div>
+      <div style="display:flex; gap:10px; overflow-x:auto;">${cols}</div>`;
+    openModal('Comparar orgs — ' + fullName, body,
+      '<button class="btn" onclick="closeModal()">Fechar</button>', true);
+  } catch(e) {
+    toast('Erro ao comparar: ' + e.message);
+  }
+}
+
+
 // ── US Detail / Component Management ──
 let currentPickerState = null;
 
@@ -726,7 +735,8 @@ async function openStoryDetail(jiraKey) {
     const srcName = s.src_org_name || (s.src_org_id ? orgName(s.src_org_id) : 'ORG ARQUITETURA');
     const tgtName = s.tgt_org_name || (s.tgt_org_id ? orgName(s.tgt_org_id) : '—');
 
-    const compsHtml = comps.length ? comps.map(c =>
+    window.__storyComps = comps;
+    const compsHtml = comps.length ? comps.map((c, ci) =>
       `<div class="hunkitem" style="align-items:center;">
         <span class="swatch ok" style="margin-top:3px;"></span>
         <div style="flex:1;">
@@ -735,6 +745,7 @@ async function openStoryDetail(jiraKey) {
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn" style="padding:4px 8px; font-size:10px;" onclick="openComponentPreview(36, '${c.component_type}', '${c.component_name.replace(/'/g, "\\'")}')">Preview</button>
+          <button class="btn" style="padding:4px 8px; font-size:10px;" onclick="compareStoryComponent(${ci})">Comparar orgs</button>
           <button class="btn" style="padding:4px 8px; font-size:10px;" onclick="removeStoryComponent('${jiraKey}', ${c.id})">Remover</button>
         </div>
       </div>`
@@ -762,34 +773,45 @@ async function openStoryDetail(jiraKey) {
   }
 }
 
+// ── Picker US-centric: 1) tipo (lista estática) → 2) objeto (se CustomField/Layout/VR/RT) → lista AO VIVO ──
+const PICKER_TYPES = ['ApexClass','ApexTrigger','ApprovalProcess','AuraDefinitionBundle','Bot','ConnectedApp','CustomApplication','CustomField','CustomLabels','CustomMetadata','CustomObject','CustomPermission','CustomTab','DuplicateRule','EmailTemplate','ExperienceBundle','ExternalCredential','FlexiPage','Flow','GlobalValueSet','Layout','LightningComponentBundle','MatchingRule','NamedCredential','Network','PermissionSet','Profile','Queue','QuickAction','RecordType','RemoteSiteSetting','Role','StandardValueSet','StaticResource','ValidationRule'];
+const PER_OBJECT_TYPES = ['CustomField','Layout','ValidationRule','RecordType'];
+const STANDARD_OBJECTS = ['Account','Asset','Campaign','CampaignMember','Case','Contact','Contract','Event','Lead','Opportunity','OpportunityLineItem','Order','Pricebook2','PricebookEntry','Product2','Quote','QuoteLineItem','Task','User'];
+const liveCache = new Map(); // `${org}::${type}::${object}` → { at, data } · TTL 1h
+const LIVE_CACHE_TTL_MS = 3600000;
+
+async function liveList(orgId, type, object) {
+  const key = orgId + '::' + type + '::' + (object || '');
+  const hit = liveCache.get(key);
+  if (hit && (Date.now() - hit.at) < LIVE_CACHE_TTL_MS) return hit.data;
+  const url = '/components/list-live?org_id=' + orgId + '&type=' + encodeURIComponent(type) + (object ? '&object=' + encodeURIComponent(object) : '');
+  const d = await api(url);
+  if (d.ok) liveCache.set(key, { at: Date.now(), data: d });
+  return d;
+}
+
 async function openComponentPicker(jiraKey) {
-  currentPickerState = { jiraKey, selectedType: null, selectedNames: new Set(), allComponents: [] };
-  const srcOrgId = 36;
-  const goldOrg = orgs.find(o => o.id === srcOrgId);
-  const byType = goldOrg?.metadata_cache?.by_type || {};
-  const types = Object.entries(byType).map(([t, d]) => ({type: t, count: d.count || 0})).filter(x => x.count > 0).sort((a,b) => b.count - a.count);
-
-  if (!types.length) {
-    openModal('Adicionar componentes',
-      '<p style="color:var(--fog); font-size:12px;">Sincronize a ARQ primeiro no Dashboard.</p>',
-      '<button class="btn" onclick="closeModal()">Fechar</button>');
-    return;
-  }
-
-  const typeOpts = types.map(t => `<option value="${t.type}">${t.type} (${t.count})</option>`).join('');
+  currentPickerState = { jiraKey, srcOrgId: 36, selectedType: null, selectedObject: null, selectedNames: new Set(), allComponents: [] };
+  const typeOpts = PICKER_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
   const body = `
     <p style="color:var(--fog); font-size:11px; margin-bottom:8px;">
-      Selecione componentes da <strong style="color:var(--ink);">ORG ARQUITETURA</strong> para vincular a <strong style="color:var(--ink);">${jiraKey}</strong>
+      Componentes lidos <strong style="color:var(--ink);">ao vivo</strong> da <strong style="color:var(--ink);">ORG ARQUITETURA</strong> para vincular a <strong style="color:var(--ink);">${jiraKey}</strong> · cache local de 1h
     </p>
-    <label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">Tipo de metadado</label>
-    <select id="pickerType" style="width:100%; padding:6px; font-size:12px; margin-bottom:12px; border:1px solid var(--line); border-radius:4px;" onchange="pickerLoadComponents()">
+    <label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">1 · Tipo de metadado</label>
+    <select id="pickerType" style="width:100%; padding:6px; font-size:12px; margin-bottom:10px; border:1px solid var(--line); border-radius:4px;" onchange="pickerTypeChanged()">
       <option value="">— escolha um tipo —</option>
       ${typeOpts}
     </select>
+    <div id="pickerObjectWrap" style="display:none;">
+      <label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">2 · Objeto</label>
+      <select id="pickerObject" style="width:100%; padding:6px; font-size:12px; margin-bottom:10px; border:1px solid var(--line); border-radius:4px;" onchange="pickerLoadComponents()">
+        <option value="">— escolha o objeto —</option>
+      </select>
+    </div>
     <input id="pickerSearch" type="text" placeholder="Filtrar por nome..."
       style="width:100%; padding:6px; font-size:12px; margin-bottom:8px; border:1px solid var(--line); border-radius:4px;"
       oninput="pickerFilterList()" />
-    <div id="pickerList" style="max-height:45vh; overflow:auto; border:1px solid var(--line); border-radius:4px;">
+    <div id="pickerList" style="max-height:42vh; overflow:auto; border:1px solid var(--line); border-radius:4px;">
       <p style="color:var(--fog); font-size:11px; padding:12px;">Escolha um tipo acima para listar componentes.</p>
     </div>
     <div id="pickerCount" style="font-size:11px; color:var(--fog); margin-top:8px;">0 selecionado(s)</div>
@@ -801,18 +823,60 @@ async function openComponentPicker(jiraKey) {
   openModal('Adicionar componentes — ' + jiraKey, body, footer);
 }
 
+async function pickerTypeChanged() {
+  const type = document.getElementById('pickerType').value;
+  const objWrap = document.getElementById('pickerObjectWrap');
+  const listEl = document.getElementById('pickerList');
+  currentPickerState.selectedType = type || null;
+  currentPickerState.selectedObject = null;
+  currentPickerState.allComponents = [];
+  currentPickerState.selectedNames = new Set();
+  updatePickerCount();
+  if (!type) {
+    objWrap.style.display = 'none';
+    listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Escolha um tipo acima.</p>';
+    return;
+  }
+  if (PER_OBJECT_TYPES.includes(type)) {
+    objWrap.style.display = 'block';
+    listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">' + type + ' é escopado por objeto — escolha o objeto acima.</p>';
+    const sel = document.getElementById('pickerObject');
+    sel.innerHTML = '<option value="">carregando objetos...</option>';
+    let customOpts = '';
+    try {
+      const d = await liveList(currentPickerState.srcOrgId, 'CustomObject', null);
+      if (d.ok) customOpts = d.components.map(c => c.fullName).sort().map(n => `<option value="${n}">${n}</option>`).join('');
+    } catch(e) { /* segue só com os standard */ }
+    const stdOpts = STANDARD_OBJECTS.map(n => `<option value="${n}">${n}</option>`).join('');
+    sel.innerHTML = '<option value="">— escolha o objeto —</option>' +
+      '<optgroup label="Standard">' + stdOpts + '</optgroup>' +
+      (customOpts ? '<optgroup label="Custom">' + customOpts + '</optgroup>' : '');
+  } else {
+    objWrap.style.display = 'none';
+    pickerLoadComponents();
+  }
+}
+
 async function pickerLoadComponents() {
   const type = document.getElementById('pickerType').value;
   if (!type) return;
+  const needsObject = PER_OBJECT_TYPES.includes(type);
+  const object = needsObject ? document.getElementById('pickerObject').value : null;
+  if (needsObject && !object) return;
   const listEl = document.getElementById('pickerList');
-  listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Carregando...</p>';
+  listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Consultando a org...</p>';
   try {
-    const d = await api('/components/list-cached?org_id=36&type=' + encodeURIComponent(type));
-    if (!d.ok || !d.total) {
+    const d = await liveList(currentPickerState.srcOrgId, type, object);
+    if (!d.ok) {
+      listEl.innerHTML = '<p style="color:#c0392b; font-size:11px; padding:12px;">Erro: ' + (d.error || '?') + '</p>';
+      return;
+    }
+    if (!d.total) {
       listEl.innerHTML = '<p style="color:var(--fog); font-size:11px; padding:12px;">Nenhum componente encontrado.</p>';
       return;
     }
     currentPickerState.selectedType = type;
+    currentPickerState.selectedObject = object;
     currentPickerState.allComponents = d.components;
     currentPickerState.selectedNames = new Set();
     renderPickerList(d.components);
@@ -1302,22 +1366,16 @@ function miniRows(cat, field, isPercent){
 }
 
 function gadgetDetail(key){
-  if(key === 'components' && orgs.length > 0){
-    const goldOrg = orgs.find(o => o.id === dashboardGoldOrgId) || orgs[0];
-    const byType = goldOrg.metadata_cache?.by_type || {};
-    const types = Object.entries(byType)
-      .map(([t, d]) => ({type: t, count: d.count || 0}))
-      .filter(x => x.count > 0)
-      .sort((a,b) => b.count - a.count);
-    if (!types.length) return '<p style="color:var(--fog); font-size:12px;">Sincronize a org primeiro (botão Atualizar).</p>';
-    return '<div class="gadget-rows">' + types.map(t => {
-      const max = types[0].count;
-      const pct = (t.count/max*100);
-      const safeType = t.type.replace(/'/g, "\\'");
-      return `<div class="gadget-row wide" style="cursor:pointer;" onclick="openTypeList(${goldOrg.id}, '${safeType}')" title="Clique para ver ${t.count} componentes">
-        <span class="gr-abbr" title="${t.type}">${t.type}</span>
+  if(key === 'components'){
+    const byType = (dashboardData?.us_components_by_type || []);
+    if (!byType.length) return '<p style="color:var(--fog); font-size:12px;">Nenhum componente vinculado a US ainda. Abra uma US no Board e use "+ Adicionar componente".</p>';
+    const max = byType[0].total;
+    return '<div class="gadget-rows">' + byType.map(t => {
+      const pct = max ? (t.total/max*100) : 0;
+      return `<div class="gadget-row wide">
+        <span class="gr-abbr" title="${t.component_type}">${t.component_type}</span>
         <span class="gr-bar-wrap"><span class="gr-bar seg-arq" style="width:${pct}%"></span></span>
-        <span class="gr-val">${t.count}</span>
+        <span class="gr-val">${t.total}</span>
       </div>`;
     }).join('') + '</div>';
   }
@@ -1341,16 +1399,6 @@ function gadgetDetail(key){
       </div>
     </div>`;
   }
-  if(key === 'components'){
-    const byType = sumMap('components','byType');
-    return `<div class="gadget-detail">
-      ${miniRows('components','total')}
-      <div class="gadget-agg">
-        <div class="gadget-metric-label">Por tipo (consolidado)</div>
-        ${Object.keys(byType).map(k=>`<div class="gadget-agg-row"><span>${k}</span><b>${byType[k]}</b></div>`).join('')}
-      </div>
-    </div>`;
-  }
   if(key === 'governance'){
     return `<div class="gadget-detail">
       <div class="gadget-metric-label">Uso de API</div>
@@ -1371,7 +1419,7 @@ function renderGadgets(){
   const cats = [
     { key:'users', icon:'◍', label:'Usuários', sub:'licenças ativas (2ª onda)', value: '—' },
     { key:'objects', icon:'▦', label:'Objetos', sub:'padrão + customizados', value: sumField('objects','total') },
-    { key:'components', icon:'▤', label:'Componentes', sub:'metadados rastreados', value: sumField('components','total') },
+    { key:'components', icon:'▤', label:'Componentes', sub:'vinculados às US', value: (dashboardData?.us_components_total ?? 0) },
     { key:'governance', icon:'◎', label:'Governança', sub:'uso médio de API (2ª onda)', value: '—' },
   ];
   el.innerHTML = cats.map(c=>{
@@ -1396,136 +1444,8 @@ function renderGadgets(){
   });
 }
 
-// ── Sync Multi-Org ──
-let __syncJobs = {}; // { orgId: { status, elapsed, interval } }
+// (removido) Sync Multi-Org — arquitetura US-centric: sem full sync; listagem via /components/list-live
 
-function openSyncModal() {
-  const orgList = orgs.map(o => {
-    const syncTxt = o.last_sync ? formatSyncDate(o.last_sync) : 'nunca sincronizado';
-    return `<label style="display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; cursor:pointer;">
-      <input type="checkbox" class="syncOrgCheck" value="${o.id}" ${o.id===36 ? 'checked' : ''} />
-      <div style="flex:1;">
-        <div style="font-weight:600; font-size:12px;">${o.name}</div>
-        <div style="font-size:10.5px; color:var(--fog);">Última sync: ${syncTxt} · ${o.metadata_cache?.total || 0} componentes</div>
-      </div>
-    </label>`;
-  }).join('');
-  const body = `
-    <p style="color:var(--fog); font-size:11px; margin-bottom:10px;">
-      Selecione as orgs para sincronizar. Cada org consulta 34 tipos de metadado (~1-2 min por org).
-    </p>
-    ${orgList}
-    <div id="syncProgress" style="margin-top:12px; font-size:11px; color:var(--fog);"></div>
-  `;
-  const footer = `
-    <button class="btn primary" id="btnStartSync" onclick="startMultiSync()">Sincronizar selecionadas</button>
-    <button class="btn" onclick="closeModal()">Cancelar</button>
-  `;
-  openModal('Sincronizar orgs', body, footer);
-}
-
-async function startMultiSync() {
-  const checks = document.querySelectorAll('.syncOrgCheck:checked');
-  const orgIds = Array.from(checks).map(c => parseInt(c.value));
-  if (!orgIds.length) { toast('Selecione ao menos uma org'); return; }
-
-  document.getElementById('btnStartSync').disabled = true;
-  document.getElementById('btnStartSync').textContent = 'Sincronizando...';
-
-  const progressEl = document.getElementById('syncProgress');
-  progressEl.innerHTML = orgIds.map(id => `<div id="progress-${id}">${orgName(id)}: iniciando...</div>`).join('');
-
-  // Disparar em paralelo
-  const promises = orgIds.map(id => syncOneOrg(id));
-
-  try {
-    await Promise.allSettled(promises);
-    try { await loadOrgs(); } catch(e) { console.error('loadOrgs fail:', e); }
-    try { renderDrift(); } catch(e) { console.error('renderDrift fail:', e); }
-    try { renderPipeline(); } catch(e) { console.error('renderPipeline fail:', e); }
-    try { renderGadgets(); } catch(e) { console.error('renderGadgets fail:', e); }
-    try { renderDashGoldSelect(); } catch(e) { console.error('renderDashGoldSelect fail:', e); }
-  } catch(e) {
-    console.error('startMultiSync fail:', e);
-    toast('Erro geral: ' + e.message);
-  }
-  const btn = document.getElementById('btnStartSync');
-  if (btn) { btn.disabled = false; btn.textContent = 'Sincronizar selecionadas'; }
-  setTimeout(() => closeModal(), 1500);
-}
-
-async function syncOneOrg(orgId) {
-  const oName = orgName(orgId);
-  const progressLine = () => document.getElementById('progress-' + orgId);
-
-  try {
-    const trigger = await api('/sync/metadata', { method: 'POST', body: JSON.stringify({ org_id: orgId }) });
-    if (!trigger.ok) {
-      if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: erro ao iniciar</span>`;
-      return;
-    }
-
-    const startedAt = Date.now();
-    const maxWaitMs = 300000;
-
-    return new Promise((resolve) => {
-      const interval = setInterval(async () => {
-        const elapsed = Math.round((Date.now() - startedAt) / 1000);
-        try {
-          const s = await api('/sync/job/' + orgId);
-          if (!s.ok) { clearInterval(interval); resolve(); return; }
-
-          if (s.status === 'running') {
-            if (progressLine()) progressLine().innerHTML = `${oName}: sincronizando... (${elapsed}s)`;
-            if (Date.now() - startedAt > maxWaitMs) {
-              clearInterval(interval);
-              if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: timeout</span>`;
-              resolve();
-            }
-            return;
-          }
-          if (s.status === 'done') {
-            clearInterval(interval);
-            if (progressLine()) progressLine().innerHTML = `<span style="color:#059669;">✓ ${oName}: ${s.total_components} componentes (${elapsed}s)</span>`;
-            resolve();
-            return;
-          }
-          if (s.status === 'failed') {
-            clearInterval(interval);
-            if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: falhou — ${s.error || 'erro'}</span>`;
-            resolve();
-            return;
-          }
-          if (s.status === 'idle') {
-            await loadOrgs();
-            const org = orgs.find(o => o.id === orgId);
-            if (org?.last_sync && new Date(org.last_sync).getTime() > startedAt - 60000) {
-              clearInterval(interval);
-              if (progressLine()) progressLine().innerHTML = `<span style="color:#059669;">✓ ${oName}: ${org.metadata_cache?.total || 0} componentes</span>`;
-              resolve();
-              return;
-            }
-            if (elapsed > 20) {
-              clearInterval(interval);
-              if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: não iniciou</span>`;
-              resolve();
-            } else {
-              if (progressLine()) progressLine().innerHTML = `${oName}: aguardando início... (${elapsed}s)`;
-            }
-          }
-        } catch(e) {
-          clearInterval(interval);
-          if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: erro — ${e.message}</span>`;
-          resolve();
-        }
-      }, 3000);
-    });
-  } catch(e) {
-    if (progressLine()) progressLine().innerHTML = `<span style="color:#c0392b;">${oName}: ${e.message}</span>`;
-  }
-}
-
-document.getElementById('btnRefreshDash').addEventListener('click', openSyncModal);
 
 function renderDrift(){
   const el = document.getElementById('driftpanel');
@@ -1578,17 +1498,13 @@ function renderDashGoldSelect(){
   const el = document.getElementById('dashGoldSelect');
   if(!el) return;
   el.innerHTML = eqAllOrgs().map(o=> {
-    const syncTxt = o.last_sync ? formatSyncDate(o.last_sync) : 'nunca sincronizado';
     const active = o.id===dashboardGoldOrgId ? 'active' : '';
-    return `<button class="${active}" onclick="setDashboardGold(${o.id})" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 14px;">
-      <span style="font-weight:600;">${o.name}</span>
-      <span style="font-size:9.5px; color:${o.id===dashboardGoldOrgId ? 'rgba(255,255,255,0.65)' : 'var(--fog)'};">sync: ${syncTxt}</span>
-    </button>`;
+    return `<button class="${active}" onclick="setDashboardGold(${o.id})" style="padding:8px 14px; font-weight:600;">${o.name}</button>`;
   }).join('');
   const note = document.getElementById('driftGoldNote');
   const goldOrg = orgs.find(o => o.id === dashboardGoldOrgId);
   if(note && goldOrg) {
-    note.textContent = 'gold: ' + goldOrg.name + ' · última sincronização: ' + formatSyncDate(goldOrg.last_sync);
+    note.textContent = 'gold: ' + goldOrg.name + ' · comparação sob demanda, por componente';
   }
 }
 
