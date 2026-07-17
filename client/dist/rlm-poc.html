@@ -3,170 +3,444 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POC · Pricing Headless RLM — Ever i9</title>
+<title>POC Revenue Cloud · Algar Telecom B2B — Ever i9</title>
 <style>
-:root{--bg:#0b0e14;--panel:#131826;--panel2:#1a2032;--border:#232b3f;--txt:#e6e9f0;--mut:#8b93a7;--acc:#4f8cff;--ok:#2ecc71;--warn:#f5a623;--err:#e74c3c;font-family:'Segoe UI',system-ui,sans-serif}
+/* ═══ SLDS-like design tokens ═══ */
+:root{
+  --brand:#0176D3; --brand-dark:#014486; --navy:#032D60; --blue-light:#EEF4FF; --blue-60:#1B96FF;
+  --bg:#F3F3F3; --white:#FFF; --panel:#FAFAF9;
+  --border:#E5E5E5; --border-strong:#C9C9C9;
+  --txt:#181818; --txt-mid:#444; --txt-weak:#747474;
+  --ok:#2E844A; --ok-bg:#E5F5E9; --ok-br:#A5E6B5;
+  --par:#8C4B02; --par-bg:#FEF2E4; --par-br:#FBCB94;
+  --cus:#BA0517; --cus-bg:#FEE9E7; --cus-br:#FEB8B8;
+  --r:4px;
+  --shadow:0 2px 2px 0 rgba(0,0,0,.1);
+  --font:'Salesforce Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);min-height:100vh}
-.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
-header{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
-h1{font-size:1.45rem;font-weight:600;letter-spacing:.2px}
-h1 span{color:var(--acc)}
-.sub{color:var(--mut);font-size:.9rem;margin-top:6px;line-height:1.5}
-.flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--mut)}
-.flow .node{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--txt)}
-.flow .arrow{color:var(--acc);font-weight:700}
-h2{font-size:1.02rem;font-weight:600;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
-h2 .tag{font-size:.68rem;background:var(--panel2);border:1px solid var(--border);color:var(--mut);border-radius:20px;padding:2px 10px;font-weight:500}
-.grid{display:grid;gap:14px}
-.g3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
-.badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;border-radius:20px;padding:3px 11px}
-.b-ok{background:rgba(46,204,113,.12);color:var(--ok)}
-.b-warn{background:rgba(245,166,35,.12);color:var(--warn)}
-.b-err{background:rgba(231,76,60,.12);color:var(--err)}
-.ms{font-size:1.35rem;font-weight:700;margin-top:8px}
-.ms small{font-size:.7rem;color:var(--mut);font-weight:400}
-.path{font-family:ui-monospace,Consolas,monospace;font-size:.72rem;color:var(--mut);margin-top:4px;word-break:break-all}
-.apiname{font-size:.86rem;font-weight:600;margin-bottom:8px}
-button{background:var(--acc);border:0;color:#fff;border-radius:9px;padding:10px 18px;font-size:.86rem;font-weight:600;cursor:pointer;transition:.15s}
-button:hover{filter:brightness(1.12)}
-button.ghost{background:var(--panel2);border:1px solid var(--border);color:var(--txt)}
-button:disabled{opacity:.45;cursor:not-allowed}
-.prod{display:flex;flex-direction:column;gap:8px}
-.prod .nm{font-weight:600;font-size:.95rem}
-.prod .cat{font-size:.72rem;color:var(--mut)}
-.prod .pr{font-size:1.25rem;font-weight:700;color:var(--acc)}
-.prod .pr small{font-size:.68rem;color:var(--mut);font-weight:400}
-.cartrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.86rem;gap:10px}
-.cartrow input{width:56px;background:var(--panel2);border:1px solid var(--border);color:var(--txt);border-radius:7px;padding:5px 8px;text-align:center}
-.callout{border-left:4px solid var(--warn);background:rgba(245,166,35,.07);border-radius:0 10px 10px 0;padding:13px 16px;font-size:.84rem;line-height:1.55;margin:14px 0;display:none}
-.callout b{color:var(--warn)}
-pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:.72rem;line-height:1.5;overflow:auto;max-height:380px;margin-top:12px}
-.resgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
-.kpi{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
-.kpi .v{font-size:1.3rem;font-weight:700}
-.kpi .l{font-size:.68rem;color:var(--mut);margin-top:3px}
-.footer{margin-top:44px;color:var(--mut);font-size:.72rem;border-top:1px solid var(--border);padding-top:14px}
-.callout-info{border-left-color:var(--acc);background:rgba(79,140,255,.07);display:block}
-.callout-info b{color:var(--acc)}
-.prem{list-style:none;display:flex;flex-direction:column;gap:11px}
-.prem li{font-size:.83rem;line-height:1.5;padding-bottom:11px;border-bottom:1px solid var(--border)}
-.prem li:last-child{border:0;padding-bottom:0}
-.prem b{color:var(--txt)}
-.prem .note{display:block;color:var(--mut);font-size:.75rem;margin-top:3px}
-.chip{display:inline-block;font-size:.64rem;font-weight:700;border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:1px;letter-spacing:.3px}
-.c-ok{background:rgba(46,204,113,.14);color:var(--ok)}
-.c-pend{background:rgba(139,147,167,.16);color:var(--mut)}
-.c-warn{background:rgba(245,166,35,.14);color:var(--warn)}
-.c-blk{background:rgba(231,76,60,.14);color:var(--err)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--mut);margin:0 0 14px}
-.src{font-size:.74rem;line-height:1.9;color:var(--mut)}
-.src a{color:var(--acc);text-decoration:none}
-.src a:hover{text-decoration:underline}
-code{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.75rem;font-family:ui-monospace,Consolas,monospace}
-@media(max-width:820px){.grid[style*="1.1fr"],.grid[style*="1fr 1fr"]{grid-template-columns:1fr!important}}
-.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ═══ Global header (Lightning) ═══ */
+.gh{background:var(--navy);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+.gh .waffle{width:26px;height:26px;border-radius:var(--r);background:rgba(255,255,255,.15);display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:5px;flex:none}
+.gh .waffle i{background:#fff;border-radius:1px;opacity:.9}
+.gh .brand{font-weight:700;font-size:15px;letter-spacing:.2px}
+.gh .app{font-size:13px;opacity:.75;border-left:1px solid rgba(255,255,255,.25);padding-left:14px}
+.gh .right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px;opacity:.8}
+.gh .env{background:rgba(255,255,255,.15);border-radius:12px;padding:2px 10px;font-weight:600}
+
+/* ═══ Page header ═══ */
+.ph{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px 0}
+.ph-top{display:flex;align-items:flex-start;gap:12px;max-width:1240px;margin:0 auto}
+.ph-icon{width:38px;height:38px;border-radius:var(--r);background:#F1B849;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;box-shadow:var(--shadow)}
+.ph h1{font-size:19px;font-weight:600;line-height:1.3}
+.ph .eyebrow{font-size:11px;color:var(--txt-weak);text-transform:uppercase;letter-spacing:.5px;font-weight:400}
+.ph-meta{display:flex;gap:34px;flex-wrap:wrap;max-width:1240px;margin:12px auto 0;padding-bottom:2px}
+.ph-meta div{font-size:11px}
+.ph-meta .l{color:var(--txt-weak);font-weight:400}
+.ph-meta .v{color:var(--txt);font-weight:600;margin-top:1px}
+
+/* ═══ Tabs (SLDS) ═══ */
+.tabs{background:var(--white);border-bottom:1px solid var(--border-strong);padding:0 20px}
+.tabs-in{display:flex;max-width:1240px;margin:0 auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:11px 18px;font-family:var(--font);font-size:13px;font-weight:400;color:var(--txt-mid);cursor:pointer;margin-bottom:-1px;transition:.12s}
+.tab:hover{color:var(--brand);background:var(--panel)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+.tab .n{background:var(--bg);color:var(--txt-weak);border-radius:10px;padding:0 6px;font-size:10px;margin-left:6px;font-weight:600}
+.tab.on .n{background:var(--blue-light);color:var(--brand)}
+
+/* ═══ Layout ═══ */
+.wrap{max-width:1240px;margin:0 auto;padding:16px 20px 60px}
+.panel{display:none}.panel.on{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+
+/* ═══ Card (SLDS) ═══ */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:12px}
+.card-h{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.card-h .ic{width:22px;height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;color:#fff}
+.card-h h2{font-size:14px;font-weight:600;letter-spacing:.1px}
+.card-h .sub{font-size:11px;color:var(--txt-weak);font-weight:400;margin-left:auto;text-align:right}
+.card-b{padding:14px}
+.card-b.flush{padding:0}
+
+/* ═══ Table (SLDS) ═══ */
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--panel);color:var(--txt-weak);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--txt-mid)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--blue-light)}
+tbody td:first-child{color:var(--txt);font-weight:600}
+td .mono,code{font-family:'SF Mono',Consolas,Monaco,monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--navy)}
+
+/* ═══ Badges de classe ═══ */
+.b{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.5px;border-radius:12px;padding:2px 9px;white-space:nowrap;border:1px solid}
+.b-ootb{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-br)}
+.b-par{background:var(--par-bg);color:var(--par);border-color:var(--par-br)}
+.b-cus{background:var(--cus-bg);color:var(--cus);border-color:var(--cus-br)}
+.b-live{background:var(--blue-light);color:var(--brand);border-color:#AACBFF}
+.b-gap{background:#F3F3F3;color:var(--txt-weak);border-color:var(--border-strong)}
+
+/* ═══ SLDS Path (signature) ═══ */
+.path{display:flex;list-style:none;margin:2px 0 0}
+.path li{position:relative;flex:1;background:#ECEBEA;color:var(--txt-mid);height:34px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;margin-right:5px;padding:0 6px 0 14px;text-align:center}
+.path li:first-child{border-radius:var(--r) 0 0 var(--r);padding-left:8px}
+.path li:last-child{margin-right:0;border-radius:0 var(--r) var(--r) 0}
+.path li:after{content:'';position:absolute;right:-13px;top:0;width:0;height:0;border-left:13px solid #ECEBEA;border-top:17px solid transparent;border-bottom:17px solid transparent;z-index:2}
+.path li:last-child:after{display:none}
+.path li.done{background:var(--brand);color:#fff}
+.path li.done:after{border-left-color:var(--brand)}
+.path li.blk{background:#FEE9E7;color:var(--cus)}
+.path li.blk:after{border-left-color:#FEE9E7}
+.path li small{font-weight:400;opacity:.85;font-size:10px;display:block}
+.path-lg{display:flex;gap:16px;font-size:10.5px;color:var(--txt-weak);margin-top:9px;flex-wrap:wrap}
+.path-lg span{display:flex;align-items:center;gap:5px}
+.path-lg i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+/* ═══ Callouts / scoped notification ═══ */
+.note{border-radius:var(--r);padding:10px 13px;font-size:12px;line-height:1.55;display:flex;gap:9px;align-items:flex-start;border:1px solid;margin-bottom:12px}
+.note .i{flex:none;font-size:13px;line-height:1.3}
+.n-info{background:var(--blue-light);border-color:#AACBFF;color:var(--navy)}
+.n-warn{background:var(--par-bg);border-color:var(--par-br);color:#5C3A02}
+.n-err{background:var(--cus-bg);border-color:var(--cus-br);color:#7A0313}
+.n-ok{background:var(--ok-bg);border-color:var(--ok-br);color:#1B5E32}
+.note b{font-weight:700}
+
+/* ═══ Listas ═══ */
+ul.li{list-style:none;display:flex;flex-direction:column;gap:9px}
+ul.li li{font-size:12px;line-height:1.5;color:var(--txt-mid);padding-left:17px;position:relative}
+ul.li li:before{content:'';position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:50%;background:var(--brand-dark)}
+ul.li.pro li:before{background:var(--ok)}
+ul.li.con li:before{background:var(--cus)}
+ul.li b{color:var(--txt)}
+ul.chk{list-style:none;display:flex;flex-direction:column;gap:11px}
+ul.chk li{font-size:12px;line-height:1.5;color:var(--txt-mid);padding-bottom:11px;border-bottom:1px solid var(--border)}
+ul.chk li:last-child{border:0;padding-bottom:0}
+ul.chk b{color:var(--txt)}
+ul.chk .d{display:block;color:var(--txt-weak);font-size:11px;margin-top:2px}
+
+/* ═══ Componentes da POC ao vivo ═══ */
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:11px;text-align:center}
+.kpi .v{font-size:20px;font-weight:700;color:var(--navy)}
+.kpi .l{font-size:10px;color:var(--txt-weak);margin-top:2px}
+.ms{font-size:22px;font-weight:700;color:var(--navy);margin-top:6px}
+.ms small{font-size:10px;color:var(--txt-weak);font-weight:400}
+.pth{font-family:'SF Mono',Consolas,monospace;font-size:10.5px;color:var(--txt-weak);margin-top:3px;word-break:break-all}
+button.btn{background:var(--white);border:1px solid var(--border-strong);color:var(--brand);border-radius:var(--r);padding:6px 14px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:.12s}
+button.btn:hover{background:var(--panel)}
+button.btn-brand{background:var(--brand);border-color:var(--brand);color:#fff}
+button.btn-brand:hover{background:var(--brand-dark)}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+.prod .nm{font-weight:600;font-size:13px;color:var(--txt)}
+.prod .cat{font-size:10.5px;color:var(--txt-weak);margin:2px 0 7px}
+.prod .pr{font-size:19px;font-weight:700;color:var(--navy)}
+.prod .pr small{font-size:10px;color:var(--txt-weak);font-weight:400}
+.crow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;gap:9px}
+.crow input{width:52px;border:1px solid var(--border-strong);border-radius:var(--r);padding:4px 6px;text-align:center;font-family:var(--font);font-size:12px}
+pre{background:#F8F8F8;border:1px solid var(--border);border-radius:var(--r);padding:12px;font-size:11px;line-height:1.55;overflow:auto;max-height:340px;font-family:'SF Mono',Consolas,monospace;color:var(--txt-mid)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--border-strong);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
+.src{font-size:11.5px;line-height:1.95;color:var(--txt-weak)}
+.src a{color:var(--brand);text-decoration:none}
+.src a:hover{text-decoration:underline}
+.foot{max-width:1240px;margin:20px auto 0;padding:12px 20px;color:var(--txt-weak);font-size:10.5px;border-top:1px solid var(--border)}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.ph-meta{gap:18px}.path{flex-direction:column}.path li{margin:0 0 5px;border-radius:var(--r)!important;padding-left:8px}.path li:after{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+
+<div class="gh">
+  <div class="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <span class="brand">Ever i9</span>
+  <span class="app">POC Revenue Cloud</span>
+  <div class="right"><span class="env">arqevery · Sandbox</span><span>API v67.0 · Summer '26</span></div>
+</div>
+
+<div class="ph">
+  <div class="ph-top">
+    <div class="ph-icon">◈</div>
+    <div>
+      <div class="eyebrow">Prova de conceito · Revenue Cloud (RLM)</div>
+      <h1>Catálogo e precificação — Algar Telecom B2B</h1>
+    </div>
+  </div>
+  <div class="ph-meta">
+    <div><div class="l">Org</div><div class="v">algartelecommartech005 — arqevery</div></div>
+    <div><div class="l">Executado em</div><div class="v">17 de julho de 2026</div></div>
+    <div><div class="l">Autor</div><div class="v">Alberto Bottaro · Everymind</div></div>
+    <div><div class="l">Ação</div><div class="v">Item 5 da ata R3 (15/jul)</div></div>
+  </div>
+</div>
+
+<div class="tabs"><div class="tabs-in">
+  <button class="tab on" id="t-crm" onclick="tab('crm')">Salesforce CRM<span class="n">RLM nativo</span></button>
+  <button class="tab" id="t-dig" onclick="tab('dig')">Canal Digital<span class="n">SFCC</span></button>
+</div></div>
+
 <div class="wrap">
-<header>
-  <h1>POC · Pricing Headless <span>Revenue Cloud</span> — vitrine e-commerce</h1>
-  <div class="sub">Demonstração do padrão de integração <b>callout server-side direto</b>: este front chama o backend Ever i9, que faz o papel do <b>app server do SFCC</b> e dispara a chamada HTTPS diretamente às Connect APIs da org <b>arqevery</b> — sem middleware intermediário. Todos os dados e respostas exibidos são reais. <a href="#premissas" style="color:var(--acc);text-decoration:none">→ Premissas de integração (checklist SFCC + org)</a></div>
-  <div class="flow">
-    <span class="node">🖥️ Browser (storefront)</span><span class="arrow">→</span>
-    <span class="node">⚙️ Backend i9 <small>(≈ app server SFCC)</small></span><span class="arrow">→ HTTPS direto →</span>
-    <span class="node">☁️ arqevery · /connect/core-pricing/pricing</span>
-  </div>
-</header>
 
-<h2>1 · Status das APIs headless <span class="tag">chamadas ao vivo na org</span>
-  <button class="ghost" style="margin-left:auto" onclick="loadStatus()">↻ Reexecutar diagnóstico</button></h2>
-<div id="status" class="grid g3"><div class="card"><span class="spin"></span> consultando a org…</div></div>
-<div id="ctxCallout" class="callout">
-  <b>Diagnóstico (17/jul):</b> o Revenue Cloud está licenciado e habilitado na arqevery, mas o <b>provisionamento da família Context Service está incompleto no lado Salesforce</b> — sem PSL com <code>RunContextRule</code>, sem o type <code>ContextDefinition</code> no Metadata API e sem os contexts standard (<code>RLM_SalesTransactionContext</code>). Por isso Products List e Pricing headless retornam os erros exibidos acima (respostas reais). <b>Destravamento: caso Salesforce solicitando o provisionamento completo do RLM na sandbox</b> (ou refresh após inicialização em produção). Quando provisionado, este painel exibe preços automaticamente — sem alteração de código.</b>
-</div>
+<!-- ══════════ ABA 1 · SALESFORCE CRM ══════════ -->
+<div class="panel on" id="p-crm">
 
-<h2>2 · Vitrine <span class="tag">catálogo PCM real · SOQL</span></h2>
-<div id="vitrine" class="grid g3"><div class="card"><span class="spin"></span> carregando catálogo…</div></div>
+  <div class="note n-info"><span class="i">ℹ️</span><div><b>Origem deste conteúdo.</b> Arquitetura apresentada por Felippe Vance (Salesforce) em 17/jul/2026, reproduzida aqui para <b>confronto com o estado real da org</b>. A classificação OOTB / Parametrizável / Customização é a do autor da apresentação. Os blocos "Confronto com a org real" e "Leitura do arquiteto" ao final são a contribuição da Everymind, medida na arqevery.</div></div>
 
-<h2>3 · Cesta &amp; precificação <span class="tag">1 cesta = 1 chamada</span></h2>
-<div class="grid" style="grid-template-columns:1.1fr .9fr">
   <div class="card">
-    <div id="cart"><div style="color:var(--mut);font-size:.86rem">Cesta vazia — adicione produtos da vitrine.</div></div>
-    <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
-      <button id="btnPrice" onclick="doPrice()" disabled>⚡ Precificar no Revenue Cloud</button>
-      <button class="ghost" onclick="clearCart()">Limpar</button>
+    <div class="card-h"><span class="ic" style="background:#0176D3">⇉</span><h2>Fluxo de precificação — as 5 camadas</h2><span class="sub">o estado de cada etapa é o medido na org, não o do slide</span></div>
+    <div class="card-b">
+      <ul class="path">
+        <li class="done">Viabilidade<small>Connect Master</small></li>
+        <li class="done">Configurador<small>EPC / PCM</small></li>
+        <li class="done">Price Book<small>+ ABP</small></li>
+        <li class="blk">Expression Set<small>mínimo + taxa</small></li>
+        <li class="blk">Cotação<small>margem + alçada</small></li>
+      </ul>
+      <div class="path-lg">
+        <span><i style="background:#0176D3"></i> etapa cuja fundação existe na arqevery</span>
+        <span><i style="background:#FEE9E7;border:1px solid #FEB8B8"></i> etapa bloqueada hoje — depende do Context Service (ver confronto abaixo)</span>
+      </div>
+      <div class="note n-warn" style="margin:14px 0 0"><span class="i">⚠️</span><div><b>Premissa central do desenho:</b> a integração traz dados, nunca calcula preço — sem API de cálculo externa. Isso é <b>princípio de design</b> (não duplicar regra de negócio fora do motor), e não uma limitação da plataforma. Ver ponto 1 da leitura do arquiteto.</div></div>
     </div>
   </div>
-  <div class="card">
-    <div class="apiname">Resultado do callout</div>
-    <div class="resgrid">
-      <div class="kpi"><div class="v" id="kMs">—</div><div class="l">backend ↔ org (ms)</div></div>
-      <div class="kpi"><div class="v" id="kTot">—</div><div class="l">total browser (ms)</div></div>
-      <div class="kpi"><div class="v" id="kP50">—</div><div class="l">p50 sessão</div></div>
-      <div class="kpi"><div class="v" id="kP95">—</div><div class="l">p95 sessão</div></div>
-    </div>
-    <div id="resState" style="margin-top:12px"></div>
-  </div>
-</div>
-<pre id="resJson" style="display:none"></pre>
 
-<h2 id="premissas">4 · Premissas de integração <span class="tag">checklist fundamentado em documentação oficial</span></h2>
-<div class="callout callout-info">
-  <b>O que este painel prova e o que ele não prova.</b> A demo acima substitui o storefront SFCC pelo backend Ever i9 — o mecanismo (callout server-side direto → Connect API, 1 cesta = 1 chamada) é idêntico. Para trocar o i9 pelo SFCC real, este é o checklist completo. <b>Nenhum item abaixo exige MuleSoft</b>: é configuração de plataforma nas duas pontas + um cartridge.
-</div>
-<div class="legend">
-  <span><span class="chip c-ok">VALIDADO</span> verificado nesta POC</span>
-  <span><span class="chip c-pend">PENDENTE</span> depende de instância SFCC</span>
-  <span><span class="chip c-warn">ATENÇÃO</span> armadilha documentada</span>
-  <span><span class="chip c-blk">BLOQUEIO</span> impede o fluxo hoje</span>
-</div>
-<div class="grid" style="grid-template-columns:1fr 1fr">
   <div class="card">
-    <div class="apiname">☁️ Lado da org (arqevery / HOMOL / PROD)</div>
-    <ul class="prem">
-      <li><span class="chip c-pend">PENDENTE</span><b>External Client App</b> com <i>Enable OAuth</i> + <i>Enable Client Credentials Flow</i>.
-        <span class="note">Connected App não é caminho: a criação está restrita desde o Spring '26 (as existentes seguem funcionando).</span></li>
-      <li><span class="chip c-pend">PENDENTE</span><b>Integration user</b> designado no fluxo (run as), preferencialmente com <i>API Only User</i>.
-        <span class="note">Client credentials exige um usuário de execução e não suporta refresh token — o token é reemitido, não renovado.</span></li>
-      <li><span class="chip c-ok">VALIDADO</span><b>Licenças e permissões de RLM</b> no integration user: PSLs <code>Salesforce Pricing Run Time</code>, <code>Product Catalog Management Viewer</code>, <code>Revenue Cloud User</code> + PS <code>CorePricingRunTimeUser</code>, <code>ProductDiscoveryUser</code>, <code>ProductCatalogManagementViewer</code>.
-        <span class="note">Atribuídas e testadas nesta POC — foi o que fez o Catalog List sair de FUNCTIONALITY_NOT_ENABLED para 200.</span></li>
-      <li><span class="chip c-ok">VALIDADO</span><b>Revenue Cloud habilitado</b> (<code>enableCoreCPQ</code>) + <b>Salesforce Pricing</b> ativo.
-        <span class="note">Estavam desligados na arqevery; ligados nesta sessão.</span></li>
-      <li><span class="chip c-blk">BLOQUEIO</span><b>Context Service provisionado</b> (contexts standard + pricing procedure default).
-        <span class="note">Ausente na arqevery e independente do SFCC — sem ele não há pricing headless por nenhum caminho, com ou sem MuleSoft.</span></li>
-      <li><span class="chip c-warn">ATENÇÃO</span><b>Login IP Ranges</b> do profile do integration user.
-        <span class="note">Se restrito, liberar os IPs de saída do SFCC — ou relaxar a política na External Client App.</span></li>
-    </ul>
+    <div class="card-h"><span class="ic" style="background:#5867E8">▤</span><h2>Arquitetura de alto nível</h2></div>
+    <div class="card-b flush"><table>
+      <thead><tr><th style="width:150px">Camada</th><th>Conteúdo</th><th style="width:130px">Classe</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Catálogo</td><td>EPC/PCM: ProductSpecification, atributos, bundles, elegibilidade de IP via Product Qualification</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>2 · Preço de tabela</td><td>Price Books + ABP: referência por prazo, segmento e eletrônica</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>3 · Motor de regras</td><td>BRE / Expression Sets: fator, valor mínimo, taxa de instalação, dedup e cross-subsídio (R2)</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>4 · Cotação &amp; ciclo de vida</td><td>Quote/Order/Asset: Asset Lifecycle para renovações, MACD, aprovações (Flow Approval Process)</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>5 · Dados externos</td><td>Viabilidade &amp; custos: Connect Master via External Service/MuleSoft; custo de last mile por input manual</td><td><span class="b b-cus">CUSTOMIZAÇÃO</span></td></tr>
+      </tbody>
+    </table></div>
   </div>
+
   <div class="card">
-    <div class="apiname">🛒 Lado SFCC — Business Manager</div>
-    <ul class="prem">
-      <li><span class="chip c-pend">PENDENTE</span><b>Service Credential</b> — URL da org + credencial.
-        <span class="note">Armadilha: o campo credential do framework é desenhado para basic authentication, não Bearer. Daí o padrão de 2 services (ao lado).</span></li>
-      <li><span class="chip c-pend">PENDENTE</span><b>Service Profile</b> — timeout de conexão, circuit breaker, rate limit.
-        <span class="note">Recomendação oficial: circuit breaker sempre ligado com contador zerado (usa o de sistema). Timeout baixo para preservar a responsividade da loja — nosso callout mediu ~250ms.</span></li>
-      <li><span class="chip c-pend">PENDENTE</span><b>Service Configuration</b> — type <code>HTTP</code> (<code>dw.net.HTTPClient</code>), mode <code>Live</code>, apontando profile + credential.
-        <span class="note">Mode <code>Mocked</code> permite desenvolver o cartridge inteiro antes do provisioning da org chegar.</span></li>
-      <li><span class="chip c-warn">ATENÇÃO</span><b>Credenciais não são portáveis.</b>
-        <span class="note">Credentials, chaves e certificados não podem ser importados/exportados — precisam ser criados à mão em cada instância (DEV, STG, PRD). Service e profile, sim, migram via Import &amp; Export → Service.</span></li>
-      <li><span class="chip c-pend">PENDENTE</span><b>Certificado / CA.</b>
-        <span class="note">O SFCC confia por padrão apenas nas root CAs que acompanham a plataforma Java; CAs adicionais vão no keystore da instância. A org usa CA pública — normalmente passa sem ação.</span></li>
-      <li><span class="chip c-pend">PENDENTE</span><b>Custom Caches</b> habilitado (Administration → Operations) e <b>Feature Switch "API hook execution"</b> ligado (Global Preferences → Feature Switches), este último só se usar hooks SCAPI/OCAPI.</li>
-    </ul>
+    <div class="card-h"><span class="ic" style="background:#F1B849">⚖</span><h2>Cobertura do motor de precificação</h2><span class="sub">12 requisitos · 4 OOTB · 6 parametrizáveis · 2 customizações</span></div>
+    <div class="card-b flush"><table>
+      <thead><tr><th style="width:270px">Requisito</th><th>Primitiva RLM</th><th style="width:130px">Classe</th></tr></thead>
+      <tbody>
+        <tr><td>Preço de tabela por segmento/prazo</td><td>Price Books + ABP</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>Eletrônica básica/premium/sem (±%)</td><td>Atributo + Price Adjustment</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>IP adicional tabelado</td><td>Produtos + Price Book fixo + eligibility</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>Bloqueio de "venda negativa"</td><td>Validation / Expression Set</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>Fator do prazo</td><td>Decision Table produto × prazo → fator</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Valor mínimo da cotação</td><td>Expression Set (base ÷/× fator)</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Taxa de instalação (delta mensal)</td><td>Expression Set + linha dinâmica</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Eletrônica por velocidade (CAPEX)</td><td>Atributo → Decision Table velocidade → capex</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Rede pronta vs. a construir</td><td>Flag de viabilidade → ramo no Expression Set</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Markup (last mile / genérico)</td><td>Expression Set (custo × markup) + Decision Table</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Dedup de CAPEX por endereço</td><td>Expression Set cross-line</td><td><span class="b b-cus">CUSTOMIZAÇÃO</span></td></tr>
+        <tr><td>Cross-subsídio (R2)</td><td>Expression Set nível-cotação (margin pooling)</td><td><span class="b b-cus">CUSTOMIZAÇÃO</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#2E844A">✓</span><h2>Por que Expression Sets / BRE</h2></div>
+      <div class="card-b"><ul class="li pro">
+        <li><b>Nativo do RLM</b> — integração e performance out-of-the-box.</li>
+        <li><b>Tabelas editáveis</b> — alteração no dia a dia pelo negócio.</li>
+        <li><b>Versionável</b> — trilha de auditoria completa.</li>
+        <li><b>Sem API externa no cálculo</b> — menos latência e menos pontos de falha.</li>
+      </ul>
+      <div class="note n-info" style="margin:14px 0 0"><span class="i">★</span><div><b>Regra de ouro:</b> nenhum número de negócio fica hard-coded — tudo em Decision Tables. A Algar muda a política sozinha, sem gerar dívida técnica.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#FE9339">!</span><h2>Onde exige atenção</h2></div>
+      <div class="card-b"><ul class="chk">
+        <li><span class="b b-cus" style="float:right">CUSTOMIZAÇÃO</span><b>Dedup de endereço</b><span class="d">Lógica cross-line: agrupa por endereço e cobra CAPEX uma única vez.</span></li>
+        <li><span class="b b-par" style="float:right">PARAMETRIZÁVEL</span><b>Taxa como produto dinâmico</b><span class="d">Atualiza a linha "Taxa de Instalação" ao mudar a cotação.</span></li>
+        <li><span class="b b-cus" style="float:right">CUSTOMIZAÇÃO</span><b>Cross-subsídio (R2)</b><span class="d">Pooling de margem em nível de cotação.</span></li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="ic" style="background:#9050E9">↻</span><h2>Ciclo de vida — Asset Lifecycle Management</h2></div>
+    <div class="card-b flush"><table>
+      <thead><tr><th style="width:150px">Cenário</th><th>Regra de negócio</th><th style="width:190px">Ação RLM</th><th style="width:130px">Classe</th></tr></thead>
+      <tbody>
+        <tr><td>Nova venda</td><td>Preço de tabela + taxa se rede a construir</td><td>Quote → Order → Asset</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>Reajuste</td><td>Aniversário, índice negociado; taxa não reajusta</td><td>Price escalation nativo</td><td><span class="b b-ootb">OOTB</span></td></tr>
+        <tr><td>Nova venda c/ subsídio</td><td>Subsídio + desconto ≤ limite (isenção de mensalidade)</td><td>Promoção / desconto pré-configurado</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Renegociação (meio)</td><td>Sem nova taxa; mantém a vigente; desconto sobre tabela atual</td><td>Amend Asset</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Upgrade / Downgrade</td><td>Não altera taxa; tabela vigente + alçadas atuais</td><td>Modify Asset</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Rescisão</td><td>C/ fidelidade: multa de 30% do restante + 100% da taxa. S/ fidelidade: sem multa</td><td>Cancel Asset + cálculo de multa</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        <tr><td>Mudança de endereço</td><td>Destino abordado (só M.O.); destino a construir (nova venda)</td><td>Cancel+New / Amend + regra de viabilidade</td><td><span class="b b-cus">CUSTOMIZAÇÃO</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#0B827C">⚑</span><h2>Alçadas &amp; aprovação</h2><span class="sub">engine 100% OOTB</span></div>
+      <div class="card-b flush">
+        <div style="padding:12px 14px 0"><div class="note n-ok" style="margin:0"><span class="i">✓</span><div>Flow Approval Process (Orchestration Engine) entrega nativamente: etapas paralelas, recall path, atribuição a filas/grupos e monitoramento.</div></div></div>
+        <table style="margin-top:12px">
+          <thead><tr><th>Alçada</th><th>Avalia</th><th>Mecanismo</th><th style="width:80px">Classe</th></tr></thead>
+          <tbody>
+            <tr><td>Desconto (produto)</td><td>% na linha</td><td>Estágio por faixa</td><td><span class="b b-ootb">OOTB</span></td></tr>
+            <tr><td>Financeira</td><td>Payback via preço mínimo</td><td>Estágio paralelo sobre Expression Set</td><td><span class="b b-ootb">OOTB</span></td></tr>
+            <tr><td>Comercial</td><td>Subsídio</td><td>Estágio sequencial na hierarquia</td><td><span class="b b-ootb">OOTB</span></td></tr>
+            <tr><td>Carta proposta + CAPEX</td><td>Matriz de recebíveis / CAPEX alto</td><td>Estágio por valor/limite</td><td><span class="b b-ootb">OOTB</span></td></tr>
+          </tbody>
+        </table>
+        <div style="padding:12px 14px"><div class="note n-warn" style="margin:0"><span class="i">⚠️</span><div><b>Os critérios, não o motor.</b> Definir faixas, limites de CAPEX, roteamento por Role/fila e campo manager (IDM). Critérios = parametrizável; engine = OOTB.</div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#04844B">⇄</span><h2>Integrações &amp; dados</h2><span class="sub">a integração traz dados, nunca calcula</span></div>
+      <div class="card-b flush"><table>
+        <thead><tr><th>Fonte / dado</th><th>Mecanismo</th><th style="width:112px">Classe</th></tr></thead>
+        <tbody>
+          <tr><td>Connect Master (viabilidade)</td><td>External Service / MuleSoft — metragem + status abordado/a construir</td><td><span class="b b-cus">CUSTOMIZAÇÃO</span></td></tr>
+          <tr><td>Custo por metro</td><td>Decision Table — CAPEX = metros × R$/metro</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+          <tr><td>Custo de last mile</td><td>Input manual por perfil habilitado — base do markup</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+          <tr><td>CAPEX de eletrônica</td><td>Decision Table velocidade → capex</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+          <tr><td>Hierarquia de aprovadores</td><td>Role/fila + manager (IDM) no Flow Approval Process</td><td><span class="b b-par">PARAMETRIZÁVEL</span></td></tr>
+        </tbody>
+      </table>
+      <div style="padding:12px 14px"><div class="note n-err" style="margin:0"><span class="i">⚠️</span><div><b>Mitigação de risco assumida:</b> histórico de falhas em integrações automáticas de custo mitigado via <b>input manual no R1</b>.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#2E844A">+</span><h2>Prós do desenho</h2></div>
+      <div class="card-b"><ul class="li pro">
+        <li><b>Customização concentrada</b> nos Expression Sets — fácil de auditar.</li>
+        <li><b>Parametrizável</b> — negócio altera política sem deploy.</li>
+        <li><b>Upgrade-safe</b> — ~80% padrão de mercado.</li>
+        <li><b>Sem API externa no cálculo</b> — menos pontos de falha.</li>
+        <li><b>Faseável</b> — R1 e R2 independentes.</li>
+        <li><b>Abrangência</b> — cobre os regimes de negociação da Algar.</li>
+      </ul></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#BA0517">−</span><h2>Contras assumidos</h2></div>
+      <div class="card-b"><ul class="li con">
+        <li><b>Lógica cross-line complexa</b> — dedup de endereço e cross-subsídio são difíceis.</li>
+        <li><b>Governança rigorosa</b> exigida para as Decision Tables de negócio.</li>
+        <li><b>Critérios de alçada</b> muito variáveis — demandam parametrização limpa.</li>
+        <li><b>Dependência externa</b> — viabilidade fornecida pelo Connect Master.</li>
+        <li><b>Mudança de endereço</b> concentra o maior esforço de customização.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--brand)">
+    <div class="card-h"><span class="ic" style="background:#0176D3">⌕</span><h2>Confronto com a org real</h2><span class="sub">medido na arqevery em 17/jul/2026 · não é opinião</span></div>
+    <div class="card-b flush"><table>
+      <thead><tr><th style="width:170px">Camada do desenho</th><th style="width:230px">Depende de</th><th>Estado verificado na arqevery</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Catálogo</td><td>ProductCatalog, Category, Selling Model</td><td><span class="b b-live">VALIDADO</span> &nbsp;Catálogo POC criado e servido. <span class="mono">/connect/cpq/catalogs</span> responde 200 em ~880ms</td></tr>
+        <tr><td>2 · Preço de tabela</td><td>PricebookEntry + ProductSellingModel</td><td><span class="b b-live">VALIDADO</span> &nbsp;3 PBEs criados com selling model vinculado</td></tr>
+        <tr><td>3 · Motor de regras</td><td>ExpressionSetDefinition, Decision Tables, Pricing Procedure</td><td><span class="b b-cus">BLOQUEADO</span> &nbsp;Zero registros. O deploy da <span class="mono">RLM_DefaultPricingProcedure</span> oficial falhou por dependência de contexto</td></tr>
+        <tr><td>4 · Cotação &amp; ciclo de vida</td><td>RLM habilitado + procedure default</td><td><span class="b b-par">PARCIAL</span> &nbsp;<span class="mono">enableCoreCPQ</span> estava <b>false</b> e foi ligado nesta sessão. Sem procedure default, não precifica: <span class="mono">SF-Pricing-00004</span></td></tr>
+        <tr><td>5 · Dados externos</td><td>External Service / Named Credential</td><td><span class="b b-gap">NÃO TESTADO</span> &nbsp;Fora do escopo desta POC</td></tr>
+        <tr style="background:#FEF8F7"><td style="color:var(--cus)">Fundação — não citada no desenho</td><td>Context Service (contexts standard)</td><td><span class="b b-cus">BLOQUEIO RAIZ</span> &nbsp;<span class="mono">FUNCTIONALITY_NOT_ENABLED [ContextResourceFamily]</span>. Nenhuma PSL da org carrega <span class="mono">RunContextRule</span> e o type <span class="mono">ContextDefinition</span> nem aparece no describeMetadata</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--navy)">
+    <div class="card-h"><span class="ic" style="background:#032D60">✎</span><h2>Leitura do arquiteto</h2><span class="sub">Everymind · o que acrescentamos ao desenho</span></div>
+    <div class="card-b"><ul class="chk">
+      <li><b>1 · "Sem API de cálculo externa" precisa de uma vírgula.</b><span class="d">A frase é verdadeira como <i>princípio</i>: ninguém deve reimplementar regra de preço fora do RLM. Mas ela é lida como se o RLM não expusesse cálculo — e ele expõe: <span class="mono">POST /connect/core-pricing/pricing</span> está documentado e foi testado hoje nesta org (aba Canal Digital). Quem calcula continua sendo o RLM; muda só quem consome. As duas afirmações convivem — e essa distinção é o que decide se a loja B2B cabe neste desenho.</span></li>
+      <li><b>2 · As três customizações são um problema só, com três sintomas.</b><span class="d">Dedup de CAPEX por endereço, cross-subsídio (R2) e mudança de endereço são todas <b>cross-line</b>: o motor precifica linha a linha, e a Algar raciocina por <b>sítio</b> e por <b>cotação</b>. Tratar como três customizações independentes triplica o custo e produz três soluções incompatíveis. Recomendação: desenhar <b>um</b> conceito de agrupamento (linha → sítio → cotação) no R1, mesmo que só o dedup use no R1 — o R2 herda em vez de reinventar.</span></li>
+      <li><b>3 · Falta o Spike 0.</b><span class="d">Os dois spikes propostos para a Semana 0 (API de viabilidade, roteamento de aprovador) pressupõem uma fundação que a sandbox não tem. As camadas 2, 3 e 4 inteiras dependem de Expression Sets, Decision Tables e Pricing Procedure — que dependem do Context Service, hoje não provisionado. <b>Spike 0 = provisionar o Context Service na sandbox</b> (caso Salesforce). Sem ele, os outros dois spikes rodam sobre terreno não verificado.</span></li>
+      <li><b>4 · "100% atendível" ≠ "100% OOTB".</b><span class="d">A recomendação está correta: os requisitos são todos endereçáveis. O risco é de leitura executiva — quatro itens são customização e concentram o esforço. Calibragem sugerida para a mesa: <b>~80% sem código, ~20% em Expression Sets parametrizáveis, e quatro pontos de código real</b> — sendo que três deles são o mesmo problema (ponto 2).</span></li>
+      <li><b>5 · Input manual de custo é dívida com data marcada.</b><span class="d">Mitigar a falha histórica de integração com input manual no R1 é a decisão pragmática certa. Mas ela precisa entrar no backlog do R2 com dono e critério de saída — senão vira processo permanente, com o custo de last mile dependendo de digitação em uma cotação que decide margem.</span></li>
+    </ul></div>
   </div>
 </div>
-<div class="card" style="margin-top:14px">
-  <div class="apiname">🧩 Cartridge — os 3 artefatos de código</div>
-  <div style="font-size:.83rem;line-height:1.6;color:var(--mut);margin-bottom:4px">
-    <b style="color:var(--txt)">1. Dois services</b> (o framework exige service config + profile + credential por serviço) &nbsp;·&nbsp;
-    <b style="color:var(--txt)">2. Token em custom cache</b> — padrão recomendado é <code>Cache.get(key, loader)</code>, limite de 128 KB por objeto, <code>expireAfterSeconds</code> abaixo do TTL da sessão. Caches não são sincronizados entre application servers: cada um emite o seu token. &nbsp;·&nbsp;
-    <b style="color:var(--txt)">3. Hook <code>dw.order.calculate</code></b> — o ponto único de cálculo e recálculo do basket, com implementação default sobrescrevível, chamado implicitamente por ~30 hooks de cesta (add item, quantidade, cupom, endereço, <code>order.beforePOST</code>). Sobrescrevendo-o, todo caminho de cesta passa pelo RLM sem tocar em mais nada.
+
+<!-- ══════════ ABA 2 · CANAL DIGITAL ══════════ -->
+<div class="panel" id="p-dig">
+
+  <div class="note n-info"><span class="i">ℹ️</span><div><b>O que esta aba responde.</b> A arquitetura da aba anterior cobre a <b>cotação assistida</b> — vendedor dentro do CRM. Quando a loja B2B entra na conversa, aparece a pergunta da R3: o SFCC consegue consultar o preço do Revenue Cloud direto, ou precisa de MuleSoft? Abaixo, a resposta medida na própria org. O backend Ever i9 faz aqui o papel do <b>app server do SFCC</b>: mesma mecânica, callout HTTPS direto, sem middleware.</div></div>
+
+  <div class="card">
+    <div class="card-h"><span class="ic" style="background:#0176D3">◉</span><h2>Status das APIs headless</h2><span class="sub">chamadas ao vivo na arqevery</span>
+      <button class="btn" style="margin-left:14px" onclick="loadStatus()">Reexecutar</button></div>
+    <div class="card-b"><div id="status" class="grid3"><div class="kpi"><span class="spin"></span> consultando a org…</div></div></div>
   </div>
-  <pre>rlm.http.oauth.token       → POST /services/oauth2/token           (grant_type=client_credentials)
+  <div id="ctxCallout" class="note n-warn" style="display:none"><span class="i">⚠️</span><div><b>Diagnóstico (17/jul):</b> o Revenue Cloud está licenciado e habilitado, mas o <b>provisionamento do Context Service está incompleto no lado Salesforce</b> — sem PSL com <span class="mono">RunContextRule</span>, sem o type <span class="mono">ContextDefinition</span> no Metadata API e sem os contexts standard. É o mesmo bloqueio raiz da aba Salesforce CRM: <b>não é uma questão de canal digital, é de fundação</b>. Quando provisionado, este painel exibe preços sem alteração de código.</div></div>
+
+  <div class="card">
+    <div class="card-h"><span class="ic" style="background:#F1B849">▦</span><h2>Vitrine</h2><span class="sub">catálogo PCM real via SOQL</span></div>
+    <div class="card-b"><div id="vitrine" class="grid3"><div class="kpi"><span class="spin"></span> carregando…</div></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#0B827C">🛒</span><h2>Cesta</h2><span class="sub">1 cesta = 1 chamada</span></div>
+      <div class="card-b">
+        <div id="cart"><div style="color:var(--txt-weak);font-size:12px">Cesta vazia — adicione produtos da vitrine.</div></div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-brand" id="btnPrice" onclick="doPrice()" disabled>Precificar no Revenue Cloud</button>
+          <button class="btn" onclick="clearCart()">Limpar</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#5867E8">⏱</span><h2>Resultado do callout</h2></div>
+      <div class="card-b">
+        <div class="grid3" style="gap:8px">
+          <div class="kpi"><div class="v" id="kMs">—</div><div class="l">backend ↔ org (ms)</div></div>
+          <div class="kpi"><div class="v" id="kTot">—</div><div class="l">total browser (ms)</div></div>
+          <div class="kpi"><div class="v" id="kP50">—</div><div class="l">p50 da sessão</div></div>
+          <div class="kpi"><div class="v" id="kP95">—</div><div class="l">p95 da sessão</div></div>
+        </div>
+        <div id="resState" style="margin-top:11px"></div>
+      </div>
+    </div>
+  </div>
+  <pre id="resJson" style="display:none"></pre>
+
+  <div class="card">
+    <div class="card-h"><span class="ic" style="background:#032D60">☑</span><h2>Premissas de integração — o que o SFCC precisa</h2><span class="sub">checklist fundamentado em documentação oficial</span></div>
+    <div class="card-b">
+      <div class="note n-info" style="margin-bottom:14px"><span class="i">ℹ️</span><div><b>Nenhum item abaixo exige MuleSoft.</b> É configuração de plataforma nas duas pontas + um cartridge. Não há na documentação oficial cartridge ou conector pronto SFCC → Revenue Cloud: o caminho documentado é o Service Framework genérico, o mesmo usado para qualquer integração HTTP do storefront.</div></div>
+      <div class="grid2">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">☁️ Lado da org</div>
+          <ul class="chk">
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>External Client App</b> com Enable OAuth + Client Credentials Flow<span class="d">Connected App não é caminho: criação restrita desde o Spring '26.</span></li>
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>Integration user</b> (run as), preferencialmente API Only<span class="d">O fluxo exige usuário de execução e não suporta refresh token.</span></li>
+            <li><span class="b b-live" style="float:right">VALIDADO</span><b>PSLs e Permission Sets de RLM</b><span class="d">Pricing Run Time, PCM Viewer, Revenue Cloud User + CorePricingRunTimeUser, ProductDiscoveryUser. Atribuídos nesta POC — foi o que fez o Catalog List sair de FUNCTIONALITY_NOT_ENABLED para 200.</span></li>
+            <li><span class="b b-cus" style="float:right">BLOQUEIO</span><b>Context Service provisionado</b><span class="d">Mesmo bloqueio da aba Salesforce CRM — independe do canal.</span></li>
+            <li><span class="b b-par" style="float:right">ATENÇÃO</span><b>Login IP Ranges</b><span class="d">Se restrito, liberar os IPs de saída do SFCC ou relaxar na External Client App.</span></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">🛒 Lado SFCC — Business Manager</div>
+          <ul class="chk">
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>Service Credential</b> — URL da org + credencial<span class="d">Armadilha: o campo é desenhado para basic authentication, não Bearer. Daí o padrão de dois services.</span></li>
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>Service Profile</b> — timeout, circuit breaker, rate limit<span class="d">Recomendação oficial: circuit breaker sempre ligado com contador zerado. Nosso callout mediu ~250ms.</span></li>
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>Service Configuration</b> — type HTTP, mode Live<span class="d">Mode Mocked permite construir o cartridge inteiro antes do provisioning chegar.</span></li>
+            <li><span class="b b-par" style="float:right">ATENÇÃO</span><b>Credenciais não são portáveis</b><span class="d">Não podem ser importadas/exportadas — criar à mão em DEV, STG e PRD. Service e profile migram via Import &amp; Export.</span></li>
+            <li><span class="b b-gap" style="float:right">PENDENTE</span><b>Custom Caches</b> e Feature Switch "API hook execution"<span class="d">O primeiro para o token; o segundo se usar hooks SCAPI/OCAPI.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="ic" style="background:#747474">&lt;/&gt;</span><h2>Cartridge — os três artefatos de código</h2></div>
+    <div class="card-b">
+      <div style="font-size:12px;color:var(--txt-mid);margin-bottom:11px;line-height:1.6">
+        <b style="color:var(--txt)">Dois services</b> (o framework exige config + profile + credential por serviço) · <b style="color:var(--txt)">token em custom cache</b> — padrão <span class="mono">Cache.get(key, loader)</span>, limite de 128 KB, caches não sincronizam entre application servers · <b style="color:var(--txt)">hook <span class="mono">dw.order.calculate</span></b> — ponto único de cálculo do basket, chamado implicitamente por ~30 hooks de cesta. Sobrescrevendo-o, todo caminho de cesta passa pelo RLM.
+      </div>
+      <pre>rlm.http.oauth.token       → POST /services/oauth2/token           (grant_type=client_credentials)
 rlm.http.pricing.calculate → POST /services/data/v67.0/connect/core-pricing/pricing
 
 // cartridge/scripts/services/rlmPricing.js
@@ -181,140 +455,144 @@ var svc = LocalServiceRegistry.createService('rlm.http.pricing.calculate', {
   mockCall:      function ()            { return mockPricingResponse; }
 });
 
-// cartridge/scripts/hooks/cart/calculate.js  →  hooks.json: {"name":"dw.order.calculate", ...}
+// cartridge/scripts/hooks/cart/calculate.js → hooks.json: {"name":"dw.order.calculate", ...}
 exports.calculate = function (basket) {
   var r = rlmPricing.call(basket);
-  if (r.status !== 'OK') return fallbackToLocalPriceBook(basket);   // ver "riscos" abaixo
+  if (r.status !== 'OK') return fallbackToLocalPriceBook(basket);   // circuit breaker → 503
   applyPrices(basket, r.object);
   basket.updateTotals();
   return new Status(Status.OK);
 };</pre>
-</div>
-<div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
-  <div class="card">
-    <div class="apiname">⚠️ Riscos de desenho (documentados)</div>
-    <ul class="prem">
-      <li><b>O RLM entra no orçamento de latência do checkout.</b><span class="note">As respostas do SCAPI precisam retornar dentro do timeout definido — e a execução dos hooks conta dentro dele.</span></li>
-      <li><b>Hook Circuit Breaker.</b><span class="note">Protege a plataforma contra excesso de falhas de hook e devolve HTTP 503. Por isso o fallback (preço do price book local quando o RLM não responde) tem que estar no desenho desde o dia 1 — não como remendo.</span></li>
-      <li><b>Hooks que retornam valor pulam a implementação de sistema</b> e os hooks seguintes do mesmo extension point.<span class="note">Em hooks de basket, a orientação oficial é não retornar nada, para não matar o calculate.</span></li>
-      <li><b>Vitrine sempre lê o catálogo local.</b><span class="note">Toda solução SFCC é híbrida: estrutura de catálogo replicada + preço via API em basket/checkout. "Opção B pura" não existe.</span></li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="apiname">📚 Fontes oficiais</div>
-    <div class="src">
-      • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-webservices.html" target="_blank">Web Services — B2C Commerce Developer Guide</a><br>
-      • <a href="https://developer.salesforce.com/docs/commerce/commerce-api/guide/extensibility_via_hooks.html" target="_blank">Customization with Hooks (SCAPI)</a><br>
-      • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-custom-caches.html" target="_blank">Custom Caches — B2C Commerce</a><br>
-      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&language=en_US&type=5" target="_blank">Configure a Client Credentials Flow (External Client App)</a><br>
-      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_client_credentials_flow.htm&language=en_US&type=5" target="_blank">OAuth 2.0 Client Credentials Flow for Server-to-Server</a><br>
-      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.connected_app_client_credentials_setup.htm&language=en_US&type=5" target="_blank">Connected App Client Credentials (restrição Spring '26)</a><br>
-      • <a href="https://developer.salesforce.com/docs/atlas.en-us.revenue_lifecycle_management_dev_guide.meta/revenue_lifecycle_management_dev_guide/product_discovery_business_apis.htm" target="_blank">Product Discovery Business APIs — Revenue Management</a>
     </div>
-    <div class="note" style="color:var(--mut);font-size:.74rem;margin-top:12px;line-height:1.5">
-      Não foi localizado na documentação oficial nenhum cartridge ou conector pronto SFCC → Revenue Cloud. O caminho documentado é o Service Framework genérico — o mesmo usado para qualquer integração HTTP do storefront.
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#BA0517">⚠</span><h2>Riscos de desenho</h2></div>
+      <div class="card-b"><ul class="li con">
+        <li><b>O RLM entra no orçamento de latência do checkout</b> — o timeout do SCAPI engloba a execução dos hooks.</li>
+        <li><b>Hook Circuit Breaker</b> devolve HTTP 503 diante de excesso de falhas. O fallback é requisito, não enfeite.</li>
+        <li><b>Hooks que retornam valor pulam a implementação de sistema</b> e os hooks seguintes do mesmo extension point.</li>
+        <li><b>A vitrine sempre lê o catálogo local</b> — toda solução SFCC é híbrida: estrutura replicada + preço via API no basket. "Opção B pura" não existe.</li>
+      </ul></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ic" style="background:#0176D3">📚</span><h2>Fontes oficiais</h2></div>
+      <div class="card-b"><div class="src">
+        • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-webservices.html" target="_blank">Web Services — B2C Commerce Developer Guide</a><br>
+        • <a href="https://developer.salesforce.com/docs/commerce/commerce-api/guide/extensibility_via_hooks.html" target="_blank">Customization with Hooks (SCAPI)</a><br>
+        • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-custom-caches.html" target="_blank">Custom Caches — B2C Commerce</a><br>
+        • <a href="https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&language=en_US&type=5" target="_blank">Configure a Client Credentials Flow (External Client App)</a><br>
+        • <a href="https://help.salesforce.com/s/articleView?id=xcloud.connected_app_client_credentials_setup.htm&language=en_US&type=5" target="_blank">Connected App Client Credentials — restrição Spring '26</a><br>
+        • <a href="https://developer.salesforce.com/docs/atlas.en-us.revenue_lifecycle_management_dev_guide.meta/revenue_lifecycle_management_dev_guide/product_discovery_business_apis.htm" target="_blank">Product Discovery Business APIs — Revenue Management</a>
+      </div></div>
     </div>
   </div>
 </div>
 
-<div class="footer">POC executada na sandbox <b>arqevery</b> · Ever i9 DevOps · Projeto CRM B2B Algar Telecom — Everymind. Endpoints: Product Discovery (<code>/connect/cpq/*</code>) e Salesforce Pricing (<code>/connect/core-pricing/pricing</code>), API v67.0 (Summer '26).</div>
 </div>
+
+<div class="foot">POC executada na sandbox <b>arqevery</b> · Ever i9 DevOps · Projeto CRM B2B Algar Telecom — Everymind. Endpoints: Product Discovery (<span class="mono">/connect/cpq/*</span>) e Salesforce Pricing (<span class="mono">/connect/core-pricing/pricing</span>), API v67.0 (Summer '26). A arquitetura da aba Salesforce CRM é de autoria da Salesforce (F. Vance, 17/jul/2026); os blocos de confronto e leitura são da Everymind.</div>
 
 <script>
-const cart = {};
-let hist = [];
-const fmt = v => v==null ? '<small>sem preço</small>' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const cart = {}; let hist = [];
+const fmt = v => v == null ? '<small>sem preço</small>' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});
 
-async function loadStatus(){
-  const el = document.getElementById('status');
-  el.innerHTML = '<div class="card"><span class="spin"></span> consultando a org…</div>';
-  try{
-    const r = await fetch('/api/rlm-poc/status'); const d = await r.json();
-    let anyBlocked = false;
-    el.innerHTML = d.checks.map(c=>{
-      const map = {ok:['b-ok','● operacional'], ok_engine:['b-ok','● engine ativo (validação ok)'],
-        blocked_context:['b-warn','◐ aguardando Context Service'], blocked_procedure:['b-warn','◐ aguardando pricing procedure'],
-        error:['b-err','✕ erro']};
-      const [cls,lbl] = map[c.state] || map.error;
-      if(c.state.startsWith('blocked')) anyBlocked = true;
-      const msg = extractMsg(c.body);
-      return `<div class="card"><div class="apiname">${c.name}</div>
-        <span class="badge ${cls}">${lbl}</span>
-        <div class="ms">${c.ms} <small>ms · HTTP ${c.httpStatus}</small></div>
-        <div class="path">${c.path}</div>
-        ${msg?`<div class="path" style="color:#c8cede;margin-top:8px">${msg}</div>`:''}</div>`;
-    }).join('');
-    document.getElementById('ctxCallout').style.display = anyBlocked ? 'block' : 'none';
-  }catch(e){ el.innerHTML = '<div class="card">Erro: '+e.message+'</div>'; }
+function tab(id){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  document.getElementById('t-' + (id === 'crm' ? 'crm' : 'dig')).classList.add('on');
+  if (id === 'dig' && !window._digLoaded) { window._digLoaded = true; loadStatus(); loadVitrine(); }
 }
+
 function extractMsg(b){
   try{
-    if(Array.isArray(b) && b[0] && b[0].message) return b[0].message.trim().slice(0,220);
-    if(b && b.apiStatus && b.apiStatus.messages && b.apiStatus.messages[0]) return b.apiStatus.messages[0].message.slice(0,220);
+    if(Array.isArray(b) && b[0] && b[0].message) return b[0].message.trim().slice(0,200);
+    if(b && b.apiStatus && b.apiStatus.messages && b.apiStatus.messages[0]) return b.apiStatus.messages[0].message.slice(0,200);
     if(b && b.apiStatus && b.apiStatus.statusCode) return b.apiStatus.statusCode;
   }catch(_){}
   return '';
+}
+
+async function loadStatus(){
+  const el = document.getElementById('status');
+  el.innerHTML = '<div class="kpi"><span class="spin"></span> consultando a org…</div>';
+  try{
+    const r = await fetch('/api/rlm-poc/status'); const d = await r.json();
+    let blocked = false;
+    el.innerHTML = d.checks.map(c => {
+      const map = {ok:['b-ootb','operacional'], ok_engine:['b-ootb','engine ativo'],
+        blocked_context:['b-par','aguardando Context Service'], blocked_procedure:['b-par','aguardando pricing procedure'],
+        error:['b-cus','erro']};
+      const [cls,lbl] = map[c.state] || map.error;
+      if(String(c.state).startsWith('blocked')) blocked = true;
+      const msg = extractMsg(c.body);
+      return `<div class="card" style="margin:0"><div class="card-b">
+        <div style="font-size:12.5px;font-weight:600;margin-bottom:7px">${c.name}</div>
+        <span class="b ${cls}">${lbl}</span>
+        <div class="ms">${c.ms} <small>ms · HTTP ${c.httpStatus}</small></div>
+        <div class="pth">${c.path}</div>
+        ${msg ? `<div class="pth" style="color:var(--txt-mid);margin-top:7px">${msg}</div>` : ''}</div></div>`;
+    }).join('');
+    document.getElementById('ctxCallout').style.display = blocked ? 'flex' : 'none';
+  }catch(e){ el.innerHTML = '<div class="kpi">Não foi possível consultar a org: ' + e.message + '</div>'; }
 }
 
 async function loadVitrine(){
   const el = document.getElementById('vitrine');
   try{
     const r = await fetch('/api/rlm-poc/vitrine'); const d = await r.json();
-    if(!d.products || !d.products.length){ el.innerHTML='<div class="card">Catálogo POC não encontrado na org.</div>'; return; }
-    el.innerHTML = d.products.map(p=>`
-      <div class="card prod">
-        <div class="nm">${p.name}</div>
-        <div class="cat">${p.category||''} · ${p.code||''}</div>
-        <div class="pr">${fmt(p.listPrice)} <small>/mês · list price (PBE)</small></div>
-        <button onclick='addToCart(${JSON.stringify(p)})'>＋ Adicionar à cesta</button>
-      </div>`).join('');
-  }catch(e){ el.innerHTML = '<div class="card">Erro: '+e.message+'</div>'; }
+    if(!d.products || !d.products.length){ el.innerHTML = '<div class="kpi">Catálogo POC não encontrado na org.</div>'; return; }
+    el.innerHTML = d.products.map(p => `<div class="card prod" style="margin:0"><div class="card-b">
+      <div class="nm">${p.name}</div>
+      <div class="cat">${p.category || ''} · ${p.code || ''}</div>
+      <div class="pr">${fmt(p.listPrice)} <small>/mês · list price</small></div>
+      <button class="btn" style="margin-top:11px;width:100%" onclick='addToCart(${JSON.stringify(p)})'>Adicionar à cesta</button>
+    </div></div>`).join('');
+  }catch(e){ el.innerHTML = '<div class="kpi">Erro: ' + e.message + '</div>'; }
 }
 
 function addToCart(p){ cart[p.id] = cart[p.id] || {...p, qty:0}; cart[p.id].qty++; renderCart(); }
 function clearCart(){ for(const k in cart) delete cart[k]; renderCart(); }
-function setQty(id,v){ if(cart[id]){ cart[id].qty=Math.max(1,parseInt(v)||1); renderCart(); } }
+function setQty(id,v){ if(cart[id]){ cart[id].qty = Math.max(1, parseInt(v) || 1); renderCart(); } }
 function renderCart(){
-  const items = Object.values(cart);
-  const el = document.getElementById('cart');
+  const items = Object.values(cart), el = document.getElementById('cart');
   document.getElementById('btnPrice').disabled = !items.length;
-  if(!items.length){ el.innerHTML='<div style="color:var(--mut);font-size:.86rem">Cesta vazia — adicione produtos da vitrine.</div>'; return; }
-  const total = items.reduce((s,i)=>s+(i.listPrice||0)*i.qty,0);
-  el.innerHTML = items.map(i=>`
-    <div class="cartrow"><span>${i.name}</span>
-      <span style="display:flex;gap:10px;align-items:center">
-        <input type="number" min="1" value="${i.qty}" onchange="setQty('${i.id}',this.value)">
-        <b>${fmt((i.listPrice||0)*i.qty)}</b></span></div>`).join('')
-    + `<div class="cartrow" style="border:0"><span style="color:var(--mut)">Total estimado (client-side)</span><b>${fmt(total)}</b></div>`;
+  if(!items.length){ el.innerHTML = '<div style="color:var(--txt-weak);font-size:12px">Cesta vazia — adicione produtos da vitrine.</div>'; return; }
+  const total = items.reduce((s,i) => s + (i.listPrice || 0) * i.qty, 0);
+  el.innerHTML = items.map(i => `<div class="crow"><span>${i.name}</span>
+    <span style="display:flex;gap:9px;align-items:center">
+      <input type="number" min="1" value="${i.qty}" onchange="setQty('${i.id}',this.value)">
+      <b style="min-width:96px;text-align:right">${fmt((i.listPrice||0)*i.qty)}</b></span></div>`).join('')
+    + `<div class="crow" style="border:0"><span style="color:var(--txt-weak)">Total estimado (client-side)</span><b>${fmt(total)}</b></div>`;
 }
 
 async function doPrice(){
-  const items = Object.values(cart).map(i=>({productId:i.id, qty:i.qty, unitPrice:i.listPrice||0}));
+  const items = Object.values(cart).map(i => ({productId:i.id, qty:i.qty, unitPrice:i.listPrice || 0}));
   const btn = document.getElementById('btnPrice');
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> precificando…';
   const t0 = performance.now();
   try{
     const r = await fetch('/api/rlm-poc/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})});
     const d = await r.json();
-    const tot = Math.round(performance.now()-t0);
     document.getElementById('kMs').textContent = d.calloutMs ?? '—';
-    document.getElementById('kTot').textContent = tot;
-    if(typeof d.calloutMs==='number'){ hist.push(d.calloutMs); hist=hist.slice(-50);
-      const s=[...hist].sort((a,b)=>a-b);
+    document.getElementById('kTot').textContent = Math.round(performance.now() - t0);
+    if(typeof d.calloutMs === 'number'){
+      hist.push(d.calloutMs); hist = hist.slice(-50);
+      const s = [...hist].sort((a,b) => a-b);
       document.getElementById('kP50').textContent = s[Math.floor(s.length*.5)];
-      document.getElementById('kP95').textContent = s[Math.min(s.length-1,Math.floor(s.length*.95))];
+      document.getElementById('kP95').textContent = s[Math.min(s.length-1, Math.floor(s.length*.95))];
     }
-    const st = document.getElementById('resState');
-    const ok = d.state==='ok';
-    st.innerHTML = `<span class="badge ${ok?'b-ok':(String(d.state).startsWith('blocked')?'b-warn':'b-err')}">${ok?'● preço calculado pelo engine':'◐ resposta real da org (setup pendente)'}</span>`;
+    const ok = d.state === 'ok';
+    document.getElementById('resState').innerHTML =
+      `<span class="b ${ok?'b-ootb':(String(d.state).startsWith('blocked')?'b-par':'b-cus')}">${ok?'preço calculado pelo engine':'resposta real da org · fundação pendente'}</span>`;
     const pre = document.getElementById('resJson');
-    pre.style.display='block';
+    pre.style.display = 'block';
     pre.textContent = JSON.stringify({calloutMs:d.calloutMs, httpStatus:d.httpStatus, state:d.state, orgResponse:d.orgResponse}, null, 2);
-  }catch(e){ alert('Erro: '+e.message); }
-  btn.disabled=false; btn.innerHTML='⚡ Precificar no Revenue Cloud';
+  }catch(e){ document.getElementById('resState').innerHTML = '<span class="b b-cus">falha na chamada: ' + e.message + '</span>'; }
+  btn.disabled = false; btn.innerHTML = 'Precificar no Revenue Cloud';
 }
-
-loadStatus(); loadVitrine();
 </script>
 </body>
 </html>
