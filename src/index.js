@@ -38,7 +38,8 @@ app.post('/api/migrate', async (req, res) => {
       ['alm_artifacts', 'content', 'TEXT'],
       ['alm_artifacts', 'version', 'INT DEFAULT 1'],
       ['alm_artifacts', 'agent', 'VARCHAR(30)'],
-      ['alm_artifacts', 'iteration', 'INT DEFAULT 1']
+      ['alm_artifacts', 'iteration', 'INT DEFAULT 1'],
+      ['deploy_runs', 'sf_deploy_id', 'VARCHAR(40)']
     ];
     for (const [table, col, def] of cols) {
       try {
