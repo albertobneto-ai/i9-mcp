@@ -195,8 +195,9 @@ router.delete('/explorer/stories/:jiraKey', authMiddleware, async (req, res) => 
     if (!rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
     const usId = rows[0].id;
     const comp = await pool.query(`DELETE FROM us_components WHERE us_id = $1`, [usId]);
+    const runs = await pool.query(`UPDATE deploy_runs SET us_id = NULL WHERE us_id = $1`, [usId]);
     await pool.query(`DELETE FROM user_stories WHERE id = $1`, [usId]);
-    res.json({ ok: true, deleted: req.params.jiraKey, components_unlinked: comp.rowCount });
+    res.json({ ok: true, deleted: req.params.jiraKey, components_unlinked: comp.rowCount, deploy_runs_unlinked: runs.rowCount });
   } catch (e) {
     console.error('[explorer/stories DELETE]', e.message);
     res.status(500).json({ ok: false, error: e.message });
