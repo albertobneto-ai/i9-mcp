@@ -48,6 +48,24 @@ pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding
 .kpi .v{font-size:1.3rem;font-weight:700}
 .kpi .l{font-size:.68rem;color:var(--mut);margin-top:3px}
 .footer{margin-top:44px;color:var(--mut);font-size:.72rem;border-top:1px solid var(--border);padding-top:14px}
+.callout-info{border-left-color:var(--acc);background:rgba(79,140,255,.07);display:block}
+.callout-info b{color:var(--acc)}
+.prem{list-style:none;display:flex;flex-direction:column;gap:11px}
+.prem li{font-size:.83rem;line-height:1.5;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.prem li:last-child{border:0;padding-bottom:0}
+.prem b{color:var(--txt)}
+.prem .note{display:block;color:var(--mut);font-size:.75rem;margin-top:3px}
+.chip{display:inline-block;font-size:.64rem;font-weight:700;border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:1px;letter-spacing:.3px}
+.c-ok{background:rgba(46,204,113,.14);color:var(--ok)}
+.c-pend{background:rgba(139,147,167,.16);color:var(--mut)}
+.c-warn{background:rgba(245,166,35,.14);color:var(--warn)}
+.c-blk{background:rgba(231,76,60,.14);color:var(--err)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--mut);margin:0 0 14px}
+.src{font-size:.74rem;line-height:1.9;color:var(--mut)}
+.src a{color:var(--acc);text-decoration:none}
+.src a:hover{text-decoration:underline}
+code{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.75rem;font-family:ui-monospace,Consolas,monospace}
+@media(max-width:820px){.grid[style*="1.1fr"],.grid[style*="1fr 1fr"]{grid-template-columns:1fr!important}}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
 </style>
@@ -56,7 +74,7 @@ pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding
 <div class="wrap">
 <header>
   <h1>POC · Pricing Headless <span>Revenue Cloud</span> — vitrine e-commerce</h1>
-  <div class="sub">Demonstração do padrão de integração <b>callout server-side direto</b>: este front chama o backend Ever i9, que faz o papel do <b>app server do SFCC</b> e dispara a chamada HTTPS diretamente às Connect APIs da org <b>arqevery</b> — sem middleware intermediário. Todos os dados e respostas exibidos são reais.</div>
+  <div class="sub">Demonstração do padrão de integração <b>callout server-side direto</b>: este front chama o backend Ever i9, que faz o papel do <b>app server do SFCC</b> e dispara a chamada HTTPS diretamente às Connect APIs da org <b>arqevery</b> — sem middleware intermediário. Todos os dados e respostas exibidos são reais. <a href="#premissas" style="color:var(--acc);text-decoration:none">→ Premissas de integração (checklist SFCC + org)</a></div>
   <div class="flow">
     <span class="node">🖥️ Browser (storefront)</span><span class="arrow">→</span>
     <span class="node">⚙️ Backend i9 <small>(≈ app server SFCC)</small></span><span class="arrow">→ HTTPS direto →</span>
@@ -95,6 +113,109 @@ pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding
   </div>
 </div>
 <pre id="resJson" style="display:none"></pre>
+
+<h2 id="premissas">4 · Premissas de integração <span class="tag">checklist fundamentado em documentação oficial</span></h2>
+<div class="callout callout-info">
+  <b>O que este painel prova e o que ele não prova.</b> A demo acima substitui o storefront SFCC pelo backend Ever i9 — o mecanismo (callout server-side direto → Connect API, 1 cesta = 1 chamada) é idêntico. Para trocar o i9 pelo SFCC real, este é o checklist completo. <b>Nenhum item abaixo exige MuleSoft</b>: é configuração de plataforma nas duas pontas + um cartridge.
+</div>
+<div class="legend">
+  <span><span class="chip c-ok">VALIDADO</span> verificado nesta POC</span>
+  <span><span class="chip c-pend">PENDENTE</span> depende de instância SFCC</span>
+  <span><span class="chip c-warn">ATENÇÃO</span> armadilha documentada</span>
+  <span><span class="chip c-blk">BLOQUEIO</span> impede o fluxo hoje</span>
+</div>
+<div class="grid" style="grid-template-columns:1fr 1fr">
+  <div class="card">
+    <div class="apiname">☁️ Lado da org (arqevery / HOMOL / PROD)</div>
+    <ul class="prem">
+      <li><span class="chip c-pend">PENDENTE</span><b>External Client App</b> com <i>Enable OAuth</i> + <i>Enable Client Credentials Flow</i>.
+        <span class="note">Connected App não é caminho: a criação está restrita desde o Spring '26 (as existentes seguem funcionando).</span></li>
+      <li><span class="chip c-pend">PENDENTE</span><b>Integration user</b> designado no fluxo (run as), preferencialmente com <i>API Only User</i>.
+        <span class="note">Client credentials exige um usuário de execução e não suporta refresh token — o token é reemitido, não renovado.</span></li>
+      <li><span class="chip c-ok">VALIDADO</span><b>Licenças e permissões de RLM</b> no integration user: PSLs <code>Salesforce Pricing Run Time</code>, <code>Product Catalog Management Viewer</code>, <code>Revenue Cloud User</code> + PS <code>CorePricingRunTimeUser</code>, <code>ProductDiscoveryUser</code>, <code>ProductCatalogManagementViewer</code>.
+        <span class="note">Atribuídas e testadas nesta POC — foi o que fez o Catalog List sair de FUNCTIONALITY_NOT_ENABLED para 200.</span></li>
+      <li><span class="chip c-ok">VALIDADO</span><b>Revenue Cloud habilitado</b> (<code>enableCoreCPQ</code>) + <b>Salesforce Pricing</b> ativo.
+        <span class="note">Estavam desligados na arqevery; ligados nesta sessão.</span></li>
+      <li><span class="chip c-blk">BLOQUEIO</span><b>Context Service provisionado</b> (contexts standard + pricing procedure default).
+        <span class="note">Ausente na arqevery e independente do SFCC — sem ele não há pricing headless por nenhum caminho, com ou sem MuleSoft.</span></li>
+      <li><span class="chip c-warn">ATENÇÃO</span><b>Login IP Ranges</b> do profile do integration user.
+        <span class="note">Se restrito, liberar os IPs de saída do SFCC — ou relaxar a política na External Client App.</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="apiname">🛒 Lado SFCC — Business Manager</div>
+    <ul class="prem">
+      <li><span class="chip c-pend">PENDENTE</span><b>Service Credential</b> — URL da org + credencial.
+        <span class="note">Armadilha: o campo credential do framework é desenhado para basic authentication, não Bearer. Daí o padrão de 2 services (ao lado).</span></li>
+      <li><span class="chip c-pend">PENDENTE</span><b>Service Profile</b> — timeout de conexão, circuit breaker, rate limit.
+        <span class="note">Recomendação oficial: circuit breaker sempre ligado com contador zerado (usa o de sistema). Timeout baixo para preservar a responsividade da loja — nosso callout mediu ~250ms.</span></li>
+      <li><span class="chip c-pend">PENDENTE</span><b>Service Configuration</b> — type <code>HTTP</code> (<code>dw.net.HTTPClient</code>), mode <code>Live</code>, apontando profile + credential.
+        <span class="note">Mode <code>Mocked</code> permite desenvolver o cartridge inteiro antes do provisioning da org chegar.</span></li>
+      <li><span class="chip c-warn">ATENÇÃO</span><b>Credenciais não são portáveis.</b>
+        <span class="note">Credentials, chaves e certificados não podem ser importados/exportados — precisam ser criados à mão em cada instância (DEV, STG, PRD). Service e profile, sim, migram via Import &amp; Export → Service.</span></li>
+      <li><span class="chip c-pend">PENDENTE</span><b>Certificado / CA.</b>
+        <span class="note">O SFCC confia por padrão apenas nas root CAs que acompanham a plataforma Java; CAs adicionais vão no keystore da instância. A org usa CA pública — normalmente passa sem ação.</span></li>
+      <li><span class="chip c-pend">PENDENTE</span><b>Custom Caches</b> habilitado (Administration → Operations) e <b>Feature Switch "API hook execution"</b> ligado (Global Preferences → Feature Switches), este último só se usar hooks SCAPI/OCAPI.</li>
+    </ul>
+  </div>
+</div>
+<div class="card" style="margin-top:14px">
+  <div class="apiname">🧩 Cartridge — os 3 artefatos de código</div>
+  <div style="font-size:.83rem;line-height:1.6;color:var(--mut);margin-bottom:4px">
+    <b style="color:var(--txt)">1. Dois services</b> (o framework exige service config + profile + credential por serviço) &nbsp;·&nbsp;
+    <b style="color:var(--txt)">2. Token em custom cache</b> — padrão recomendado é <code>Cache.get(key, loader)</code>, limite de 128 KB por objeto, <code>expireAfterSeconds</code> abaixo do TTL da sessão. Caches não são sincronizados entre application servers: cada um emite o seu token. &nbsp;·&nbsp;
+    <b style="color:var(--txt)">3. Hook <code>dw.order.calculate</code></b> — o ponto único de cálculo e recálculo do basket, com implementação default sobrescrevível, chamado implicitamente por ~30 hooks de cesta (add item, quantidade, cupom, endereço, <code>order.beforePOST</code>). Sobrescrevendo-o, todo caminho de cesta passa pelo RLM sem tocar em mais nada.
+  </div>
+  <pre>rlm.http.oauth.token       → POST /services/oauth2/token           (grant_type=client_credentials)
+rlm.http.pricing.calculate → POST /services/data/v67.0/connect/core-pricing/pricing
+
+// cartridge/scripts/services/rlmPricing.js
+var svc = LocalServiceRegistry.createService('rlm.http.pricing.calculate', {
+  createRequest: function (svc, cart) {
+    svc.setRequestMethod('POST');
+    svc.addHeader('Authorization', 'Bearer ' + getToken());   // getToken() → CacheMgr
+    svc.addHeader('Content-Type', 'application/json');
+    return JSON.stringify(buildPayload(cart));                // Cart + CartItem[]
+  },
+  parseResponse: function (svc, client) { return JSON.parse(client.text); },
+  mockCall:      function ()            { return mockPricingResponse; }
+});
+
+// cartridge/scripts/hooks/cart/calculate.js  →  hooks.json: {"name":"dw.order.calculate", ...}
+exports.calculate = function (basket) {
+  var r = rlmPricing.call(basket);
+  if (r.status !== 'OK') return fallbackToLocalPriceBook(basket);   // ver "riscos" abaixo
+  applyPrices(basket, r.object);
+  basket.updateTotals();
+  return new Status(Status.OK);
+};</pre>
+</div>
+<div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+  <div class="card">
+    <div class="apiname">⚠️ Riscos de desenho (documentados)</div>
+    <ul class="prem">
+      <li><b>O RLM entra no orçamento de latência do checkout.</b><span class="note">As respostas do SCAPI precisam retornar dentro do timeout definido — e a execução dos hooks conta dentro dele.</span></li>
+      <li><b>Hook Circuit Breaker.</b><span class="note">Protege a plataforma contra excesso de falhas de hook e devolve HTTP 503. Por isso o fallback (preço do price book local quando o RLM não responde) tem que estar no desenho desde o dia 1 — não como remendo.</span></li>
+      <li><b>Hooks que retornam valor pulam a implementação de sistema</b> e os hooks seguintes do mesmo extension point.<span class="note">Em hooks de basket, a orientação oficial é não retornar nada, para não matar o calculate.</span></li>
+      <li><b>Vitrine sempre lê o catálogo local.</b><span class="note">Toda solução SFCC é híbrida: estrutura de catálogo replicada + preço via API em basket/checkout. "Opção B pura" não existe.</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="apiname">📚 Fontes oficiais</div>
+    <div class="src">
+      • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-webservices.html" target="_blank">Web Services — B2C Commerce Developer Guide</a><br>
+      • <a href="https://developer.salesforce.com/docs/commerce/commerce-api/guide/extensibility_via_hooks.html" target="_blank">Customization with Hooks (SCAPI)</a><br>
+      • <a href="https://developer.salesforce.com/docs/commerce/b2c-commerce/guide/b2c-custom-caches.html" target="_blank">Custom Caches — B2C Commerce</a><br>
+      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&language=en_US&type=5" target="_blank">Configure a Client Credentials Flow (External Client App)</a><br>
+      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_client_credentials_flow.htm&language=en_US&type=5" target="_blank">OAuth 2.0 Client Credentials Flow for Server-to-Server</a><br>
+      • <a href="https://help.salesforce.com/s/articleView?id=xcloud.connected_app_client_credentials_setup.htm&language=en_US&type=5" target="_blank">Connected App Client Credentials (restrição Spring '26)</a><br>
+      • <a href="https://developer.salesforce.com/docs/atlas.en-us.revenue_lifecycle_management_dev_guide.meta/revenue_lifecycle_management_dev_guide/product_discovery_business_apis.htm" target="_blank">Product Discovery Business APIs — Revenue Management</a>
+    </div>
+    <div class="note" style="color:var(--mut);font-size:.74rem;margin-top:12px;line-height:1.5">
+      Não foi localizado na documentação oficial nenhum cartridge ou conector pronto SFCC → Revenue Cloud. O caminho documentado é o Service Framework genérico — o mesmo usado para qualquer integração HTTP do storefront.
+    </div>
+  </div>
+</div>
 
 <div class="footer">POC executada na sandbox <b>arqevery</b> · Ever i9 DevOps · Projeto CRM B2B Algar Telecom — Everymind. Endpoints: Product Discovery (<code>/connect/cpq/*</code>) e Salesforce Pricing (<code>/connect/core-pricing/pricing</code>), API v67.0 (Summer '26).</div>
 </div>
