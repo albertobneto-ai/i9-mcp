@@ -14,6 +14,7 @@ import {
   runToolingQuery, runSoql
 } from '../services/sf-multi.js';
 import crypto from 'crypto';
+import { inflateRawSync } from 'zlib';
 import { analyze as vectorAgentAnalyze } from '../vectorAgent/index.js';
 
 
@@ -1259,6 +1260,227 @@ router.post('/explorer/us/prepare-deploy', authMiddleware, async (req, res) => {
     res.json({ ok: true, jira_key: jira_key || null, components: results });
   } catch (e) {
     console.error('[us/prepare-deploy]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// US MERGE — correção por US: retrieve na org de ORIGEM da US
+// (src_org_id definido na criação) e deploy assíncrono na org
+// destino escolhida. H12-safe: a rota dispara o deploy e o
+// acompanhamento é feito via /us/merge-status (polling).
+// ============================================================
+
+function parseZipEntries(zipBuf) {
+  // End Of Central Directory (0x06054b50), varrendo do fim
+  let eocd = -1;
+  const stop = Math.max(0, zipBuf.length - 22 - 65536);
+  for (let i = zipBuf.length - 22; i >= stop; i--) {
+    if (zipBuf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('ZIP inválido (EOCD não encontrado)');
+  const count = zipBuf.readUInt16LE(eocd + 10);
+  let off = zipBuf.readUInt32LE(eocd + 16);
+  const entries = [];
+  for (let n = 0; n < count; n++) {
+    if (zipBuf.readUInt32LE(off) !== 0x02014b50) throw new Error('ZIP inválido (central directory)');
+    const compMethod = zipBuf.readUInt16LE(off + 10);
+    const compSize   = zipBuf.readUInt32LE(off + 20);
+    const nameLen    = zipBuf.readUInt16LE(off + 28);
+    const extraLen   = zipBuf.readUInt16LE(off + 30);
+    const commentLen = zipBuf.readUInt16LE(off + 32);
+    const localOff   = zipBuf.readUInt32LE(off + 42);
+    const name = zipBuf.slice(off + 46, off + 46 + nameLen).toString('utf-8');
+    const lNameLen  = zipBuf.readUInt16LE(localOff + 26);
+    const lExtraLen = zipBuf.readUInt16LE(localOff + 28);
+    const dataStart = localOff + 30 + lNameLen + lExtraLen;
+    const raw = zipBuf.slice(dataStart, dataStart + compSize);
+    if (!name.endsWith('/')) {
+      const data = compMethod === 8 ? inflateRawSync(raw) : raw;
+      entries.push({ path: name, content: data.toString('utf-8') });
+    }
+    off += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+
+async function retrieveComponentsZip(srcOrg, comps) {
+  const conn = await connectToOrg(srcOrg);
+  const byType = {};
+  for (const c of comps) (byType[c.component_type] = byType[c.component_type] || []).push(c.component_name);
+  const types = Object.entries(byType).map(([name, members]) => ({ name, members }));
+  const reqJob = conn.metadata.retrieve({ unpackaged: { types, version: '62.0' } });
+  const start = Date.now();
+  let r = await reqJob.check();
+  while (!(r.done === true || r.done === 'true')) {
+    if (Date.now() - start > 22000)
+      throw new Error('Retrieve na origem excedeu 22s — repita a operação (a conexão SOAP fica aquecida na 2ª tentativa).');
+    await new Promise(s => setTimeout(s, 1500));
+    r = await conn.metadata.checkRetrieveStatus(r.id);
+  }
+  if (String(r.status || '') === 'Failed')
+    throw new Error('Retrieve falhou na origem: ' + (r.errorMessage || 'sem detalhe'));
+  let entries = parseZipEntries(Buffer.from(r.zipFile, 'base64'));
+  if (entries.length && entries.every(e => e.path.startsWith('unpackaged/')))
+    entries = entries.map(e => ({ path: e.path.slice('unpackaged/'.length), content: e.content }));
+  return entries;
+}
+
+// POST /api/explorer/us/merge-run
+// { jira_key, dest_org_id, component_ids?: number[] }
+// Origem da correção = src_org_id da US (org escolhida na criação).
+router.post('/explorer/us/merge-run', authMiddleware, async (req, res) => {
+  try {
+    const { jira_key, component_ids } = req.body || {};
+    const dest_org_id = toInt(req.body ? req.body.dest_org_id : null);
+    if (!jira_key || !dest_org_id)
+      return res.status(400).json({ ok: false, error: 'jira_key and dest_org_id required' });
+
+    const usRes = await pool.query(`SELECT * FROM user_stories WHERE jira_key = $1`, [jira_key]);
+    if (!usRes.rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+    const us = usRes.rows[0];
+    if (!us.src_org_id)
+      return res.status(400).json({ ok: false, error: 'US sem org de origem (src) definida na criação — edite a US antes do merge' });
+    if (dest_org_id === us.src_org_id)
+      return res.status(400).json({ ok: false, error: 'Destino não pode ser a própria org de origem da correção' });
+
+    const params = [us.id];
+    let compWhere = '';
+    if (Array.isArray(component_ids) && component_ids.length) {
+      params.push(component_ids.map(v => toInt(v)).filter(Boolean));
+      compWhere = ' AND id = ANY($2)';
+    }
+    const compsRes = await pool.query(
+      `SELECT * FROM us_components WHERE us_id = $1${compWhere} ORDER BY component_type, component_name`, params);
+    if (!compsRes.rows.length)
+      return res.status(400).json({ ok: false, error: 'Nenhum componente vinculado à US (ou seleção vazia)' });
+    const comps = compsRes.rows;
+
+    const srcOrg = await getOrg(us.src_org_id);
+    const destOrg = await getOrg(dest_org_id);
+    if (!srcOrg || !destOrg) return res.status(404).json({ ok: false, error: 'Org de origem ou destino não cadastrada' });
+
+    // Snapshot (leitura) do estado atual no destino — tolerante a ausência/falha
+    const snapBefore = {};
+    for (const c of comps) {
+      try {
+        const ret = await readCompareContent(destOrg, c.component_type, c.component_name);
+        snapBefore[c.id] = ret && ret.content ? String(ret.content).substring(0, 10000) : null;
+      } catch (e) { snapBefore[c.id] = null; }
+    }
+
+    // Retrieve do pacote na ORIGEM — formato deployável nativo:
+    // Apex com -meta.xml, LWC bundle completo, XML real dos declarativos
+    const entries = await retrieveComponentsZip(srcOrg, comps);
+    if (!entries.length)
+      return res.status(422).json({ ok: false, error: 'Retrieve na origem não devolveu arquivos — confira se os componentes existem na org de origem' });
+    const zipBuffer = buildMetadataZip(entries);
+
+    const oeId = await nextOeId(pool);
+    const drRes = await pool.query(`
+      INSERT INTO deploy_runs (oe_id, us_id, type, src_org_id, tgt_org_id, status, deployed_by, deployed_at, created_at)
+      VALUES ($1, $2, 'MERGE', $3, $4, 'running', $5, NOW(), NOW())
+      RETURNING id, created_at
+    `, [oeId, us.id, us.src_org_id, dest_org_id, req.user.id]);
+    const deployRunId = drRes.rows[0].id;
+
+    for (const c of comps) {
+      await pool.query(`
+        INSERT INTO deploy_components (deploy_run_id, component_name, component_type, action, snap_before, snap_after, result, error_message)
+        VALUES ($1, $2, $3, 'merged', $4, NULL, 'pending', NULL)
+      `, [deployRunId, c.component_name, c.component_type, snapBefore[c.id]]);
+    }
+
+    // Dispara o deploy SEM aguardar a conclusão (H12-safe)
+    const conn = await connectToOrg(destOrg);
+    const job = conn.metadata.deploy(zipBuffer, {
+      rollbackOnError: true, singlePackage: true, allowMissingFiles: false, autoUpdatePackage: false
+    });
+    const st = await job.check();
+    const sfDeployId = st.id;
+    await pool.query(`UPDATE deploy_runs SET sf_deploy_id = $1 WHERE id = $2`, [sfDeployId, deployRunId]);
+    await pool.query(`UPDATE user_stories SET oe_id = $1, updated_at = NOW() WHERE id = $2`, [oeId, us.id]);
+
+    res.json({
+      ok: true, oe_id: oeId, deploy_run_id: deployRunId, sf_deploy_id: sfDeployId,
+      files_in_package: entries.length,
+      source: { org_id: us.src_org_id, org_name: srcOrg.name },
+      dest: { org_id: dest_org_id, org_name: destOrg.name },
+      components: comps.map(c => ({ id: c.id, name: c.component_name, type: c.component_type })),
+      status: 'running'
+    });
+  } catch (e) {
+    console.error('[us/merge-run]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /api/explorer/us/merge-status/:deployRunId — polling do deploy assíncrono
+router.get('/explorer/us/merge-status/:deployRunId', authMiddleware, async (req, res) => {
+  try {
+    const drRes = await pool.query(`
+      SELECT dr.*, o1.name AS src_org_name, o2.name AS tgt_org_name
+        FROM deploy_runs dr
+        LEFT JOIN orgs o1 ON o1.id = dr.src_org_id
+        LEFT JOIN orgs o2 ON o2.id = dr.tgt_org_id
+       WHERE dr.id = $1
+    `, [toInt(req.params.deployRunId)]);
+    if (!drRes.rows.length) return res.status(404).json({ ok: false, error: 'Deploy run not found' });
+    const dr = drRes.rows[0];
+
+    const loadComps = async () => (await pool.query(
+      `SELECT * FROM deploy_components WHERE deploy_run_id = $1 ORDER BY component_type, component_name`, [dr.id])).rows;
+
+    if (dr.status !== 'running' || !dr.sf_deploy_id) {
+      return res.json({ ok: true, status: dr.status, deploy_run: dr, components: await loadComps() });
+    }
+
+    const destOrg = await getOrg(dr.tgt_org_id);
+    if (!destOrg) return res.status(404).json({ ok: false, error: 'Org destino não cadastrada' });
+    const conn = await connectToOrg(destOrg);
+    const det = await conn.metadata.checkDeployStatus(dr.sf_deploy_id, true);
+
+    const isDone = det.done === true || det.done === 'true';
+    if (!isDone) {
+      return res.json({
+        ok: true, status: 'running',
+        progress: {
+          deployed: Number(det.numberComponentsDeployed || 0),
+          total: Number(det.numberComponentsTotal || 0),
+          errors: Number(det.numberComponentErrors || 0),
+          state: det.status || 'InProgress'
+        }
+      });
+    }
+
+    const success = det.success === true || det.success === 'true';
+    const runStatus = success ? 'success' : 'failed';
+    const duration = Math.max(1, Math.round((Date.now() - new Date(dr.created_at).getTime()) / 1000));
+    await pool.query(`UPDATE deploy_runs SET status = $1, duration_sec = $2 WHERE id = $3`, [runStatus, duration, dr.id]);
+
+    const failures = {};
+    const cf = det.details && det.details.componentFailures;
+    if (cf) {
+      for (const f of (Array.isArray(cf) ? cf : [cf])) {
+        const key = f.fullName || f.fileName || '';
+        const msg = f.problem || f.problemType || 'Erro desconhecido';
+        if (key) failures[key] = msg;
+        const base = key.split('/').pop().replace(/\.[^.]+$/, '');
+        if (base && !failures[base]) failures[base] = msg;
+      }
+    }
+    const comps = await loadComps();
+    for (const c of comps) {
+      const err = failures[c.component_name] || null;
+      const compStatus = success ? (err ? 'failed' : 'success') : (err ? 'failed' : 'rolled_back');
+      await pool.query(
+        `UPDATE deploy_components SET result = $1, error_message = $2 WHERE id = $3`,
+        [compStatus, err, c.id]);
+    }
+
+    res.json({ ok: true, status: runStatus, deploy_run: Object.assign({}, dr, { status: runStatus, duration_sec: duration }), components: await loadComps() });
+  } catch (e) {
+    console.error('[us/merge-status]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
