@@ -186,6 +186,22 @@ router.patch('/explorer/stories/:jiraKey', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/explorer/stories/:jiraKey — remove a US e seus vínculos
+router.delete('/explorer/stories/:jiraKey', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM user_stories WHERE jira_key = $1`, [req.params.jiraKey]);
+    if (!rows.length) return res.status(404).json({ ok: false, error: 'Story not found' });
+    const usId = rows[0].id;
+    const comp = await pool.query(`DELETE FROM us_components WHERE us_id = $1`, [usId]);
+    await pool.query(`DELETE FROM user_stories WHERE id = $1`, [usId]);
+    res.json({ ok: true, deleted: req.params.jiraKey, components_unlinked: comp.rowCount });
+  } catch (e) {
+    console.error('[explorer/stories DELETE]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ============================================================
 // BE-1  BOARD  (Kanban agrupado por board_status)
 // ============================================================
