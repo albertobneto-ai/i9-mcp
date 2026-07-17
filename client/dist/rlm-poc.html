@@ -68,7 +68,7 @@ pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding
   <button class="ghost" style="margin-left:auto" onclick="loadStatus()">↻ Reexecutar diagnóstico</button></h2>
 <div id="status" class="grid g3"><div class="card"><span class="spin"></span> consultando a org…</div></div>
 <div id="ctxCallout" class="callout">
-  <b>Pré-requisito pendente na org:</b> o Context Service ainda não foi provisionado (o RLM nunca foi inicializado pela UI nesta sandbox). Destravamento: abrir <b>Setup → Revenue Settings</b> e concluir a inicialização — os contexts standard e a pricing procedure default são provisionados pelo próprio Setup. <b>Este painel passa a exibir preços automaticamente, sem alteração de código.</b>
+  <b>Diagnóstico (17/jul):</b> o Revenue Cloud está licenciado e habilitado na arqevery, mas o <b>provisionamento da família Context Service está incompleto no lado Salesforce</b> — sem PSL com <code>RunContextRule</code>, sem o type <code>ContextDefinition</code> no Metadata API e sem os contexts standard (<code>RLM_SalesTransactionContext</code>). Por isso Products List e Pricing headless retornam os erros exibidos acima (respostas reais). <b>Destravamento: caso Salesforce solicitando o provisionamento completo do RLM na sandbox</b> (ou refresh após inicialização em produção). Quando provisionado, este painel exibe preços automaticamente — sem alteração de código.</b>
 </div>
 
 <h2>2 · Vitrine <span class="tag">catálogo PCM real · SOQL</span></h2>
