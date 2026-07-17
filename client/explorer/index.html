@@ -320,9 +320,27 @@
       <div class="viewhead">
         <div>
           <h2>Rollback</h2>
-          <div class="sub">Escolha a org afetada, veja os últimos deploys e reverta a partir de outra org</div>
+          <div class="sub">Merge por US (correção vinda da org de origem) ou reversão por deploy (OE)</div>
         </div>
       </div>
+      <div class="lane-label" style="margin-top:4px;">Merge por US — correção da origem</div>
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div><label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">User Story</label><select id="um_us" style="width:100%;"></select></div>
+            <div><label style="font-size:11px; color:var(--fog); display:block; margin-bottom:4px;">Org destino do merge</label><select id="um_dest" style="width:100%;"></select></div>
+          </div>
+          <div id="um_srcbanner" style="font-size:11.5px; color:var(--fog); margin:10px 0 4px;"></div>
+          <div id="um_comps" style="margin-top:6px;"></div>
+          <div style="display:flex; gap:10px; margin-top:12px; align-items:center; flex-wrap:wrap;">
+            <button class="btn small" id="um_analyze">Analisar diferenças</button>
+            <button class="btn primary small" id="um_run">Executar merge</button>
+            <span id="um_status" class="note"></span>
+          </div>
+          <div id="um_result" style="margin-top:10px;"></div>
+        </div>
+      </div>
+      <div class="lane-label">Reverter por deploy (OE)</div>
       <div class="eqpick-block">
         <div class="eqpick-caption">Org afetada (destino dos deploys)</div>
         <div class="formrow" style="max-width:280px;"><select id="rb_org"></select></div>
@@ -1696,6 +1714,131 @@ function renderRollbackOrgSelect(){
   sel.addEventListener('change', renderRollbackList);
 }
 
+/* ============ US MERGE (correção por US → org destino) ============ */
+let umStory = null, umComps = [], umCompare = {}, umPoll = null, umRunning = false;
+
+async function umInit(){
+  const sel = document.getElementById('um_us');
+  if (!sel) return;
+  try {
+    const d = await api('/stories');
+    const items = (d.items || []).filter(s => s.src_org_id);
+    sel.innerHTML = '<option value="">— selecione a US —</option>' +
+      items.map(s => `<option value="${s.jira_key}">${s.jira_key} — ${(s.title||'').substring(0,48)}</option>`).join('');
+  } catch(e){ console.error('umInit', e); }
+}
+
+async function umPickUS(){
+  const jira = document.getElementById('um_us').value;
+  umStory = null; umComps = []; umCompare = {};
+  document.getElementById('um_result').innerHTML = '';
+  const banner = document.getElementById('um_srcbanner');
+  const compsEl = document.getElementById('um_comps');
+  const destSel = document.getElementById('um_dest');
+  if (!jira){ banner.innerHTML=''; compsEl.innerHTML=''; destSel.innerHTML=''; return; }
+  const d = await api('/stories/' + encodeURIComponent(jira));
+  if (!d.ok){ toast('Erro ao carregar US'); return; }
+  umStory = d.story; umComps = d.components || [];
+  banner.innerHTML = `Correção vem de: <b style="color:var(--ink)">${umStory.src_org_name}</b> · org escolhida na criação da US. Ao lado, a org que receberá o merge.`;
+  destSel.innerHTML = orgs.filter(o => o.id !== umStory.src_org_id)
+    .map(o => `<option value="${o.id}" ${o.id === umStory.tgt_org_id ? 'selected':''}>${o.name}${(o.id===100||o.id===133)?' · ambiente controlado':''}</option>`).join('');
+  umRenderComps();
+}
+
+function umRenderComps(){
+  const el = document.getElementById('um_comps');
+  if (!umComps.length){ el.innerHTML = '<p style="color:var(--fog); font-size:12px;">Nenhum componente vinculado à US — vincule no card da US (board).</p>'; return; }
+  el.innerHTML = umComps.map(c => {
+    const cmp = umCompare[c.id];
+    let badge = '';
+    if (cmp === 'diff')   badge = '<span class="chip" style="color:#b45309; border-color:#b45309;">vai atualizar</span>';
+    if (cmp === 'ok')     badge = '<span class="chip ok">idêntico</span>';
+    if (cmp === 'absent') badge = '<span class="chip blue">vai criar</span>';
+    if (cmp === 'no_src') badge = '<span class="chip" style="color:#c0392b; border-color:#c0392b;">não existe na origem</span>';
+    const disabled = cmp === 'no_src' ? 'disabled' : '';
+    const checked = cmp === 'no_src' ? '' : 'checked';
+    return `<label style="display:flex; align-items:center; gap:10px; padding:7px 4px; border-bottom:1px solid var(--line); font-size:12px; cursor:pointer;">
+      <input type="checkbox" class="um_ck" value="${c.id}" ${checked} ${disabled}>
+      <span class="mono" style="color:var(--fog); min-width:170px;">${c.component_type}</span>
+      <span style="flex:1; color:var(--ink);">${c.component_name}</span>
+      ${badge}
+    </label>`;
+  }).join('');
+}
+
+async function umAnalyze(){
+  if (!umStory){ toast('Selecione uma US'); return; }
+  const destId = parseInt(document.getElementById('um_dest').value);
+  if (!destId){ toast('Selecione a org destino'); return; }
+  const btn = document.getElementById('um_analyze');
+  btn.disabled = true; btn.textContent = 'Analisando…';
+  for (const c of umComps){
+    try {
+      const d = await api('/components/compare-across-orgs', { method:'POST', body: JSON.stringify({
+        component_type: c.component_type, full_name: c.component_name,
+        org_ids: [umStory.src_org_id, destId] }) });
+      if (d.ok){
+        const srcR = (d.results||[]).find(r => r.org_id === umStory.src_org_id);
+        if (!srcR || !srcR.found){ umCompare[c.id] = 'no_src'; }
+        else {
+          const cmp = (d.comparisons || []).find(x => x.org_id === destId);
+          umCompare[c.id] = cmp ? cmp.vs_base : 'na';
+        }
+      } else umCompare[c.id] = 'na';
+    } catch(e){ umCompare[c.id] = 'na'; }
+    umRenderComps();
+  }
+  btn.disabled = false; btn.textContent = 'Analisar diferenças';
+}
+
+async function umRun(){
+  if (umRunning) return;
+  if (!umStory){ toast('Selecione uma US'); return; }
+  const destSel = document.getElementById('um_dest');
+  const destId = parseInt(destSel.value);
+  if (!destId){ toast('Selecione a org destino'); return; }
+  const destName = destSel.options[destSel.selectedIndex] ? destSel.options[destSel.selectedIndex].text : destId;
+  const ids = Array.from(document.querySelectorAll('.um_ck:checked')).map(i => parseInt(i.value));
+  if (!ids.length){ toast('Selecione ao menos um componente'); return; }
+  const controlada = (destId === 100 || destId === 133) ? '\n\n⚠ ATENÇÃO: ambiente controlado (' + destName + ').' : '';
+  if (!confirm('Merge da US ' + umStory.jira_key + '\n' + ids.length + ' componente(s)\nOrigem da correção: ' + umStory.src_org_name + '\nDestino: ' + destName + controlada + '\n\nConfirmar o deploy?')) return;
+  umRunning = true;
+  const st = document.getElementById('um_status');
+  const btn = document.getElementById('um_run');
+  btn.disabled = true; st.textContent = 'Preparando pacote na origem (retrieve)…';
+  document.getElementById('um_result').innerHTML = '';
+  try {
+    const d = await api('/us/merge-run', { method:'POST', body: JSON.stringify({
+      jira_key: umStory.jira_key, dest_org_id: destId, component_ids: ids }) });
+    if (!d.ok) throw new Error(d.error || 'Falha ao iniciar merge');
+    st.textContent = 'OE ' + d.oe_id + ' · deploy em andamento (' + d.files_in_package + ' arquivos)…';
+    umPoll = setInterval(async () => {
+      try {
+        const s = await api('/us/merge-status/' + d.deploy_run_id);
+        if (s.status === 'running'){
+          const p = s.progress || {};
+          st.textContent = 'OE ' + d.oe_id + ' · ' + (p.state || 'InProgress') + ' — ' + (p.deployed||0) + '/' + (p.total||'?') + ' componentes' + (p.errors ? ' · ' + p.errors + ' erro(s)' : '');
+          return;
+        }
+        clearInterval(umPoll); umPoll = null; umRunning = false; btn.disabled = false;
+        const okRun = s.status === 'success';
+        st.textContent = '';
+        document.getElementById('um_result').innerHTML =
+          '<div style="border-left:3px solid ' + (okRun?'#2e7d32':'#c0392b') + '; padding:10px 12px; font-size:12px; background:var(--ice); border-radius:6px;">' +
+            '<b>' + (okRun ? '✓ Merge concluído' : '✗ Merge falhou — rollbackOnError: nada foi aplicado parcialmente') + '</b> · OE ' + d.oe_id + ' · ' + ((s.deploy_run && s.deploy_run.duration_sec) || '?') + 's' +
+            '<div style="margin-top:8px;">' + (s.components||[]).map(c =>
+              '<div style="display:flex; gap:8px; padding:3px 0;"><span>' + (c.result==='success'?'✓':c.result==='rolled_back'?'↩':'✗') + '</span><span class="mono" style="color:var(--fog);">' + c.component_type + '</span><span style="flex:1;">' + c.component_name + '</span><span style="color:#c0392b;">' + (c.error_message||'') + '</span></div>').join('') + '</div>' +
+          '</div>';
+        toast(okRun ? ('US ' + umStory.jira_key + ': merge aplicado em ' + destName + ' (OE ' + d.oe_id + ')') : 'Merge falhou — veja os detalhes por componente');
+        loadBoard().then(()=>{ try{ renderBoard(); }catch(e){} });
+      } catch(e){ /* mantém o polling */ }
+    }, 4000);
+  } catch(e){
+    umRunning = false; btn.disabled = false; st.textContent = '';
+    toast('Erro: ' + e.message);
+  }
+}
+
 function renderRollbackList(){
   const sel = document.getElementById('rb_org');
   const orgName_ = sel.value;
@@ -2252,6 +2395,12 @@ renderRecentDeploys();
 renderMatrix();
 renderRollbackOrgSelect();
 renderRollbackList();
+umInit();
+(function(){
+  const a = document.getElementById('um_us');      if (a) a.addEventListener('change', umPickUS);
+  const b = document.getElementById('um_analyze'); if (b) b.addEventListener('click', umAnalyze);
+  const c = document.getElementById('um_run');     if (c) c.addEventListener('click', umRun);
+})();
 
 // ── Bootstrap ──
 document.addEventListener('DOMContentLoaded', () => {
