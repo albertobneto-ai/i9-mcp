@@ -130,7 +130,7 @@ router.post('/explorer/stories', authMiddleware, async (req, res) => {
   try {
     const {
       jira_key, title,
-      type = 'RELEASE', priority = 'media', board_status = 'todo',
+      type = 'RELEASE', priority = 'media', board_status = 'backlog',
       src_org_id = null, tgt_org_id = null,
       sprint = null, assigned_to = null
     } = req.body || {};
@@ -230,10 +230,13 @@ router.get('/explorer/board', authMiddleware, async (req, res) => {
           us.updated_at DESC
     `, params);
 
-    const columns = ['todo', 'prog', 'review', 'deploy', 'done'];
+    // Board 10 colunas / 2 raias: Preparação (backlog→ready) + Execução (dev→done)
+    const columns = ['backlog','discovery','hf','spec','poc','ready','dev','qa','uat','done'];
+    const LEGACY_MAP = { todo:'backlog', prog:'dev', review:'qa', deploy:'uat' };
     const board = Object.fromEntries(columns.map(c => [c, []]));
     for (const r of rows) {
-      const col = board[r.board_status] !== undefined ? r.board_status : 'todo';
+      let col = r.board_status;
+      if (board[col] === undefined) col = LEGACY_MAP[col] || 'backlog';
       board[col].push(r);
     }
     res.json({ ok: true, columns, board, total: rows.length });
