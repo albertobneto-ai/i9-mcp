@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POC · Pricing Headless RLM — Ever i9</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131826;--panel2:#1a2032;--border:#232b3f;--txt:#e6e9f0;--mut:#8b93a7;--acc:#4f8cff;--ok:#2ecc71;--warn:#f5a623;--err:#e74c3c;font-family:'Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+header{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+h1{font-size:1.45rem;font-weight:600;letter-spacing:.2px}
+h1 span{color:var(--acc)}
+.sub{color:var(--mut);font-size:.9rem;margin-top:6px;line-height:1.5}
+.flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--mut)}
+.flow .node{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--txt)}
+.flow .arrow{color:var(--acc);font-weight:700}
+h2{font-size:1.02rem;font-weight:600;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+h2 .tag{font-size:.68rem;background:var(--panel2);border:1px solid var(--border);color:var(--mut);border-radius:20px;padding:2px 10px;font-weight:500}
+.grid{display:grid;gap:14px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;border-radius:20px;padding:3px 11px}
+.b-ok{background:rgba(46,204,113,.12);color:var(--ok)}
+.b-warn{background:rgba(245,166,35,.12);color:var(--warn)}
+.b-err{background:rgba(231,76,60,.12);color:var(--err)}
+.ms{font-size:1.35rem;font-weight:700;margin-top:8px}
+.ms small{font-size:.7rem;color:var(--mut);font-weight:400}
+.path{font-family:ui-monospace,Consolas,monospace;font-size:.72rem;color:var(--mut);margin-top:4px;word-break:break-all}
+.apiname{font-size:.86rem;font-weight:600;margin-bottom:8px}
+button{background:var(--acc);border:0;color:#fff;border-radius:9px;padding:10px 18px;font-size:.86rem;font-weight:600;cursor:pointer;transition:.15s}
+button:hover{filter:brightness(1.12)}
+button.ghost{background:var(--panel2);border:1px solid var(--border);color:var(--txt)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.prod{display:flex;flex-direction:column;gap:8px}
+.prod .nm{font-weight:600;font-size:.95rem}
+.prod .cat{font-size:.72rem;color:var(--mut)}
+.prod .pr{font-size:1.25rem;font-weight:700;color:var(--acc)}
+.prod .pr small{font-size:.68rem;color:var(--mut);font-weight:400}
+.cartrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.86rem;gap:10px}
+.cartrow input{width:56px;background:var(--panel2);border:1px solid var(--border);color:var(--txt);border-radius:7px;padding:5px 8px;text-align:center}
+.callout{border-left:4px solid var(--warn);background:rgba(245,166,35,.07);border-radius:0 10px 10px 0;padding:13px 16px;font-size:.84rem;line-height:1.55;margin:14px 0;display:none}
+.callout b{color:var(--warn)}
+pre{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:.72rem;line-height:1.5;overflow:auto;max-height:380px;margin-top:12px}
+.resgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
+.kpi{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.kpi .v{font-size:1.3rem;font-weight:700}
+.kpi .l{font-size:.68rem;color:var(--mut);margin-top:3px}
+.footer{margin-top:44px;color:var(--mut);font-size:.72rem;border-top:1px solid var(--border);padding-top:14px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mut);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>POC · Pricing Headless <span>Revenue Cloud</span> — vitrine e-commerce</h1>
+  <div class="sub">Demonstração do padrão de integração <b>callout server-side direto</b>: este front chama o backend Ever i9, que faz o papel do <b>app server do SFCC</b> e dispara a chamada HTTPS diretamente às Connect APIs da org <b>arqevery</b> — sem middleware intermediário. Todos os dados e respostas exibidos são reais.</div>
+  <div class="flow">
+    <span class="node">🖥️ Browser (storefront)</span><span class="arrow">→</span>
+    <span class="node">⚙️ Backend i9 <small>(≈ app server SFCC)</small></span><span class="arrow">→ HTTPS direto →</span>
+    <span class="node">☁️ arqevery · /connect/core-pricing/pricing</span>
+  </div>
+</header>
+
+<h2>1 · Status das APIs headless <span class="tag">chamadas ao vivo na org</span>
+  <button class="ghost" style="margin-left:auto" onclick="loadStatus()">↻ Reexecutar diagnóstico</button></h2>
+<div id="status" class="grid g3"><div class="card"><span class="spin"></span> consultando a org…</div></div>
+<div id="ctxCallout" class="callout">
+  <b>Pré-requisito pendente na org:</b> o Context Service ainda não foi provisionado (o RLM nunca foi inicializado pela UI nesta sandbox). Destravamento: abrir <b>Setup → Revenue Settings</b> e concluir a inicialização — os contexts standard e a pricing procedure default são provisionados pelo próprio Setup. <b>Este painel passa a exibir preços automaticamente, sem alteração de código.</b>
+</div>
+
+<h2>2 · Vitrine <span class="tag">catálogo PCM real · SOQL</span></h2>
+<div id="vitrine" class="grid g3"><div class="card"><span class="spin"></span> carregando catálogo…</div></div>
+
+<h2>3 · Cesta &amp; precificação <span class="tag">1 cesta = 1 chamada</span></h2>
+<div class="grid" style="grid-template-columns:1.1fr .9fr">
+  <div class="card">
+    <div id="cart"><div style="color:var(--mut);font-size:.86rem">Cesta vazia — adicione produtos da vitrine.</div></div>
+    <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+      <button id="btnPrice" onclick="doPrice()" disabled>⚡ Precificar no Revenue Cloud</button>
+      <button class="ghost" onclick="clearCart()">Limpar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="apiname">Resultado do callout</div>
+    <div class="resgrid">
+      <div class="kpi"><div class="v" id="kMs">—</div><div class="l">backend ↔ org (ms)</div></div>
+      <div class="kpi"><div class="v" id="kTot">—</div><div class="l">total browser (ms)</div></div>
+      <div class="kpi"><div class="v" id="kP50">—</div><div class="l">p50 sessão</div></div>
+      <div class="kpi"><div class="v" id="kP95">—</div><div class="l">p95 sessão</div></div>
+    </div>
+    <div id="resState" style="margin-top:12px"></div>
+  </div>
+</div>
+<pre id="resJson" style="display:none"></pre>
+
+<div class="footer">POC executada na sandbox <b>arqevery</b> · Ever i9 DevOps · Projeto CRM B2B Algar Telecom — Everymind. Endpoints: Product Discovery (<code>/connect/cpq/*</code>) e Salesforce Pricing (<code>/connect/core-pricing/pricing</code>), API v67.0 (Summer '26).</div>
+</div>
+
+<script>
+const cart = {};
+let hist = [];
+const fmt = v => v==null ? '<small>sem preço</small>' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});
+
+async function loadStatus(){
+  const el = document.getElementById('status');
+  el.innerHTML = '<div class="card"><span class="spin"></span> consultando a org…</div>';
+  try{
+    const r = await fetch('/api/rlm-poc/status'); const d = await r.json();
+    let anyBlocked = false;
+    el.innerHTML = d.checks.map(c=>{
+      const map = {ok:['b-ok','● operacional'], ok_engine:['b-ok','● engine ativo (validação ok)'],
+        blocked_context:['b-warn','◐ aguardando Context Service'], blocked_procedure:['b-warn','◐ aguardando pricing procedure'],
+        error:['b-err','✕ erro']};
+      const [cls,lbl] = map[c.state] || map.error;
+      if(c.state.startsWith('blocked')) anyBlocked = true;
+      const msg = extractMsg(c.body);
+      return `<div class="card"><div class="apiname">${c.name}</div>
+        <span class="badge ${cls}">${lbl}</span>
+        <div class="ms">${c.ms} <small>ms · HTTP ${c.httpStatus}</small></div>
+        <div class="path">${c.path}</div>
+        ${msg?`<div class="path" style="color:#c8cede;margin-top:8px">${msg}</div>`:''}</div>`;
+    }).join('');
+    document.getElementById('ctxCallout').style.display = anyBlocked ? 'block' : 'none';
+  }catch(e){ el.innerHTML = '<div class="card">Erro: '+e.message+'</div>'; }
+}
+function extractMsg(b){
+  try{
+    if(Array.isArray(b) && b[0] && b[0].message) return b[0].message.trim().slice(0,220);
+    if(b && b.apiStatus && b.apiStatus.messages && b.apiStatus.messages[0]) return b.apiStatus.messages[0].message.slice(0,220);
+    if(b && b.apiStatus && b.apiStatus.statusCode) return b.apiStatus.statusCode;
+  }catch(_){}
+  return '';
+}
+
+async function loadVitrine(){
+  const el = document.getElementById('vitrine');
+  try{
+    const r = await fetch('/api/rlm-poc/vitrine'); const d = await r.json();
+    if(!d.products || !d.products.length){ el.innerHTML='<div class="card">Catálogo POC não encontrado na org.</div>'; return; }
+    el.innerHTML = d.products.map(p=>`
+      <div class="card prod">
+        <div class="nm">${p.name}</div>
+        <div class="cat">${p.category||''} · ${p.code||''}</div>
+        <div class="pr">${fmt(p.listPrice)} <small>/mês · list price (PBE)</small></div>
+        <button onclick='addToCart(${JSON.stringify(p)})'>＋ Adicionar à cesta</button>
+      </div>`).join('');
+  }catch(e){ el.innerHTML = '<div class="card">Erro: '+e.message+'</div>'; }
+}
+
+function addToCart(p){ cart[p.id] = cart[p.id] || {...p, qty:0}; cart[p.id].qty++; renderCart(); }
+function clearCart(){ for(const k in cart) delete cart[k]; renderCart(); }
+function setQty(id,v){ if(cart[id]){ cart[id].qty=Math.max(1,parseInt(v)||1); renderCart(); } }
+function renderCart(){
+  const items = Object.values(cart);
+  const el = document.getElementById('cart');
+  document.getElementById('btnPrice').disabled = !items.length;
+  if(!items.length){ el.innerHTML='<div style="color:var(--mut);font-size:.86rem">Cesta vazia — adicione produtos da vitrine.</div>'; return; }
+  const total = items.reduce((s,i)=>s+(i.listPrice||0)*i.qty,0);
+  el.innerHTML = items.map(i=>`
+    <div class="cartrow"><span>${i.name}</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <input type="number" min="1" value="${i.qty}" onchange="setQty('${i.id}',this.value)">
+        <b>${fmt((i.listPrice||0)*i.qty)}</b></span></div>`).join('')
+    + `<div class="cartrow" style="border:0"><span style="color:var(--mut)">Total estimado (client-side)</span><b>${fmt(total)}</b></div>`;
+}
+
+async function doPrice(){
+  const items = Object.values(cart).map(i=>({productId:i.id, qty:i.qty, unitPrice:i.listPrice||0}));
+  const btn = document.getElementById('btnPrice');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> precificando…';
+  const t0 = performance.now();
+  try{
+    const r = await fetch('/api/rlm-poc/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})});
+    const d = await r.json();
+    const tot = Math.round(performance.now()-t0);
+    document.getElementById('kMs').textContent = d.calloutMs ?? '—';
+    document.getElementById('kTot').textContent = tot;
+    if(typeof d.calloutMs==='number'){ hist.push(d.calloutMs); hist=hist.slice(-50);
+      const s=[...hist].sort((a,b)=>a-b);
+      document.getElementById('kP50').textContent = s[Math.floor(s.length*.5)];
+      document.getElementById('kP95').textContent = s[Math.min(s.length-1,Math.floor(s.length*.95))];
+    }
+    const st = document.getElementById('resState');
+    const ok = d.state==='ok';
+    st.innerHTML = `<span class="badge ${ok?'b-ok':(String(d.state).startsWith('blocked')?'b-warn':'b-err')}">${ok?'● preço calculado pelo engine':'◐ resposta real da org (setup pendente)'}</span>`;
+    const pre = document.getElementById('resJson');
+    pre.style.display='block';
+    pre.textContent = JSON.stringify({calloutMs:d.calloutMs, httpStatus:d.httpStatus, state:d.state, orgResponse:d.orgResponse}, null, 2);
+  }catch(e){ alert('Erro: '+e.message); }
+  btn.disabled=false; btn.innerHTML='⚡ Precificar no Revenue Cloud';
+}
+
+loadStatus(); loadVitrine();
+</script>
+</body>
+</html>
