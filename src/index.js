@@ -16,6 +16,7 @@ import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
 import bugsRoutes from './routes/bugs.js';
 import explorerRoutes from './routes/explorer.js';
+import rlmPocRoutes from './routes/rlm-poc.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,8 +39,7 @@ app.post('/api/migrate', async (req, res) => {
       ['alm_artifacts', 'content', 'TEXT'],
       ['alm_artifacts', 'version', 'INT DEFAULT 1'],
       ['alm_artifacts', 'agent', 'VARCHAR(30)'],
-      ['alm_artifacts', 'iteration', 'INT DEFAULT 1'],
-      ['deploy_runs', 'sf_deploy_id', 'VARCHAR(40)']
+      ['alm_artifacts', 'iteration', 'INT DEFAULT 1']
     ];
     for (const [table, col, def] of cols) {
       try {
@@ -160,6 +160,7 @@ app.use('/api/devops', devopsRoutes);
 app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 app.use('/api/bugs', bugsRoutes);
+app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api', explorerRoutes);
 
 // Job status polling
@@ -338,6 +339,12 @@ app.use('/explorer', express.static(explorerDir));
 app.get('/bugs', (req, res) => {
   res.sendFile(path.join(clientDist, 'bugs.html'), err => {
     if (err) res.status(404).json({ error: 'Bug tracker page not found' });
+  });
+});
+
+app.get('/rlm-poc', (req, res) => {
+  res.sendFile(path.join(clientDist, 'rlm-poc.html'), err => {
+    if (err) res.status(404).json({ error: 'RLM POC page not found' });
   });
 });
 
