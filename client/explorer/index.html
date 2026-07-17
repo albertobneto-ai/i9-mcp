@@ -135,8 +135,14 @@
   .progress-wrap{ width:100%; height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:6px;}
   .progress-bar{ height:100%; background:var(--ink); width:0%; transition:width .25s linear; }
 
-  .board{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
-  .col{ background:var(--ice); border:1px solid var(--line); border-radius:var(--radius); min-height:60vh; transition:border-color .15s;}
+  .board{ display:flex; flex-direction:column; gap:20px; }
+  .lane-label{ display:flex; align-items:center; gap:10px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fog); font-weight:700; margin-bottom:9px; }
+  .lane-label::after{ content:''; flex:1; height:1px; background:var(--line); }
+  .lane-cols{ display:grid; gap:12px; overflow-x:auto; padding-bottom:4px; }
+  .lane-prep .lane-cols{ grid-template-columns:repeat(6,minmax(168px,1fr)); }
+  .lane-exec .lane-cols{ grid-template-columns:repeat(4,minmax(168px,1fr)); }
+  .col-sub{ font-size:9.5px; color:var(--fog); font-family:'IBM Plex Mono'; margin-top:1px; }
+  .col{ background:var(--ice); border:1px solid var(--line); border-radius:var(--radius); min-height:30vh; transition:border-color .15s;}
   .col.dragover{ border-color:var(--ink); border-style:dashed; }
   .col-head{ padding:12px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
   .col-head span.title{ font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--fog); font-weight:600;}
@@ -222,7 +228,7 @@
   .harrow-btn:hover{ background:#000; }
 
   /* Vector Agent */
-  .vector-agent-btn{ white-space:nowrap; flex-shrink:0; }
+  .vector-agent-btn{ display:none !important; white-space:nowrap; flex-shrink:0; }
   .vectoragent-output{ font-family:'IBM Plex Mono'; font-size:11px; line-height:1.7; white-space:pre-wrap; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:14px; max-height:52vh; overflow-y:auto; color:var(--ink); }
 
   .hunklist{ display:flex; flex-direction:column; gap:8px; }
@@ -252,7 +258,7 @@
     <div class="rail-logo">i9</div>
     <div class="rail-btn active" data-view="board" title="Board">▤</div>
     <div class="rail-btn" data-view="dashboard" title="Dashboard">◫</div>
-    <div class="rail-btn" data-view="equalizacao" title="Equalização">≋</div>
+    <div class="rail-btn" data-view="equalizacao" title="Equalização" style="display:none">≋</div>
     <div class="rail-btn" data-view="rollback" title="Rollback">↺</div>
     <div class="rail-spacer"></div>
     <div class="rail-avatar">AB</div>
@@ -265,7 +271,7 @@
         <h1>Org Explorer</h1>
       </div>
       <div class="pipeline" id="pipeline"></div>
-      <div class="globalbadge" id="globalDriftBadge"></div>
+      <div class="globalbadge" id="globalDriftBadge" style="display:none"></div>
     </div>
 
     <!-- BOARD -->
@@ -288,15 +294,15 @@
           <div class="sub">Dados consolidados dos ambientes cadastrados · clique num gadget para expandir</div>
         </div>
         <div style="display:flex; gap:10px;">
-          <button class="btn primary" id="btnRunDrift">Executar Drift</button>
+          <button class="btn primary" id="btnRunDrift" style="display:none">Executar Drift</button>
         </div>
       </div>
-      <div class="eqpick-block">
+      <div class="eqpick-block" style="display:none">
         <div class="eqpick-caption">Gold sandbox · referência usada no Drift deste Dashboard</div>
         <div class="goldselect" id="dashGoldSelect"></div>
       </div>
       <div class="gadgets" id="envGadgets"></div>
-      <div class="panel">
+      <div class="panel" style="display:none">
         <div class="panel-head">
           <h3>Estado dos ambientes (Drift)</h3>
           <span class="note" id="driftGoldNote">gold: ORG ARQUITETURA · comparação sob demanda, por componente</span>
@@ -410,8 +416,15 @@ async function api(path, opts = {}) {
 
 // ── State (carregado da API) ──
 let orgs = [];
-let boardData = { todo:[], prog:[], review:[], deploy:[], done:[] };
-const colTitles = { todo:'To do', prog:'Em progresso', review:'Em revisão', deploy:'Deploy', done:'Concluído' };
+const BOARD_LANES = [
+  { id:'prep', label:'Preparação', cols:['backlog','discovery','hf','spec','poc','ready'] },
+  { id:'exec', label:'Execução',  cols:['dev','qa','uat','done'] }
+];
+const ALL_COLS = BOARD_LANES.flatMap(l=>l.cols);
+const EXEC_COLS = new Set(BOARD_LANES[1].cols);
+let boardData = Object.fromEntries(ALL_COLS.map(c=>[c,[]]));
+const colTitles = { backlog:'Backlog', discovery:'Discovery', hf:'HF', spec:'Spec', poc:'POC', ready:'Ready', dev:'DEV', qa:'QA', uat:'UAT', done:'Done' };
+const colSubs   = { dev:'DEVEVERY', qa:'QA', uat:'HOMOL', done:'cliente aprovou' };
 let recentDeploys = [];
 let dashboardGoldOrgId = 36;
 let dashboardData = {};
@@ -507,7 +520,7 @@ function rebuildEnvData() {
 async function loadBoard() {
   const d = await api('/board');
   if (d.ok) {
-    boardData = d.board;
+    boardData = Object.fromEntries(ALL_COLS.map(c=>[c, (d.board && d.board[c]) || []]));
     // Map fields for compatibility
     for (const col of Object.values(boardData)) {
       for (const item of col) {
@@ -1012,10 +1025,12 @@ function renderBoard(){
   const total = Object.values(boardData).reduce((a,c)=>a+c.length,0);
   document.getElementById('boardSub').textContent = `${total} user stories · sprint atual: 2026.14`;
   let html='';
-  Object.keys(boardData).forEach(col=>{
-    const cards = boardData[col];
+  BOARD_LANES.forEach(lane=>{
+    html += `<div class="lane lane-${lane.id}"><div class="lane-label">${lane.label}</div><div class="lane-cols">`;
+    lane.cols.forEach(col=>{
+    const cards = boardData[col] || [];
     html += `<div class="col" data-col="${col}">
-      <div class="col-head"><span class="title">${colTitles[col]}</span><span class="count">${cards.length}</span></div>
+      <div class="col-head"><span><span class="title">${colTitles[col]}</span>${colSubs[col]?`<div class="col-sub">${colSubs[col]}</div>`:''}</span><span class="count">${cards.length}</span></div>
       <div class="col-body" data-col="${col}">`;
     cards.forEach((c,idx)=>{
       html += `<div class="card" draggable="true" data-col="${col}" data-idx="${idx}" data-jira="${c.jira}" style="cursor:pointer;" onclick="if(!event.target.closest('.dragging')) openStoryDetail('${c.jira}')">
@@ -1029,6 +1044,8 @@ function renderBoard(){
           <span class="oe">${c.oe ? c.oe : '—'}</span>
         </div>
       </div>`;
+    });
+    html += `</div></div>`;
     });
     html += `</div></div>`;
   });
@@ -1053,12 +1070,24 @@ function attachDnD(){
       body.closest('.col').classList.remove('dragover');
       if(!dragSrc) return;
       const destCol = body.dataset.col;
-      const card = boardData[dragSrc.col].splice(dragSrc.idx,1)[0];
-      if(destCol === 'deploy' && !card.oe){ card.oe = 'OE-' + String(nextOe++).padStart(4,'0'); }
+      const srcCol = dragSrc.col;
+      if(srcCol === destCol){ dragSrc = null; return; }
+      if(EXEC_COLS.has(srcCol) && !EXEC_COLS.has(destCol)){
+        dragSrc = null;
+        toast('Mão única: Execução não retrocede para Preparação. Bugs pós-DONE vão para o Bug Tracker.');
+        return;
+      }
+      const card = boardData[srcCol].splice(dragSrc.idx,1)[0];
+      if(EXEC_COLS.has(destCol) && !card.oe){ card.oe = 'OE-' + String(nextOe++).padStart(4,'0'); }
       boardData[destCol].push(card);
       dragSrc = null;
       renderBoard();
-      toast(`${card.jira} movida para "${colTitles[destCol]}"`);
+      api('/stories/' + encodeURIComponent(card.jira), {
+        method:'PATCH', body: JSON.stringify({ board_status: destCol })
+      }).then(d=>{
+        if(d && d.ok) toast(`${card.jira} → "${colTitles[destCol]}" (salvo)`);
+        else { toast('Falha ao salvar movimento — recarregando board'); loadBoard().then(renderBoard); }
+      }).catch(()=>{ toast('Falha ao salvar movimento — recarregando board'); loadBoard().then(renderBoard); });
     });
   });
 }
@@ -1108,7 +1137,7 @@ document.getElementById('btnNewUS').addEventListener('click', ()=>{
     try {
       const d = await api('/stories', {
         method: 'POST',
-        body: JSON.stringify({ jira_key: jira, title, type, priority, sprint, board_status: 'todo' })
+        body: JSON.stringify({ jira_key: jira, title, type, priority, sprint, board_status: 'backlog' })
       });
       if (!d.ok) {
         if (d.error && d.error.includes('exists')) {
@@ -1574,7 +1603,7 @@ function viewDriftDetail(orgId){
       <div style="flex:1;"><strong>${c.name}</strong> <span style="color:var(--fog)">· ${c.type}</span><br>
       <span style="color:var(--fog); font-size:10.5px;">${statusLabel[st]}</span></div>
       <div style="display:flex; gap:6px;">
-        <button class="btn small" onclick="closeModal(); switchView('equalizacao'); setTimeout(()=>openDiff('${c.name}', ${orgId}, ${dashboardGoldOrgId}),150);">Ver código</button>
+        <button class="btn small" style="display:none" onclick="closeModal(); switchView('equalizacao'); setTimeout(()=>openDiff('${c.name}', ${orgId}, ${dashboardGoldOrgId}),150);">Ver código</button>
         ${actionBtn}
       </div>
     </div>`;
