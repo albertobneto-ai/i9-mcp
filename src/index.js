@@ -17,10 +17,11 @@ import { authMiddleware } from './middleware/auth.js';
 import bugsRoutes from './routes/bugs.js';
 import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
+import controlRoutes, { initControlTables } from './routes/control.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '12mb' }));
 
 // CORS
 app.use((req, res, next) => {
@@ -139,13 +140,15 @@ app.get('/api/init-db', async (req, res) => {
     try { await pool.query('ALTER TABLE deploy_log ADD COLUMN IF NOT EXISTS previous_state TEXT'); } catch {}
     // ALM tables
     await initAlmTables();
+    // Control i9
+    await initControlTables();
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
       await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
         ['Alberto Bottaro', 'admin@everi9.com', hash, 'admin']);
     }
-    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs', 'deploy_log', 'alm_epics', 'alm_stories', 'alm_artifacts', 'alm_files', 'alm_trace'] });
+    res.json({ status: 'ok', tables: ['users', 'conversations', 'orgs', 'jobs', 'deploy_log', 'alm_epics', 'alm_stories', 'alm_artifacts', 'alm_files', 'alm_trace', 'control_requests'] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -161,6 +164,7 @@ app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 app.use('/api/bugs', bugsRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
+app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
 app.use('/api', explorerRoutes);
 
 // Job status polling
@@ -334,6 +338,10 @@ const clientDist = path.join(__dirname, '..', 'client', 'dist');
 const explorerDir = path.join(__dirname, '..', 'client', 'explorer');
 app.use('/explorer', express.static(explorerDir));
 
+// Control i9 frontend
+const controlDir = path.join(__dirname, '..', 'client', 'control');
+app.use('/control', express.static(controlDir));
+
   app.use(express.static(clientDist));
 // Bug Tracker page
 app.get('/bugs', (req, res) => {
@@ -418,6 +426,8 @@ app.get('/api/debug/ip', async (req, res) => {
   try { const ip = await getOutboundIP(); res.json({ ip }); }
   catch (e) { res.json({ error: e.message }); }
 });
+
+initControlTables().catch(e => console.error('[control] init falhou:', e.message));
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
 

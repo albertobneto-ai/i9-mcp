@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Control i9 · Ever i9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rail-bg:#141518;
+  --rail-line:#2a2b30;
+  --rail-fog:#8b8d96;
+  --rail-ice:#f7f8fa;
+
+  --paper:#e7e8ec;
+  --ice:#f7f8fa;
+  --white:#ffffff;
+  --line:#d3d5da;
+  --steel:#8b8d96;
+  --fog:#6b6d75;
+  --ink:#1a1b1e;
+  --radius:3px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);height:100vh;height:100dvh;display:flex;overflow:hidden}
+
+/* ---------- RAIL ---------- */
+.rail{background:var(--rail-bg);border-right:1px solid var(--rail-line);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;width:56px;flex-shrink:0}
+.rail-logo{width:28px;height:28px;border:1px solid var(--rail-fog);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:var(--rail-ice);font-size:12px;margin-bottom:12px}
+.rail-btn{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--rail-fog);cursor:pointer;font-size:15px;border:1px solid transparent;transition:.12s;text-decoration:none}
+.rail-btn:hover{color:var(--rail-ice);border-color:var(--rail-line)}
+.rail-btn.active{color:var(--rail-bg);background:var(--rail-ice)}
+.rail-spacer{flex:1}
+.rail-avatar{width:26px;height:26px;border-radius:50%;background:var(--rail-fog);font-size:10.5px;display:flex;align-items:center;justify-content:center;color:var(--rail-bg);font-weight:600}
+
+/* ---------- SHELL ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{border-bottom:1px solid var(--rail-line);background:var(--rail-bg);padding:14px 26px;display:flex;align-items:center;gap:28px}
+.brandblock .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--rail-fog)}
+.brandblock h1{font-family:'Space Grotesk';font-size:15px;font-weight:600;color:var(--rail-ice);margin-top:2px;letter-spacing:-.01em}
+.topbar-spacer{flex:1}
+.agentstate{display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--rail-fog)}
+.agentdot{width:6px;height:6px;border-radius:50%;background:var(--rail-fog)}
+.agentdot.live{background:#f7f8fa}
+
+.view{flex:1;overflow-y:auto;padding:22px 26px 40px}
+.viewhead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.viewhead h2{font-family:'Space Grotesk';font-size:19px;font-weight:600;letter-spacing:-.015em}
+.viewhead p{font-size:11.5px;color:var(--fog);margin-top:5px;max-width:600px;line-height:1.55}
+.headactions{display:flex;gap:8px;flex-shrink:0}
+
+/* ---------- BOTOES ---------- */
+.btn{border:1px solid var(--line);background:var(--white);color:var(--ink);padding:8px 14px;border-radius:var(--radius);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:.12s}
+.btn:hover{border-color:var(--steel);background:var(--ice)}
+.btn.primary{background:var(--ink);color:var(--ice);border-color:var(--ink)}
+.btn.primary:hover{background:#000}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.small{padding:5px 10px;font-size:11px}
+
+/* ---------- FILTROS ---------- */
+.filters{display:flex;gap:6px;margin-bottom:16px;align-items:center}
+.fchip{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:5px 10px;border:1px solid var(--line);background:var(--white);border-radius:var(--radius);cursor:pointer;color:var(--fog)}
+.fchip:hover{border-color:var(--steel)}
+.fchip.on{background:var(--ink);color:var(--ice);border-color:var(--ink)}
+.fcount{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fog);margin-left:auto}
+
+/* ---------- CARDS ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.card:hover{border-color:var(--steel);box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
+.card-id{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fog);letter-spacing:.06em}
+.card-title{font-size:12.5px;line-height:1.45;margin-bottom:9px;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-foot{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--fog);gap:8px}
+.card-attach{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fog);display:flex;align-items:center;gap:4px}
+
+/* ---------- STATUS ---------- */
+.st{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;padding:3px 7px;border-radius:var(--radius);border:1px solid var(--line);color:var(--fog);background:var(--ice);white-space:nowrap}
+.st.fila{border-color:var(--steel);color:var(--fog)}
+.st.analise{border-color:var(--ink);color:var(--ink);background:var(--white)}
+.st.analise::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink);margin-right:5px;vertical-align:middle;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.st.ok{background:var(--ink);color:var(--ice);border-color:var(--ink)}
+.st.falha{border-color:var(--ink);color:var(--ink);background:repeating-linear-gradient(45deg,var(--ice),var(--ice) 3px,var(--white) 3px,var(--white) 6px)}
+
+/* ---------- EMPTY ---------- */
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:44px 20px;text-align:center;color:var(--fog);font-size:12px;background:var(--ice)}
+.empty strong{display:block;font-family:'Space Grotesk';font-size:14px;color:var(--ink);font-weight:600;margin-bottom:6px}
+
+/* ---------- MODAL ---------- */
+.overlay{position:fixed;inset:0;background:rgba(20,21,24,.45);display:none;align-items:center;justify-content:center;z-index:100}
+.overlay.open{display:flex}
+.modal{background:var(--ice);border:1px solid var(--line);border-radius:var(--radius);width:520px;max-width:92vw;max-height:84vh;display:flex;flex-direction:column}
+.modal.wide{width:760px}
+.sheet-grip{display:none}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-family:'Space Grotesk';font-size:14.5px;font-weight:600}
+.modal-head .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--fog);margin-bottom:3px}
+.modal-close{cursor:pointer;color:var(--fog);font-size:16px;border:none;background:none}
+.modal-close:hover{color:var(--ink)}
+.modal-body{padding:18px 20px;overflow-y:auto}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;align-items:center}
+
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--fog);display:block;margin-bottom:6px}
+textarea,input[type=text],select{width:100%;border:1px solid var(--line);background:var(--white);border-radius:var(--radius);padding:9px 11px;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--ink);resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--ink)}
+textarea{min-height:132px;line-height:1.55}
+.field{margin-bottom:16px}
+
+.drop{border:1px dashed var(--line);border-radius:var(--radius);padding:18px;text-align:center;color:var(--fog);font-size:11.5px;cursor:pointer;background:var(--white);transition:.12s}
+.drop:hover,.drop.over{border-color:var(--ink);color:var(--ink)}
+.filerow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:var(--white);border-radius:var(--radius);padding:8px 11px;font-size:11.5px;margin-top:7px}
+.filerow .fname{font-family:'IBM Plex Mono',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filerow .fdel{cursor:pointer;color:var(--fog);border:none;background:none;font-size:14px}
+.filerow .fdel:hover{color:var(--ink)}
+
+/* ---------- RECIBO ---------- */
+.receipt{text-align:left}
+.receipt .rid{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-.02em;margin-bottom:14px}
+.receipt h4{font-family:'Space Grotesk';font-size:14px;font-weight:600;margin-bottom:8px}
+.receipt p{font-size:12px;color:var(--fog);line-height:1.65;margin-bottom:12px}
+.steps{border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+.step{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:11.5px;color:var(--fog)}
+.step .dot{width:6px;height:6px;border-radius:50%;background:var(--line);margin-top:5px;flex-shrink:0}
+.step.done .dot{background:var(--ink)}
+.step.done{color:var(--ink)}
+.step b{font-weight:600;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+
+/* ---------- DETALHE ---------- */
+.block{margin-bottom:18px}
+.block .lbl{margin-bottom:7px}
+.prose{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px;font-size:12.5px;line-height:1.62;white-space:pre-wrap;word-break:break-word}
+.meta{display:flex;gap:18px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fog);letter-spacing:.05em;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.meta span b{color:var(--ink);font-weight:500}
+.waiting{border:1px dashed var(--line);border-radius:var(--radius);padding:22px 16px;text-align:center;font-size:11.5px;color:var(--fog);background:var(--white);line-height:1.6}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ice);padding:10px 18px;border-radius:var(--radius);font-size:12px;z-index:200;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* ================= MOBILE ================= */
+@media (max-width:760px){
+  body{display:block;height:100dvh;overflow:hidden}
+
+  /* rail vira barra inferior, mesmos tokens escuros */
+  .rail{position:fixed;bottom:0;left:0;right:0;width:100%;height:auto;
+        flex-direction:row;justify-content:space-around;align-items:center;
+        border-right:none;border-top:1px solid var(--rail-line);
+        padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:90;gap:0}
+  .rail-logo,.rail-spacer{display:none}
+  .rail-btn{width:46px;height:46px;font-size:18px}
+  .rail-avatar{width:30px;height:30px;font-size:11px}
+
+  .main{height:100dvh;padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+  .topbar{padding:11px 15px;gap:12px}
+  .brandblock h1{font-size:14.5px}
+  .agentstate{font-size:9px;gap:5px}
+
+  .view{padding:15px 15px 26px}
+  .viewhead{flex-direction:column;align-items:stretch;gap:13px;margin-bottom:16px}
+  .viewhead h2{font-size:18px}
+  .viewhead p{font-size:12px;max-width:none}
+  .headactions{display:grid;grid-template-columns:1fr 1.35fr;gap:8px}
+
+  .btn{min-height:44px;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .btn.small{min-height:36px;font-size:11.5px}
+
+  /* filtros roláveis na horizontal */
+  .filters{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+           margin:0 -15px 14px;padding:0 15px 5px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .fchip{flex-shrink:0;min-height:36px;display:flex;align-items:center;font-size:10.5px}
+  .fcount{display:none}
+
+  .cards{grid-template-columns:1fr;gap:9px}
+  .card{padding:14px 14px}
+  .card-title{font-size:13.5px;-webkit-line-clamp:4}
+  .card-foot,.card-id{font-size:11px}
+  .empty{padding:34px 16px}
+
+  /* modais viram bottom sheet */
+  .overlay{align-items:flex-end}
+  .modal,.modal.wide{width:100%;max-width:100%;max-height:92dvh;
+        border-radius:var(--radius) var(--radius) 0 0;
+        border-left:none;border-right:none;border-bottom:none}
+  .sheet-grip{display:block;width:34px;height:4px;border-radius:2px;background:var(--line);
+              margin:9px auto 0;flex-shrink:0}
+  .modal-head{padding:12px 16px 14px}
+  .modal-body{padding:16px}
+  .modal-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+              flex-direction:column-reverse;gap:8px}
+  .modal-foot .btn{width:100%}
+
+  /* 16px evita o zoom automatico do iOS ao focar */
+  textarea,input[type=text],select{font-size:16px;padding:11px 12px}
+  textarea{min-height:150px}
+  .lbl{font-size:10px}
+  .drop{padding:28px 16px;font-size:12.5px;min-height:96px;display:flex;
+        align-items:center;justify-content:center}
+  .filerow{padding:11px;font-size:12px}
+  .filerow .fdel{font-size:18px;padding:0 4px}
+
+  .receipt .rid{font-size:30px}
+  .receipt p{font-size:12.5px}
+  .step{font-size:12px;padding:8px 0}
+  .meta{gap:9px 16px;font-size:9.5px}
+  .prose{font-size:13px;padding:13px}
+  .waiting{padding:24px 14px;font-size:12.5px}
+  .toast{bottom:calc(72px + env(safe-area-inset-bottom));width:calc(100% - 30px);text-align:center}
+}
+@media (max-width:380px){
+  .agentstate span:last-child{display:none}
+  .headactions{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="rail-logo">i9</div>
+  <a class="rail-btn" href="/explorer" title="Board">▤</a>
+  <a class="rail-btn" href="/explorer" title="Dashboard">◫</a>
+  <div class="rail-btn active" title="Control i9">◈</div>
+  <div class="rail-spacer"></div>
+  <div class="rail-avatar">AB</div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="brandblock">
+      <div class="eyebrow">Algar Telecom · CRMB2B</div>
+      <h1>Control i9</h1>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="agentstate"><span class="agentdot" id="agentDot"></span><span id="agentTxt">agente ocioso</span></div>
+  </div>
+
+  <div class="view">
+    <div class="viewhead">
+      <div>
+        <h2>Solicitações ao agente</h2>
+        <p>Escreva o que precisa, anexe um arquivo, ou os dois. Cada envio vira um card na fila. O agente responde quando o Control i9 for acionado em sessão de chat.</p>
+      </div>
+      <div class="headactions">
+        <button class="btn" onclick="load()">Atualizar</button>
+        <button class="btn primary" onclick="openNew()">Nova solicitação</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="fchip on" data-f="all" onclick="setF(this)">Todas</div>
+      <div class="fchip" data-f="NA_FILA" onclick="setF(this)">Na fila</div>
+      <div class="fchip" data-f="EM_ANALISE" onclick="setF(this)">Em análise</div>
+      <div class="fchip" data-f="RESPONDIDO" onclick="setF(this)">Respondido</div>
+      <div class="fchip" data-f="FALHA" onclick="setF(this)">Falha</div>
+      <div class="fcount" id="fcount"></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </div>
+</div>
+
+<!-- NOVA SOLICITACAO -->
+<div class="overlay" id="ovNew">
+  <div class="modal">
+    <div class="sheet-grip"></div>
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow">Agentic</div>
+        <h3>Control i9</h3>
+      </div>
+      <button class="modal-close" onclick="closeOv('ovNew')">✕</button>
+    </div>
+    <div class="modal-body" id="newBody">
+      <div class="field">
+        <label class="lbl">O que você precisa</label>
+        <textarea id="txtReq" placeholder="Ex.: Ler a HF anexa e gerar a spec técnica no padrão Word Dark, com gap analysis contra a arqevery."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label class="lbl">Anexo · opcional · até 8 MB</label>
+        <div class="drop" id="drop">Arraste um arquivo aqui ou clique para escolher</div>
+        <input type="file" id="fileIn" style="display:none">
+        <div id="fileList"></div>
+      </div>
+    </div>
+    <div class="modal-foot" id="newFoot">
+      <button class="btn" onclick="closeOv('ovNew')">Cancelar</button>
+      <button class="btn primary" id="btnSend" onclick="send()">Enviar ao agente</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETALHE -->
+<div class="overlay" id="ovDet">
+  <div class="modal wide">
+    <div class="sheet-grip"></div>
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow" id="detEyebrow">Solicitação</div>
+        <h3 id="detTitle">—</h3>
+      </div>
+      <button class="modal-close" onclick="closeOv('ovDet')">✕</button>
+    </div>
+    <div class="modal-body" id="detBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeOv('ovDet')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API='/api/control';
+let ITEMS=[], F='all', FILE=null;
+
+const ST={
+  NA_FILA:    {c:'fila',    t:'na fila'},
+  EM_ANALISE: {c:'analise', t:'em análise'},
+  RESPONDIDO: {c:'ok',      t:'respondido'},
+  FALHA:      {c:'falha',   t:'falha'}
+};
+
+function tok(){ return localStorage.getItem('i9_token')||''; }
+function H(){ return {'Authorization':'Bearer '+tok(),'Content-Type':'application/json'}; }
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2600); }
+function ago(iso){
+  if(!iso) return '—';
+  const s=Math.floor((Date.now()-new Date(iso))/1000);
+  if(s<60) return 'há '+s+'s';
+  if(s<3600) return 'há '+Math.floor(s/60)+' min';
+  if(s<86400) return 'há '+Math.floor(s/3600)+' h';
+  return 'há '+Math.floor(s/86400)+' d';
+}
+function openOv(id){ document.getElementById(id).classList.add('open'); }
+function closeOv(id){ document.getElementById(id).classList.remove('open'); }
+
+function openNew(){
+  FILE=null;
+  document.getElementById('txtReq').value='';
+  document.getElementById('fileList').innerHTML='';
+  document.getElementById('newFoot').style.display='flex';
+  document.getElementById('newBody').innerHTML=NEWFORM;
+  bindDrop();
+  openOv('ovNew');
+  setTimeout(()=>document.getElementById('txtReq').focus(),60);
+}
+const NEWFORM=document.getElementById('newBody').innerHTML;
+
+function bindDrop(){
+  const d=document.getElementById('drop'), i=document.getElementById('fileIn');
+  if(!d) return;
+  if(window.matchMedia('(hover:none)').matches) d.textContent='Toque para escolher um arquivo';
+  d.onclick=()=>i.click();
+  d.ondragover=e=>{e.preventDefault();d.classList.add('over')};
+  d.ondragleave=()=>d.classList.remove('over');
+  d.ondrop=e=>{e.preventDefault();d.classList.remove('over');if(e.dataTransfer.files[0])take(e.dataTransfer.files[0])};
+  i.onchange=()=>{ if(i.files[0]) take(i.files[0]); };
+}
+function take(f){
+  if(f.size>8*1024*1024){ toast('Arquivo acima de 8 MB'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    FILE={name:f.name,size:f.size,b64:r.result.split(',')[1]};
+    document.getElementById('fileList').innerHTML=
+      '<div class="filerow"><span class="fname">'+esc(f.name)+'</span>'+
+      '<span style="color:var(--fog);font-size:10.5px">'+(f.size/1024).toFixed(0)+' KB</span>'+
+      '<button class="fdel" onclick="FILE=null;document.getElementById(\'fileList\').innerHTML=\'\'">✕</button></div>';
+  };
+  r.readAsDataURL(f);
+}
+
+async function send(){
+  const txt=document.getElementById('txtReq').value.trim();
+  if(!txt && !FILE){ toast('Escreva algo ou anexe um arquivo'); return; }
+  const b=document.getElementById('btnSend');
+  b.disabled=true; b.textContent='Enviando…';
+  try{
+    const r=await fetch(API,{method:'POST',headers:H(),body:JSON.stringify({
+      request:txt, file:FILE?{name:FILE.name,size:FILE.size,content_b64:FILE.b64}:null
+    })});
+    const j=await r.json();
+    if(!r.ok) throw new Error(j.error||'Falha ao registrar');
+    receipt(j);
+    load();
+  }catch(e){
+    toast(e.message); b.disabled=false; b.textContent='Enviar ao agente';
+  }
+}
+
+function receipt(j){
+  document.getElementById('newFoot').style.display='none';
+  document.getElementById('newBody').innerHTML=
+    '<div class="receipt">'+
+      '<div class="rid">#'+j.id+'</div>'+
+      '<h4>Solicitação registrada</h4>'+
+      '<p>Ela está na fila do agente. O processamento não é instantâneo: acontece quando o Control i9 for acionado em uma sessão de chat. Você pode fechar esta janela — nada se perde, e o card guarda o estado.</p>'+
+      '<div class="steps">'+
+        '<div class="step done"><span class="dot"></span><span><b>Na fila</b><br>Registrado agora, com o anexo se houver.</span></div>'+
+        '<div class="step"><span class="dot"></span><span><b>Em análise</b><br>O agente reivindica o card e começa a trabalhar.</span></div>'+
+        '<div class="step"><span class="dot"></span><span><b>Respondido</b><br>Resposta e arquivos aparecem no próprio card.</span></div>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('newFoot').style.display='flex';
+  document.getElementById('newFoot').innerHTML='<button class="btn primary" onclick="closeOv(\'ovNew\')">Entendido</button>';
+}
+
+function setF(el){
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); F=el.dataset.f; render();
+}
+
+async function load(){
+  try{
+    const r=await fetch(API,{headers:H()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    ITEMS=j.items||j||[];
+  }catch(e){ ITEMS=[]; }
+  render(); agent();
+}
+
+function agent(){
+  const busy=ITEMS.some(i=>i.status==='EM_ANALISE');
+  document.getElementById('agentDot').classList.toggle('live',busy);
+  document.getElementById('agentTxt').textContent = busy? 'agente em execução' : 'agente ocioso';
+}
+
+function render(){
+  const list = F==='all'? ITEMS : ITEMS.filter(i=>i.status===F);
+  const c=document.getElementById('cards');
+  document.getElementById('fcount').textContent = list.length+' de '+ITEMS.length;
+  if(!list.length){
+    c.innerHTML='<div class="empty" style="grid-column:1/-1"><strong>Nenhuma solicitação</strong>'+
+      (ITEMS.length? 'Nada neste filtro.' : 'Clique em Nova solicitação para enviar a primeira ao agente.')+'</div>';
+    return;
+  }
+  c.innerHTML=list.map(i=>{
+    const s=ST[i.status]||ST.NA_FILA;
+    const title=(i.request||'').trim() || (i.file_name? 'Anexo: '+i.file_name : 'Sem descrição');
+    return '<div class="card" onclick="detail('+i.id+')">'+
+      '<div class="card-top"><span class="card-id">#'+i.id+'</span><span class="st '+s.c+'">'+s.t+'</span></div>'+
+      '<div class="card-title">'+esc(title)+'</div>'+
+      '<div class="card-foot"><span>'+ago(i.created_at)+'</span>'+
+      (i.file_name? '<span class="card-attach">▣ 1</span>':'<span></span>')+'</div></div>';
+  }).join('');
+}
+
+function detail(id){
+  const i=ITEMS.find(x=>x.id===id); if(!i) return;
+  const s=ST[i.status]||ST.NA_FILA;
+  document.getElementById('detEyebrow').textContent='Solicitação #'+i.id;
+  document.getElementById('detTitle').textContent=s.t.charAt(0).toUpperCase()+s.t.slice(1);
+  let h='<div class="meta">'+
+    '<span>criado <b>'+ago(i.created_at)+'</b></span>'+
+    (i.claimed_at? '<span>reivindicado <b>'+ago(i.claimed_at)+'</b></span>':'')+
+    (i.answered_at? '<span>respondido <b>'+ago(i.answered_at)+'</b></span>':'')+
+    '<span>status <b>'+i.status+'</b></span></div>';
+  if(i.request) h+='<div class="block"><label class="lbl">Pedido</label><div class="prose">'+esc(i.request)+'</div></div>';
+  if(i.file_name) h+='<div class="block"><label class="lbl">Anexo enviado</label>'+
+    '<div class="filerow"><span class="fname">'+esc(i.file_name)+'</span>'+
+    '<a class="btn small" href="'+API+'/'+i.id+'/file" target="_blank">Baixar</a></div></div>';
+
+  h+='<div class="block"><label class="lbl">Resposta do agente</label>';
+  if(i.status==='RESPONDIDO'){
+    h+='<div class="prose">'+esc(i.result||'')+'</div>';
+    if(i.result_file_name) h+='<div class="filerow" style="margin-top:9px"><span class="fname">'+esc(i.result_file_name)+'</span>'+
+      '<a class="btn small" href="'+API+'/'+i.id+'/result-file" target="_blank">Baixar</a></div>';
+  } else if(i.status==='FALHA'){
+    h+='<div class="prose">'+esc(i.error||'Sem detalhe registrado.')+'</div>';
+  } else if(i.status==='EM_ANALISE'){
+    h+='<div class="waiting">O agente reivindicou este card e está trabalhando nele.<br>A resposta aparece aqui quando ele concluir.</div>';
+  } else {
+    h+='<div class="waiting">Ainda na fila.<br>O agente processa quando o Control i9 for acionado em sessão de chat.</div>';
+  }
+  h+='</div>';
+  document.getElementById('detBody').innerHTML=h;
+  openOv('ovDet');
+}
+
+document.querySelectorAll('.sheet-grip').forEach(g=>{
+  let y0=null;
+  g.addEventListener('touchstart',e=>y0=e.touches[0].clientY,{passive:true});
+  g.addEventListener('touchmove',e=>{
+    if(y0!==null && e.touches[0].clientY-y0>62){ g.closest('.overlay').classList.remove('open'); y0=null; }
+  },{passive:true});
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeOv('ovNew');closeOv('ovDet');} });
+bindDrop(); load(); setInterval(load,20000);
+</script>
+</body>
+</html>
