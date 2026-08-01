@@ -192,6 +192,14 @@
   .pp-sched{margin-top:8px;display:none;gap:6px;}
   .pp-sched input{border:1.2px solid var(--line);border-radius:9px;padding:6px 8px;font-size:12px;flex:1;}
   .pp-sched button{background:var(--blue);color:#fff;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:700;}
+  .routego{background:linear-gradient(135deg,var(--blue),var(--spark));color:#fff;font-weight:800;font-size:12.5px;padding:8px 13px;border-radius:20px;}
+  .routebar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fff;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--navy);flex-wrap:wrap;z-index:2;}
+  .routebar.hide{display:none;}
+  .rb-g{background:#0e9f5b;color:#fff;padding:7px 12px;border-radius:16px;text-decoration:none;font-weight:800;font-size:12px;}
+  .rb-w{background:#33ccff;color:#04364f;padding:7px 12px;border-radius:16px;text-decoration:none;font-weight:800;font-size:12px;}
+  .rb-x{background:#eef2f7;color:var(--muted);padding:7px 12px;border-radius:16px;font-weight:700;font-size:12px;}
+  .pmk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 3px 7px rgba(3,45,96,.4);}
+  .stopmk{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 9px rgba(3,45,96,.45);}
   .micbtn:hover{background:#e3edf9;}
   .micbtn.miclive{background:linear-gradient(135deg,#e0483e,#b8342c);animation:crblink 1s infinite;}
   .micbtn.miclive svg path,.micbtn.miclive svg rect{stroke:#fff;}
@@ -340,11 +348,22 @@
 <div class="mapwrap hide" id="mapWrap">
   <div class="maptop">
     <b>🗺️ Farm Maps</b>
-    <label class="lay"><input type="checkbox" id="layLeads" checked> 🎯 Leads</label>
-    <label class="lay"><input type="checkbox" id="layAccts" checked> 🏢 Contas</label>
-    <label class="lay"><input type="checkbox" id="layVisits" checked> 📅 Visitas</label>
+    <label class="lay"><input type="checkbox" id="layLeads" checked> 🎯 Lead Explorer</label>
+    <label class="lay"><input type="checkbox" id="layPrio"> 🔥 Por prioridade</label>
+    <label class="lay"><input type="checkbox" id="layAccts"> 🏢 Contas</label>
+    <label class="lay"><input type="checkbox" id="layGpon"> 📡 GPON</label>
+    <label class="lay"><input type="checkbox" id="layMetro"> 🛰️ Metro</label>
+    <label class="lay"><input type="checkbox" id="layToday" checked> 📅 Hoje</label>
+    <label class="lay"><input type="checkbox" id="lay7d" checked> 🗓️ 7 dias</label>
+    <button class="routego" id="routeBtn">🚗 Rota de hoje</button>
     <span class="mapinfo" id="mapInfo"></span>
     <button class="xbtn mapx" id="mapClose">×</button>
+  </div>
+  <div class="routebar hide" id="routeBar">
+    <span id="routeSum"></span>
+    <a class="rb-g" id="routeGmaps" target="_blank" rel="noopener">🧭 Google Maps</a>
+    <a class="rb-w" id="routeWaze" target="_blank" rel="noopener">🚙 Waze (próx.)</a>
+    <button class="rb-x" id="routeClear">limpar</button>
   </div>
   <div id="mapEl"></div>
 </div>
@@ -798,7 +817,7 @@ function attachMic(btnId,inputId){
 attachMic('micMain','input');attachMic('micRag','ragInput');
 
 // ── Farm Maps: mapa com camadas e ações de visita ──
-let MAP=null,MAPLAYERS={leads:null,accts:null,visits:null},MAPDATA=null;
+let MAP=null,MAPLAYERS={},MAPDATA=null,ROUTE=null;
 function loadLeaflet(){
   return new Promise((res,rej)=>{
     if(window.L)return res();
@@ -807,7 +826,12 @@ function loadLeaflet(){
   });
 }
 function mkIcon(emoji){return L.divIcon({className:'',html:'<div class="mkr">'+emoji+'</div>',iconSize:[24,24],iconAnchor:[12,22],popupAnchor:[0,-20]});}
-function ppActions(id,who,checkedIn){
+function prioIcon(rating){
+  const c=/very\s*hot|hot/i.test(rating||'')?'#e0483e':(/warm/i.test(rating||'')?'#f79009':(/cold/i.test(rating||'')?'#4a90d9':'#98a2b3'));
+  return L.divIcon({className:'',html:`<div class="pmk" style="background:${c}"></div>`,iconSize:[16,16],iconAnchor:[8,8],popupAnchor:[0,-8]});
+}
+function stopIcon(n){return L.divIcon({className:'',html:`<div class="stopmk">${n}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-13]});}
+function ppActions(id){
   return `<div class="pp-acts">
     <button onclick="openRecord('${id}')">📂 Abrir</button>
     <button onclick="ppSched(this)">📅 Agendar</button>
@@ -847,29 +871,81 @@ window.visitAct=async(kind,id,btn)=>{
     else run(null,null);
   } else run(null,null);
 };
-async function loadMapData(){
-  const r=await api('/api/agent-farm/map-data?orgId='+ORG_ID);
-  const d=await r.json();
-  if(!d.ok){toast(d.error||'falha no mapa');return;}
-  MAPDATA=d;
-  Object.values(MAPLAYERS).forEach(l=>{if(l)l.clearLayers();});
-  d.leads.forEach(x=>{
-    const m=L.marker([x._lat,x._lng],{icon:mkIcon('🎯')});
+function isToday(iso){const d=new Date(iso),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
+function renderLayers(){
+  if(!MAPDATA)return;
+  const prio=document.getElementById('layPrio').checked;
+  Object.values(MAPLAYERS).forEach(l=>{if(l&&l.clearLayers)l.clearLayers();});
+  MAPDATA.leads.forEach(x=>{
+    const m=L.marker([x._lat,x._lng],{icon:prio?prioIcon(x.Rating):mkIcon('🎯')});
     m.bindPopup(`<div class="pp-name">${esc(x.Name||'')}</div><div class="pp-sub">${esc(x.Company||'')} · ${esc(x.City||x.State||'')} · ${esc(x.Status||'')}${x.Rating?' · '+esc(x.Rating):''}</div>`+ppActions(x.Id));
     MAPLAYERS.leads.addLayer(m);
   });
-  d.accounts.forEach(x=>{
+  MAPDATA.accounts.forEach(x=>{
     const m=L.marker([x._lat,x._lng],{icon:mkIcon('🏢')});
     m.bindPopup(`<div class="pp-name">${esc(x.Name||'')}</div><div class="pp-sub">${esc(x.BillingCity||x.BillingState||'')}${x.Industry?' · '+esc(x.Industry):''}</div>`+ppActions(x.Id));
     MAPLAYERS.accts.addLayer(m);
   });
-  d.events.forEach(x=>{
-    const done=x.CheckOut?'✅ concluída':(x.CheckIn?'📍 em visita':'');
-    const m=L.marker([x._lat,x._lng],{icon:mkIcon(x.CheckIn?'📌':'📅')});
-    m.bindPopup(`<div class="pp-name">${esc(x.Subject||'Visita')}</div><div class="pp-sub">${new Date(x.Start).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${x.WhoName?' · '+esc(x.WhoName):''} ${done}</div>`+ppActions(x.Id));
-    MAPLAYERS.visits.addLayer(m);
+  (MAPDATA.gpon||[]).forEach(g=>{
+    const c=L.circle([g.lat,g.lng],{radius:g.km*1000,color:'#0e9f5b',weight:1.5,fillColor:'#12b76a',fillOpacity:0.14});
+    c.bindPopup(`<div class="pp-name">📡 Cobertura GPON</div><div class="pp-sub">${esc(g.city)}/${esc(g.uf)} · raio ~${g.km} km · referência de território</div>`);
+    MAPLAYERS.gpon.addLayer(c);
   });
-  document.getElementById('mapInfo').textContent=d.leads.length+' leads · '+d.accounts.length+' contas · '+d.events.length+' visitas';
+  (MAPDATA.metro||[]).forEach(s=>{
+    const c=L.circle([s._lat,s._lng],{radius:2500,color:'#7a5af8',weight:1.5,fillColor:'#9b8afb',fillOpacity:0.18});
+    c.bindPopup(`<div class="pp-name">🛰️ ${esc(s.Name)}</div><div class="pp-sub">Metro · anel ${esc(s.Anel||'—')} · ${esc(s.Bairro||'')}</div>`);
+    const m=L.marker([s._lat,s._lng],{icon:mkIcon('🛰️')});
+    m.bindPopup(`<div class="pp-name">🛰️ ${esc(s.Name)}</div><div class="pp-sub">Estação Metro · anel ${esc(s.Anel||'—')} · ${esc(s.Bairro||'')}</div>`);
+    MAPLAYERS.metro.addLayer(c);MAPLAYERS.metro.addLayer(m);
+  });
+  const now=Date.now();
+  MAPDATA.events.forEach(x=>{
+    if(new Date(x.Start).getTime()<now-864e5&&!x.CheckIn)return;
+    const today=isToday(x.Start);
+    const done=x.CheckOut?'✅ concluída':(x.CheckIn?'📍 em visita':'');
+    const m=L.marker([x._lat,x._lng],{icon:mkIcon(x.CheckIn?'📌':(today?'📅':'🗓️'))});
+    m.bindPopup(`<div class="pp-name">${esc(x.Subject||'Visita')}</div><div class="pp-sub">${new Date(x.Start).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${x.WhoName?' · '+esc(x.WhoName):''} ${done}</div>`+ppActions(x.Id));
+    (today?MAPLAYERS.today:MAPLAYERS.week).addLayer(m);
+  });
+  const tCount=MAPDATA.events.filter(e=>isToday(e.Start)).length;
+  document.getElementById('mapInfo').textContent=MAPDATA.leads.length+' leads · '+MAPDATA.accounts.length+' contas · '+tCount+' hoje · '+(MAPDATA.metro||[]).length+' estações';
+}
+async function loadMapData(){
+  const r=await api('/api/agent-farm/map-data?orgId='+ORG_ID);
+  const d=await r.json();
+  if(!d.ok){toast(d.error||'falha no mapa');return;}
+  MAPDATA=d;renderLayers();
+}
+// ── rota otimizada (vizinho mais próximo) + navegação Google Maps / Waze ──
+function hav(a,b){const R=6371,dLa=(b[0]-a[0])*Math.PI/180,dLo=(b[1]-a[1])*Math.PI/180;const x=Math.sin(dLa/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+function buildRouteFrom(origin){
+  const stops=(MAPDATA.events||[]).filter(e=>isToday(e.Start)&&!e.CheckOut).map(e=>({id:e.Id,label:e.Subject+(e.WhoName?' · '+e.WhoName:''),pos:[e._lat,e._lng]}));
+  if(!stops.length){toast('Sem visitas agendadas pra hoje 🗓️');return;}
+  const order=[];let cur=origin?[...origin]:stops[0].pos.slice();const rest=[...stops];let km=0;
+  while(rest.length){
+    let bi=0,bd=1e9;
+    rest.forEach((s,i)=>{const d=hav(cur,s.pos);if(d<bd){bd=d;bi=i;}});
+    const s=rest.splice(bi,1)[0];km+=bd;order.push(s);cur=s.pos;
+  }
+  if(ROUTE){ROUTE.line&&MAP.removeLayer(ROUTE.line);(ROUTE.marks||[]).forEach(m=>MAP.removeLayer(m));}
+  const pts=(origin?[origin]:[]).concat(order.map(s=>s.pos));
+  const line=L.polyline(pts,{color:'#0176D3',weight:4,opacity:.8,dashArray:'8 6'}).addTo(MAP);
+  const marks=order.map((s,i)=>L.marker(s.pos,{icon:stopIcon(i+1),zIndexOffset:1000}).addTo(MAP).bindPopup(`<div class="pp-name">Parada ${i+1}</div><div class="pp-sub">${esc(s.label)}</div>`+ppActions(s.id)));
+  ROUTE={order,line,marks,origin};
+  MAP.fitBounds(line.getBounds().pad(0.2));
+  document.getElementById('routeBar').classList.remove('hide');
+  document.getElementById('routeSum').textContent='🚗 '+order.length+' parada(s) · ~'+km.toFixed(1)+' km (linha reta)';
+  const o=origin?origin.join(','):order[0].pos.join(',');
+  const dest=order[order.length-1].pos.join(',');
+  const way=order.slice(0,-1).map(s=>s.pos.join(',')).join('|');
+  document.getElementById('routeGmaps').href='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent(o)+'&destination='+encodeURIComponent(dest)+(way?'&waypoints='+encodeURIComponent(way):'');
+  document.getElementById('routeWaze').href='https://waze.com/ul?ll='+order[0].pos.join(',')+'&navigate=yes';
+}
+function startRoute(){
+  if(!MAPDATA){toast('Abre o mapa primeiro');return;}
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(p=>buildRouteFrom([p.coords.latitude,p.coords.longitude]),()=>buildRouteFrom(null),{timeout:6000});
+  } else buildRouteFrom(null);
 }
 async function openMap(){
   document.getElementById('mapWrap').classList.remove('hide');
@@ -877,11 +953,15 @@ async function openMap(){
   if(!MAP){
     MAP=L.map('mapEl',{zoomControl:true}).setView([-18.9,-47.9],6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP);
-    MAPLAYERS.leads=L.layerGroup().addTo(MAP);
-    MAPLAYERS.accts=L.layerGroup().addTo(MAP);
-    MAPLAYERS.visits=L.layerGroup().addTo(MAP);
-    [['layLeads','leads'],['layAccts','accts'],['layVisits','visits']].forEach(([cb,k])=>{
+    MAPLAYERS={leads:L.layerGroup().addTo(MAP),accts:L.layerGroup(),gpon:L.layerGroup(),metro:L.layerGroup(),today:L.layerGroup().addTo(MAP),week:L.layerGroup().addTo(MAP)};
+    [['layLeads','leads'],['layAccts','accts'],['layGpon','gpon'],['layMetro','metro'],['layToday','today'],['lay7d','week']].forEach(([cb,k])=>{
       document.getElementById(cb).addEventListener('change',e=>{if(e.target.checked)MAP.addLayer(MAPLAYERS[k]);else MAP.removeLayer(MAPLAYERS[k]);});
+    });
+    document.getElementById('layPrio').addEventListener('change',renderLayers);
+    document.getElementById('routeBtn').addEventListener('click',startRoute);
+    document.getElementById('routeClear').addEventListener('click',()=>{
+      if(ROUTE){ROUTE.line&&MAP.removeLayer(ROUTE.line);(ROUTE.marks||[]).forEach(m=>MAP.removeLayer(m));ROUTE=null;}
+      document.getElementById('routeBar').classList.add('hide');
     });
     document.getElementById('mapInfo').textContent='carregando…';
   }
