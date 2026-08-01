@@ -755,7 +755,7 @@ router.get('/map-data', authMiddleware, async (req, res) => {
     const lq = await conn.query("SELECT Id,Name,Company,City,State,Latitude,Longitude,Status,Rating,Phone FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
     const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingCity != null OR BillingState != null ORDER BY LastModifiedDate DESC LIMIT 150");
     const now = new Date(); const past = new Date(now.getTime() - 7 * 864e5).toISOString(); const fut = new Date(now.getTime() + 30 * 864e5).toISOString();
-    const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
+    const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c,EhRelatorioVisita__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
     const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude');
     const accounts = await coordsFor((aq.records || []).map((r) => { delete r.attributes; return r; }), 'BillingCity', 'BillingState', 'BillingLatitude', 'BillingLongitude');
     const leadPos = {}; leads.forEach((l) => { leadPos[l.Id] = [l._lat, l._lng]; });
@@ -771,7 +771,7 @@ router.get('/map-data', authMiddleware, async (req, res) => {
       }
       if (!pos && e.WhoId && leadPos[e.WhoId]) pos = leadPos[e.WhoId];
       if (!pos) continue;
-      events.push({ Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, _lat: pos[0], _lng: pos[1] });
+      events.push({ Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, Report: e.EhRelatorioVisita__c, _lat: pos[0], _lng: pos[1] });
     }
     let metro = [];
     try {
@@ -824,8 +824,10 @@ router.post('/visit-action', authMiddleware, async (req, res) => {
         if (q.records && q.records[0]) evId = q.records[0].Id;
       }
       if (!evId) return res.json({ ok: false, error: 'nenhum check-in aberto para este registro — faça o check-in primeiro' });
-      const q2 = await conn.query(`SELECT CheckInDateTime__c FROM Event WHERE Id='${esc1(evId)}'`);
-      const ci = q2.records && q2.records[0] && q2.records[0].CheckInDateTime__c;
+      const q2 = await conn.query(`SELECT CheckInDateTime__c,EhRelatorioVisita__c FROM Event WHERE Id='${esc1(evId)}'`);
+      const rec2 = (q2.records && q2.records[0]) || {};
+      if (rec2.EhRelatorioVisita__c !== 'Sim') return res.json({ ok: false, needReport: true, eventId: evId, error: 'Preencha o relatório de visita antes do check-out 📋' });
+      const ci = rec2.CheckInDateTime__c;
       const durMin = ci ? Math.round((Date.now() - new Date(ci).getTime()) / 60000) : null;
       const upd = { Id: evId, CheckOutDateTime__c: nowIso };
       if (b.lat != null) { upd.CheckOutLatitude__c = b.lat; upd.CheckOutLongitude__c = b.lng; }
@@ -867,6 +869,62 @@ router.get('/calendar', authMiddleware, async (req, res) => {
     const q = await conn.query(`SELECT Id,Subject,StartDateTime,EndDateTime,Location,Who.Name,What.Name,CheckInDateTime__c,CheckOutDateTime__c FROM Event WHERE StartDateTime >= ${from} AND StartDateTime <= ${to} ORDER BY StartDateTime LIMIT 400`);
     const events = (q.records || []).map((e) => ({ id: e.Id, subject: e.Subject, start: e.StartDateTime, end: e.EndDateTime, location: e.Location, who: e.Who && e.Who.Name, what: e.What && e.What.Name, checkin: e.CheckInDateTime__c, checkout: e.CheckOutDateTime__c }));
     return res.json({ ok: true, events });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// ── Relatório de Visita (disponível só após check-in; obrigatório p/ check-out) ──
+router.get('/visit-report-meta', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36; const eventId = req.query.eventId;
+    if (!eventId) return res.status(400).json({ ok: false, error: 'eventId obrigatório' });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const q = await conn.query(`SELECT Id,Subject,WhoId,Who.Name,Location,CheckInDateTime__c,CheckOutDateTime__c,Motivo_Visita__c,Observacoes_Visita__c,EhRelatorioVisita__c FROM Event WHERE Id='${esc1(eventId)}'`);
+    const ev = q.records && q.records[0];
+    if (!ev) return res.json({ ok: false, error: 'evento não encontrado' });
+    if (!ev.CheckInDateTime__c) return res.json({ ok: false, noCheckin: true, error: 'O relatório de visita fica disponível após o check-in 📍' });
+    const desc = await describeCached(conn, 'Event', orgId);
+    const mot = (desc.fields || []).find((f) => f.name === 'Motivo_Visita__c');
+    const motivos = mot ? (mot.picklistValues || []).filter((p) => p.active).map((p) => p.value) : [];
+    let addr = { rua: '', cidade: '', estado: '', cep: '' }; let isLead = false;
+    if (ev.WhoId && ev.WhoId.startsWith('00Q')) {
+      isLead = true;
+      const lq = await conn.query(`SELECT EnderecoVisitaRua__c,EnderecoVisitaCidade__c,EnderecoVisitaEstado__c,EnderecoVisitaCEP__c,City,State,Street,PostalCode FROM Lead WHERE Id='${esc1(ev.WhoId)}'`);
+      const l = lq.records && lq.records[0];
+      if (l) addr = { rua: l.EnderecoVisitaRua__c || l.Street || '', cidade: l.EnderecoVisitaCidade__c || l.City || '', estado: l.EnderecoVisitaEstado__c || l.State || '', cep: l.EnderecoVisitaCEP__c || l.PostalCode || '' };
+    }
+    return res.json({ ok: true, event: { id: ev.Id, subject: ev.Subject, whoId: ev.WhoId, whoName: ev.Who && ev.Who.Name, checkin: ev.CheckInDateTime__c, checkout: ev.CheckOutDateTime__c, motivo: ev.Motivo_Visita__c, observacoes: ev.Observacoes_Visita__c, done: ev.EhRelatorioVisita__c === 'Sim' }, motivos, addr, isLead });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+router.post('/visit-report', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    if (!b.eventId || !b.motivo || !b.observacoes) return res.json({ ok: false, error: 'motivo e observações são obrigatórios' });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const q = await conn.query(`SELECT WhoId,CheckInDateTime__c FROM Event WHERE Id='${esc1(b.eventId)}'`);
+    const ev = q.records && q.records[0];
+    if (!ev) return res.json({ ok: false, error: 'evento não encontrado' });
+    if (!ev.CheckInDateTime__c) return res.json({ ok: false, error: 'faça o check-in antes de preencher o relatório 📍' });
+    const a = b.endereco || {};
+    const locStr = [a.rua, a.cidade, a.estado].filter(Boolean).join(', ');
+    const updEv = { Id: b.eventId, Motivo_Visita__c: b.motivo, Observacoes_Visita__c: b.observacoes, EhRelatorioVisita__c: 'Sim' };
+    if (locStr) updEv.Location = locStr;
+    const r = await conn.sobject('Event').update(updEv);
+    let geocoded = false;
+    if (ev.WhoId && ev.WhoId.startsWith('00Q') && (a.rua || a.cidade)) {
+      const updLd = { Id: ev.WhoId };
+      if (a.rua != null) updLd.EnderecoVisitaRua__c = a.rua;
+      if (a.cidade != null) updLd.EnderecoVisitaCidade__c = a.cidade;
+      if (a.estado != null) updLd.EnderecoVisitaEstado__c = a.estado;
+      if (a.cep != null) updLd.EnderecoVisitaCEP__c = a.cep;
+      const g = await geocodeText(locStr || (a.cidade + ', ' + a.estado));
+      if (g) { updLd.EnderecoVisitaLatitude__c = g[0]; updLd.EnderecoVisitaLongitude__c = g[1]; geocoded = true; }
+      try { await conn.sobject('Lead').update(updLd); } catch (e) {}
+    }
+    return res.json({ ok: !!r.success, eventId: b.eventId, geocoded, errors: r.errors });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
