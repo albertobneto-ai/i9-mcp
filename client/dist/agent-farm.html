@@ -149,7 +149,7 @@
   .spark{position:absolute;pointer-events:none;font-size:15px;animation:sparkle .8s ease forwards;}
   @keyframes sparkle{0%{transform:translate(0,0) scale(0);opacity:1;}100%{transform:translate(var(--sx),var(--sy)) scale(1.2);opacity:0;}}
 
-  .scrim{position:fixed;inset:0;background:rgba(3,45,96,.5);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .scrim{position:fixed;inset:0;background:rgba(3,45,96,.5);backdrop-filter:blur(4px);z-index:65;display:flex;align-items:center;justify-content:center;padding:18px;}
   .scrim.hide{display:none;}
   .modal{background:#fff;border-radius:24px;max-width:520px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(3,45,96,.45);}
   .mhead{background:linear-gradient(135deg,#043e86,var(--blue) 60%,var(--sky));color:#fff;padding:22px 26px;display:flex;align-items:center;gap:14px;}
@@ -323,6 +323,17 @@
   </div>
 </div></div>
 
+<div class="scrim hide" id="visitScrim"><div class="modal" style="max-width:520px;">
+  <div class="mhead" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <div><h3>📋 Relatório de Visita</h3><p id="vrSub" style="opacity:.9;font-size:12.5px;margin:2px 0 0;"></p></div>
+    </div>
+    <button class="xbtn" id="vrClose">×</button>
+  </div>
+  <div class="mbody" id="vrBody"><div class="muted">Carregando…</div></div>
+</div></div>
+
 <div class="scrim hide" id="autoScrim"><div class="modal" style="max-width:480px;">
   <div class="mhead" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
@@ -394,6 +405,7 @@
     <label class="lay"><input type="checkbox" id="layMetro"> 🛰️ Metro</label>
     <label class="lay"><input type="checkbox" id="layToday" checked> 📅 Hoje</label>
     <label class="lay"><input type="checkbox" id="lay7d" checked> 🗓️ 7 dias</label>
+    <button class="calnav caltoday" id="mapNewLead" style="width:auto;">➕ Nova lead</button>
     <button class="calnav caltoday" id="mapCalBtn" style="width:auto;">📆 Agenda</button>
     <button class="routego" id="routeBtn">🚗 Rota de hoje</button>
     <div class="mapsearch"><input id="mapQ" placeholder="🔎 lead, conta, cidade…" autocomplete="off"><div class="mapsug hide" id="mapSug"></div></div>
@@ -905,6 +917,17 @@ window.ppSchedGo=async(id,btn)=>{
   if(d.ok){toast('Visita agendada 📅');btn.closest('.leaflet-popup-content').querySelector('.pp-ok').textContent='📅 Visita agendada!';loadMapData();}
   else toast(d.error||'falha');
 };
+function evActions(x){
+  let btns=`<button onclick="openRecord('${x.Id}')">📝 Registro</button>`;
+  if(!x.CheckIn){
+    btns+=`<button onclick="ppAddr(this)">📍 Endereço</button><button onclick="visitAct('checkin','${x.Id}',this)">📍 Check-in</button>`;
+  } else if(!x.CheckOut){
+    btns+=`<button onclick="openVisitReport('${x.Id}')">📋 Relatório${x.Report==='Sim'?' ✅':''}</button><button onclick="visitAct('checkout','${x.Id}',this)">🏁 Check-out</button>`;
+  }
+  return `<div class="pp-acts">${btns}</div>
+  <div class="pp-sched pp-addrbox"><input type="text" placeholder="rua, nº, cidade - UF"><button onclick="ppAddrGo('${x.Id}',this)">OK</button></div>
+  <div class="pp-ok"></div>`;
+}
 window.visitAct=async(kind,id,btn)=>{
   const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
   const run=async(lat,lng)=>{
@@ -917,7 +940,8 @@ window.visitAct=async(kind,id,btn)=>{
       if(kind==='task'){ok.textContent='✅ Tarefa de follow-up criada';toast('Tarefa criada ✅');}
       try{celebrate();}catch(e){}
       loadMapData();
-    } else toast(d.error||'falha');
+    } else if(d.needReport){toast(d.error||'Preencha o relatório de visita 📋');openVisitReport(d.eventId||id);}
+    else toast(d.error||'falha');
   };
   if(kind==='checkin'||kind==='checkout'){
     if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>run(p.coords.latitude,p.coords.longitude),()=>run(null,null),{timeout:6000});}
@@ -958,7 +982,7 @@ function renderLayers(){
     const today=isToday(x.Start);
     const done=x.CheckOut?'✅ concluída':(x.CheckIn?'📍 em visita':'');
     const m=L.marker([x._lat,x._lng],{icon:mkIcon(x.CheckIn?'📌':(today?'📅':'🗓️'))});
-    m.bindPopup(`<div class="pp-name">${esc(x.Subject||'Visita')}</div><div class="pp-sub">${new Date(x.Start).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${x.WhoName?' · '+esc(x.WhoName):''} ${done}</div>`+ppActions(x.Id,true));
+    m.bindPopup(`<div class="pp-name">${esc(x.Subject||'Visita')}</div><div class="pp-sub">${new Date(x.Start).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${x.WhoName?' · '+esc(x.WhoName):''} ${done}</div>`+evActions(x));
     MARKS[x.Id]=m;(today?MAPLAYERS.today:MAPLAYERS.week).addLayer(m);
   });
   const tCount=MAPDATA.events.filter(e=>isToday(e.Start)).length;
@@ -1095,10 +1119,56 @@ async function loadCal(){
 function openCal(){document.getElementById('calWrap').classList.remove('hide');loadCal();}
 document.getElementById('calBtn').addEventListener('click',openCal);
 document.getElementById('mapCalBtn').addEventListener('click',openCal);
+document.getElementById('mapNewLead').addEventListener('click',()=>startCreate('Lead',{}));
 document.getElementById('calClose').addEventListener('click',()=>document.getElementById('calWrap').classList.add('hide'));
 document.getElementById('calPrev').addEventListener('click',()=>{CAL.m--;if(CAL.m<0){CAL.m=11;CAL.y--;}loadCal();});
 document.getElementById('calNext').addEventListener('click',()=>{CAL.m++;if(CAL.m>11){CAL.m=0;CAL.y++;}loadCal();});
 document.getElementById('calHoje').addEventListener('click',()=>{CAL={y:new Date().getFullYear(),m:new Date().getMonth()};loadCal();});
+
+// ── Relatório de Visita (após check-in; obrigatório p/ check-out) ──
+async function openVisitReport(eventId){
+  const s=document.getElementById('visitScrim');s.classList.remove('hide');
+  document.getElementById('vrSub').textContent='Carregando…';
+  const body=document.getElementById('vrBody');body.innerHTML='<div class="muted">Carregando…</div>';
+  const r=await api('/api/agent-farm/visit-report-meta?orgId='+ORG_ID+'&eventId='+encodeURIComponent(eventId));
+  const d=await r.json();
+  if(!d.ok){body.innerHTML='<div class="muted">'+esc(d.error||'erro')+'</div>';if(d.noCheckin)setTimeout(()=>s.classList.add('hide'),2200);return;}
+  document.getElementById('vrSub').textContent=(d.event.subject||'Visita')+(d.event.whoName?' · '+d.event.whoName:'')+' · check-in '+new Date(d.event.checkin).toLocaleTimeString('pt-BR').slice(0,5);
+  body.innerHTML=
+    '<div class="fld"><label>Motivo da visita *</label><select id="vrMotivo"><option value=""></option>'+d.motivos.map(m=>`<option ${m===d.event.motivo?'selected':''}>${esc(m)}</option>`).join('')+'</select></div>'+
+    '<div class="fld"><label>Observações da visita *</label><textarea id="vrObs" rows="3" placeholder="o que foi tratado, próximos passos…">'+esc(d.event.observacoes||'')+'</textarea></div>'+
+    '<div class="sech">Endereço da visita</div>'+
+    '<div class="fld"><label>Rua</label><input type="text" id="vrRua" value="'+esc(d.addr.rua||'')+'"></div>'+
+    '<div class="grid-2" style="display:flex;gap:10px;"><div class="fld" style="flex:2"><label>Cidade</label><input type="text" id="vrCid" value="'+esc(d.addr.cidade||'')+'"></div>'+
+    '<div class="fld" style="flex:1"><label>UF</label><input type="text" id="vrUf" maxlength="2" value="'+esc(d.addr.estado||'')+'"></div></div>'+
+    '<div class="fld"><label>CEP</label><input type="text" id="vrCep" value="'+esc(d.addr.cep||'')+'"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px;"><button class="prim" id="vrSave" style="margin-top:0;">Salvar relatório</button>'+
+    (!d.event.checkout?'<button class="prim" id="vrSaveOut" style="margin-top:0;background:linear-gradient(135deg,#12b76a,#0e9f5b);">Salvar + Check-out 🏁</button>':'')+'</div>';
+  const save=async(thenCheckout)=>{
+    const motivo=document.getElementById('vrMotivo').value,obs=document.getElementById('vrObs').value.trim();
+    if(!motivo||!obs){toast('Motivo e observações são obrigatórios 📋');return;}
+    const btn=document.getElementById(thenCheckout?'vrSaveOut':'vrSave');btn.disabled=true;btn.textContent='Salvando…';
+    const rr=await api('/api/agent-farm/visit-report',{method:'POST',body:JSON.stringify({orgId:ORG_ID,eventId,motivo,observacoes:obs,
+      endereco:{rua:document.getElementById('vrRua').value,cidade:document.getElementById('vrCid').value,estado:document.getElementById('vrUf').value.toUpperCase(),cep:document.getElementById('vrCep').value}})});
+    const dd=await rr.json();
+    if(!dd.ok){toast(dd.error||'falha');btn.disabled=false;btn.textContent=thenCheckout?'Salvar + Check-out 🏁':'Salvar relatório';return;}
+    toast('Relatório salvo ✅'+(dd.geocoded?' · endereço mapeado 📍':''));try{celebrate();}catch(e){}
+    if(typeof loadMapData==='function'&&MAPDATA)loadMapData();
+    if(thenCheckout){
+      const go=(lat,lng)=>api('/api/agent-farm/visit-action',{method:'POST',body:JSON.stringify({orgId:ORG_ID,kind:'checkout',eventId,lat,lng})}).then(x=>x.json()).then(o=>{
+        if(o.ok){toast('Check-out feito 🏁'+(o.durationMin!=null?' · '+o.durationMin+' min':''));if(MAPDATA)loadMapData();}
+        else toast(o.error||'falha no check-out');
+        document.getElementById('visitScrim').classList.add('hide');
+      });
+      if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>go(p.coords.latitude,p.coords.longitude),()=>go(null,null),{timeout:6000});
+      else go(null,null);
+    } else document.getElementById('visitScrim').classList.add('hide');
+  };
+  document.getElementById('vrSave').addEventListener('click',()=>save(false));
+  const so=document.getElementById('vrSaveOut');if(so)so.addEventListener('click',()=>save(true));
+}
+document.getElementById('vrClose').addEventListener('click',()=>document.getElementById('visitScrim').classList.add('hide'));
+document.getElementById('visitScrim').addEventListener('click',e=>{if(e.target.id==='visitScrim')document.getElementById('visitScrim').classList.add('hide');});
 
 // ── detecção de dispositivo (celular x desktop) ──
 (function(){
