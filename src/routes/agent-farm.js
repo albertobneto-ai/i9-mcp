@@ -29,6 +29,9 @@ const BEHAV =
   'Responda sempre em português do Brasil, curto e objetivo. NUNCA invente Ids, números ou dados: sempre consulte a org com soql_query. ' +
   'Para alterar/criar, execute a ação e confirme o resultado real (Id + campos). Se faltar um dado obrigatório, pergunte antes de agir. ' +
   'Ao listar registros, apresente em lista curta e legível (não despeje JSON).' +
+  '\n\nLISTAS CLICÁVEIS: ao listar registros, NÃO mostre o Id cru numa coluna. Em vez disso, torne o nome (ou identificador) de cada ' +
+  'registro clicável usando EXATAMENTE o formato [[REC:<Id real de 15 ou 18 chars>:<texto visível>]]. Ex.: numa tabela de leads, a célula ' +
+  'do nome vira [[REC:00Q...:ZZ Teste Vendas]]; numa lista de contas, [[REC:001...:Agro Connect]]. Funciona em tabelas e listas. Use o Id real do registro.' +
   '\n\nAÇÕES CLICÁVEIS: ao final da resposta, quando fizer sentido, ofereça de 1 a 4 próximas ações que o usuário pode querer. ' +
   'Cada ação é um comando curto e imperativo que VOCÊ executaria se ele clicar (ex.: "Qualificar a lead teste MAP como Hot", ' +
   '"Atualizar o telefone da JJ HOMOL", "Ver detalhes da Agro Connect", "Criar uma nova lead"). Use o identificador real do registro. ' +
@@ -268,6 +271,34 @@ router.delete('/agents/:id', authMiddleware, async (req, res) => {
   try {
     const r = await pool.query('DELETE FROM farm_agents WHERE id=$1', [req.params.id]);
     return res.json({ ok: true, deleted: r.rowCount });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// GET /api/agent-farm/record?orgId=36&id=<recordId> — lê um registro real da org
+const ID_PREFIX = { '00Q': 'Lead', '001': 'Account', '003': 'Contact', '006': 'Opportunity', '500': 'Case', '00T': 'Task', '00U': 'Event', '701': 'Campaign', '800': 'Contract' };
+let _prefixCache = null;
+async function objForId(conn, id) {
+  const p = id.slice(0, 3);
+  if (ID_PREFIX[p]) return ID_PREFIX[p];
+  if (!_prefixCache) { const g = await conn.describeGlobal(); _prefixCache = {}; g.sobjects.forEach((s) => { if (s.keyPrefix) _prefixCache[s.keyPrefix] = s.name; }); }
+  return _prefixCache[p] || null;
+}
+router.get('/record', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const id = req.query.id;
+    if (!id) return res.status(400).json({ ok: false, error: 'id obrigatório' });
+    const org = await getOrgById(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
+    const conn = await connToOrg(org);
+    const obj = await objForId(conn, id);
+    if (!obj) return res.json({ ok: false, error: 'objeto não identificado para ' + id });
+    const rec = await conn.sobject(obj).retrieve(id);
+    const fields = Object.entries(rec)
+      .filter(([k, v]) => v != null && v !== '' && typeof v !== 'object' && k !== 'attributes')
+      .slice(0, 40).map(([k, v]) => [k, String(v)]);
+    const name = rec.Name || rec.CaseNumber || rec.Subject || rec.Title || id;
+    return res.json({ ok: true, object: obj, id, name, fields, instanceUrl: conn.instanceUrl });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
