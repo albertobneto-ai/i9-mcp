@@ -64,10 +64,17 @@
   .recrow{display:flex;justify-content:space-between;gap:14px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;}
   .recrow .k{color:var(--muted);font-weight:700;white-space:nowrap;} .recrow .v{color:var(--ink);text-align:right;word-break:break-word;max-width:62%;}
   .recopen{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-weight:700;font-size:13.5px;}
-  .recedit .ei{width:56%;border:1.5px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13.5px;color:var(--ink);background:#fff;}
-  .recedit .ei:focus{border-color:var(--sky);outline:none;}
-  .recedit input[type=checkbox].ei{width:20px;height:20px;accent-color:var(--blue);}
+  .recedit .ei,.recedit .ni{width:56%;border:1.5px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13.5px;color:var(--ink);background:#fff;}
+  .recedit .ei:focus,.recedit .ni:focus{border-color:var(--sky);outline:none;}
+  .recedit input[type=checkbox].ei,.recedit input[type=checkbox].ni{width:20px;height:20px;accent-color:var(--blue);}
   .recrow.edit{align-items:center;}
+  .sech{font-family:'Fredoka';font-weight:600;color:var(--navy);font-size:14px;margin:16px 0 2px;padding-top:10px;border-top:1px solid var(--line);}
+  .sech:first-child{border-top:none;padding-top:0;margin-top:2px;}
+  .rtlist{display:flex;flex-direction:column;gap:9px;}
+  .rtbtn{text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font-weight:700;color:var(--navy);font-size:15px;transition:.15s;display:flex;align-items:center;}
+  .rtbtn:hover{border-color:var(--sky);background:#eaf3ff;transform:translateY(-1px);}
+  .rtdef{font-size:10px;font-weight:800;background:var(--mint);color:#fff;padding:2px 7px;border-radius:20px;margin-left:8px;}
+  .reqmark{color:#d9534f;font-weight:800;}
   .xbtn{background:rgba(255,255,255,.2);color:#fff;border-radius:10px;width:34px;height:34px;font-size:20px;line-height:1;flex:0 0 34px;}
   @keyframes float{from{transform:translateY(2px);}to{transform:translateY(-4px);}}
   .m-eye{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite;animation-delay:var(--d,0s);}
@@ -201,6 +208,17 @@
     <div class="lerr" id="lErr">Não consegui entrar. Confira e-mail e senha.</div>
     <p class="muted" style="margin-top:12px;">Os agentes operam na org <b>arqevery</b> — leitura e escrita reais.</p>
   </div>
+</div></div>
+
+<div class="scrim hide" id="newScrim"><div class="modal" style="max-width:600px;">
+  <div class="mhead" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <div><h3 id="newTitle">Novo registro</h3><p style="opacity:.9;font-size:12.5px;margin:2px 0 0;">Formulário conectado à arqevery</p></div>
+    </div>
+    <button class="xbtn" id="newClose">×</button>
+  </div>
+  <div class="mbody" id="newBody"></div>
 </div></div>
 
 <div class="scrim hide" id="recScrim"><div class="modal" style="max-width:560px;">
@@ -337,6 +355,7 @@ async function sendMsg(){
     if(d.ok){const wrote=(d.steps||[]).some(s=>s.tool!=='soql_query'&&!/falha/.test(s.summary));
       hist[active.id].push({role:'assistant',text:d.text||'(sem resposta)',html:mdLite(d.text||''),steps:d.steps||[],actions:d.actions||[]});
       render();if(wrote)celebrate();
+      if(d.newRecord&&d.newRecord.object)startCreate(d.newRecord.object,d.newRecord.prefill||{});
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
   const sm2=stageMascotEl();if(sm2)sm2.classList.remove('think');const tb2=document.getElementById('thinkB');if(tb2)tb2.classList.remove('show');
@@ -422,6 +441,76 @@ async function recSave(){
   }catch(e){toast(e.message);btn.disabled=false;btn.textContent='Salvar alterações';}
 }
 document.getElementById('recEdit').addEventListener('click',recEdit);
+
+// ── Criar registro (replica o modal "New" com record type e campos do layout) ──
+let NEWMETA=null;
+function createInput(f,prefill){
+  const v=(prefill&&prefill[f.name]!=null)?String(prefill[f.name]):'';
+  const id='nf_'+f.name, base=`class="ni" id="${id}" data-f="${f.name}" data-type="${f.type}" data-req="${f.required?1:''}" data-label="${esc(f.label)}"`;
+  if(f.type==='boolean') return `<input type="checkbox" ${base} ${v==='true'?'checked':''}>`;
+  if(f.type==='picklist'&&f.options) return `<select ${base}><option value=""></option>`+f.options.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')+`</select>`;
+  if(f.type==='textarea') return `<textarea ${base} rows="2">${esc(v)}</textarea>`;
+  if(f.type==='date') return `<input type="date" ${base} value="${esc(v.slice(0,10))}">`;
+  const num=['double','currency','int','percent'].includes(f.type);
+  return `<input type="${num?'number':'text'}" ${base} value="${esc(v)}">`;
+}
+async function startCreate(object,prefill){
+  prefill=prefill||{};
+  document.getElementById('newScrim').classList.remove('hide');
+  document.getElementById('newTitle').textContent='Novo registro';
+  const body=document.getElementById('newBody');body.innerHTML='<div class="muted">Preparando o formulário…</div>';
+  try{
+    const r=await api('/api/agent-farm/create-meta?orgId='+ORG_ID+'&object='+encodeURIComponent(object));
+    const meta=await r.json();
+    if(!meta.ok){body.innerHTML='<div class="muted">'+esc(meta.error||'erro')+'</div>';return;}
+    NEWMETA=meta;
+    document.getElementById('newTitle').textContent='Nova '+(meta.label||object);
+    if(meta.selectorRequired&&meta.recordTypes.length>1){
+      body.innerHTML='<div class="muted" style="margin-bottom:12px;">Qual o tipo de registro?</div><div class="rtlist">'+
+        meta.recordTypes.map(rt=>`<button class="rtbtn" data-rt="${rt.recordTypeId}">${esc(rt.name)}${rt.isDefault?'<span class="rtdef">padrão</span>':''}</button>`).join('')+'</div>';
+      body.querySelectorAll('.rtbtn').forEach(b=>b.addEventListener('click',()=>loadCreateForm(object,b.dataset.rt,prefill)));
+    }else{
+      const rt=(meta.recordTypes.find(r=>r.isDefault)||meta.recordTypes[0]||{}).recordTypeId;
+      loadCreateForm(object,rt,prefill);
+    }
+  }catch(e){body.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
+}
+async function loadCreateForm(object,rtId,prefill){
+  const body=document.getElementById('newBody');body.innerHTML='<div class="muted">Carregando os campos…</div>';
+  try{
+    const r=await api('/api/agent-farm/create-layout?orgId='+ORG_ID+'&object='+encodeURIComponent(object)+(rtId?'&recordTypeId='+rtId:''));
+    const layout=await r.json();
+    if(!layout.ok){body.innerHTML='<div class="muted">'+esc(layout.error||'erro')+'</div>';return;}
+    document.getElementById('newTitle').textContent='Nova '+(NEWMETA.label||object)+(layout.recordTypeName?' · '+layout.recordTypeName:'');
+    const html=(layout.sections||[]).map(s=>{
+      const rows=s.fields.map(f=>`<div class="recrow edit"><span class="k">${esc(f.label)}${f.required?' <span class="reqmark">*</span>':''}</span>${createInput(f,prefill)}</div>`).join('');
+      return (s.heading?`<div class="sech">${esc(s.heading)}</div>`:'')+'<div class="recgrid recedit">'+rows+'</div>';
+    }).join('');
+    body.innerHTML=html+'<div style="display:flex;gap:8px;margin-top:18px;"><button class="prim" id="newSave" style="margin-top:0;">Criar '+esc(NEWMETA.label||object)+'</button><button class="ghost" id="newCancel" style="margin-top:0;width:auto;padding:14px 18px;">Cancelar</button></div>';
+    document.getElementById('newSave').addEventListener('click',()=>doCreate(object,layout.recordTypeId,NEWMETA.selectorRequired));
+    document.getElementById('newCancel').addEventListener('click',()=>document.getElementById('newScrim').classList.add('hide'));
+  }catch(e){body.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
+}
+async function doCreate(object,rtId,selectorRequired){
+  const fields={},missing=[];
+  document.querySelectorAll('#newBody .ni').forEach(el=>{
+    const name=el.dataset.f,type=el.dataset.type;
+    const v=type==='boolean'?el.checked:el.value;
+    if(el.dataset.req&&(v===''||v==null||v===false)) missing.push(el.dataset.label||name);
+    if(type==='boolean'){fields[name]=v;}else if(v!==''){fields[name]=v;}
+  });
+  if(missing.length){toast('Preencha: '+missing.slice(0,4).join(', '));return;}
+  if(selectorRequired&&rtId)fields.RecordTypeId=rtId;
+  const btn=document.getElementById('newSave');btn.disabled=true;btn.textContent='Criando…';
+  try{
+    const r=await api('/api/agent-farm/record-create',{method:'POST',body:JSON.stringify({orgId:ORG_ID,object,fields})});
+    const d=await r.json();
+    if(d.ok){document.getElementById('newScrim').classList.add('hide');toast((NEWMETA.label||object)+' criado ✅');openRecord(d.id);}
+    else{toast(d.error||(d.errors&&JSON.stringify(d.errors))||'falha ao criar');btn.disabled=false;btn.textContent='Criar '+(NEWMETA.label||object);}
+  }catch(e){toast(e.message);btn.disabled=false;btn.textContent='Criar '+(NEWMETA.label||object);}
+}
+document.getElementById('newClose').addEventListener('click',()=>document.getElementById('newScrim').classList.add('hide'));
+document.getElementById('newScrim').addEventListener('click',e=>{if(e.target.id==='newScrim')document.getElementById('newScrim').classList.add('hide');});
 document.getElementById('recClose').addEventListener('click',()=>document.getElementById('recScrim').classList.add('hide'));
 document.getElementById('recScrim').addEventListener('click',e=>{if(e.target.id==='recScrim')document.getElementById('recScrim').classList.add('hide');});
 </script>
