@@ -57,7 +57,14 @@
   .card .tg{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
 
   /* mascote */
-  .mascot{width:100%;height:100%;overflow:visible;animation:float 4s ease-in-out infinite alternate;animation-delay:var(--d,0s);transform-origin:50% 90%;}
+  .mascot{width:100%;height:100%;object-fit:contain;display:block;overflow:visible;animation:float 4s ease-in-out infinite alternate;animation-delay:var(--d,0s);transform-origin:50% 90%;filter:drop-shadow(0 6px 8px rgba(3,45,96,.18));}
+  .reclink{color:var(--blue);font-weight:700;cursor:pointer;text-decoration:none;border-bottom:1.5px solid rgba(1,118,211,.35);transition:.12s;}
+  .reclink:hover{border-bottom-color:var(--blue);background:#eaf3ff;border-radius:4px;}
+  .recgrid{border-top:1px solid var(--line);}
+  .recrow{display:flex;justify-content:space-between;gap:14px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .recrow .k{color:var(--muted);font-weight:700;white-space:nowrap;} .recrow .v{color:var(--ink);text-align:right;word-break:break-word;max-width:62%;}
+  .recopen{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-weight:700;font-size:13.5px;}
+  .xbtn{background:rgba(255,255,255,.2);color:#fff;border-radius:10px;width:34px;height:34px;font-size:20px;line-height:1;flex:0 0 34px;}
   @keyframes float{from{transform:translateY(2px);}to{transform:translateY(-4px);}}
   .m-eye{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite;animation-delay:var(--d,0s);}
   @keyframes blink{0%,92%,100%{transform:scaleY(1);}96%{transform:scaleY(.12);}}
@@ -192,6 +199,14 @@
   </div>
 </div></div>
 
+<div class="scrim hide" id="recScrim"><div class="modal" style="max-width:560px;">
+  <div class="mhead" style="justify-content:space-between;">
+    <div style="min-width:0"><h3 id="recTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;">Registro</h3><p id="recSub"></p></div>
+    <button class="xbtn" id="recClose">×</button>
+  </div>
+  <div class="mbody" id="recBody"><div class="muted">Carregando…</div></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -206,27 +221,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 
 // ── mascote SVG
 function mascot(accent,kind){
-  const d=darken(accent),l=lighten(accent,.45);
-  let s=`<svg class="mascot" viewBox="0 0 100 100" style="--d:${(Math.random()*2).toFixed(2)}s">`;
-  s+='<ellipse cx="50" cy="90" rx="24" ry="5" fill="#0b2545" opacity="0.08"/>';
-  if(kind==='lead'||kind==='opp'||kind==='acct'){
-    s+=`<g class="m-ear"><circle cx="31" cy="30" r="9" fill="${accent}"/><circle cx="31" cy="30" r="4.5" fill="${d}"/></g>`;
-    s+=`<g class="m-ear"><circle cx="69" cy="30" r="9" fill="${accent}"/><circle cx="69" cy="30" r="4.5" fill="${d}"/></g>`;
-  }
-  s+=`<rect x="21" y="26" width="58" height="54" rx="27" fill="${accent}"/>`;
-  s+=`<ellipse cx="50" cy="42" rx="27" ry="17" fill="${l}" opacity="0.55"/>`;
-  if(kind==='lead') s+=`<line x1="50" y1="20" x2="50" y2="9" stroke="${d}" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="7" r="8" fill="#00D4FF" opacity="0.25"/><circle cx="50" cy="7" r="4.5" fill="#00D4FF"/>`;
-  if(kind==='opp') s+=`<circle cx="50" cy="12" r="9" fill="#fff"/><path d="M45 14 L50 8 L55 14 M50 8 L50 16" stroke="${accent}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  if(kind==='acct') s+=`<path d="M39 20 l4 -9 l3.5 6 l3.5 -10 l3.5 10 l3.5 -6 l4 9 z" fill="${lighten(accent,.2)}" stroke="${d}" stroke-width="1.4" stroke-linejoin="round"/>`;
-  if(kind==='case') s+=`<path d="M30 40 a20 20 0 0 1 40 0" stroke="${d}" stroke-width="3.5" fill="none"/><rect x="25" y="40" width="9" height="14" rx="4.5" fill="${d}"/><rect x="66" y="40" width="9" height="14" rx="4.5" fill="${d}"/>`;
-  if(!['lead','opp','acct','case'].includes(kind)) s+=`<line x1="50" y1="22" x2="50" y2="10" stroke="${d}" stroke-width="3" stroke-linecap="round"/><path d="M50 3 l3.2 5.5 l-3.2 -1 l-3.2 1 z" fill="#FFB43B"/>`;
-  s+='<ellipse cx="50" cy="56" rx="20" ry="17" fill="#fff"/>';
-  s+=`<ellipse class="m-eye" cx="42" cy="53" rx="4.5" ry="5.6" fill="#0b2545"/><circle cx="43.4" cy="51" r="1.5" fill="#fff"/>`;
-  s+=`<ellipse class="m-eye" cx="58" cy="53" rx="4.5" ry="5.6" fill="#0b2545"/><circle cx="59.4" cy="51" r="1.5" fill="#fff"/>`;
-  s+='<circle cx="37" cy="61" r="3.2" fill="#ff8fae" opacity="0.5"/><circle cx="63" cy="61" r="3.2" fill="#ff8fae" opacity="0.5"/>';
-  s+='<path d="M45 62 q5 5 10 0" stroke="#0b2545" stroke-width="2.3" fill="none" stroke-linecap="round"/>';
-  s+='</svg>';
-  return s;
+  return `<img class="mascot" src="/mascote.png" alt="Ever iA" draggable="false" style="--d:${(Math.random()*2).toFixed(2)}s">`;
 }
 
 function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · arqevery':'desconectado';}
@@ -297,6 +292,7 @@ function render(){
 // markdown mínimo (negrito, tabela, quebras) para as respostas
 function mdLite(s){
   s=esc(s);
+  s=s.replace(/\[\[REC:([A-Za-z0-9]{15,18}):([\s\S]*?)\]\]/g,(m,id,label)=>`<span class="reclink" data-id="${id}">${label}</span>`);
   const lines=s.split('\n');let out=[],i=0;
   while(i<lines.length){
     if(/^\s*\|.*\|\s*$/.test(lines[i])&&i+1<lines.length&&/^\s*\|[-: |]+\|\s*$/.test(lines[i+1])){
@@ -309,7 +305,7 @@ function mdLite(s){
   return out.join('\n').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
 }
 
-document.getElementById('thread').addEventListener('click',e=>{const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
+document.getElementById('thread').addEventListener('click',e=>{const rl=e.target.closest('.reclink');if(rl){openRecord(rl.dataset.id);return;}const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
 document.getElementById('send').addEventListener('click',sendMsg);
 document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
 document.getElementById('menu').addEventListener('click',()=>document.getElementById('roster').classList.toggle('open'));
@@ -358,6 +354,26 @@ document.getElementById('doCreate').addEventListener('click',async()=>{
 });
 
 if(TOKEN){document.getElementById('loginScrim').classList.add('hide');setConn(true);loadAgents();}
+
+// ── modal de registro (abre o registro da org aqui dentro)
+async function openRecord(id){
+  const s=document.getElementById('recScrim');s.classList.remove('hide');
+  document.getElementById('recTitle').textContent='Registro';
+  document.getElementById('recSub').textContent=id;
+  const body=document.getElementById('recBody');body.innerHTML='<div class="muted">Carregando da arqevery…</div>';
+  try{
+    const r=await api('/api/agent-farm/record?orgId='+ORG_ID+'&id='+encodeURIComponent(id));
+    const d=await r.json();
+    if(!d.ok){body.innerHTML='<div class="muted">'+esc(d.error||'não encontrado')+'</div>';return;}
+    document.getElementById('recTitle').textContent=d.name;
+    document.getElementById('recSub').textContent=d.object+' · '+d.id;
+    const rows=(d.fields||[]).map(([k,v])=>`<div class="recrow"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
+    const url=(d.instanceUrl||'')+'/'+d.id;
+    body.innerHTML='<div class="recgrid">'+rows+'</div><a class="recopen" href="'+url+'" target="_blank" rel="noopener">Abrir no Salesforce ↗</a>';
+  }catch(e){body.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
+}
+document.getElementById('recClose').addEventListener('click',()=>document.getElementById('recScrim').classList.add('hide'));
+document.getElementById('recScrim').addEventListener('click',e=>{if(e.target.id==='recScrim')document.getElementById('recScrim').classList.add('hide');});
 </script>
 </body>
 </html>
