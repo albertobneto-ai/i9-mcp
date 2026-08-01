@@ -381,7 +381,7 @@ async function startCallRec(ctx){
   function upd(){const el=document.getElementById('crTxt');el.textContent=(finalTxt+(interim?' '+interim:''))||'🎙️ Põe no viva-voz e fala — eu transcrevo aqui…';el.scrollTop=el.scrollHeight;}
   if(SR){
     rec=new SR();rec.lang='pt-BR';rec.continuous=true;rec.interimResults=true;
-    rec.onresult=e=>{interim='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)finalTxt+=r[0].transcript+' ';else interim+=r[0].transcript;}upd();};
+    rec.onresult=e=>{interim='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)finalTxt+=fixTerms(r[0].transcript)+' ';else interim+=r[0].transcript;}upd();};
     rec.onend=()=>{if(alive){try{rec.start();}catch(e){}}};
     try{rec.start();}catch(e){}
   }else{document.getElementById('crTxt').textContent='(transcrição ao vivo indisponível neste navegador — vou gravar o áudio mesmo assim)';}
@@ -493,7 +493,8 @@ function mdLite(s){
   return out.join('\n').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
 }
 
-document.getElementById('thread').addEventListener('click',e=>{const rl=e.target.closest('.reclink');if(rl){openRecord(rl.dataset.id);return;}const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
+document.getElementById('thread').addEventListener('click',e=>{const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
+document.addEventListener('click',e=>{const rl=e.target.closest('.reclink');if(rl&&rl.dataset.id)openRecord(rl.dataset.id);});
 document.getElementById('send').addEventListener('click',sendMsg);
 document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
 const _roster=document.getElementById('roster'),_rscrim=document.getElementById('rscrim');
@@ -726,6 +727,21 @@ document.getElementById('autoClose').addEventListener('click',()=>document.getEl
 document.getElementById('autoScrim').addEventListener('click',e=>{if(e.target.id==='autoScrim')document.getElementById('autoScrim').classList.add('hide');});
 
 // ── ditado por voz nos campos de conversa ──
+// corrige termos de CRM que o reconhecedor pt-BR estropia (lide → lead, etc.)
+function fixTerms(t){
+  return String(t||'')
+    .replace(/\blides\b/gi,'leads').replace(/\blide\b/gi,'lead')
+    .replace(/\bleeds\b/gi,'leads').replace(/\bleed\b/gi,'lead').replace(/\blid\b/gi,'lead')
+    .replace(/\bch[áa]ter\b/gi,'chatter')
+    .replace(/\bfolou\s?ap\b/gi,'follow-up').replace(/\bfollow\s?up\b/gi,'follow-up')
+    .replace(/\bimeio\b/gi,'e-mail').replace(/\bemeio\b/gi,'e-mail')
+    .replace(/\bsales\s?force\b/gi,'Salesforce')
+    .replace(/\bpaipi?laine?\b/gi,'pipeline').replace(/\bpaip\s?line\b/gi,'pipeline')
+    .replace(/\br[eê]itin(gue|g)?\b/gi,'rating')
+    .replace(/\bt[áa]squi?(s)?\b/gi,'task$1')
+    .replace(/\bconvert[êe]r?\b/gi,'converter')
+    .replace(/\bops\b/gi,'opp');
+}
 function attachMic(btnId,inputId){
   const btn=document.getElementById(btnId),inp=document.getElementById(inputId);
   if(!btn||!inp)return;
@@ -736,7 +752,7 @@ function attachMic(btnId,inputId){
     if(on){try{rec.stop();}catch(e){}return;}
     rec=new SR();rec.lang='pt-BR';rec.interimResults=true;rec.continuous=false;
     const base=inp.value;
-    rec.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;inp.value=(base?base+' ':'')+t;};
+    rec.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;inp.value=(base?base+' ':'')+fixTerms(t);};
     rec.onstart=()=>{on=true;btn.classList.add('miclive');};
     rec.onend=()=>{on=false;btn.classList.remove('miclive');inp.focus();};
     rec.onerror=()=>{on=false;btn.classList.remove('miclive');};
