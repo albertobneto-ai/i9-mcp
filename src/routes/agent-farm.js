@@ -188,7 +188,7 @@ async function execTool(conn, orgId, name, input) {
     catch (e) { try { const t = await conn.sobject('Task').create(base); taskId = t.id; } catch (e2) {} }
     let digits = String(raw).replace(/\D/g, '');
     if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) digits = '55' + digits;
-    return { ok: true, id: taskId, phone: raw, name: rec.Name, dial: digits };
+    return { ok: true, id: taskId, phone: raw, name: rec.Name, dial: digits, leadId: input.leadId };
   }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
@@ -226,7 +226,7 @@ async function agenticRun(system, messages, conn, orgId) {
         let out;
         try { out = await execTool(conn, orgId, blk.name, blk.input || {}); }
         catch (e) { out = { ok: false, error: String(e.message || e) }; }
-        if (out && out.dial) dial = { number: out.dial, display: out.phone, name: out.name };
+        if (out && out.dial) dial = { number: out.dial, display: out.phone, name: out.name, leadId: out.leadId };
         steps.push({ tool: blk.name, input: blk.input, summary: stepSummary(blk.name, blk.input || {}, out) });
         results.push({ type: 'tool_result', tool_use_id: blk.id, content: JSON.stringify(out).slice(0, 6000) });
       }
@@ -531,6 +531,46 @@ router.post('/auto-create', authMiddleware, async (req, res) => {
     const okIds = arr.filter((x) => x.success).map((x) => x.id);
     const errs = arr.filter((x) => !x.success).map((x) => x.errors);
     return res.json({ ok: true, created: okIds.length, failed: arr.length - okIds.length, ids: okIds.slice(0, 50), sampleErrors: errs.slice(0, 3), city, uf, recordTypeId: rtId });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/call-log — salva transcrição da ligação na Task e anexa o áudio
+router.post('/call-log', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!b.leadId) return res.status(400).json({ ok: false, error: 'leadId obrigatório' });
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const dur = b.durationSec ? ` · duração ${Math.floor(b.durationSec / 60)}m${String(b.durationSec % 60).padStart(2, '0')}s` : '';
+    const transcript = (b.transcript || '').trim();
+    const desc = ('TRANSCRIÇÃO DA LIGAÇÃO' + dur + '\n' + (transcript || '(sem fala reconhecida)')).slice(0, 31000);
+    const base = { WhoId: b.leadId, Subject: 'Ligação (gravada)', Status: 'Completed', Description: desc, ActivityDate: new Date().toISOString().slice(0, 10) };
+    let task;
+    try { task = await conn.sobject('Task').create({ ...base, Type: 'Call' }); }
+    catch (e) { task = await conn.sobject('Task').create(base); }
+    if (!task.success) return res.json({ ok: false, error: JSON.stringify(task.errors) });
+    let fileId = null;
+    if (b.audio) {
+      try {
+        const ext = /ogg/.test(b.mime || '') ? 'ogg' : (/mp4|aac/.test(b.mime || '') ? 'm4a' : 'webm');
+        const cv = await conn.sobject('ContentVersion').create({
+          Title: 'Ligacao_' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-'),
+          PathOnClient: 'ligacao.' + ext,
+          VersionData: b.audio,
+          FirstPublishLocationId: task.id,
+        });
+        if (cv.success) {
+          fileId = cv.id;
+          try {
+            const q = await conn.query(`SELECT ContentDocumentId FROM ContentVersion WHERE Id='${cv.id}'`);
+            const docId = q.records && q.records[0] && q.records[0].ContentDocumentId;
+            if (docId) await conn.sobject('ContentDocumentLink').create({ ContentDocumentId: docId, LinkedEntityId: b.leadId, ShareType: 'V' });
+          } catch (e2) {}
+        }
+      } catch (e) {}
+    }
+    return res.json({ ok: true, taskId: task.id, fileId, chars: transcript.length });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
