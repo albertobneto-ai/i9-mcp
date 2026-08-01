@@ -698,6 +698,17 @@ router.post('/call-log', authMiddleware, async (req, res) => {
 // ── Farm Maps: camadas no mapa + ações de visita (check-in/out nos campos do épico Visitas) ──
 const UF_CENTER = { AC: [-9.02, -70.81], AL: [-9.57, -36.78], AP: [1.41, -51.77], AM: [-4.15, -63.15], BA: [-12.58, -41.7], CE: [-5.2, -39.53], DF: [-15.78, -47.93], ES: [-19.19, -40.34], GO: [-15.98, -49.86], MA: [-5.42, -45.44], MT: [-12.95, -55.51], MS: [-20.51, -54.54], MG: [-18.51, -44.55], PA: [-3.79, -52.48], PB: [-7.12, -36.72], PR: [-24.89, -51.55], PE: [-8.38, -37.86], PI: [-7.72, -42.97], RJ: [-22.25, -42.66], RN: [-5.81, -36.59], RS: [-29.75, -53.32], RO: [-10.83, -63.34], RR: [2.05, -61.4], SC: [-27.45, -50.95], SP: [-22.19, -48.79], SE: [-10.57, -37.44], TO: [-9.46, -48.26] };
 const _geo = {};
+async function geocodeText(q) {
+  const key = ('txt|' + q).toLowerCase();
+  if (_geo[key]) return _geo[key];
+  try {
+    const u = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(q + ', Brasil');
+    const r = await fetch(u, { headers: { 'User-Agent': 'everi9-farm/1.0 (contato@everi9.com)' } });
+    const j = await r.json();
+    if (j && j[0]) { _geo[key] = [parseFloat(j[0].lat), parseFloat(j[0].lon)]; return _geo[key]; }
+  } catch (e) {}
+  return null;
+}
 async function geocodeCity(city, uf) {
   const key = (city + '|' + uf).toLowerCase();
   if (_geo[key]) return _geo[key];
@@ -745,13 +756,20 @@ router.get('/map-data', authMiddleware, async (req, res) => {
     const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude');
     const accounts = await coordsFor((aq.records || []).map((r) => { delete r.attributes; return r; }), 'BillingCity', 'BillingState', 'BillingLatitude', 'BillingLongitude');
     const leadPos = {}; leads.forEach((l) => { leadPos[l.Id] = [l._lat, l._lng]; });
-    const events = (eq.records || []).map((e) => {
+    let geoBudget = 5;
+    const events = [];
+    for (const e of (eq.records || [])) {
       let pos = null;
       if (e.CheckInLatitude__c != null) pos = [e.CheckInLatitude__c, e.CheckInLongitude__c];
-      else if (e.WhoId && leadPos[e.WhoId]) pos = leadPos[e.WhoId];
-      if (!pos) return null;
-      return { Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, _lat: pos[0], _lng: pos[1] };
-    }).filter(Boolean);
+      else if (e.Location && e.Location.length > 5 && !/^-?\d+\.\d+,/.test(e.Location)) {
+        const key = ('txt|' + e.Location).toLowerCase();
+        if (_geo[key]) pos = _geo[key];
+        else if (geoBudget > 0) { geoBudget--; const g = await geocodeText(e.Location); if (g) pos = g; }
+      }
+      if (!pos && e.WhoId && leadPos[e.WhoId]) pos = leadPos[e.WhoId];
+      if (!pos) continue;
+      events.push({ Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, _lat: pos[0], _lng: pos[1] });
+    }
     let metro = [];
     try {
       const mq = await conn.query('SELECT Id,Name,Anel_Associado__c,Neighborhood__c,Latitude__c,Longitude__c FROM Metro_Station__c WHERE Latitude__c != null LIMIT 200');
@@ -813,6 +831,12 @@ router.post('/visit-action', authMiddleware, async (req, res) => {
       const r = await conn.sobject('Event').update(upd);
       return res.json({ ok: !!r.success, eventId: evId, at: nowIso, durationMin: durMin, errors: r.errors });
     }
+    if (b.kind === 'address') {
+      if (!b.eventId || !b.address) return res.json({ ok: false, error: 'eventId e address obrigatórios' });
+      const r = await conn.sobject('Event').update({ Id: b.eventId, Location: b.address });
+      const g = await geocodeText(b.address);
+      return res.json({ ok: !!r.success, eventId: b.eventId, geocoded: !!g, lat: g && g[0], lng: g && g[1], errors: r.errors });
+    }
     if (b.kind === 'schedule') {
       if (!b.startDateTime) return res.json({ ok: false, error: 'startDateTime obrigatório' });
       const st = new Date(b.startDateTime);
@@ -826,6 +850,20 @@ router.post('/visit-action', authMiddleware, async (req, res) => {
       return res.json({ ok: !!(r && r.success), taskId: r && r.id, errors: r && r.errors });
     }
     return res.status(400).json({ ok: false, error: 'kind inválido' });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// GET /api/agent-farm/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD — agendamentos do período
+router.get('/calendar', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const from = new Date((req.query.from || new Date().toISOString().slice(0, 10)) + 'T00:00:00-03:00').toISOString();
+    const to = new Date((req.query.to || new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10)) + 'T23:59:59-03:00').toISOString();
+    const q = await conn.query(`SELECT Id,Subject,StartDateTime,EndDateTime,Location,Who.Name,What.Name,CheckInDateTime__c,CheckOutDateTime__c FROM Event WHERE StartDateTime >= ${from} AND StartDateTime <= ${to} ORDER BY StartDateTime LIMIT 400`);
+    const events = (q.records || []).map((e) => ({ id: e.Id, subject: e.Subject, start: e.StartDateTime, end: e.EndDateTime, location: e.Location, who: e.Who && e.Who.Name, what: e.What && e.What.Name, checkin: e.CheckInDateTime__c, checkout: e.CheckOutDateTime__c }));
+    return res.json({ ok: true, events });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
