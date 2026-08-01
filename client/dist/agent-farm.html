@@ -76,6 +76,17 @@
   .rtbtn:hover{border-color:var(--sky);background:#eaf3ff;transform:translateY(-1px);}
   .rtdef{font-size:10px;font-weight:800;background:var(--mint);color:#fff;padding:2px 7px;border-radius:20px;margin-left:8px;}
   .reqmark{color:#d9534f;font-weight:800;}
+  #recScrim #recBody{flex:1;min-height:0;overflow-y:auto;}
+  .recagent{flex:0 0 auto;border-top:1px solid var(--line);background:linear-gradient(0deg,#eef6ff,#fff);padding:11px 18px 14px;}
+  .ragReply{font-size:13.5px;color:var(--ink);max-height:150px;overflow-y:auto;margin-bottom:9px;}
+  .ragReply:empty{display:none;}
+  .raginbar{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--sky);border-radius:16px;padding:5px 5px 5px 8px;}
+  .ragav{width:30px;height:30px;flex:0 0 30px;display:block;}
+  .ragav .mascot{filter:none;}
+  .raginbar input{flex:1;border:none;outline:none;font-size:14px;color:var(--ink);background:transparent;min-width:0;}
+  .ragsend{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--spark));display:flex;align-items:center;justify-content:center;}
+  .ragthink{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:600;}
+  .ragthink .mascot{width:22px;height:22px;filter:none;}
   .xbtn{background:rgba(255,255,255,.2);color:#fff;border-radius:10px;width:34px;height:34px;font-size:20px;line-height:1;flex:0 0 34px;}
   @keyframes float{from{transform:translateY(2px);}to{transform:translateY(-4px);}}
   .m-eye{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite;animation-delay:var(--d,0s);}
@@ -266,7 +277,7 @@
   <div class="mbody" id="newBody"></div>
 </div></div>
 
-<div class="scrim hide" id="recScrim"><div class="modal" style="max-width:560px;">
+<div class="scrim hide" id="recScrim"><div class="modal" style="max-width:560px;display:flex;flex-direction:column;overflow:hidden;">
   <div class="mhead" style="justify-content:space-between;">
     <div style="min-width:0"><h3 id="recTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;">Registro</h3><p id="recSub"></p></div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -275,6 +286,14 @@
     </div>
   </div>
   <div class="mbody" id="recBody"><div class="muted">Carregando…</div></div>
+  <div class="recagent" id="recAgent">
+    <div class="ragReply" id="ragReply"></div>
+    <div class="raginbar">
+      <span class="ragav"><img class="mascot" src="/mascote.png" alt=""></span>
+      <input id="ragInput" placeholder="peça pro agente: edite o telefone, ligue, envie e-mail…">
+      <button class="ragsend" id="ragSend"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button>
+    </div>
+  </div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -434,6 +453,7 @@ if(TOKEN){document.getElementById('loginScrim').classList.add('hide');setConn(tr
 let REC=null;
 async function openRecord(id){
   const s=document.getElementById('recScrim');s.classList.remove('hide');
+  document.getElementById('ragReply').innerHTML='';
   document.getElementById('recTitle').textContent='Registro';
   document.getElementById('recSub').textContent=id;
   document.getElementById('recEdit').style.display='none';
@@ -611,6 +631,30 @@ document.getElementById('autoScrim').addEventListener('click',e=>{if(e.target.id
 })();
 document.getElementById('recClose').addEventListener('click',()=>document.getElementById('recScrim').classList.add('hide'));
 document.getElementById('recScrim').addEventListener('click',e=>{if(e.target.id==='recScrim')document.getElementById('recScrim').classList.add('hide');});
+
+// ── agente flutuante dentro do modal do registro (contexto = registro aberto) ──
+async function ragSend(){
+  const inp=document.getElementById('ragInput');const text=inp.value.trim();
+  if(!text||!REC)return;
+  const ag=active||AGENTS[0];
+  if(!ag){toast('Escolha um agente na prateleira primeiro');return;}
+  const btn=document.getElementById('ragSend');if(btn.disabled)return;btn.disabled=true;
+  inp.value='';
+  const reply=document.getElementById('ragReply');
+  reply.innerHTML='<span class="ragthink"><img class="mascot" src="/mascote.png" alt="">pensando…</span>';
+  const ctx='CONTEXTO: o usuário está com o registro '+REC.object+' de Id '+REC.id+' aberto (nome: '+REC.name+'). Quando ele disser "esta lead", "este registro", "essa conta" ou "tal campo", refere-se a ESTE registro. Use o Id '+REC.id+' diretamente nas ferramentas (update_record, send_email, log_call, convert_lead), sem precisar procurar.';
+  try{
+    const r=await api('/api/agent-farm/chat',{method:'POST',body:JSON.stringify({agentId:ag.id,orgId:ORG_ID,messages:[{role:'user',content:ctx+'\n\nPedido do usuário: '+text}]})});
+    const d=await r.json();
+    if(!d.ok){reply.textContent=d.error||'falha';return;}
+    reply.innerHTML=mdLite(d.text||'(feito)');
+    const wrote=(d.steps||[]).some(s=>s.tool!=='soql_query'&&!/falha/.test(s.summary));
+    if(wrote){const cur=reply.innerHTML;await openRecord(REC.id);document.getElementById('ragReply').innerHTML=cur;try{celebrate();}catch(e){}}
+  }catch(e){reply.textContent=e.message;}
+  finally{document.getElementById('ragSend').disabled=false;}
+}
+document.getElementById('ragSend').addEventListener('click',ragSend);
+document.getElementById('ragInput').addEventListener('keydown',e=>{if(e.key==='Enter')ragSend();});
 </script>
 </body>
 </html>
