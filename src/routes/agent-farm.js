@@ -151,8 +151,14 @@ async function execTool(conn, orgId, name, input) {
   }
   if (name === 'log_call') {
     if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
-    const r = await conn.sobject('Task').create({ WhoId: input.leadId, Subject: input.subject || 'Ligação', Type: 'Call', Status: 'Completed', Description: input.comments || '', ActivityDate: new Date().toISOString().slice(0, 10) });
-    return { ok: !!r.success, id: r.id, errors: r.errors };
+    const rec = { WhoId: input.leadId, Subject: input.subject || 'Ligação', Status: 'Completed', Description: input.comments || '', ActivityDate: new Date().toISOString().slice(0, 10) };
+    try {
+      const r = await conn.sobject('Task').create({ ...rec, Type: 'Call' });
+      return { ok: !!r.success, id: r.id, errors: r.errors };
+    } catch (e) {
+      const r = await conn.sobject('Task').create(rec); // org sem Task.Type
+      return { ok: !!r.success, id: r.id, errors: r.errors };
+    }
   }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
