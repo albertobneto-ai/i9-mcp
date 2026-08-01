@@ -695,4 +695,122 @@ router.post('/call-log', authMiddleware, async (req, res) => {
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
+// ── Farm Maps: camadas no mapa + ações de visita (check-in/out nos campos do épico Visitas) ──
+const UF_CENTER = { AC: [-9.02, -70.81], AL: [-9.57, -36.78], AP: [1.41, -51.77], AM: [-4.15, -63.15], BA: [-12.58, -41.7], CE: [-5.2, -39.53], DF: [-15.78, -47.93], ES: [-19.19, -40.34], GO: [-15.98, -49.86], MA: [-5.42, -45.44], MT: [-12.95, -55.51], MS: [-20.51, -54.54], MG: [-18.51, -44.55], PA: [-3.79, -52.48], PB: [-7.12, -36.72], PR: [-24.89, -51.55], PE: [-8.38, -37.86], PI: [-7.72, -42.97], RJ: [-22.25, -42.66], RN: [-5.81, -36.59], RS: [-29.75, -53.32], RO: [-10.83, -63.34], RR: [2.05, -61.4], SC: [-27.45, -50.95], SP: [-22.19, -48.79], SE: [-10.57, -37.44], TO: [-9.46, -48.26] };
+const _geo = {};
+async function geocodeCity(city, uf) {
+  const key = (city + '|' + uf).toLowerCase();
+  if (_geo[key]) return _geo[key];
+  try {
+    const u = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(city + ', ' + uf + ', Brasil');
+    const r = await fetch(u, { headers: { 'User-Agent': 'everi9-farm/1.0 (contato@everi9.com)' } });
+    const j = await r.json();
+    if (j && j[0]) { _geo[key] = [parseFloat(j[0].lat), parseFloat(j[0].lon)]; return _geo[key]; }
+  } catch (e) {}
+  return null;
+}
+function jitter(id, base) {
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  const dx = ((h % 1000) / 1000 - 0.5) * 0.06, dy = (((h >> 10) % 1000) / 1000 - 0.5) * 0.06;
+  return [base[0] + dx, base[1] + dy];
+}
+async function coordsFor(recs, cityF, stateF, latF, lngF) {
+  let newGeo = 0;
+  const out = [];
+  for (const r of recs) {
+    let pos = null;
+    if (latF && r[latF] != null && r[lngF] != null) pos = [r[latF], r[lngF]];
+    else {
+      const city = r[cityF], uf = (r[stateF] || '').toUpperCase().slice(0, 2);
+      if (city && uf) {
+        const key = (city + '|' + uf).toLowerCase();
+        if (_geo[key]) pos = jitter(r.Id, _geo[key]);
+        else if (newGeo < 8) { newGeo++; const g = await geocodeCity(city, uf); if (g) pos = jitter(r.Id, g); }
+        if (!pos && UF_CENTER[uf]) pos = jitter(r.Id, UF_CENTER[uf]);
+      } else if (UF_CENTER[uf]) pos = jitter(r.Id, UF_CENTER[uf]);
+    }
+    if (pos) out.push({ ...r, _lat: pos[0], _lng: pos[1] });
+  }
+  return out;
+}
+router.get('/map-data', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const lq = await conn.query("SELECT Id,Name,Company,City,State,Latitude,Longitude,Status,Rating,Phone FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
+    const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingCity != null OR BillingState != null ORDER BY LastModifiedDate DESC LIMIT 150");
+    const now = new Date(); const past = new Date(now.getTime() - 7 * 864e5).toISOString(); const fut = new Date(now.getTime() + 30 * 864e5).toISOString();
+    const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
+    const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude');
+    const accounts = await coordsFor((aq.records || []).map((r) => { delete r.attributes; return r; }), 'BillingCity', 'BillingState', 'BillingLatitude', 'BillingLongitude');
+    const leadPos = {}; leads.forEach((l) => { leadPos[l.Id] = [l._lat, l._lng]; });
+    const events = (eq.records || []).map((e) => {
+      let pos = null;
+      if (e.CheckInLatitude__c != null) pos = [e.CheckInLatitude__c, e.CheckInLongitude__c];
+      else if (e.WhoId && leadPos[e.WhoId]) pos = leadPos[e.WhoId];
+      if (!pos) return null;
+      return { Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, _lat: pos[0], _lng: pos[1] };
+    }).filter(Boolean);
+    return res.json({ ok: true, leads, accounts, events });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /visit-action — checkin | checkout | schedule | task (grava nos campos do épico Visitas)
+router.post('/visit-action', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const nowIso = new Date().toISOString();
+    if (b.kind === 'checkin') {
+      let evId = b.eventId;
+      if (!evId && b.recordId) {
+        const q = await conn.query(`SELECT Id FROM Event WHERE WhoId='${esc1(b.recordId)}' AND CheckInDateTime__c = null AND StartDateTime >= ${new Date(Date.now() - 864e5).toISOString()} ORDER BY StartDateTime LIMIT 1`);
+        if (q.records && q.records[0]) evId = q.records[0].Id;
+      }
+      if (!evId) {
+        const nr = await conn.sobject('Event').create({ Subject: 'Visita — check-in', WhoId: b.recordId || null, StartDateTime: nowIso, EndDateTime: new Date(Date.now() + 36e5).toISOString(), Location: b.lat ? (b.lat + ',' + b.lng) : undefined });
+        if (!nr.success) return res.json({ ok: false, error: JSON.stringify(nr.errors) });
+        evId = nr.id;
+      }
+      const upd = { Id: evId, CheckInDateTime__c: nowIso };
+      if (b.lat != null) { upd.CheckInLatitude__c = b.lat; upd.CheckInLongitude__c = b.lng; }
+      const r = await conn.sobject('Event').update(upd);
+      return res.json({ ok: !!r.success, eventId: evId, at: nowIso, errors: r.errors });
+    }
+    if (b.kind === 'checkout') {
+      let evId = b.eventId;
+      if (!evId && b.recordId) {
+        const q = await conn.query(`SELECT Id,CheckInDateTime__c FROM Event WHERE WhoId='${esc1(b.recordId)}' AND CheckInDateTime__c != null AND CheckOutDateTime__c = null ORDER BY CheckInDateTime__c DESC LIMIT 1`);
+        if (q.records && q.records[0]) evId = q.records[0].Id;
+      }
+      if (!evId) return res.json({ ok: false, error: 'nenhum check-in aberto para este registro — faça o check-in primeiro' });
+      const q2 = await conn.query(`SELECT CheckInDateTime__c FROM Event WHERE Id='${esc1(evId)}'`);
+      const ci = q2.records && q2.records[0] && q2.records[0].CheckInDateTime__c;
+      const durMin = ci ? Math.round((Date.now() - new Date(ci).getTime()) / 60000) : null;
+      const upd = { Id: evId, CheckOutDateTime__c: nowIso };
+      if (b.lat != null) { upd.CheckOutLatitude__c = b.lat; upd.CheckOutLongitude__c = b.lng; }
+      if (durMin != null) upd.VisitDuration__c = durMin;
+      if (b.notes) upd.Observacoes_Visita__c = b.notes;
+      const r = await conn.sobject('Event').update(upd);
+      return res.json({ ok: !!r.success, eventId: evId, at: nowIso, durationMin: durMin, errors: r.errors });
+    }
+    if (b.kind === 'schedule') {
+      if (!b.startDateTime) return res.json({ ok: false, error: 'startDateTime obrigatório' });
+      const st = new Date(b.startDateTime);
+      const ev = { Subject: b.subject || 'Visita', WhoId: b.recordId || null, StartDateTime: st.toISOString(), EndDateTime: new Date(st.getTime() + 36e5).toISOString(), Location: b.location };
+      const r = await conn.sobject('Event').create(ev);
+      return res.json({ ok: !!r.success, eventId: r.id, errors: r.errors });
+    }
+    if (b.kind === 'task') {
+      const t = { WhoId: b.recordId || null, Subject: b.subject || 'Follow-up da visita', Status: 'Not Started', ActivityDate: (b.dueDate || new Date(Date.now() + 864e5).toISOString().slice(0, 10)) };
+      let r; try { r = await conn.sobject('Task').create(t); } catch (e) { delete t.Status; r = await conn.sobject('Task').create(t); }
+      return res.json({ ok: !!(r && r.success), taskId: r && r.id, errors: r && r.errors });
+    }
+    return res.status(400).json({ ok: false, error: 'kind inválido' });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
 export default router;
