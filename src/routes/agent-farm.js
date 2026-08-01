@@ -16,9 +16,13 @@ async function getOrgById(id) {
   const r = await pool.query('SELECT * FROM orgs WHERE id = $1', [id]);
   return r.rows[0];
 }
+const _conns = {};
 async function connToOrg(org) {
+  const key = org.id || org.username;
+  if (_conns[key]) { try { await _conns[key].identity(); return _conns[key]; } catch (e) { delete _conns[key]; } }
   const conn = new jsforce.Connection({ loginUrl: org.login_url, version: '62.0' });
   await conn.login(org.username, org.password + (org.security_token || ''));
+  _conns[key] = conn;
   return conn;
 }
 
@@ -294,8 +298,9 @@ router.get('/record', authMiddleware, async (req, res) => {
     const obj = await objForId(conn, id);
     if (!obj) return res.json({ ok: false, error: 'objeto não identificado para ' + id });
     const rec = await conn.sobject(obj).retrieve(id);
+    const SKIP = new Set(['attributes', 'IsDeleted', 'SystemModstamp', 'LastReferencedDate', 'LastViewedDate', 'PhotoUrl', 'IsUnreadByOwner', 'ActiveTrackerCount', 'IsPriorityRecord', 'RecordTypeId', 'MasterRecordId', 'JigsawContactId', 'IndividualId', 'CleanStatus', 'EmailBouncedReason', 'EmailBouncedDate']);
     const fields = Object.entries(rec)
-      .filter(([k, v]) => v != null && v !== '' && typeof v !== 'object' && k !== 'attributes')
+      .filter(([k, v]) => v != null && v !== '' && typeof v !== 'object' && !SKIP.has(k) && !k.endsWith('__pc'))
       .slice(0, 40).map(([k, v]) => [k, String(v)]);
     const name = rec.Name || rec.CaseNumber || rec.Subject || rec.Title || id;
     return res.json({ ok: true, object: obj, id, name, fields, instanceUrl: conn.instanceUrl });
