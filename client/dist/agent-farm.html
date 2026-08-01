@@ -170,6 +170,28 @@
   .dialchip{background:linear-gradient(135deg,#12b76a,#0e9f5b);color:#fff;padding:14px 22px;border-radius:30px;font-weight:800;font-size:15px;box-shadow:0 16px 36px rgba(14,159,91,.5);display:none;align-items:center;gap:9px;text-decoration:none;}
   .recchip{background:linear-gradient(135deg,#e0483e,#b8342c);color:#fff;padding:12px 20px;border-radius:30px;font-weight:800;font-size:14px;box-shadow:0 14px 30px rgba(224,72,62,.45);display:none;align-items:center;gap:8px;}
   .micbtn{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#eef2f7;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .mapbtn{width:40px;height:40px;border-radius:12px;background:#eaf3ff;font-size:19px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .mapbtn:hover{background:#dcecff;transform:translateY(-1px);}
+  .mapwrap{position:fixed;inset:0;z-index:55;background:#eef6ff;display:flex;flex-direction:column;}
+  .mapwrap.hide{display:none;}
+  .maptop{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);z-index:2;flex-wrap:wrap;}
+  .maptop b{font-family:'Fredoka';color:var(--navy);font-size:16px;}
+  .lay{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;}
+  .lay input{width:16px;height:16px;accent-color:var(--blue);}
+  .mapinfo{font-size:12px;color:var(--muted);margin-left:auto;}
+  .mapx{background:#eaf3ff;color:var(--navy);}
+  #mapEl{flex:1;min-height:0;}
+  .mkr{font-size:22px;line-height:1;filter:drop-shadow(0 3px 4px rgba(3,45,96,.35));}
+  .leaflet-popup-content{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;margin:12px 14px;min-width:210px;}
+  .pp-name{font-family:'Fredoka';font-weight:600;color:var(--navy);font-size:14.5px;margin-bottom:2px;}
+  .pp-sub{color:var(--muted);font-size:12px;margin-bottom:8px;}
+  .pp-acts{display:flex;flex-wrap:wrap;gap:6px;}
+  .pp-acts button{background:#eaf3ff;border:1.2px solid var(--sky);color:#0a4f9e;border-radius:14px;padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;}
+  .pp-acts button:hover{background:var(--blue);color:#fff;}
+  .pp-ok{color:#0e9f5b;font-weight:800;font-size:12px;margin-top:6px;}
+  .pp-sched{margin-top:8px;display:none;gap:6px;}
+  .pp-sched input{border:1.2px solid var(--line);border-radius:9px;padding:6px 8px;font-size:12px;flex:1;}
+  .pp-sched button{background:var(--blue);color:#fff;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:700;}
   .micbtn:hover{background:#e3edf9;}
   .micbtn.miclive{background:linear-gradient(135deg,#e0483e,#b8342c);animation:crblink 1s infinite;}
   .micbtn.miclive svg path,.micbtn.miclive svg rect{stroke:#fff;}
@@ -218,6 +240,7 @@
 <header class="bar">
   <button class="menu" id="menu">☰</button>
   <div class="logo"><span class="mk"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L21 9l-5.5 3.9L17.5 20 12 16l-5.5 4 2-7.1L3 9l6.8-.7z" fill="#fff"/></svg></span><b>ever i9</b> · <span class="t2">Farm de Agentes</span></div>
+  <button class="mapbtn" id="mapBtn" title="Farm Maps">🗺️</button>
   <div class="conn" id="conn"><span class="dot"></span><span id="conntxt">desconectado</span></div>
 </header>
 
@@ -313,6 +336,18 @@
     </div>
   </div>
 </div></div>
+
+<div class="mapwrap hide" id="mapWrap">
+  <div class="maptop">
+    <b>🗺️ Farm Maps</b>
+    <label class="lay"><input type="checkbox" id="layLeads" checked> 🎯 Leads</label>
+    <label class="lay"><input type="checkbox" id="layAccts" checked> 🏢 Contas</label>
+    <label class="lay"><input type="checkbox" id="layVisits" checked> 📅 Visitas</label>
+    <span class="mapinfo" id="mapInfo"></span>
+    <button class="xbtn mapx" id="mapClose">×</button>
+  </div>
+  <div id="mapEl"></div>
+</div>
 
 <div class="callrec" id="callrec">
   <div class="crhead"><span class="reddot"></span><span class="crtitle" id="crName">Ligação</span><span class="crtimer" id="crTimer">0:00</span></div>
@@ -761,6 +796,100 @@ function attachMic(btnId,inputId){
   });
 }
 attachMic('micMain','input');attachMic('micRag','ragInput');
+
+// ── Farm Maps: mapa com camadas e ações de visita ──
+let MAP=null,MAPLAYERS={leads:null,accts:null,visits:null},MAPDATA=null;
+function loadLeaflet(){
+  return new Promise((res,rej)=>{
+    if(window.L)return res();
+    const c=document.createElement('link');c.rel='stylesheet';c.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(c);
+    const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+function mkIcon(emoji){return L.divIcon({className:'',html:'<div class="mkr">'+emoji+'</div>',iconSize:[24,24],iconAnchor:[12,22],popupAnchor:[0,-20]});}
+function ppActions(id,who,checkedIn){
+  return `<div class="pp-acts">
+    <button onclick="openRecord('${id}')">📂 Abrir</button>
+    <button onclick="ppSched(this)">📅 Agendar</button>
+    <button onclick="visitAct('task','${id}',this)">✅ Tarefa</button>
+    <button onclick="visitAct('checkin','${id}',this)">📍 Check-in</button>
+    <button onclick="visitAct('checkout','${id}',this)">🏁 Check-out</button>
+  </div>
+  <div class="pp-sched"><input type="datetime-local"><button onclick="ppSchedGo('${id}',this)">OK</button></div>
+  <div class="pp-ok"></div>`;
+}
+window.ppSched=(btn)=>{const s=btn.closest('.leaflet-popup-content').querySelector('.pp-sched');s.style.display=s.style.display==='flex'?'none':'flex';};
+window.ppSchedGo=async(id,btn)=>{
+  const inp=btn.parentElement.querySelector('input');
+  if(!inp.value){toast('Escolhe a data/hora');return;}
+  btn.disabled=true;
+  const r=await api('/api/agent-farm/visit-action',{method:'POST',body:JSON.stringify({orgId:ORG_ID,kind:'schedule',recordId:id,startDateTime:inp.value,subject:'Visita'})});
+  const d=await r.json();btn.disabled=false;
+  if(d.ok){toast('Visita agendada 📅');btn.closest('.leaflet-popup-content').querySelector('.pp-ok').textContent='📅 Visita agendada!';loadMapData();}
+  else toast(d.error||'falha');
+};
+window.visitAct=async(kind,id,btn)=>{
+  const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
+  const run=async(lat,lng)=>{
+    btn.disabled=true;
+    const r=await api('/api/agent-farm/visit-action',{method:'POST',body:JSON.stringify({orgId:ORG_ID,kind,recordId:id,eventId:(id||'').startsWith('00U')?id:undefined,lat,lng})});
+    const d=await r.json();btn.disabled=false;
+    if(d.ok){
+      if(kind==='checkin'){ok.textContent='📍 Check-in feito '+new Date(d.at).toLocaleTimeString('pt-BR').slice(0,5);toast('Check-in gravado ✅');}
+      if(kind==='checkout'){ok.textContent='🏁 Check-out'+(d.durationMin!=null?' · visita de '+d.durationMin+' min':'');toast('Check-out gravado ✅');}
+      if(kind==='task'){ok.textContent='✅ Tarefa de follow-up criada';toast('Tarefa criada ✅');}
+      try{celebrate();}catch(e){}
+      loadMapData();
+    } else toast(d.error||'falha');
+  };
+  if(kind==='checkin'||kind==='checkout'){
+    if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>run(p.coords.latitude,p.coords.longitude),()=>run(null,null),{timeout:6000});}
+    else run(null,null);
+  } else run(null,null);
+};
+async function loadMapData(){
+  const r=await api('/api/agent-farm/map-data?orgId='+ORG_ID);
+  const d=await r.json();
+  if(!d.ok){toast(d.error||'falha no mapa');return;}
+  MAPDATA=d;
+  Object.values(MAPLAYERS).forEach(l=>{if(l)l.clearLayers();});
+  d.leads.forEach(x=>{
+    const m=L.marker([x._lat,x._lng],{icon:mkIcon('🎯')});
+    m.bindPopup(`<div class="pp-name">${esc(x.Name||'')}</div><div class="pp-sub">${esc(x.Company||'')} · ${esc(x.City||x.State||'')} · ${esc(x.Status||'')}${x.Rating?' · '+esc(x.Rating):''}</div>`+ppActions(x.Id));
+    MAPLAYERS.leads.addLayer(m);
+  });
+  d.accounts.forEach(x=>{
+    const m=L.marker([x._lat,x._lng],{icon:mkIcon('🏢')});
+    m.bindPopup(`<div class="pp-name">${esc(x.Name||'')}</div><div class="pp-sub">${esc(x.BillingCity||x.BillingState||'')}${x.Industry?' · '+esc(x.Industry):''}</div>`+ppActions(x.Id));
+    MAPLAYERS.accts.addLayer(m);
+  });
+  d.events.forEach(x=>{
+    const done=x.CheckOut?'✅ concluída':(x.CheckIn?'📍 em visita':'');
+    const m=L.marker([x._lat,x._lng],{icon:mkIcon(x.CheckIn?'📌':'📅')});
+    m.bindPopup(`<div class="pp-name">${esc(x.Subject||'Visita')}</div><div class="pp-sub">${new Date(x.Start).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${x.WhoName?' · '+esc(x.WhoName):''} ${done}</div>`+ppActions(x.Id));
+    MAPLAYERS.visits.addLayer(m);
+  });
+  document.getElementById('mapInfo').textContent=d.leads.length+' leads · '+d.accounts.length+' contas · '+d.events.length+' visitas';
+}
+async function openMap(){
+  document.getElementById('mapWrap').classList.remove('hide');
+  try{await loadLeaflet();}catch(e){toast('não carregou o mapa');return;}
+  if(!MAP){
+    MAP=L.map('mapEl',{zoomControl:true}).setView([-18.9,-47.9],6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP);
+    MAPLAYERS.leads=L.layerGroup().addTo(MAP);
+    MAPLAYERS.accts=L.layerGroup().addTo(MAP);
+    MAPLAYERS.visits=L.layerGroup().addTo(MAP);
+    [['layLeads','leads'],['layAccts','accts'],['layVisits','visits']].forEach(([cb,k])=>{
+      document.getElementById(cb).addEventListener('change',e=>{if(e.target.checked)MAP.addLayer(MAPLAYERS[k]);else MAP.removeLayer(MAPLAYERS[k]);});
+    });
+    document.getElementById('mapInfo').textContent='carregando…';
+  }
+  setTimeout(()=>MAP.invalidateSize(),150);
+  loadMapData();
+}
+document.getElementById('mapBtn').addEventListener('click',openMap);
+document.getElementById('mapClose').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
 
 // ── detecção de dispositivo (celular x desktop) ──
 (function(){
