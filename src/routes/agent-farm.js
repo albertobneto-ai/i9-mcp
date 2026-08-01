@@ -1,339 +1,199 @@
-// src/routes/agent-farm.js — Farm de Agentes Agentforce (Ever i9)
-// Provisiona um agente REAL (Bot + GenAiPlanner) via Metadata API v63 e ativa via ConnectApi.
-// Receita validada empiricamente contra arqevery (org 36): GenAiPlanner é válido em v60-63;
-// v64 exige GenAiPlannerBundle. Deploy em v63 + ativação ConnectApi.BotVersionActivation.
+// src/routes/agent-farm.js — Farm de Agentes de IA (Ever i9)
+// Agentes de IA criados por nós (NÃO Agentforce), conectados à org arqevery.
+// Cada agente tem um contexto especializado e USA FERRAMENTAS REAIS: consulta (SOQL) e
+// altera/cria (DML) registros de verdade na org via tool-use da IA.
 import express from 'express';
-import AdmZip from 'adm-zip';
 import jsforce from 'jsforce';
-import { randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { authMiddleware } from '../middleware/auth.js';
 import pool from '../config/db.js';
-import * as claude from '../services/claude.js';
-import { call as aiCall } from '../services/claude.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const BOT_TPL = readFileSync(join(__dirname, '../services/agent-farm-template.xml'), 'utf8');
 
 const router = express.Router();
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-6';
+const WRITE_ORGS = new Set([36]); // só arqevery permite escrita (HOMOL/DevEvery = read-only)
 
 async function getOrgById(id) {
   const r = await pool.query('SELECT * FROM orgs WHERE id = $1', [id]);
   return r.rows[0];
 }
-
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// DeveloperName seguro: letras/dígitos/_ , começa com letra
-function slugify(name) {
-  let s = String(name || 'Agente')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '_')
-    .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
-  if (!s) s = 'Agente';
-  if (!/^[a-zA-Z]/.test(s)) s = 'A_' + s;
-  return s.slice(0, 60);
-}
-
-const CAP_ACT = {
-  'Criar registro': 'Create Record', 'Consultar dados': 'Query Records',
-  'Resumir': 'Summarize Record', 'Recomendar': 'recomendacao (NBA) via prompt',
-  'Buscar conhecimento (RAG)': 'Retriever/RAG sobre Data 360', 'Atualizar registro': 'Update Record',
-  'Integrar externo (MCP)': 'MCP tool', 'Enviar e-mail': 'Send Email',
-};
-
-function composePersona({ name, domain, job, tone, caps, rules }) {
-  const acts = (caps && caps.length ? caps : ['Consultar dados']).map((c) => CAP_ACT[c] || c).join(', ');
-  return (
-    `Voce e ${name}, um agente Agentforce criado sob medida pela farm de agentes do Ever i9 na org sandbox arqevery` +
-    (domain ? `, no dominio de ${domain}` : '') + '. ' +
-    `Seu trabalho: ${job || 'ajudar o usuario no que for pedido dentro do seu dominio'}. ` +
-    `Tom de voz: ${tone || 'Amigavel'}. ` +
-    `Capacidades (actions que voce pode acionar): ${acts}. ` +
-    `Regras que voce SEMPRE respeita: ${rules || 'ser transparente e pedir os dados que faltam antes de agir'}. ` +
-    `Responda sempre em portugues do Brasil, de forma curta e objetiva; use vocabulario Salesforce correto; ` +
-    `nunca invente dados e consulte o registro antes de afirmar algo.`
-  );
-}
-
-function buildBotXml(o) {
-  const persona = composePersona(o);
-  const shortDesc = `Agente ${o.domain || 'IA'} (farm Ever i9): ${(o.job || 'assistente').slice(0, 160)}`.slice(0, 240);
-  const role = `Voce e ${o.name}, agente de IA de ${o.domain || 'apoio'}. ${(o.job || '').slice(0, 400)}`.slice(0, 950);
-  let xml = BOT_TPL
-    .replace(/__DEV__/g, o.dev)
-    .replace(/__LABEL__/g, esc(o.label))
-    .replace(/__COMPANY__/g, esc(o.company || 'Algar Telecom'))
-    .replace(/__WELCOME__/g, esc(o.welcome || `Oi! Sou ${o.name}. Como posso ajudar?`))
-    .replace(/__ERRORMSG__/g, esc('Ops, tive um problema aqui. Vamos tentar de novo.'))
-    .replace(/__ROLE__/g, esc(role))
-    .replace(/__DESC__/g, esc(shortDesc));
-  xml = xml.replace(/__UUID__/g, () => randomUUID());
-  return { xml, persona };
-}
-
-function buildPlannerXml(o, persona) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<GenAiPlanner xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>${esc(persona)}</description>
-    <masterLabel>${esc(o.label)}</masterLabel>
-    <plannerType>AiCopilot__ReAct</plannerType>
-</GenAiPlanner>`;
-}
-
-function buildPackageXml(dev) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <types><members>${dev}</members><name>Bot</name></types>
-    <types><members>${dev}</members><name>GenAiPlanner</name></types>
-    <version>63.0</version>
-</Package>`;
-}
-
-function buildZipBase64(dev, botXml, plannerXml, pkgXml) {
-  const zip = new AdmZip();
-  zip.addFile('package.xml', Buffer.from(pkgXml, 'utf8'));
-  zip.addFile(`bots/${dev}.bot`, Buffer.from(botXml, 'utf8'));
-  zip.addFile(`genAiPlanners/${dev}.genAiPlanner`, Buffer.from(plannerXml, 'utf8'));
-  return zip.toBuffer().toString('base64');
-}
-
-// Conexão dedicada em v63 (GenAiPlanner só é válido em v60-63; conexão padrão do i9 é v62)
-async function connV63(org) {
-  const conn = new jsforce.Connection({ loginUrl: org.login_url, version: '63.0' });
+async function connToOrg(org) {
+  const conn = new jsforce.Connection({ loginUrl: org.login_url, version: '62.0' });
   await conn.login(org.username, org.password + (org.security_token || ''));
   return conn;
 }
 
-async function activateAgent(conn, dev) {
-  const q = await conn.query(
-    `SELECT Id, Status FROM BotVersion WHERE BotDefinition.DeveloperName='${dev}' AND VersionNumber=1 LIMIT 1`
-  );
-  if (!q.records || !q.records.length) return { activated: false, reason: 'BotVersion não encontrada' };
-  const bvId = q.records[0].Id;
-  const apex =
-    `Id bvId='${bvId}'; ConnectApi.BotVersionActivation.updateVersionStatus(` +
-    `bvId, ConnectApi.BotVersionActivationStatus.Active, null);`;
-  const r = await conn.tooling.executeAnonymous(apex);
-  const ok = r.compiled && r.success;
-  return { activated: ok, botVersionId: bvId, compileProblem: r.compileProblem, exceptionMessage: r.exceptionMessage };
-}
-
-function problemsOf(status) {
-  const d = status.details || {};
-  let comp = d.componentFailures || [];
-  if (!Array.isArray(comp)) comp = [comp];
-  return comp.map((c) => `${c.fullName || c.fileName}: ${c.problem}`);
-}
-
-// POST /api/agent-farm/build  { orgId=36, name, domain, job, tone, caps[], rules, company, welcome }
-router.post('/build', authMiddleware, async (req, res) => {
-  try {
-    const b = req.body || {};
-    const orgId = b.orgId || 36;
-    if (!b.name) return res.status(400).json({ ok: false, error: 'name é obrigatório' });
-    const org = await getOrgById(orgId);
-    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
-
-    const dev = 'Agente_i9_' + slugify(b.name);
-    const label = String(b.name).slice(0, 80);
-    const o = { ...b, dev, label, domain: b.domain || 'Custom' };
-
-    const { xml: botXml, persona } = buildBotXml(o);
-    const plannerXml = buildPlannerXml(o, persona);
-    const zipB64 = buildZipBase64(dev, botXml, plannerXml, buildPackageXml(dev));
-
-    const conn = await connV63(org);
-    const buf = Buffer.from(zipB64, 'base64');
-    const dep = await conn.metadata.deploy(buf, { rollbackOnError: true, singlePackage: true });
-
-    let status, tries = 0;
-    do {
-      await sleep(2200);
-      status = await conn.metadata.checkDeployStatus(dep.id, true);
-      tries++;
-    } while (!status.done && tries < 10);
-
-    if (!status.done) {
-      return res.json({ ok: false, pending: true, deployId: dep.id, orgId, developerName: dev, masterLabel: label,
-        message: 'deploy ainda em andamento — chame POST /api/agent-farm/activate' });
-    }
-    if (status.status !== 'Succeeded') {
-      return res.status(422).json({ ok: false, error: 'deploy falhou', status: status.status, problems: problemsOf(status) });
-    }
-
-    const act = await activateAgent(conn, dev);
-    return res.json({
-      ok: true, orgId, developerName: dev, masterLabel: label,
-      deployId: dep.id, deployed: status.numberComponentsDeployed,
-      activated: act.activated, botVersionId: act.botVersionId,
-      note: act.activated ? 'Agente criado e ATIVADO na org.' : 'Agente criado; ativação pendente.',
-      activationDetail: act,
-    });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
-  }
-});
-
-// POST /api/agent-farm/activate  { orgId=36, developerName }
-router.post('/activate', authMiddleware, async (req, res) => {
-  try {
-    const orgId = (req.body && req.body.orgId) || 36;
-    const dev = req.body && req.body.developerName;
-    if (!dev) return res.status(400).json({ ok: false, error: 'developerName é obrigatório' });
-    const org = await getOrgById(orgId);
-    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
-    const conn = await connV63(org);
-    const act = await activateAgent(conn, dev);
-    return res.json({ ok: act.activated, developerName: dev, ...act });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
-  }
-});
-
-// GET /api/agent-farm/list?orgId=36
-router.get('/list', authMiddleware, async (req, res) => {
-  try {
-    const orgId = req.query.orgId || 36;
-    const org = await getOrgById(orgId);
-    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
-    const conn = await connV63(org);
-    const q = await conn.query(
-      `SELECT Id, DeveloperName, MasterLabel, Type FROM BotDefinition WHERE DeveloperName LIKE 'Agente_i9_%' ORDER BY DeveloperName`
-    );
-    return res.json({ ok: true, orgId, count: q.totalSize, agents: q.records });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
-  }
-});
-
-// cache da persona real (description do GenAiPlanner na org)
-const personaCache = {};
-async function getPersona(conn, orgId, dev) {
-  const key = orgId + ':' + dev;
-  if (personaCache[key]) return personaCache[key];
-  let persona = '';
-  try {
-    const md = await conn.metadata.read('GenAiPlanner', dev);
-    const rec = Array.isArray(md) ? md[0] : md;
-    persona = (rec && rec.description) ? rec.description : '';
-  } catch (e) { persona = ''; }
-  if (persona) personaCache[key] = persona;
-  return persona;
-}
-
-// POST /api/agent-farm/chat  { orgId=36, developerName, message, history:[{role,content}] }
-router.post('/chat', authMiddleware, async (req, res) => {
-  try {
-    const b = req.body || {};
-    const orgId = b.orgId || 36;
-    const dev = b.developerName;
-    const message = (b.message || '').trim();
-    if (!dev || !message) return res.status(400).json({ ok: false, error: 'developerName e message são obrigatórios' });
-    const org = await getOrgById(orgId);
-    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
-    const conn = await connV63(org);
-    const persona = await getPersona(conn, orgId, dev);
-    if (!persona) return res.status(404).json({ ok: false, error: 'agente sem persona (GenAiPlanner) na org' });
-
-    const sys = persona + '\n\nINSTRUCOES DE EXECUCAO: Voce e este agente rodando via Agent API na org sandbox arqevery. ' +
-      'Responda em portugues do Brasil, curto e objetivo (ate ~6 linhas). Quando fizer sentido, comece com uma linha ' +
-      '[[PLANO]]Topic «...» -> Action «...»[[/PLANO]] e depois a resposta. Use vocabulario Salesforce correto. ' +
-      'Opere sobre dados de sandbox sem afirmar registros reais como verificados; peca os parametros que faltarem. ' +
-      'Se perguntarem se voce e real, diga que e uma demonstracao conectada a arqevery.';
-
-    const hist = Array.isArray(b.history) ? b.history.filter(m => m && m.role && m.content).slice(-10) : [];
-    const messages = [...hist, { role: 'user', content: message }];
-    const reply = await claude.call(sys, messages, 1024);
-    return res.json({ ok: true, developerName: dev, reply });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
-  }
-});
-
-// Carrega a persona REAL do agente (description do GenAiPlanner na org)
-const personaCache = {};
-async function loadPersona(conn, dev) {
-  if (personaCache[dev]) return personaCache[dev];
-  let persona = '';
-  try {
-    const md = await conn.metadata.read('GenAiPlanner', dev);
-    const rec = Array.isArray(md) ? md[0] : md;
-    persona = (rec && rec.description) || '';
-  } catch (e) { /* ignore */ }
-  if (!persona) {
-    try {
-      const q = await conn.query(`SELECT MasterLabel FROM GenAiPlannerDefinition WHERE DeveloperName='${dev}' LIMIT 1`);
-      persona = `Voce e o agente ${q.records && q.records[0] ? q.records[0].MasterLabel : dev}, um agente Agentforce da arqevery.`;
-    } catch (e) { persona = `Voce e o agente ${dev}.`; }
-  }
-  personaCache[dev] = persona;
-  return persona;
-}
-
+// ───────── Prateleira: agentes pré-configurados (contexto genial por domínio) ─────────
 const BEHAV =
-  'Voce e um agente Agentforce rodando na org sandbox arqevery. Responda SEMPRE em portugues do Brasil, curto e objetivo (3-6 linhas). ' +
-  'Aja exatamente conforme a sua configuracao acima. Quando fizer sentido, inicie a resposta com UMA linha no formato ' +
-  '[[PLANO]]Topic «...» -> Action «...»[[/PLANO]] e depois responda. Use vocabulario Salesforce correto. Nunca invente dados.\n' +
-  'PROTOCOLO DE DADOS: se para responder voce precisar consultar registros reais da org, responda NESTA VEZ APENAS com uma linha ' +
-  'exatamente no formato: SOQL: <uma query SELECT valida>. Nada alem disso. Voce recebera o resultado e entao respondera ao usuario citando os dados.';
+  '\n\nCOMO VOCÊ OPERA: você é um agente OPERACIONAL conectado à org Salesforce arqevery. ' +
+  'Quando o usuário pedir algo, USE AS FERRAMENTAS para fazer de verdade na org — não apenas explique. ' +
+  'Responda sempre em português do Brasil, curto e objetivo. NUNCA invente Ids, números ou dados: sempre consulte a org com soql_query. ' +
+  'Para alterar/criar, execute a ação e confirme o resultado real (Id + campos). Se faltar um dado obrigatório, pergunte antes de agir. ' +
+  'Ao listar registros, apresente em lista curta e legível (não despeje JSON).';
 
-function splitPlan(raw) {
-  const m = raw.match(/\[\[PLANO\]\]([\s\S]*?)\[\[\/PLANO\]\]/);
-  if (m) return { plan: m[1].trim(), text: raw.replace(m[0], '').trim() };
-  return { plan: null, text: raw };
+const LEAD_CTX =
+  'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
+  'Domínio: objeto Lead. Campos úteis: Id, Name, FirstName, LastName, Company, Title, Email, Phone, MobilePhone, ' +
+  'Status, LeadSource, Rating, Industry, NumberOfEmployees, AnnualRevenue, City, State, CreatedDate, OwnerId, Owner.Name, IsConverted. ' +
+  'Padrões de ação: "liste/mostre minhas leads" → soql_query SELECT Id,Name,Company,Status,Rating,Phone,Email,CreatedDate FROM Lead ' +
+  'WHERE IsConverted=false ORDER BY CreatedDate DESC LIMIT 20. ' +
+  '"altere o telefone/e-mail/status da lead X" → se não tiver o Id, ache com soql_query por Name/Company; depois update_record no objeto Lead. ' +
+  '"crie uma lead" → create_record (LastName e Company são obrigatórios). ' +
+  'Qualificação BANT (Budget, Authority, Need, Timeline); priorize Rating=Hot; alerte leads sem atividade recente. ' +
+  'Foco de mercado: Triângulo Mineiro, interior de SP, Goiás e oeste de MG.';
+
+const OPP_CTX =
+  'Você é {NAME}, agente de IA especialista em OPORTUNIDADES (pipeline) B2B da Algar, conectado à arqevery. ' +
+  'Domínio: objeto Opportunity. Campos: Id, Name, AccountId, Account.Name, StageName, Amount, CloseDate, Probability, ' +
+  'ForecastCategoryName, OwnerId, NextStep, CreatedDate. ' +
+  'Padrões: "meu pipeline" → soql_query agregando por StageName ou listando abertas (StageName NOT IN (\'Closed Won\',\'Closed Lost\')) ORDER BY CloseDate. ' +
+  '"mova o estágio/atualize o valor/próximo passo da opp X" → ache o Id e update_record. Aponte riscos (close date vencida, sem next step).';
+
+const ACCT_CTX =
+  'Você é {NAME}, agente de IA especialista em CONTAS (Account) B2B da Algar, conectado à arqevery. ' +
+  'Campos: Id, Name, CNPJ__c, Industry, Phone, Website, BillingCity, BillingState, OwnerId, Type, AnnualRevenue. ' +
+  'Padrões: "liste/busque contas" → soql_query; "atualize telefone/site/dados da conta X" → ache Id e update_record; ' +
+  '"crie uma conta" → create_record (Name obrigatório). Dê a visão 360 quando pedirem sobre uma conta.';
+
+const SERVICE_CTX =
+  'Você é {NAME}, agente de IA especialista em ATENDIMENTO (Case) da Algar, conectado à arqevery. ' +
+  'Campos: Id, CaseNumber, Subject, Status, Priority, ContactId, AccountId, Origin, CreatedDate, OwnerId. ' +
+  'Padrões: "liste os casos abertos" → soql_query WHERE Status != \'Closed\'; "mude o status/prioridade/dono do caso X" → update_record; ' +
+  'resuma casos e sugira próximo passo.';
+
+const STATIC_AGENTS = [
+  { id: 'lead', name: 'Léo', domain: 'Lead', color: '#0176D3', emoji: '🎯', tag: 'Cria, lista, qualifica e atualiza leads', context: LEAD_CTX },
+  { id: 'opp', name: 'Ótto', domain: 'Oportunidade', color: '#8B5CF6', emoji: '📈', tag: 'Pipeline, estágio e próximo passo', context: OPP_CTX },
+  { id: 'acct', name: 'Ako', domain: 'Account', color: '#FFB43B', emoji: '🏢', tag: 'Contas, 360 e atualização de dados', context: ACCT_CTX },
+  { id: 'case', name: 'Ciça', domain: 'Service', color: '#FF6FA5', emoji: '🎧', tag: 'Casos, status e prioridade', context: SERVICE_CTX },
+];
+
+// custom agents em DB
+async function ensureTable() {
+  await pool.query(`CREATE TABLE IF NOT EXISTS farm_agents (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, domain TEXT, color TEXT, emoji TEXT, tag TEXT,
+    context TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now()
+  )`);
+}
+async function allAgents() {
+  await ensureTable();
+  const r = await pool.query('SELECT id,name,domain,color,emoji,tag,context FROM farm_agents ORDER BY created_at DESC');
+  return [...r.rows.map((a) => ({ ...a, farm: true })), ...STATIC_AGENTS.map((a) => ({ ...a, farm: false }))];
+}
+async function getAgent(id) {
+  const all = await allAgents();
+  return all.find((a) => a.id === id);
 }
 
-// POST /api/agent-farm/chat  { orgId=36, developerName, messages:[{role,content}] }
+// ───────── Ferramentas reais contra a org ─────────
+const TOOLS = [
+  { name: 'soql_query', description: 'Executa uma consulta SOQL de leitura (SELECT) na org e retorna os registros reais.',
+    input_schema: { type: 'object', properties: { query: { type: 'string', description: 'Query SOQL SELECT completa' } }, required: ['query'] } },
+  { name: 'update_record', description: 'Atualiza campos de um registro EXISTENTE na org (DML update real).',
+    input_schema: { type: 'object', properties: { sobject: { type: 'string' }, recordId: { type: 'string' }, fields: { type: 'object', description: 'mapa campo→valor' } }, required: ['sobject', 'recordId', 'fields'] } },
+  { name: 'create_record', description: 'Cria um NOVO registro na org (DML insert real).',
+    input_schema: { type: 'object', properties: { sobject: { type: 'string' }, fields: { type: 'object' } }, required: ['sobject', 'fields'] } },
+];
+
+async function execTool(conn, orgId, name, input) {
+  const canWrite = WRITE_ORGS.has(Number(orgId));
+  if (name === 'soql_query') {
+    const q = await conn.query(input.query);
+    const recs = (q.records || []).slice(0, 50).map((r) => { const c = { ...r }; delete c.attributes; return c; });
+    return { ok: true, totalSize: q.totalSize, records: recs };
+  }
+  if (name === 'update_record') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const r = await conn.sobject(input.sobject).update({ Id: input.recordId, ...input.fields });
+    return { ok: !!r.success, id: r.id || input.recordId, errors: r.errors };
+  }
+  if (name === 'create_record') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const r = await conn.sobject(input.sobject).create(input.fields);
+    return { ok: !!r.success, id: r.id, errors: r.errors };
+  }
+  return { ok: false, error: 'ferramenta desconhecida: ' + name };
+}
+
+function stepSummary(name, input, out) {
+  if (name === 'soql_query') return `consultou ${out.totalSize != null ? out.totalSize : (out.records ? out.records.length : 0)} registro(s)`;
+  if (name === 'update_record') return out.ok ? `atualizou ${input.sobject} ${out.id}` : `falha ao atualizar (${out.error || 'erro'})`;
+  if (name === 'create_record') return out.ok ? `criou ${input.sobject} ${out.id}` : `falha ao criar (${out.error || 'erro'})`;
+  return name;
+}
+
+// loop agêntico com tool-use da Anthropic
+async function agenticRun(system, messages, conn, orgId) {
+  const key = process.env.ANTHROPIC_KEY;
+  const convo = messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') }));
+  const steps = [];
+  for (let i = 0; i < 6; i++) {
+    const res = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 1200, system, tools: TOOLS, messages: convo }),
+    });
+    if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    convo.push({ role: 'assistant', content: data.content });
+    if (data.stop_reason === 'tool_use') {
+      const results = [];
+      for (const blk of data.content) {
+        if (blk.type !== 'tool_use') continue;
+        let out;
+        try { out = await execTool(conn, orgId, blk.name, blk.input || {}); }
+        catch (e) { out = { ok: false, error: String(e.message || e) }; }
+        steps.push({ tool: blk.name, input: blk.input, summary: stepSummary(blk.name, blk.input || {}, out) });
+        results.push({ type: 'tool_result', tool_use_id: blk.id, content: JSON.stringify(out).slice(0, 6000) });
+      }
+      convo.push({ role: 'user', content: results });
+      continue;
+    }
+    const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+    return { text, steps };
+  }
+  return { text: 'Fiz várias etapas mas atingi o limite de iterações. Pode refinar o pedido?', steps };
+}
+
+// ───────── Rotas ─────────
+// GET /api/agent-farm/agents — prateleira (custom + pré-configurados)
+router.get('/agents', authMiddleware, async (req, res) => {
+  try { return res.json({ ok: true, agents: await allAgents() }); }
+  catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/agents — cria agente de IA { name, domain, context, color, emoji }
+router.post('/agents', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!b.name || !b.context) return res.status(400).json({ ok: false, error: 'name e context são obrigatórios' });
+    await ensureTable();
+    const id = 'c_' + Date.now().toString(36);
+    const tag = (b.tag || b.domain || 'Agente sob medida').slice(0, 60);
+    await pool.query(
+      'INSERT INTO farm_agents (id,name,domain,color,emoji,tag,context) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+      [id, b.name.slice(0, 60), b.domain || 'Custom', b.color || '#0176D3', b.emoji || '🤖', tag, b.context]
+    );
+    return res.json({ ok: true, id, name: b.name });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/chat — { agentId, orgId=36, messages:[{role,content}] } → ação real na org
 router.post('/chat', authMiddleware, async (req, res) => {
   try {
     const b = req.body || {};
     const orgId = b.orgId || 36;
-    const dev = b.developerName;
+    const agent = await getAgent(b.agentId);
+    if (!agent) return res.status(404).json({ ok: false, error: 'agente não encontrado' });
     const messages = Array.isArray(b.messages) ? b.messages.slice(-16) : [];
-    if (!dev) return res.status(400).json({ ok: false, error: 'developerName é obrigatório' });
     if (!messages.length) return res.status(400).json({ ok: false, error: 'messages vazio' });
     const org = await getOrgById(orgId);
     if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
 
-    const conn = await connV63(org);
-    const persona = await loadPersona(conn, dev);
-    const system = persona + '\n\n' + BEHAV;
-
-    let raw = await aiCall(system, messages, 1024);
-    let grounded = false, soql = null;
-
-    // grounding real: 1 rodada de SOQL read-only, se o agente pedir
-    const mSoql = raw.trim().match(/^SOQL:\s*(SELECT[\s\S]+)$/i);
-    if (mSoql) {
-      soql = mSoql[1].trim().replace(/;+\s*$/, '');
-      let dataStr;
-      try {
-        const q = await conn.query(soql);
-        grounded = true;
-        dataStr = JSON.stringify((q.records || []).map((r) => { const c = { ...r }; delete c.attributes; return c; })).slice(0, 4000);
-        if (!q.records || !q.records.length) dataStr = '[] (nenhum registro encontrado)';
-      } catch (e) {
-        dataStr = 'ERRO na consulta: ' + String(e.message || e);
-      }
-      const followup = messages.concat([
-        { role: 'assistant', content: 'SOQL: ' + soql },
-        { role: 'user', content: '[RESULTADO DA ORG]\n' + dataStr + '\n\nAgora responda ao usuario com base nesses dados reais, de forma curta.' },
-      ]);
-      raw = await aiCall(system, followup, 1024);
-    }
-
-    const { plan, text } = splitPlan(raw);
-    return res.json({ ok: true, developerName: dev, plan, text, grounded, soql });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
-  }
+    const conn = await connToOrg(org);
+    const system = agent.context.replace(/\{NAME\}/g, agent.name) + BEHAV;
+    const { text, steps } = await agenticRun(system, messages, conn, orgId);
+    return res.json({ ok: true, agentId: agent.id, text, steps });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
 export default router;
