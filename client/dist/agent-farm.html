@@ -166,8 +166,13 @@
   .ghost{width:100%;background:none;color:var(--muted);font-weight:600;padding:10px;font-size:13px;margin-top:2px;}
   .lerr{color:#c0392b;font-size:12.5px;margin-top:8px;display:none;} .lerr.show{display:block;}
   .muted{color:var(--muted);font-size:12px;}
-  .dialchip{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:80;background:linear-gradient(135deg,#12b76a,#0e9f5b);color:#fff;padding:14px 22px;border-radius:30px;font-weight:800;font-size:15px;box-shadow:0 16px 36px rgba(14,159,91,.5);display:none;align-items:center;gap:9px;text-decoration:none;}
-  .recchip{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:80;background:linear-gradient(135deg,#e0483e,#b8342c);color:#fff;padding:12px 20px;border-radius:30px;font-weight:800;font-size:14px;box-shadow:0 14px 30px rgba(224,72,62,.45);display:none;align-items:center;gap:8px;}
+  .chipdock{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:env(safe-area-inset-bottom,0);}
+  .dialchip{background:linear-gradient(135deg,#12b76a,#0e9f5b);color:#fff;padding:14px 22px;border-radius:30px;font-weight:800;font-size:15px;box-shadow:0 16px 36px rgba(14,159,91,.5);display:none;align-items:center;gap:9px;text-decoration:none;}
+  .recchip{background:linear-gradient(135deg,#e0483e,#b8342c);color:#fff;padding:12px 20px;border-radius:30px;font-weight:800;font-size:14px;box-shadow:0 14px 30px rgba(224,72,62,.45);display:none;align-items:center;gap:8px;}
+  .micbtn{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#eef2f7;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .micbtn:hover{background:#e3edf9;}
+  .micbtn.miclive{background:linear-gradient(135deg,#e0483e,#b8342c);animation:crblink 1s infinite;}
+  .micbtn.miclive svg path,.micbtn.miclive svg rect{stroke:#fff;}
   .callrec{position:fixed;bottom:0;left:0;right:0;z-index:90;background:#fff;border-top:2px solid #e0483e;box-shadow:0 -18px 44px rgba(3,45,96,.28);padding:14px 18px calc(14px + env(safe-area-inset-bottom,6px));display:none;}
   .callrec .crhead{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
   .callrec .reddot{width:12px;height:12px;border-radius:50%;background:#e0483e;animation:crblink 1s infinite;}
@@ -233,7 +238,7 @@
       </div>
     </div>
     <div class="composer" id="composer" style="display:none;">
-      <div class="inbar"><input id="input" type="text" placeholder="fale com seu agente…"><button class="send" id="send"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button></div>
+      <div class="inbar"><input id="input" type="text" placeholder="fale com seu agente…"><button class="micbtn" id="micMain" title="Falar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0176D3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button><button class="send" id="send"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button></div>
     </div>
   </main>
   <div class="rscrim" id="rscrim"></div>
@@ -303,6 +308,7 @@
     <div class="raginbar">
       <span class="ragav"><img class="mascot" src="/mascote.png" alt=""></span>
       <input id="ragInput" placeholder="peça pro agente: edite o telefone, ligue, envie e-mail…">
+      <button class="micbtn" id="micRag" title="Falar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0176D3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
       <button class="ragsend" id="ragSend"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button>
     </div>
   </div>
@@ -333,17 +339,19 @@ function mascot(accent,kind){
 
 function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · arqevery':'desconectado';}
 function toast(m){const t=document.getElementById('toast');t.innerHTML='<span>✨</span>'+esc(m);t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3300);}
+function chipDock(){let d=document.getElementById('chipDock');if(!d){d=document.createElement('div');d.id='chipDock';d.className='chipdock';document.body.appendChild(d);}return d;}
 function openDial(d){
   if(!d||!d.number)return;
   const tel='tel:+'+d.number;
+  const dock=chipDock();
   let chip=document.getElementById('dialChip');
-  if(!chip){chip=document.createElement('a');chip.id='dialChip';chip.className='dialchip';document.body.appendChild(chip);}
+  if(!chip){chip=document.createElement('a');chip.id='dialChip';chip.className='dialchip';dock.appendChild(chip);}
   chip.href=tel;chip.innerHTML='📞 Ligar para '+esc(d.display||d.number);chip.style.display='inline-flex';
   chip.onclick=()=>{setTimeout(()=>{chip.style.display='none';const rc=document.getElementById('recChip');if(rc)rc.style.display='none';},400);};
   clearTimeout(window._dialT);window._dialT=setTimeout(()=>{chip.style.display='none';},45000);
   if(d.leadId){
     let rc=document.getElementById('recChip');
-    if(!rc){rc=document.createElement('button');rc.id='recChip';rc.className='recchip';document.body.appendChild(rc);}
+    if(!rc){rc=document.createElement('button');rc.id='recChip';rc.className='recchip';dock.appendChild(rc);}
     rc.innerHTML='🎙️ Gravar & ligar (viva-voz)';rc.style.display='inline-flex';
     rc.onclick=async()=>{
       rc.disabled=true;rc.innerHTML='🎙️ ligando o microfone…';
@@ -516,6 +524,8 @@ async function sendMsg(){
       if(d.newRecord&&d.newRecord.object)startCreate(d.newRecord.object,d.newRecord.prefill||{});
       if(d.autoCreate&&d.autoCreate.object)openAuto({count:d.autoCreate.count,uf:d.autoCreate.uf,city:d.autoCreate.city});
       if(d.dial)openDial(d.dial);
+    if(d.openRecordId&&(!REC||d.openRecordId!==REC.id))openRecord(d.openRecordId);
+      if(d.openRecordId)openRecord(d.openRecordId);
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
   const sm2=stageMascotEl();if(sm2)sm2.classList.remove('think');const tb2=document.getElementById('thinkB');if(tb2)tb2.classList.remove('show');
@@ -714,6 +724,26 @@ document.getElementById('acUf').addEventListener('change',e=>loadCities(e.target
 document.getElementById('acGo').addEventListener('click',doAuto);
 document.getElementById('autoClose').addEventListener('click',()=>document.getElementById('autoScrim').classList.add('hide'));
 document.getElementById('autoScrim').addEventListener('click',e=>{if(e.target.id==='autoScrim')document.getElementById('autoScrim').classList.add('hide');});
+
+// ── ditado por voz nos campos de conversa ──
+function attachMic(btnId,inputId){
+  const btn=document.getElementById(btnId),inp=document.getElementById(inputId);
+  if(!btn||!inp)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){btn.style.display='none';return;}
+  let rec=null,on=false;
+  btn.addEventListener('click',()=>{
+    if(on){try{rec.stop();}catch(e){}return;}
+    rec=new SR();rec.lang='pt-BR';rec.interimResults=true;rec.continuous=false;
+    const base=inp.value;
+    rec.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;inp.value=(base?base+' ':'')+t;};
+    rec.onstart=()=>{on=true;btn.classList.add('miclive');};
+    rec.onend=()=>{on=false;btn.classList.remove('miclive');inp.focus();};
+    rec.onerror=()=>{on=false;btn.classList.remove('miclive');};
+    try{rec.start();}catch(e){}
+  });
+}
+attachMic('micMain','input');attachMic('micRag','ragInput');
 
 // ── detecção de dispositivo (celular x desktop) ──
 (function(){
