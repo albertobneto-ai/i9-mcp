@@ -339,15 +339,20 @@ function openDial(d){
   let chip=document.getElementById('dialChip');
   if(!chip){chip=document.createElement('a');chip.id='dialChip';chip.className='dialchip';document.body.appendChild(chip);}
   chip.href=tel;chip.innerHTML='📞 Ligar para '+esc(d.display||d.number);chip.style.display='inline-flex';
-  chip.onclick=()=>{setTimeout(()=>{chip.style.display='none';},400);};
-  try{chip.click();}catch(e){}
-  clearTimeout(window._dialT);window._dialT=setTimeout(()=>{chip.style.display='none';},10000);
+  chip.onclick=()=>{setTimeout(()=>{chip.style.display='none';const rc=document.getElementById('recChip');if(rc)rc.style.display='none';},400);};
+  clearTimeout(window._dialT);window._dialT=setTimeout(()=>{chip.style.display='none';},45000);
   if(d.leadId){
     let rc=document.getElementById('recChip');
     if(!rc){rc=document.createElement('button');rc.id='recChip';rc.className='recchip';document.body.appendChild(rc);}
-    rc.innerHTML='🎙️ Gravar & transcrever (viva-voz)';rc.style.display='inline-flex';
-    rc.onclick=()=>{rc.style.display='none';startCallRec({leadId:d.leadId,name:d.name});};
-    clearTimeout(window._recT);window._recT=setTimeout(()=>{rc.style.display='none';},25000);
+    rc.innerHTML='🎙️ Gravar & ligar (viva-voz)';rc.style.display='inline-flex';
+    rc.onclick=async()=>{
+      rc.disabled=true;rc.innerHTML='🎙️ ligando o microfone…';
+      const ok=await startCallRec({leadId:d.leadId,name:d.name});
+      rc.disabled=false;rc.style.display='none';
+      if(ok!==false){chip.style.display='none';toast('Gravando 🔴 abrindo o telefone…');setTimeout(()=>{window.location.href=tel;},600);}
+      else{rc.innerHTML='🎙️ Gravar & ligar (viva-voz)';rc.style.display='inline-flex';}
+    };
+    clearTimeout(window._recT);window._recT=setTimeout(()=>{rc.style.display='none';},45000);
   }
 }
 
@@ -355,10 +360,10 @@ function openDial(d){
 let CR=null;
 function crFmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 async function startCallRec(ctx){
-  if(CR){toast('Já estou gravando');return;}
+  if(CR){toast('Já estou gravando');return false;}
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}
-  catch(e){toast('Preciso da permissão do microfone 🎙️');return;}
+  catch(e){toast('Preciso da permissão do microfone 🎙️');return false;}
   const mime=MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':(MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'');
   const mr=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
   const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
@@ -397,6 +402,7 @@ async function startCallRec(ctx){
       else toast(d.error||'falha ao salvar');
     }catch(e){toast(e.message);}
   }};
+  return true;
 }
 document.getElementById('crStop').addEventListener('click',()=>CR&&CR.stop(true));
 document.getElementById('crCancel').addEventListener('click',()=>CR&&CR.stop(false));
