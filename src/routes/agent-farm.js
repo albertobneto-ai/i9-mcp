@@ -48,7 +48,12 @@ const BEHAV =
   '\n\nAUTO-CRIAR EM MASSA: se o usuário quiser gerar VÁRIAS leads de uma vez informando quantidade + cidade + UF (ex.: "auto criar 20 leads em Uberlândia MG", "gera 50 leads em SP"), ' +
   'responda uma linha curta e inclua o token [[AUTOCREATE:Lead]] — ou já com os dados: [[AUTOCREATE:Lead:{"count":20,"uf":"MG","city":"Uberlândia"}]]. Isso abre um formulário de geração em massa.' +
   '\n\nLIGAR: quando o usuário disser "ligue/ligar para a lead", use a ferramenta call_lead — ela pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use log_call só para "registrar uma ligação" sem discar.' +
-  '\n\nATIVIDADES: você também cria Eventos de calendário (create_event — visitas, reuniões; pergunte data/hora se faltar), Tarefas (create_task — follow-ups com vencimento), Notas (create_note) e posts no Chatter (post_chatter), e consulta a agenda (get_calendar). Interprete datas relativas ("amanhã", "sexta às 14h") usando a data atual informada, fuso de Brasília (-03:00).';
+  '\n\nATIVIDADES: você também cria Eventos de calendário (create_event — visitas, reuniões; pergunte data/hora se faltar), Tarefas (create_task — follow-ups com vencimento), Notas (create_note) e posts no Chatter (post_chatter), e consulta a agenda (get_calendar). Interprete datas relativas ("amanhã", "sexta às 14h") usando a data atual informada, fuso de Brasília (-03:00). ' +
+  'IMPORTANTE: ao listar tarefas, eventos ou agenda, marque cada item como clicável com [[REC:<Id>:<assunto>]] (Ids 00T = tarefa, 00U = evento) — o usuário clica para abrir e EDITAR a atividade.' +
+  '\n\nCADÊNCIA (Sales Engagement): cadência é a sequência estruturada de toques (ligação, e-mail, social, visita) com intervalos definidos para engajar uma lead — conceito do Sales Engagement do Salesforce. ' +
+  'Quando pedirem "aplique a cadência" numa lead, use apply_cadence (padrão: 5 toques em 9 dias — Ligação D0, E-mail D+1, Ligação D+3, E-mail D+5, Break-up D+8; aceite passos customizados). ' +
+  'Quando pedirem "mostre a cadência/atividades/timeline" da lead, use get_activities e apresente em timeline cronológica com status (✅ concluído, 🔵 aberto, 🔴 atrasado vs hoje), cada item clicável com [[REC:...]]. ' +
+  'Dica de coach: se a lead não tem toques futuros, sugira aplicar a cadência.';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -131,6 +136,10 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { recordId: { type: 'string' }, text: { type: 'string' } }, required: ['recordId', 'text'] } },
   { name: 'get_calendar', description: 'Consulta o calendário: eventos do usuário num intervalo de datas (default: próximos 7 dias). Use para "o que tenho na agenda", "eventos de amanhã", "minha semana".',
     input_schema: { type: 'object', properties: { fromDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, toDate: { type: 'string', description: 'YYYY-MM-DD (default +7d)' }, whoId: { type: 'string', description: 'filtrar por lead/contato (opcional)' } }, required: [] } },
+  { name: 'get_activities', description: 'Timeline de um registro: todas as Tarefas e Eventos (abertos e concluídos) de uma lead/conta/opp em ordem cronológica. Use para "mostre a cadência", "atividades da lead", "histórico de toques".',
+    input_schema: { type: 'object', properties: { recordId: { type: 'string' } }, required: ['recordId'] } },
+  { name: 'apply_cadence', description: 'Aplica uma CADÊNCIA de sales engagement na lead: cria a sequência de toques (tarefas com datas escalonadas a partir de startDate). Se steps não for informado, usa a cadência padrão B2B de 5 toques em 9 dias (Ligação D0, E-mail D+1, Ligação D+3, E-mail D+5, Ligação break-up D+8).',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' }, startDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, steps: { type: 'array', items: { type: 'object', properties: { dayOffset: { type: 'number' }, kind: { type: 'string', description: 'call | email | task | visita' }, subject: { type: 'string' } }, required: ['dayOffset', 'subject'] } } }, required: ['leadId'] } },
 ];
 
 const esc1 = (s) => String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
@@ -252,6 +261,37 @@ async function execTool(conn, orgId, name, input) {
     const evs = (res2.records || []).map((e) => ({ id: e.Id, subject: e.Subject, start: e.StartDateTime, end: e.EndDateTime, location: e.Location, who: e.Who && e.Who.Name, what: e.What && e.What.Name }));
     return { ok: true, count: evs.length, events: evs };
   }
+  if (name === 'get_activities') {
+    const rid = esc1(input.recordId);
+    const tq = await conn.query(`SELECT Id,Subject,Status,ActivityDate FROM Task WHERE WhoId='${rid}' OR WhatId='${rid}' ORDER BY ActivityDate NULLS LAST LIMIT 60`);
+    const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location FROM Event WHERE WhoId='${rid}' OR WhatId='${rid}' ORDER BY StartDateTime LIMIT 40`);
+    const tasks = (tq.records || []).map((t) => ({ id: t.Id, type: 'Task', subject: t.Subject, status: t.Status, date: t.ActivityDate }));
+    const events = (eq.records || []).map((e) => ({ id: e.Id, type: 'Event', subject: e.Subject, start: e.StartDateTime, location: e.Location }));
+    return { ok: true, tasks, events, total: tasks.length + events.length };
+  }
+  if (name === 'apply_cadence') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const start = input.startDate ? new Date(input.startDate + 'T12:00:00-03:00') : new Date();
+    const DEF = [
+      { dayOffset: 0, kind: 'call', subject: 'Cadência 1/5 · Ligação de apresentação' },
+      { dayOffset: 1, kind: 'email', subject: 'Cadência 2/5 · E-mail proposta de valor' },
+      { dayOffset: 3, kind: 'call', subject: 'Cadência 3/5 · Ligação de follow-up' },
+      { dayOffset: 5, kind: 'email', subject: 'Cadência 4/5 · E-mail case de sucesso' },
+      { dayOffset: 8, kind: 'call', subject: 'Cadência 5/5 · Ligação final (break-up)' },
+    ];
+    const steps = (Array.isArray(input.steps) && input.steps.length) ? input.steps : DEF;
+    const created = [];
+    for (const s of steps.slice(0, 12)) {
+      const d = new Date(start.getTime() + (Number(s.dayOffset) || 0) * 24 * 3600 * 1000);
+      const t = { WhoId: input.leadId, Subject: s.subject, Status: 'Not Started', ActivityDate: d.toISOString().slice(0, 10), Description: 'Passo de cadência de vendas (' + (s.kind || 'toque') + ')' };
+      let r;
+      try { r = await conn.sobject('Task').create({ ...t, Type: /call|liga/i.test(s.kind || '') ? 'Call' : (/mail/i.test(s.kind || '') ? 'Email' : undefined) }); }
+      catch (e) { r = await conn.sobject('Task').create(t); }
+      if (!(r && r.success)) { try { delete t.Status; r = await conn.sobject('Task').create(t); } catch (e2) {} }
+      if (r && r.success) created.push({ id: r.id, subject: s.subject, date: t.ActivityDate });
+    }
+    return { ok: created.length > 0, created, count: created.length };
+  }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
 
@@ -268,6 +308,8 @@ function stepSummary(name, input, out) {
   if (name === 'create_note') return out.ok ? `criou nota ${out.id}` : `falha na nota (${out.error || JSON.stringify(out.errors || '')})`;
   if (name === 'post_chatter') return out.ok ? `postou no Chatter (${out.id})` : `falha no Chatter (${out.error || JSON.stringify(out.errors || '')})`;
   if (name === 'get_calendar') return `consultou agenda: ${out.count != null ? out.count : 0} evento(s)`;
+  if (name === 'get_activities') return `timeline: ${out.total != null ? out.total : 0} atividade(s)`;
+  if (name === 'apply_cadence') return out.ok ? `aplicou cadência: ${out.count} toque(s) criados` : `falha na cadência (${out.error || 'erro'})`;
   return name;
 }
 
