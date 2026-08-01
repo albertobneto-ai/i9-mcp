@@ -155,13 +155,12 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(130px);z-index:70;background:var(--navy);color:#fff;padding:14px 20px;border-radius:15px;font-weight:600;font-size:14px;box-shadow:0 16px 36px rgba(3,45,96,.42);transition:transform .38s cubic-bezier(.2,.9,.3,1.4);display:flex;align-items:center;gap:9px;}
   .toast.show{transform:translateX(-50%) translateY(0);}
   @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;width:300px;flex-basis:300px;max-width:84vw;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
-  .rscrim{display:none;position:fixed;inset:62px 0 0 0;background:rgba(3,45,96,.35);z-index:15;}
+  .rscrim{display:none;position:absolute;inset:0;background:rgba(3,45,96,.35);z-index:15;}
   @media(min-width:861px){.rscrim{display:none!important;}}
   @media(max-width:640px){
     .bar{padding:10px 14px;gap:10px;height:58px;}
     .shell{height:calc(100vh - 58px);}
     .roster{height:calc(100vh - 58px);top:58px;}
-    .rscrim{inset:58px 0 0 0;}
     .logo .t2{display:none;}
     .conn{font-size:11px;padding:5px 9px;}
     .stage{padding:11px 14px;min-height:66px;gap:11px;}
@@ -211,9 +210,8 @@
       <div class="inbar"><input id="input" type="text" placeholder="fale com seu agente…"><button class="send" id="send"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button></div>
     </div>
   </main>
+  <div class="rscrim" id="rscrim"></div>
 </div>
-
-<div class="rscrim" id="rscrim"></div>
 
 <div class="scrim hide" id="createScrim"><div class="modal">
   <div class="mhead"><span class="pod" id="createPod"></span><div><h3>Criar agente</h3><p>Nasce conectado à arqevery e executa de verdade.</p></div></div>
