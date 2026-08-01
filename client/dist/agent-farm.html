@@ -165,7 +165,6 @@
       </div>
     </div>
     <div class="composer" id="composer" style="display:none;">
-      <div class="sugs" id="sugs"></div>
       <div class="inbar"><input id="input" type="text" placeholder="fale com seu agente…"><button class="send" id="send"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button></div>
     </div>
   </main>
@@ -280,7 +279,6 @@ function select(id){
   document.getElementById('stage').innerHTML=`<span class="pod">${mascot(active.color,k)}<div class="bubble-think" id="thinkB"><span class="dots"><i></i><i></i><i></i></span></div></span>
     <div><h3>${esc(active.name)}</h3><div class="sub"><span class="d"></span>IA operacional · conectada à arqevery</div></div>`;
   document.getElementById('composer').style.display='block';
-  document.getElementById('sugs').innerHTML=(SUGS[active.domain]||['Liste os registros recentes']).map(s=>`<button class="sug">${esc(s)}</button>`).join('');
   if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado na arqevery. Pode pedir de verdade — listar, criar, alterar. Bora?`}];}
   render();
 }
@@ -311,7 +309,6 @@ function mdLite(s){
   return out.join('\n').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
 }
 
-document.getElementById('sugs').addEventListener('click',e=>{const b=e.target.closest('.sug');if(!b||busy)return;document.getElementById('input').value=b.textContent;sendMsg();});
 document.getElementById('thread').addEventListener('click',e=>{const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
 document.getElementById('send').addEventListener('click',sendMsg);
 document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
