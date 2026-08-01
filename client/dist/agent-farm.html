@@ -104,6 +104,10 @@
   .sugs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px;}
   .sug{background:#fff;border:1.5px solid var(--line);border-radius:30px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--blue);transition:.15s;}
   .sug:hover{border-color:var(--sky);background:#eaf3ff;transform:translateY(-1px);}
+  .acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+  .act{background:linear-gradient(135deg,#eaf3ff,#dcecff);border:1.5px solid var(--sky);color:#0a4f9e;border-radius:20px;padding:7px 13px;font-size:12.5px;font-weight:700;transition:.15s;display:inline-flex;align-items:center;gap:5px;}
+  .act:hover{background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;transform:translateY(-1px);border-color:transparent;box-shadow:0 6px 14px rgba(1,118,211,.28);}
+  .act:disabled{opacity:.5;cursor:default;transform:none;}
   .inbar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:20px;padding:7px 7px 7px 18px;box-shadow:0 8px 22px rgba(3,45,96,.08);}
   .inbar:focus-within{border-color:var(--sky);}
   .inbar input{flex:1;border:none;font-size:15px;padding:9px 0;background:transparent;color:var(--ink);}
@@ -287,7 +291,8 @@ function render(){
     if(m.role==='me')return `<div class="msg me"><span class="av">AB</span><div class="bubble">${esc(m.text)}</div></div>`;
     if(m.typing)return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div class="bubble"><span style="color:var(--muted)">${esc(m.status||'pensando…')}</span></div></div>`;
     const chips=(m.steps&&m.steps.length)?`<div class="steps">${m.steps.map(s=>{const isQ=s.tool==='soql_query',fail=/falha/.test(s.summary);const cls=isQ?'q':(fail?'e':'w');const ic=isQ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4" stroke-linecap="round"/></svg>':(s.tool==='update_record'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>');return `<span class="chip ${cls}">${ic}${esc(s.summary)}</span>`;}).join('')}</div>`:'';
-    return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div class="bubble">${chips}${m.html||esc(m.text)}</div></div>`;
+    const acts=(m.actions&&m.actions.length)?`<div class="acts">${m.actions.map(a=>`<button class="act" data-a="${encodeURIComponent(a)}">▸ ${esc(a)}</button>`).join('')}</div>`:'';
+    return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div style="min-width:0"><div class="bubble">${chips}${m.html||esc(m.text)}</div>${acts}</div></div>`;
   }).join('');
   t.scrollTop=t.scrollHeight;
 }
@@ -307,6 +312,7 @@ function mdLite(s){
 }
 
 document.getElementById('sugs').addEventListener('click',e=>{const b=e.target.closest('.sug');if(!b||busy)return;document.getElementById('input').value=b.textContent;sendMsg();});
+document.getElementById('thread').addEventListener('click',e=>{const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
 document.getElementById('send').addEventListener('click',sendMsg);
 document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
 document.getElementById('menu').addEventListener('click',()=>document.getElementById('roster').classList.toggle('open'));
@@ -329,7 +335,7 @@ async function sendMsg(){
     const d=await r.json();
     hist[active.id]=hist[active.id].filter(m=>!m.typing);
     if(d.ok){const wrote=(d.steps||[]).some(s=>s.tool!=='soql_query'&&!/falha/.test(s.summary));
-      hist[active.id].push({role:'assistant',text:d.text||'(sem resposta)',html:mdLite(d.text||''),steps:d.steps||[]});
+      hist[active.id].push({role:'assistant',text:d.text||'(sem resposta)',html:mdLite(d.text||''),steps:d.steps||[],actions:d.actions||[]});
       render();if(wrote)celebrate();
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
