@@ -481,7 +481,7 @@ router.post('/auto-create', authMiddleware, async (req, res) => {
     const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
     const conn = await connToOrg(org);
     const dl = await describeLayoutsRaw(conn, object);
-    const nac = (dl.recordTypeMappings || []).find((m) => /nacional/i.test(m.name)) || (dl.recordTypeMappings || []).find((m) => m.defaultRecordTypeMapping);
+    const nac = (dl.recordTypeMappings || []).find((m) => m.defaultRecordTypeMapping) || (dl.recordTypeMappings || []).find((m) => /^nacional$/i.test(m.name));
     const rtId = b.recordTypeId || (nac && nac.recordTypeId);
     const desc = await describeCached(conn, object, orgId);
     const fld = (n) => (desc.fields || []).find((f) => f.name === n);
