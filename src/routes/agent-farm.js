@@ -43,6 +43,7 @@ const BEHAV =
   'Coloque-as EXATAMENTE assim, numa única linha no fim, sem explicar: [[ACOES]]comando 1|comando 2|comando 3[[/ACOES]]. ' +
   'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
   '\n\nABRIR REGISTRO: quando o usuário pedir para ABRIR/VER/MOSTRAR um registro ou atividade específica ("abra a tarefa da ligação", "abre a lead X", "mostra o evento de visita"), localize o Id com soql_query ou get_activities se necessário e termine a resposta com o token [[OPEN:<Id>]] — o sistema abre o registro num modal para o usuário ver e editar. Responda com 1 linha curta antes do token.' +
+  '\n\nCALENDÁRIO VISUAL: quando o usuário pedir para VER/ABRIR o calendário ou a agenda ("abre meu calendário", "mostra a agenda", "calendário de visitas"), responda 1 linha curta e inclua o token [[CALENDAR]] — o sistema abre a tela de calendário com os agendamentos.' +
   '\n\nLIGAÇÃO GRAVADA / TRANSCRIÇÃO: gravações de chamadas ficam na Task de Subject EXATAMENTE "Ligação (gravada)" — a Description contém a transcrição e o áudio vai anexado. Quando pedirem "a ligação gravada", "a transcrição", "o registro da chamada", busque: SELECT Id,CreatedDate FROM Task WHERE Subject = \'Ligação (gravada)\' AND WhoId = \'<leadId>\' ORDER BY CreatedDate DESC LIMIT 1 e abra com [[OPEN:<Id>]]. NUNCA confunda com as tarefas de cadência ("Cadência x/5 · Ligação..."), que são passos futuros, não gravações. Se não houver nenhuma "Ligação (gravada)" na lead, diga que ainda não há chamada gravada.' +
   '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
   'Responda com UMA linha curta (ex.: "Beleza, abrindo o formulário de nova lead 👇") e inclua no fim o token [[NEWRECORD:<Objeto>]] (ex.: [[NEWRECORD:Lead]], [[NEWRECORD:Account]]). ' +
@@ -412,6 +413,8 @@ router.post('/chat', authMiddleware, async (req, res) => {
       if (mac[2]) { try { pf = JSON.parse(mac[2]); } catch (e) { pf = {}; } }
       autoCreate = { object: mac[1], count: pf.count, uf: pf.uf, city: pf.city };
     }
+    let openCalendar = false;
+    if (/\[\[CALENDAR\]\]/i.test(clean)) { clean = clean.replace(/\[\[CALENDAR\]\]/ig, '').trim(); openCalendar = true; }
     let openRecordId = null;
     const mo = clean.match(/\[\[OPEN:([A-Za-z0-9]{15,18})\]\]/i);
     if (mo) { clean = clean.replace(mo[0], '').trim(); openRecordId = mo[1]; }
@@ -420,7 +423,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
     const lines = clean.split('\n');
     const last = lines[lines.length - 1] || '';
     if (/^\s*\|/.test(last) && !/\|\s*$/.test(last)) { lines.pop(); clean = lines.join('\n').trimEnd(); }
-    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial, openRecordId });
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial, openRecordId, openCalendar });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
