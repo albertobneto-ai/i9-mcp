@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#eaf3ff">
 <title>Farm de Agentes · ever i9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <style>
@@ -35,7 +36,7 @@
   @keyframes pulse{50%{box-shadow:0 0 0 7px rgba(47,201,138,0);}}
   .menu{display:none;width:40px;height:40px;border-radius:12px;background:#eaf3ff;align-items:center;justify-content:center;font-size:18px;}
 
-  .shell{position:relative;z-index:2;display:flex;height:calc(100vh - 62px);}
+  .shell{position:relative;z-index:2;display:flex;height:calc(100vh - 62px);height:calc(100dvh - 62px);}
   .roster{width:322px;flex:0 0 322px;overflow-y:auto;padding:16px 14px;}
   .roster h2{font-family:'Fredoka';font-weight:600;font-size:13px;letter-spacing:.3px;color:var(--muted);margin:10px 8px 12px;text-transform:uppercase;}
   .cta{width:100%;display:flex;align-items:center;gap:12px;padding:14px;border-radius:20px;margin-bottom:16px;
@@ -154,18 +155,18 @@
   .muted{color:var(--muted);font-size:12px;}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(130px);z-index:70;background:var(--navy);color:#fff;padding:14px 20px;border-radius:15px;font-weight:600;font-size:14px;box-shadow:0 16px 36px rgba(3,45,96,.42);transition:transform .38s cubic-bezier(.2,.9,.3,1.4);display:flex;align-items:center;gap:9px;}
   .toast.show{transform:translateX(-50%) translateY(0);}
-  @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;width:300px;flex-basis:300px;max-width:84vw;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
+  @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);height:calc(100dvh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;width:300px;flex-basis:300px;max-width:84vw;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
   .rscrim{display:none;position:absolute;inset:0;background:rgba(3,45,96,.35);z-index:15;}
   @media(min-width:861px){.rscrim{display:none!important;}}
   @media(max-width:640px){
     .bar{padding:10px 14px;gap:10px;height:58px;}
-    .shell{height:calc(100vh - 58px);}
-    .roster{height:calc(100vh - 58px);top:58px;}
+    .shell{height:calc(100vh - 58px);height:calc(100dvh - 58px);}
+    .roster{height:calc(100vh - 58px);height:calc(100dvh - 58px);top:58px;}
     .logo .t2{display:none;}
     .conn{font-size:11px;padding:5px 9px;}
     .stage{padding:11px 14px;min-height:66px;gap:11px;}
     .thread{padding:16px 14px 8px;gap:12px;}
-    .composer{padding:10px 14px 16px;}
+    .composer{padding:10px 14px calc(16px + env(safe-area-inset-bottom,8px));}
     .bubble{max-width:100%;font-size:14.5px;}
     .bubble table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
     .msg .av{width:34px;height:34px;flex:0 0 34px;}
