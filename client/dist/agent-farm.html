@@ -368,7 +368,7 @@ async function openRecord(id){
     document.getElementById('recTitle').textContent=d.name;
     document.getElementById('recSub').textContent=d.object+' · '+d.id;
     const rows=(d.fields||[]).map(([k,v])=>`<div class="recrow"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
-    const url=(d.instanceUrl||'')+'/'+d.id;
+    const url=(d.instanceUrl||'')+'/lightning/r/'+encodeURIComponent(d.object)+'/'+d.id+'/view';
     body.innerHTML='<div class="recgrid">'+rows+'</div><a class="recopen" href="'+url+'" target="_blank" rel="noopener">Abrir no Salesforce ↗</a>';
   }catch(e){body.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
 }
