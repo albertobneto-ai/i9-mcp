@@ -46,7 +46,8 @@ const BEHAV =
   'O sistema abrirá um formulário com os campos certos pra ele preencher. Se o usuário já tiver dito alguns valores, inclua-os como JSON: [[NEWRECORD:Lead:{"LastName":"Silva","Company":"ACME"}]]. ' +
   'Só use a ferramenta create_record diretamente se o usuário pedir explicitamente "cria você mesmo" e já fornecer todos os dados.' +
   '\n\nAUTO-CRIAR EM MASSA: se o usuário quiser gerar VÁRIAS leads de uma vez informando quantidade + cidade + UF (ex.: "auto criar 20 leads em Uberlândia MG", "gera 50 leads em SP"), ' +
-  'responda uma linha curta e inclua o token [[AUTOCREATE:Lead]] — ou já com os dados: [[AUTOCREATE:Lead:{"count":20,"uf":"MG","city":"Uberlândia"}]]. Isso abre um formulário de geração em massa.';
+  'responda uma linha curta e inclua o token [[AUTOCREATE:Lead]] — ou já com os dados: [[AUTOCREATE:Lead:{"count":20,"uf":"MG","city":"Uberlândia"}]]. Isso abre um formulário de geração em massa.' +
+  '\n\nLIGAR: quando o usuário disser "ligue/ligar para a lead", use a ferramenta call_lead — ela pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use log_call só para "registrar uma ligação" sem discar.';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -117,6 +118,8 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { leadId: { type: 'string' }, email: { type: 'string', description: 'opcional; se ausente usa o Email da Lead' }, subject: { type: 'string' }, body: { type: 'string' } }, required: ['subject', 'body'] } },
   { name: 'log_call', description: 'Registra uma ligação para a Lead como atividade (Task tipo Call) na org.',
     input_schema: { type: 'object', properties: { leadId: { type: 'string' }, subject: { type: 'string' }, comments: { type: 'string' } }, required: ['leadId'] } },
+  { name: 'call_lead', description: 'LIGAR para uma Lead: pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use sempre que pedirem "ligue/ligar para a lead".',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' } }, required: ['leadId'] } },
 ];
 
 const esc1 = (s) => String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
@@ -173,6 +176,20 @@ async function execTool(conn, orgId, name, input) {
       return { ok: !!r.success, id: r.id, errors: r.errors };
     }
   }
+  if (name === 'call_lead') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const q = await conn.query(`SELECT Name,Phone,MobilePhone FROM Lead WHERE Id='${esc1(input.leadId)}'`);
+    const rec = (q.records && q.records[0]) || {};
+    const raw = rec.Phone || rec.MobilePhone;
+    if (!raw) return { ok: false, error: 'lead sem telefone cadastrado' };
+    let taskId = null;
+    const base = { WhoId: input.leadId, Subject: 'Ligação', Status: 'Completed', Description: 'Ligação iniciada pelo agente', ActivityDate: new Date().toISOString().slice(0, 10) };
+    try { const t = await conn.sobject('Task').create({ ...base, Type: 'Call' }); taskId = t.id; }
+    catch (e) { try { const t = await conn.sobject('Task').create(base); taskId = t.id; } catch (e2) {} }
+    let digits = String(raw).replace(/\D/g, '');
+    if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) digits = '55' + digits;
+    return { ok: true, id: taskId, phone: raw, name: rec.Name, dial: digits };
+  }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
 
@@ -183,6 +200,7 @@ function stepSummary(name, input, out) {
   if (name === 'convert_lead') return out.ok ? `converteu a lead → Opp ${out.opportunityId || '—'}` : `falha ao converter (${out.error || 'erro'})`;
   if (name === 'send_email') return out.ok ? `enviou e-mail para ${out.to}` : `falha no e-mail (${out.error || 'erro'})`;
   if (name === 'log_call') return out.ok ? `registrou ligação (${out.id})` : `falha ao registrar ligação (${out.error || 'erro'})`;
+  if (name === 'call_lead') return out.ok ? `abrindo discador → ${out.phone}` : `falha ao ligar (${out.error || 'erro'})`;
   return name;
 }
 
@@ -191,6 +209,7 @@ async function agenticRun(system, messages, conn, orgId) {
   const key = process.env.ANTHROPIC_KEY;
   const convo = messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') }));
   const steps = [];
+  let dial = null;
   for (let i = 0; i < 6; i++) {
     const res = await fetch(ANTHROPIC_URL, {
       method: 'POST',
@@ -207,6 +226,7 @@ async function agenticRun(system, messages, conn, orgId) {
         let out;
         try { out = await execTool(conn, orgId, blk.name, blk.input || {}); }
         catch (e) { out = { ok: false, error: String(e.message || e) }; }
+        if (out && out.dial) dial = { number: out.dial, display: out.phone, name: out.name };
         steps.push({ tool: blk.name, input: blk.input, summary: stepSummary(blk.name, blk.input || {}, out) });
         results.push({ type: 'tool_result', tool_use_id: blk.id, content: JSON.stringify(out).slice(0, 6000) });
       }
@@ -214,9 +234,9 @@ async function agenticRun(system, messages, conn, orgId) {
       continue;
     }
     const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-    return { text, steps };
+    return { text, steps, dial };
   }
-  return { text: 'Fiz várias etapas mas atingi o limite de iterações. Pode refinar o pedido?', steps };
+  return { text: 'Fiz várias etapas mas atingi o limite de iterações. Pode refinar o pedido?', steps, dial };
 }
 
 // ───────── Rotas ─────────
@@ -256,7 +276,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
 
     const conn = await connToOrg(org);
     const system = agent.context.replace(/\{NAME\}/g, agent.name) + BEHAV;
-    const { text, steps } = await agenticRun(system, messages, conn, orgId);
+    const { text, steps, dial } = await agenticRun(system, messages, conn, orgId);
     let clean = text, actions = [];
     const ma = text.match(/\[\[ACOES\]\]([\s\S]*?)\[\[\/ACOES\]\]/i);
     if (ma) {
@@ -279,7 +299,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
       if (mac[2]) { try { pf = JSON.parse(mac[2]); } catch (e) { pf = {}; } }
       autoCreate = { object: mac[1], count: pf.count, uf: pf.uf, city: pf.city };
     }
-    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate });
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
