@@ -287,6 +287,14 @@ async function objForId(conn, id) {
   if (!_prefixCache) { const g = await conn.describeGlobal(); _prefixCache = {}; g.sobjects.forEach((s) => { if (s.keyPrefix) _prefixCache[s.keyPrefix] = s.name; }); }
   return _prefixCache[p] || null;
 }
+const _desc = {};
+async function describeCached(conn, obj, orgId) {
+  const k = orgId + ':' + obj;
+  if (_desc[k]) return _desc[k];
+  const d = await conn.sobject(obj).describe();
+  _desc[k] = d;
+  return d;
+}
 router.get('/record', authMiddleware, async (req, res) => {
   try {
     const orgId = req.query.orgId || 36;
@@ -298,12 +306,36 @@ router.get('/record', authMiddleware, async (req, res) => {
     const obj = await objForId(conn, id);
     if (!obj) return res.json({ ok: false, error: 'objeto não identificado para ' + id });
     const rec = await conn.sobject(obj).retrieve(id);
+    const desc = await describeCached(conn, obj, orgId);
+    const fmap = {}; (desc.fields || []).forEach((f) => { fmap[f.name] = f; });
     const SKIP = new Set(['attributes', 'IsDeleted', 'SystemModstamp', 'LastReferencedDate', 'LastViewedDate', 'PhotoUrl', 'IsUnreadByOwner', 'ActiveTrackerCount', 'IsPriorityRecord', 'RecordTypeId', 'MasterRecordId', 'JigsawContactId', 'IndividualId', 'CleanStatus', 'EmailBouncedReason', 'EmailBouncedDate']);
     const fields = Object.entries(rec)
       .filter(([k, v]) => v != null && v !== '' && typeof v !== 'object' && !SKIP.has(k) && !k.endsWith('__pc'))
-      .slice(0, 40).map(([k, v]) => [k, String(v)]);
+      .slice(0, 50).map(([k, v]) => {
+        const f = fmap[k] || {};
+        const type = f.type || 'string';
+        const editable = !!f.updateable && type !== 'reference';
+        const o = { name: k, label: f.label || k, value: String(v), type, editable };
+        if (type === 'picklist' || type === 'multipicklist') o.options = (f.picklistValues || []).filter((p) => p.active).map((p) => p.value);
+        return o;
+      });
     const name = rec.Name || rec.CaseNumber || rec.Subject || rec.Title || id;
     return res.json({ ok: true, object: obj, id, name, fields, instanceUrl: conn.instanceUrl });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/record-update — salva alterações de campos do registro
+router.post('/record-update', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const orgId = b.orgId || 36;
+    if (!b.id || !b.object || !b.fields || typeof b.fields !== 'object') return res.status(400).json({ ok: false, error: 'id, object e fields são obrigatórios' });
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId);
+    if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
+    const conn = await connToOrg(org);
+    const r = await conn.sobject(b.object).update({ Id: b.id, ...b.fields });
+    return res.json({ ok: !!r.success, id: r.id || b.id, errors: r.errors });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
