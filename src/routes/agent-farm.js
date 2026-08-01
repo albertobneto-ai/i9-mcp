@@ -44,7 +44,9 @@ const BEHAV =
   '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
   'Responda com UMA linha curta (ex.: "Beleza, abrindo o formulário de nova lead 👇") e inclua no fim o token [[NEWRECORD:<Objeto>]] (ex.: [[NEWRECORD:Lead]], [[NEWRECORD:Account]]). ' +
   'O sistema abrirá um formulário com os campos certos pra ele preencher. Se o usuário já tiver dito alguns valores, inclua-os como JSON: [[NEWRECORD:Lead:{"LastName":"Silva","Company":"ACME"}]]. ' +
-  'Só use a ferramenta create_record diretamente se o usuário pedir explicitamente "cria você mesmo" e já fornecer todos os dados.';
+  'Só use a ferramenta create_record diretamente se o usuário pedir explicitamente "cria você mesmo" e já fornecer todos os dados.' +
+  '\n\nAUTO-CRIAR EM MASSA: se o usuário quiser gerar VÁRIAS leads de uma vez informando quantidade + cidade + UF (ex.: "auto criar 20 leads em Uberlândia MG", "gera 50 leads em SP"), ' +
+  'responda uma linha curta e inclua o token [[AUTOCREATE:Lead]] — ou já com os dados: [[AUTOCREATE:Lead:{"count":20,"uf":"MG","city":"Uberlândia"}]]. Isso abre um formulário de geração em massa.';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -269,7 +271,15 @@ router.post('/chat', authMiddleware, async (req, res) => {
       if (mn[2]) { try { prefill = JSON.parse(mn[2]); } catch (e) { prefill = {}; } }
       newRecord = { object: mn[1], prefill };
     }
-    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord });
+    let autoCreate = null;
+    const mac = clean.match(/\[\[AUTOCREATE:([A-Za-z_0-9]+)(?::([\s\S]*?))?\]\]/i);
+    if (mac) {
+      clean = clean.replace(mac[0], '').trim();
+      let pf = {};
+      if (mac[2]) { try { pf = JSON.parse(mac[2]); } catch (e) { pf = {}; } }
+      autoCreate = { object: mac[1], count: pf.count, uf: pf.uf, city: pf.city };
+    }
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
@@ -430,6 +440,77 @@ router.post('/record-create', authMiddleware, async (req, res) => {
     const conn = await connToOrg(org);
     const r = await conn.sobject(b.object).create(b.fields);
     return res.json({ ok: !!r.success, id: r.id, errors: r.errors });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// ── Auto-create em massa (quantidade + UF + cidade, cidade dependente via IBGE) ──
+let _ufs = null; const _cidades = {};
+router.get('/ibge/ufs', authMiddleware, async (req, res) => {
+  try {
+    if (!_ufs) { const r = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome'); _ufs = (await r.json()).map((u) => ({ sigla: u.sigla, nome: u.nome })); }
+    return res.json({ ok: true, ufs: _ufs });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+router.get('/ibge/cidades', authMiddleware, async (req, res) => {
+  try {
+    const uf = (req.query.uf || '').toUpperCase();
+    if (!uf) return res.status(400).json({ ok: false, error: 'uf obrigatório' });
+    if (!_cidades[uf]) { const r = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`); _cidades[uf] = (await r.json()).map((c) => c.nome); }
+    return res.json({ ok: true, uf, cidades: _cidades[uf] });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+function genCNPJ() {
+  const rnd = () => Math.floor(Math.random() * 10);
+  const b = []; for (let i = 0; i < 8; i++) b.push(rnd()); b.push(0, 0, 0, 1);
+  const calc = (arr) => { let pos = arr.length - 7, sum = 0; for (let i = 0; i < arr.length; i++) { sum += arr[i] * pos--; if (pos < 2) pos = 9; } const r = sum % 11; return r < 2 ? 0 : 11 - r; };
+  b.push(calc(b)); b.push(calc(b)); return b.join('');
+}
+const _FIRST = ['Ana', 'Bruno', 'Carlos', 'Daniela', 'Eduardo', 'Fernanda', 'Gustavo', 'Helena', 'Igor', 'Juliana', 'Lucas', 'Marina', 'Nathan', 'Olivia', 'Paulo', 'Rafaela', 'Thiago', 'Vanessa', 'Wagner', 'Yara'];
+const _LAST = ['Silva', 'Souza', 'Oliveira', 'Santos', 'Pereira', 'Lima', 'Costa', 'Almeida', 'Nunes', 'Rocha', 'Carvalho', 'Gomes', 'Martins', 'Araujo', 'Ribeiro', 'Barbosa'];
+const _SECTOR = ['Comércio', 'Serviços', 'Tecnologia', 'Logística', 'Indústria', 'Consultoria', 'Telecom', 'Varejo', 'Agro', 'Saúde'];
+const _DDD = { AC: '68', AL: '82', AP: '96', AM: '92', BA: '71', CE: '85', DF: '61', ES: '27', GO: '62', MA: '98', MT: '65', MS: '67', MG: '31', PA: '91', PB: '83', PR: '41', PE: '81', PI: '86', RJ: '21', RN: '84', RS: '51', RO: '69', RR: '95', SC: '48', SP: '11', SE: '79', TO: '63' };
+
+router.post('/auto-create', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36; const object = b.object || 'Lead';
+    const count = Math.max(1, Math.min(100, parseInt(b.count, 10) || 0));
+    const uf = (b.uf || '').toUpperCase(); const city = b.city || '';
+    if (!count || !uf || !city) return res.status(400).json({ ok: false, error: 'count, uf e city são obrigatórios' });
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const dl = await describeLayoutsRaw(conn, object);
+    const nac = (dl.recordTypeMappings || []).find((m) => /nacional/i.test(m.name)) || (dl.recordTypeMappings || []).find((m) => m.defaultRecordTypeMapping);
+    const rtId = b.recordTypeId || (nac && nac.recordTypeId);
+    const desc = await describeCached(conn, object, orgId);
+    const fld = (n) => (desc.fields || []).find((f) => f.name === n);
+    const pv = (n, prefer) => { const f = fld(n); if (!f || !f.picklistValues) return prefer; const vals = f.picklistValues.filter((p) => p.active).map((p) => p.value); if (prefer && vals.includes(prefer)) return prefer; return vals[0] || prefer; };
+    const status = pv('Status', 'Novo'); const source = pv('LeadSource', 'Outros');
+    const ddd = _DDD[uf] || '11';
+    const hasCNPJ = !!fld('CNPJ__c'), hasCity = !!fld('City'), hasState = !!fld('State'), hasCountry = !!fld('Country');
+    const recs = [];
+    for (let i = 0; i < count; i++) {
+      const fn = _FIRST[Math.floor(Math.random() * _FIRST.length)], ln = _LAST[Math.floor(Math.random() * _LAST.length)];
+      const r = {
+        FirstName: fn, LastName: ln,
+        Company: `${ln} ${_SECTOR[Math.floor(Math.random() * _SECTOR.length)]} ${1000 + Math.floor(Math.random() * 9000)} Ltda`,
+        Status: status, LeadSource: source,
+        Email: `${fn}.${ln}${i}@exemplo.com.br`.toLowerCase(),
+        Phone: `(${ddd}) 9${Math.floor(10000000 + Math.random() * 89999999)}`,
+      };
+      if (hasCity) r.City = city;
+      if (hasState) r.State = uf;
+      if (hasCountry) r.Country = 'Brasil';
+      if (hasCNPJ) r.CNPJ__c = genCNPJ();
+      if (rtId) r.RecordTypeId = rtId;
+      recs.push(r);
+    }
+    const out = await conn.sobject(object).create(recs, { allOrNone: false });
+    const arr = Array.isArray(out) ? out : [out];
+    const okIds = arr.filter((x) => x.success).map((x) => x.id);
+    const errs = arr.filter((x) => !x.success).map((x) => x.errors);
+    return res.json({ ok: true, created: okIds.length, failed: arr.length - okIds.length, ids: okIds.slice(0, 50), sampleErrors: errs.slice(0, 3), city, uf, recordTypeId: rtId });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
