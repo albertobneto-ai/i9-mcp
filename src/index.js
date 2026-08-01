@@ -358,6 +358,13 @@ app.get('/rlm-poc', (req, res) => {
   });
 });
 
+// Farm de Agentes — URL amigável
+app.get(['/farm', '/farm.html'], (req, res) => {
+  res.sendFile(path.join(clientDist, 'agent-farm.html'), err => {
+    if (err) res.status(404).json({ error: 'Farm page not found' });
+  });
+});
+
 app.get(/^\/(?!api\/).*/, (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'), err => {
     if (err) res.status(404).json({ error: 'Frontend not found' });
