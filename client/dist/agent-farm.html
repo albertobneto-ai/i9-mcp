@@ -166,6 +166,7 @@
   .ghost{width:100%;background:none;color:var(--muted);font-weight:600;padding:10px;font-size:13px;margin-top:2px;}
   .lerr{color:#c0392b;font-size:12.5px;margin-top:8px;display:none;} .lerr.show{display:block;}
   .muted{color:var(--muted);font-size:12px;}
+  .dialchip{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:80;background:linear-gradient(135deg,#12b76a,#0e9f5b);color:#fff;padding:14px 22px;border-radius:30px;font-weight:800;font-size:15px;box-shadow:0 16px 36px rgba(14,159,91,.5);display:none;align-items:center;gap:9px;text-decoration:none;}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(130px);z-index:70;background:var(--navy);color:#fff;padding:14px 20px;border-radius:15px;font-weight:600;font-size:14px;box-shadow:0 16px 36px rgba(3,45,96,.42);transition:transform .38s cubic-bezier(.2,.9,.3,1.4);display:flex;align-items:center;gap:9px;}
   .toast.show{transform:translateX(-50%) translateY(0);}
   @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);height:calc(100dvh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;width:300px;flex-basis:300px;max-width:84vw;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
@@ -315,6 +316,16 @@ function mascot(accent,kind){
 
 function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · arqevery':'desconectado';}
 function toast(m){const t=document.getElementById('toast');t.innerHTML='<span>✨</span>'+esc(m);t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3300);}
+function openDial(d){
+  if(!d||!d.number)return;
+  const tel='tel:+'+d.number;
+  let chip=document.getElementById('dialChip');
+  if(!chip){chip=document.createElement('a');chip.id='dialChip';chip.className='dialchip';document.body.appendChild(chip);}
+  chip.href=tel;chip.innerHTML='📞 Ligar para '+esc(d.display||d.number);chip.style.display='inline-flex';
+  chip.onclick=()=>{setTimeout(()=>{chip.style.display='none';},400);};
+  try{chip.click();}catch(e){}
+  clearTimeout(window._dialT);window._dialT=setTimeout(()=>{chip.style.display='none';},10000);
+}
 async function api(path,opts={}){opts.headers=Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},opts.headers||{});const r=await fetch(path,opts);if(r.status===401){logout();throw new Error('sessão expirada');}return r;}
 
 // nuvens de fundo
@@ -424,6 +435,7 @@ async function sendMsg(){
       render();if(wrote)celebrate();
       if(d.newRecord&&d.newRecord.object)startCreate(d.newRecord.object,d.newRecord.prefill||{});
       if(d.autoCreate&&d.autoCreate.object)openAuto({count:d.autoCreate.count,uf:d.autoCreate.uf,city:d.autoCreate.city});
+      if(d.dial)openDial(d.dial);
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
   const sm2=stageMascotEl();if(sm2)sm2.classList.remove('think');const tb2=document.getElementById('thinkB');if(tb2)tb2.classList.remove('show');
@@ -648,6 +660,7 @@ async function ragSend(){
     const d=await r.json();
     if(!d.ok){reply.textContent=d.error||'falha';return;}
     reply.innerHTML=mdLite(d.text||'(feito)');
+    if(d.dial)openDial(d.dial);
     const wrote=(d.steps||[]).some(s=>s.tool!=='soql_query'&&!/falha/.test(s.summary));
     if(wrote){const cur=reply.innerHTML;await openRecord(REC.id);document.getElementById('ragReply').innerHTML=cur;try{celebrate();}catch(e){}}
   }catch(e){reply.textContent=e.message;}
