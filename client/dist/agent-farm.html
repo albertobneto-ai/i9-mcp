@@ -154,7 +154,32 @@
   .muted{color:var(--muted);font-size:12px;}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(130px);z-index:70;background:var(--navy);color:#fff;padding:14px 20px;border-radius:15px;font-weight:600;font-size:14px;box-shadow:0 16px 36px rgba(3,45,96,.42);transition:transform .38s cubic-bezier(.2,.9,.3,1.4);display:flex;align-items:center;gap:9px;}
   .toast.show{transform:translateX(-50%) translateY(0);}
-  @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
+  @media(max-width:860px){.roster{position:absolute;z-index:20;height:calc(100vh - 62px);transform:translateX(-100%);transition:transform .25s;background:#eef6ff;width:300px;flex-basis:300px;max-width:84vw;}.roster.open{transform:none;box-shadow:0 0 40px rgba(3,45,96,.25);}.menu{display:flex;}}
+  .rscrim{display:none;position:fixed;inset:62px 0 0 0;background:rgba(3,45,96,.35);z-index:15;}
+  @media(min-width:861px){.rscrim{display:none!important;}}
+  @media(max-width:640px){
+    .bar{padding:10px 14px;gap:10px;height:58px;}
+    .shell{height:calc(100vh - 58px);}
+    .roster{height:calc(100vh - 58px);top:58px;}
+    .rscrim{inset:58px 0 0 0;}
+    .logo .t2{display:none;}
+    .conn{font-size:11px;padding:5px 9px;}
+    .stage{padding:11px 14px;min-height:66px;gap:11px;}
+    .thread{padding:16px 14px 8px;gap:12px;}
+    .composer{padding:10px 14px 16px;}
+    .bubble{max-width:100%;font-size:14.5px;}
+    .bubble table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .msg .av{width:34px;height:34px;flex:0 0 34px;}
+    .stage .pod{width:46px;height:46px;flex:0 0 46px;}
+    .empty2 .big{width:120px;height:120px;}
+    .scrim{padding:0;align-items:flex-end;}
+    .modal{max-width:100%;width:100%;border-radius:22px 22px 0 0;max-height:94vh;}
+    .mhead{border-radius:22px 22px 0 0;}
+    .recrow.edit{flex-direction:column;align-items:stretch;gap:6px;}
+    .recedit .ei,.recedit .ni{width:100%;}
+    .recrow .v{max-width:56%;}
+    .acts .act{font-size:12px;}
+  }
 </style>
 </head>
 <body>
@@ -187,6 +212,8 @@
     </div>
   </main>
 </div>
+
+<div class="rscrim" id="rscrim"></div>
 
 <div class="scrim hide" id="createScrim"><div class="modal">
   <div class="mhead"><span class="pod" id="createPod"></span><div><h3>Criar agente</h3><p>Nasce conectado à arqevery e executa de verdade.</p></div></div>
@@ -285,7 +312,7 @@ async function loadAgents(){
       <div class="tg">${esc(a.tag||'')}</div></div></div>`).join('');
   }catch(e){box.innerHTML='<div class="muted" style="padding:12px;">'+e.message+'</div>';}
 }
-document.getElementById('agents').addEventListener('click',e=>{const el=e.target.closest('.card');if(!el)return;select(el.dataset.id);document.getElementById('roster').classList.remove('open');});
+document.getElementById('agents').addEventListener('click',e=>{const el=e.target.closest('.card');if(!el)return;select(el.dataset.id);setRoster(false);});
 
 const SUGS={Lead:['Liste minhas leads','Crie uma lead: Tecnova, contato João, (34) 99999-0000','Altere o telefone da última lead para (34) 98888-1111'],
   Oportunidade:['Mostre meu pipeline','Quais oportunidades estão sem próximo passo?'],
@@ -333,7 +360,10 @@ function mdLite(s){
 document.getElementById('thread').addEventListener('click',e=>{const rl=e.target.closest('.reclink');if(rl){openRecord(rl.dataset.id);return;}const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
 document.getElementById('send').addEventListener('click',sendMsg);
 document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-document.getElementById('menu').addEventListener('click',()=>document.getElementById('roster').classList.toggle('open'));
+const _roster=document.getElementById('roster'),_rscrim=document.getElementById('rscrim');
+function setRoster(open){_roster.classList.toggle('open',open);_rscrim.style.display=open?'block':'none';}
+document.getElementById('menu').addEventListener('click',()=>setRoster(!_roster.classList.contains('open')));
+_rscrim.addEventListener('click',()=>setRoster(false));
 
 function celebrate(){
   const m=stageMascotEl();if(!m)return;m.classList.remove('celebrate');void m.offsetWidth;m.classList.add('celebrate');
@@ -511,6 +541,13 @@ async function doCreate(object,rtId,selectorRequired){
 }
 document.getElementById('newClose').addEventListener('click',()=>document.getElementById('newScrim').classList.add('hide'));
 document.getElementById('newScrim').addEventListener('click',e=>{if(e.target.id==='newScrim')document.getElementById('newScrim').classList.add('hide');});
+
+// ── detecção de dispositivo (celular x desktop) ──
+(function(){
+  var mob=/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(window.matchMedia&&window.matchMedia('(max-width:860px)').matches);
+  document.body.classList.add(mob?'dev-mobile':'dev-desktop');
+  if(mob){var st=document.getElementById('stage');var m=st&&st.querySelector('.muted');if(m)m.textContent='Toque em ☰ para escolher um agente';}
+})();
 document.getElementById('recClose').addEventListener('click',()=>document.getElementById('recScrim').classList.add('hide'));
 document.getElementById('recScrim').addEventListener('click',e=>{if(e.target.id==='recScrim')document.getElementById('recScrim').classList.add('hide');});
 </script>
