@@ -41,6 +41,7 @@ const BEHAV =
   '"Atualizar o telefone da JJ HOMOL", "Ver detalhes da Agro Connect", "Criar uma nova lead"). Use o identificador real do registro. ' +
   'Coloque-as EXATAMENTE assim, numa única linha no fim, sem explicar: [[ACOES]]comando 1|comando 2|comando 3[[/ACOES]]. ' +
   'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
+  '\n\nABRIR REGISTRO: quando o usuário pedir para ABRIR/VER/MOSTRAR um registro ou atividade específica ("abra a tarefa da ligação", "abre a lead X", "mostra o evento de visita"), localize o Id com soql_query ou get_activities se necessário e termine a resposta com o token [[OPEN:<Id>]] — o sistema abre o registro num modal para o usuário ver e editar. Responda com 1 linha curta antes do token.' +
   '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
   'Responda com UMA linha curta (ex.: "Beleza, abrindo o formulário de nova lead 👇") e inclua no fim o token [[NEWRECORD:<Objeto>]] (ex.: [[NEWRECORD:Lead]], [[NEWRECORD:Account]]). ' +
   'O sistema abrirá um formulário com os campos certos pra ele preencher. Se o usuário já tiver dito alguns valores, inclua-os como JSON: [[NEWRECORD:Lead:{"LastName":"Silva","Company":"ACME"}]]. ' +
@@ -409,7 +410,10 @@ router.post('/chat', authMiddleware, async (req, res) => {
       if (mac[2]) { try { pf = JSON.parse(mac[2]); } catch (e) { pf = {}; } }
       autoCreate = { object: mac[1], count: pf.count, uf: pf.uf, city: pf.city };
     }
-    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial });
+    let openRecordId = null;
+    const mo = clean.match(/\[\[OPEN:([A-Za-z0-9]{15,18})\]\]/i);
+    if (mo) { clean = clean.replace(mo[0], '').trim(); openRecordId = mo[1]; }
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial, openRecordId });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
