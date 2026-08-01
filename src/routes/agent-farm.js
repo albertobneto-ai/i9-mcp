@@ -82,7 +82,8 @@ async function ensureTable() {
 async function allAgents() {
   await ensureTable();
   const r = await pool.query('SELECT id,name,domain,color,emoji,tag,context FROM farm_agents ORDER BY created_at DESC');
-  return [...r.rows.map((a) => ({ ...a, farm: true })), ...STATIC_AGENTS.map((a) => ({ ...a, farm: false }))];
+  // Prateleira mostra só os agentes criados (STATIC_AGENTS desativados a pedido).
+  return r.rows.map((a) => ({ ...a, farm: true }));
 }
 async function getAgent(id) {
   const all = await allAgents();
@@ -204,6 +205,23 @@ router.post('/chat', authMiddleware, async (req, res) => {
       actions = ma[1].split('|').map((a) => a.trim()).filter(Boolean).slice(0, 4);
     }
     return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/agents/clear — remove TODOS os agentes criados
+router.post('/agents/clear', authMiddleware, async (req, res) => {
+  try {
+    await ensureTable();
+    const r = await pool.query('DELETE FROM farm_agents');
+    return res.json({ ok: true, deleted: r.rowCount });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// DELETE /api/agent-farm/agents/:id — remove um agente criado
+router.delete('/agents/:id', authMiddleware, async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM farm_agents WHERE id=$1', [req.params.id]);
+    return res.json({ ok: true, deleted: r.rowCount });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
