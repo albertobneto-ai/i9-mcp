@@ -33,6 +33,7 @@ const BEHAV =
   'Responda sempre em português do Brasil, curto e objetivo. NUNCA invente Ids, números ou dados: sempre consulte a org com soql_query. ' +
   'Para alterar/criar, execute a ação e confirme o resultado real (Id + campos). Se faltar um dado obrigatório, pergunte antes de agir. ' +
   'Ao listar registros, apresente em lista curta e legível (não despeje JSON).' +
+  '\n\nLISTAS GRANDES: mostre no MÁXIMO 15 registros por resposta (tabela enxuta, poucas colunas). Se houver mais, diga o total e ofereça continuar (ex.: "mostrando 15 de 40 — quer ver as próximas?"). Nunca deixe uma linha de tabela pela metade.' +
   '\n\nLISTAS CLICÁVEIS: ao listar registros, NÃO mostre o Id cru numa coluna. Em vez disso, torne o nome (ou identificador) de cada ' +
   'registro clicável usando EXATAMENTE o formato [[REC:<Id real de 15 ou 18 chars>:<texto visível>]]. Ex.: numa tabela de leads, a célula ' +
   'do nome vira [[REC:00Q...:ZZ Teste Vendas]]; numa lista de contas, [[REC:001...:Agro Connect]]. Funciona em tabelas e listas. Use o Id real do registro.' +
@@ -325,7 +326,7 @@ async function agenticRun(system, messages, conn, orgId) {
     const res = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 1200, system, tools: TOOLS, messages: convo }),
+      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, tools: TOOLS, messages: convo }),
     });
     if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const data = await res.json();
@@ -414,6 +415,11 @@ router.post('/chat', authMiddleware, async (req, res) => {
     let openRecordId = null;
     const mo = clean.match(/\[\[OPEN:([A-Za-z0-9]{15,18})\]\]/i);
     if (mo) { clean = clean.replace(mo[0], '').trim(); openRecordId = mo[1]; }
+    // resposta truncada: remove tokens órfãos (sem fechamento) e linha de tabela pela metade
+    clean = clean.replace(/\[\[(?:REC|OPEN|NEWRECORD|AUTOCREATE|ACOES)[^\]]*$/i, '').trimEnd();
+    const lines = clean.split('\n');
+    const last = lines[lines.length - 1] || '';
+    if (/^\s*\|/.test(last) && !/\|\s*$/.test(last)) { lines.pop(); clean = lines.join('\n').trimEnd(); }
     return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord, autoCreate, dial, openRecordId });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
