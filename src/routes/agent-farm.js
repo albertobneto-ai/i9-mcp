@@ -28,7 +28,12 @@ const BEHAV =
   'Quando o usuário pedir algo, USE AS FERRAMENTAS para fazer de verdade na org — não apenas explique. ' +
   'Responda sempre em português do Brasil, curto e objetivo. NUNCA invente Ids, números ou dados: sempre consulte a org com soql_query. ' +
   'Para alterar/criar, execute a ação e confirme o resultado real (Id + campos). Se faltar um dado obrigatório, pergunte antes de agir. ' +
-  'Ao listar registros, apresente em lista curta e legível (não despeje JSON).';
+  'Ao listar registros, apresente em lista curta e legível (não despeje JSON).' +
+  '\n\nAÇÕES CLICÁVEIS: ao final da resposta, quando fizer sentido, ofereça de 1 a 4 próximas ações que o usuário pode querer. ' +
+  'Cada ação é um comando curto e imperativo que VOCÊ executaria se ele clicar (ex.: "Qualificar a lead teste MAP como Hot", ' +
+  '"Atualizar o telefone da JJ HOMOL", "Ver detalhes da Agro Connect", "Criar uma nova lead"). Use o identificador real do registro. ' +
+  'Coloque-as EXATAMENTE assim, numa única linha no fim, sem explicar: [[ACOES]]comando 1|comando 2|comando 3[[/ACOES]]. ' +
+  'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -192,7 +197,13 @@ router.post('/chat', authMiddleware, async (req, res) => {
     const conn = await connToOrg(org);
     const system = agent.context.replace(/\{NAME\}/g, agent.name) + BEHAV;
     const { text, steps } = await agenticRun(system, messages, conn, orgId);
-    return res.json({ ok: true, agentId: agent.id, text, steps });
+    let clean = text, actions = [];
+    const ma = text.match(/\[\[ACOES\]\]([\s\S]*?)\[\[\/ACOES\]\]/i);
+    if (ma) {
+      clean = text.replace(ma[0], '').trim();
+      actions = ma[1].split('|').map((a) => a.trim()).filter(Boolean).slice(0, 4);
+    }
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
