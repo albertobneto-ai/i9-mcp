@@ -752,7 +752,23 @@ router.get('/map-data', authMiddleware, async (req, res) => {
       if (!pos) return null;
       return { Id: e.Id, Subject: e.Subject, Start: e.StartDateTime, Location: e.Location, WhoId: e.WhoId, WhoName: e.Who && e.Who.Name, CheckIn: e.CheckInDateTime__c, CheckOut: e.CheckOutDateTime__c, _lat: pos[0], _lng: pos[1] };
     }).filter(Boolean);
-    return res.json({ ok: true, leads, accounts, events });
+    let metro = [];
+    try {
+      const mq = await conn.query('SELECT Id,Name,Anel_Associado__c,Neighborhood__c,Latitude__c,Longitude__c FROM Metro_Station__c WHERE Latitude__c != null LIMIT 200');
+      metro = (mq.records || []).map((m) => ({ Id: m.Id, Name: m.Name, Anel: m.Anel_Associado__c, Bairro: m.Neighborhood__c, _lat: m.Latitude__c, _lng: m.Longitude__c }));
+    } catch (e) {}
+    // Cobertura GPON — cidades de referência do território Algar (Triângulo/interior SP/GO/oeste MG)
+    const gpon = [
+      { city: 'Uberlândia', uf: 'MG', lat: -18.9186, lng: -48.2772, km: 14 }, { city: 'Uberaba', uf: 'MG', lat: -19.7472, lng: -47.9381, km: 10 },
+      { city: 'Araguari', uf: 'MG', lat: -18.6489, lng: -48.1930, km: 7 }, { city: 'Patos de Minas', uf: 'MG', lat: -18.5789, lng: -46.5181, km: 7 },
+      { city: 'Ituiutaba', uf: 'MG', lat: -18.9772, lng: -49.4639, km: 6 }, { city: 'Araxá', uf: 'MG', lat: -19.5902, lng: -46.9438, km: 6 },
+      { city: 'Patrocínio', uf: 'MG', lat: -18.9436, lng: -46.9925, km: 5 }, { city: 'Franca', uf: 'SP', lat: -20.5386, lng: -47.4008, km: 8 },
+      { city: 'Ribeirão Preto', uf: 'SP', lat: -21.1775, lng: -47.8103, km: 12 }, { city: 'Campinas', uf: 'SP', lat: -22.9099, lng: -47.0626, km: 12 },
+      { city: 'São José do Rio Preto', uf: 'SP', lat: -20.8113, lng: -49.3758, km: 8 }, { city: 'Goiânia', uf: 'GO', lat: -16.6869, lng: -49.2648, km: 12 },
+      { city: 'Anápolis', uf: 'GO', lat: -16.3281, lng: -48.9530, km: 7 }, { city: 'Rio Verde', uf: 'GO', lat: -17.7923, lng: -50.9192, km: 6 },
+      { city: 'Itumbiara', uf: 'GO', lat: -18.4192, lng: -49.2150, km: 5 }, { city: 'Divinópolis', uf: 'MG', lat: -20.1446, lng: -44.8912, km: 6 },
+    ];
+    return res.json({ ok: true, leads, accounts, events, metro, gpon });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
