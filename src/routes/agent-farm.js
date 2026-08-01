@@ -47,7 +47,8 @@ const BEHAV =
   'Só use a ferramenta create_record diretamente se o usuário pedir explicitamente "cria você mesmo" e já fornecer todos os dados.' +
   '\n\nAUTO-CRIAR EM MASSA: se o usuário quiser gerar VÁRIAS leads de uma vez informando quantidade + cidade + UF (ex.: "auto criar 20 leads em Uberlândia MG", "gera 50 leads em SP"), ' +
   'responda uma linha curta e inclua o token [[AUTOCREATE:Lead]] — ou já com os dados: [[AUTOCREATE:Lead:{"count":20,"uf":"MG","city":"Uberlândia"}]]. Isso abre um formulário de geração em massa.' +
-  '\n\nLIGAR: quando o usuário disser "ligue/ligar para a lead", use a ferramenta call_lead — ela pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use log_call só para "registrar uma ligação" sem discar.';
+  '\n\nLIGAR: quando o usuário disser "ligue/ligar para a lead", use a ferramenta call_lead — ela pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use log_call só para "registrar uma ligação" sem discar.' +
+  '\n\nATIVIDADES: você também cria Eventos de calendário (create_event — visitas, reuniões; pergunte data/hora se faltar), Tarefas (create_task — follow-ups com vencimento), Notas (create_note) e posts no Chatter (post_chatter), e consulta a agenda (get_calendar). Interprete datas relativas ("amanhã", "sexta às 14h") usando a data atual informada, fuso de Brasília (-03:00).';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -120,6 +121,16 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { leadId: { type: 'string' }, subject: { type: 'string' }, comments: { type: 'string' } }, required: ['leadId'] } },
   { name: 'call_lead', description: 'LIGAR para uma Lead: pega o telefone da lead, registra a ligação e ABRE O DISCADOR do aparelho do usuário com o número. Use sempre que pedirem "ligue/ligar para a lead".',
     input_schema: { type: 'object', properties: { leadId: { type: 'string' } }, required: ['leadId'] } },
+  { name: 'create_event', description: 'Cria um Evento no calendário (visita, reunião, demo) ligado a um registro. Datas em ISO com fuso de Brasília, ex.: 2026-08-05T14:00:00-03:00. Se o usuário não der horário, pergunte. Duração padrão 1h.',
+    input_schema: { type: 'object', properties: { whoId: { type: 'string', description: 'Id de Lead/Contact (opcional)' }, whatId: { type: 'string', description: 'Id de Account/Opportunity/Case (opcional)' }, subject: { type: 'string' }, startDateTime: { type: 'string' }, endDateTime: { type: 'string', description: 'opcional; default start+1h' }, location: { type: 'string' }, description: { type: 'string' } }, required: ['subject', 'startDateTime'] } },
+  { name: 'create_task', description: 'Cria uma Tarefa (to-do, follow-up) ligada a um registro, com data de vencimento.',
+    input_schema: { type: 'object', properties: { whoId: { type: 'string' }, whatId: { type: 'string' }, subject: { type: 'string' }, dueDate: { type: 'string', description: 'YYYY-MM-DD' }, comments: { type: 'string' }, status: { type: 'string', description: 'default Not Started / aberto' }, priority: { type: 'string' } }, required: ['subject'] } },
+  { name: 'create_note', description: 'Cria uma Nota (ContentNote) anexada a um registro (lead, conta, opp...).',
+    input_schema: { type: 'object', properties: { recordId: { type: 'string' }, title: { type: 'string' }, body: { type: 'string' } }, required: ['recordId', 'title', 'body'] } },
+  { name: 'post_chatter', description: 'Publica um post no Chatter no feed de um registro (lead, conta, opp...).',
+    input_schema: { type: 'object', properties: { recordId: { type: 'string' }, text: { type: 'string' } }, required: ['recordId', 'text'] } },
+  { name: 'get_calendar', description: 'Consulta o calendário: eventos do usuário num intervalo de datas (default: próximos 7 dias). Use para "o que tenho na agenda", "eventos de amanhã", "minha semana".',
+    input_schema: { type: 'object', properties: { fromDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, toDate: { type: 'string', description: 'YYYY-MM-DD (default +7d)' }, whoId: { type: 'string', description: 'filtrar por lead/contato (opcional)' } }, required: [] } },
 ];
 
 const esc1 = (s) => String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
@@ -190,6 +201,57 @@ async function execTool(conn, orgId, name, input) {
     if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) digits = '55' + digits;
     return { ok: true, id: taskId, phone: raw, name: rec.Name, dial: digits, leadId: input.leadId };
   }
+  if (name === 'create_event') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const start = new Date(input.startDateTime);
+    if (isNaN(start)) return { ok: false, error: 'startDateTime inválido' };
+    const end = input.endDateTime ? new Date(input.endDateTime) : new Date(start.getTime() + 60 * 60 * 1000);
+    const ev = { Subject: input.subject, StartDateTime: start.toISOString(), EndDateTime: end.toISOString() };
+    if (input.whoId) ev.WhoId = input.whoId;
+    if (input.whatId) ev.WhatId = input.whatId;
+    if (input.location) ev.Location = input.location;
+    if (input.description) ev.Description = input.description;
+    const r = await conn.sobject('Event').create(ev);
+    return { ok: !!r.success, id: r.id, errors: r.errors, start: start.toISOString(), end: end.toISOString() };
+  }
+  if (name === 'create_task') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const t = { Subject: input.subject, Status: input.status || 'Not Started' };
+    if (input.whoId) t.WhoId = input.whoId;
+    if (input.whatId) t.WhatId = input.whatId;
+    if (input.dueDate) t.ActivityDate = input.dueDate;
+    if (input.comments) t.Description = input.comments;
+    if (input.priority) t.Priority = input.priority;
+    let r;
+    try { r = await conn.sobject('Task').create(t); }
+    catch (e) { delete t.Status; r = await conn.sobject('Task').create(t); }
+    if (!r.success && r.errors && /Status/i.test(JSON.stringify(r.errors))) { delete t.Status; r = await conn.sobject('Task').create(t); }
+    return { ok: !!r.success, id: r.id, errors: r.errors };
+  }
+  if (name === 'create_note') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const html = String(input.body || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+    const r = await conn.sobject('ContentNote').create({ Title: input.title, Content: Buffer.from(html, 'utf8').toString('base64') });
+    if (!r.success) return { ok: false, errors: r.errors };
+    try { await conn.sobject('ContentDocumentLink').create({ ContentDocumentId: r.id, LinkedEntityId: input.recordId, ShareType: 'V' }); }
+    catch (e) { return { ok: true, id: r.id, warn: 'nota criada mas não linkada: ' + String(e.message || e) }; }
+    return { ok: true, id: r.id };
+  }
+  if (name === 'post_chatter') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const r = await conn.sobject('FeedItem').create({ ParentId: input.recordId, Body: input.text, Type: 'TextPost' });
+    return { ok: !!r.success, id: r.id, errors: r.errors };
+  }
+  if (name === 'get_calendar') {
+    const from = input.fromDate ? new Date(input.fromDate + 'T00:00:00-03:00') : new Date();
+    const to = input.toDate ? new Date(input.toDate + 'T23:59:59-03:00') : new Date(from.getTime() + 7 * 24 * 3600 * 1000);
+    let q = `SELECT Id,Subject,StartDateTime,EndDateTime,Location,Who.Name,What.Name FROM Event WHERE StartDateTime >= ${from.toISOString()} AND StartDateTime <= ${to.toISOString()}`;
+    if (input.whoId) q += ` AND WhoId='${esc1(input.whoId)}'`;
+    q += ' ORDER BY StartDateTime LIMIT 50';
+    const res2 = await conn.query(q);
+    const evs = (res2.records || []).map((e) => ({ id: e.Id, subject: e.Subject, start: e.StartDateTime, end: e.EndDateTime, location: e.Location, who: e.Who && e.Who.Name, what: e.What && e.What.Name }));
+    return { ok: true, count: evs.length, events: evs };
+  }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
 
@@ -201,6 +263,11 @@ function stepSummary(name, input, out) {
   if (name === 'send_email') return out.ok ? `enviou e-mail para ${out.to}` : `falha no e-mail (${out.error || 'erro'})`;
   if (name === 'log_call') return out.ok ? `registrou ligação (${out.id})` : `falha ao registrar ligação (${out.error || 'erro'})`;
   if (name === 'call_lead') return out.ok ? `abrindo discador → ${out.phone}` : `falha ao ligar (${out.error || 'erro'})`;
+  if (name === 'create_event') return out.ok ? `criou evento ${out.id}` : `falha no evento (${out.error || JSON.stringify(out.errors || '')})`;
+  if (name === 'create_task') return out.ok ? `criou tarefa ${out.id}` : `falha na tarefa (${out.error || JSON.stringify(out.errors || '')})`;
+  if (name === 'create_note') return out.ok ? `criou nota ${out.id}` : `falha na nota (${out.error || JSON.stringify(out.errors || '')})`;
+  if (name === 'post_chatter') return out.ok ? `postou no Chatter (${out.id})` : `falha no Chatter (${out.error || JSON.stringify(out.errors || '')})`;
+  if (name === 'get_calendar') return `consultou agenda: ${out.count != null ? out.count : 0} evento(s)`;
   return name;
 }
 
@@ -275,7 +342,8 @@ router.post('/chat', authMiddleware, async (req, res) => {
     if (!org) return res.status(404).json({ ok: false, error: `org ${orgId} não encontrada` });
 
     const conn = await connToOrg(org);
-    const system = agent.context.replace(/\{NAME\}/g, agent.name) + BEHAV;
+    const nowBr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'full', timeStyle: 'short' });
+    const system = agent.context.replace(/\{NAME\}/g, agent.name) + BEHAV + `\n\nDATA/HORA ATUAL (Brasília): ${nowBr}.`;
     const { text, steps, dial } = await agenticRun(system, messages, conn, orgId);
     let clean = text, actions = [];
     const ma = text.match(/\[\[ACOES\]\]([\s\S]*?)\[\[\/ACOES\]\]/i);
