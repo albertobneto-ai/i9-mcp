@@ -98,7 +98,15 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { sobject: { type: 'string' }, recordId: { type: 'string' }, fields: { type: 'object', description: 'mapa campo→valor' } }, required: ['sobject', 'recordId', 'fields'] } },
   { name: 'create_record', description: 'Cria um NOVO registro na org (DML insert real).',
     input_schema: { type: 'object', properties: { sobject: { type: 'string' }, fields: { type: 'object' } }, required: ['sobject', 'fields'] } },
+  { name: 'convert_lead', description: 'Converte uma Lead em Account + Contact + Opportunity (Database.convertLead real).',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' }, opportunityName: { type: 'string', description: 'nome da oportunidade (opcional)' }, createOpportunity: { type: 'boolean', description: 'default true' } }, required: ['leadId'] } },
+  { name: 'send_email', description: 'Envia um e-mail para o contato/e-mail de uma Lead (Messaging.sendEmail real).',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' }, email: { type: 'string', description: 'opcional; se ausente usa o Email da Lead' }, subject: { type: 'string' }, body: { type: 'string' } }, required: ['subject', 'body'] } },
+  { name: 'log_call', description: 'Registra uma ligação para a Lead como atividade (Task tipo Call) na org.',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' }, subject: { type: 'string' }, comments: { type: 'string' } }, required: ['leadId'] } },
 ];
+
+const esc1 = (s) => String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
 
 async function execTool(conn, orgId, name, input) {
   const canWrite = WRITE_ORGS.has(Number(orgId));
@@ -117,6 +125,35 @@ async function execTool(conn, orgId, name, input) {
     const r = await conn.sobject(input.sobject).create(input.fields);
     return { ok: !!r.success, id: r.id, errors: r.errors };
   }
+  if (name === 'convert_lead') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    let status = 'Closed - Converted';
+    try { const s = await conn.query('SELECT MasterLabel FROM LeadStatus WHERE IsConverted=true LIMIT 1'); if (s.records && s.records[0]) status = s.records[0].MasterLabel; } catch (e) {}
+    let apex = `Database.LeadConvert lc=new Database.LeadConvert();lc.setLeadId('${esc1(input.leadId)}');lc.setConvertedStatus('${esc1(status)}');`;
+    if (input.createOpportunity === false) apex += 'lc.setDoNotCreateOpportunity(true);';
+    else if (input.opportunityName) apex += `lc.setOpportunityName('${esc1(input.opportunityName)}');`;
+    apex += 'Database.LeadConvertResult r=Database.convertLead(lc);System.assert(r.isSuccess());';
+    const ex = await conn.tooling.executeAnonymous(apex);
+    if (!(ex.compiled && ex.success)) return { ok: false, error: ex.exceptionMessage || ex.compileProblem || 'convert falhou' };
+    const q = await conn.query(`SELECT ConvertedAccountId,ConvertedContactId,ConvertedOpportunityId FROM Lead WHERE Id='${esc1(input.leadId)}'`);
+    const rec = (q.records && q.records[0]) || {};
+    return { ok: true, accountId: rec.ConvertedAccountId, contactId: rec.ConvertedContactId, opportunityId: rec.ConvertedOpportunityId };
+  }
+  if (name === 'send_email') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    let email = input.email;
+    if (!email && input.leadId) { const q = await conn.query(`SELECT Email FROM Lead WHERE Id='${esc1(input.leadId)}'`); if (q.records && q.records[0]) email = q.records[0].Email; }
+    if (!email) return { ok: false, error: 'lead sem e-mail cadastrado' };
+    const apex = `Messaging.SingleEmailMessage m=new Messaging.SingleEmailMessage();m.setToAddresses(new String[]{'${esc1(email)}'});m.setSubject('${esc1(input.subject)}');m.setPlainTextBody('${esc1(input.body)}');Messaging.SendEmailResult[] rr=Messaging.sendEmail(new Messaging.SingleEmailMessage[]{m});System.assert(rr[0].isSuccess());`;
+    const ex = await conn.tooling.executeAnonymous(apex);
+    if (!(ex.compiled && ex.success)) return { ok: false, to: email, error: (ex.exceptionMessage || ex.compileProblem || 'envio falhou') + ' (verifique Email Deliverability do sandbox)' };
+    return { ok: true, to: email };
+  }
+  if (name === 'log_call') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    const r = await conn.sobject('Task').create({ WhoId: input.leadId, Subject: input.subject || 'Ligação', Type: 'Call', Status: 'Completed', Description: input.comments || '', ActivityDate: new Date().toISOString().slice(0, 10) });
+    return { ok: !!r.success, id: r.id, errors: r.errors };
+  }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
 
@@ -124,6 +161,9 @@ function stepSummary(name, input, out) {
   if (name === 'soql_query') return `consultou ${out.totalSize != null ? out.totalSize : (out.records ? out.records.length : 0)} registro(s)`;
   if (name === 'update_record') return out.ok ? `atualizou ${input.sobject} ${out.id}` : `falha ao atualizar (${out.error || 'erro'})`;
   if (name === 'create_record') return out.ok ? `criou ${input.sobject} ${out.id}` : `falha ao criar (${out.error || 'erro'})`;
+  if (name === 'convert_lead') return out.ok ? `converteu a lead → Opp ${out.opportunityId || '—'}` : `falha ao converter (${out.error || 'erro'})`;
+  if (name === 'send_email') return out.ok ? `enviou e-mail para ${out.to}` : `falha no e-mail (${out.error || 'erro'})`;
+  if (name === 'log_call') return out.ok ? `registrou ligação (${out.id})` : `falha ao registrar ligação (${out.error || 'erro'})`;
   return name;
 }
 
