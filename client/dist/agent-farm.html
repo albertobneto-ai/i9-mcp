@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farm de Agentes · ever i9</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  :root{
+    --navy:#04244d;--blue:#0176D3;--blue2:#1B96FF;--spark:#00D4FF;--teal:#06B6C7;
+    --grape:#8B5CF6;--coral:#FF7A59;--sun:#FFB43B;--mint:#38C793;--pink:#FF6FA5;
+    --cloud:#EAF3FF;--paper:#F6FAFF;--ink:#12294a;--muted:#5b6d88;--line:#E1EAF5;--white:#fff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);
+    font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.5;}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  input,textarea,select{font-family:inherit;}
+  a{color:var(--blue);}
+  .bar{display:flex;align-items:center;gap:16px;background:#fff;border-bottom:1px solid var(--line);padding:11px 22px;position:sticky;top:0;z-index:10;}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.4px;font-size:16px;color:var(--navy);}
+  .logo .mk{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--spark));display:flex;align-items:center;justify-content:center;box-shadow:0 5px 13px rgba(1,118,211,.35);}
+  .conn{margin-left:auto;display:flex;align-items:center;gap:9px;background:var(--cloud);border-radius:30px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--navy);}
+  .conn .dot{width:9px;height:9px;border-radius:50%;background:#c33;}
+  .conn.on .dot{background:var(--mint);box-shadow:0 0 0 4px rgba(56,199,147,.25);}
+
+  .wrap{max-width:1080px;margin:22px auto;padding:0 18px;}
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:20px;}
+  @media(max-width:880px){.grid{grid-template-columns:1fr;}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 4px 16px rgba(4,36,77,.05);overflow:hidden;}
+  .card h2{margin:0;padding:16px 20px;font-size:15px;font-weight:800;color:var(--navy);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;}
+  .card .bd{padding:18px 20px;}
+
+  .hero{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:20px;padding:22px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px;}
+  .hero .pl{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 52px;}
+  .hero h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.4px;}
+  .hero p{margin:4px 0 0;opacity:.9;font-size:13.5px;}
+
+  .fld{margin-bottom:16px;}
+  .fld label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:7px;}
+  .fld input[type=text],.fld textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14.5px;color:var(--ink);resize:vertical;}
+  .fld input:focus,.fld textarea:focus{border-color:var(--blue2);outline:none;}
+  .pick{display:flex;gap:7px;flex-wrap:wrap;}
+  .opt{border:1.5px solid var(--line);border-radius:26px;padding:7px 13px;font-size:12.5px;font-weight:600;color:var(--muted);background:#fff;transition:all .12s;}
+  .opt:hover{border-color:var(--blue2);}
+  .opt.on{color:#fff;border-color:transparent;}
+  .create{width:100%;background:linear-gradient(135deg,var(--blue),var(--spark));color:#fff;font-weight:800;font-size:15.5px;padding:14px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s;margin-top:4px;}
+  .create:hover{transform:translateY(-2px);}
+  .create:disabled{opacity:.55;transform:none;cursor:default;}
+
+  .steps{margin:2px 0 0;}
+  .pstep{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:13.5px;color:var(--muted);opacity:.45;transition:opacity .3s;}
+  .pstep.on{opacity:1;color:var(--navy);font-weight:600;}
+  .pstep.done .ic{background:var(--mint);}
+  .pstep .ic{width:24px;height:24px;border-radius:8px;background:var(--line);flex:0 0 24px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;transition:background .3s;}
+  .pstep.on:not(.done) .ic{background:var(--blue2);}
+  .spin{width:13px;height:13px;border:2.5px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  .result{border-radius:14px;padding:15px 16px;font-size:14px;margin-top:14px;display:none;}
+  .result.show{display:block;}
+  .result.ok{background:#EAF9F1;border:1px solid #b5e6cd;color:#12594a;}
+  .result.err{background:#FDECEA;border:1px solid #f3c2bb;color:#8a2a1e;}
+  .result b{color:inherit;}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;margin-left:6px;}
+  .badge.act{background:var(--mint);color:#fff;} .badge.inact{background:var(--sun);color:#5a3a00;}
+
+  .agent{display:flex;gap:11px;align-items:center;padding:11px;border-radius:13px;border:1px solid var(--line);margin-bottom:9px;}
+  .agent .av{width:40px;height:40px;border-radius:12px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;}
+  .agent .nm{font-weight:800;font-size:14px;color:var(--navy);}
+  .agent .dv{font-size:11.5px;color:var(--muted);word-break:break-all;}
+  .agent a.open{margin-left:auto;font-size:12px;font-weight:700;white-space:nowrap;}
+  .empty{color:var(--muted);font-size:13.5px;text-align:center;padding:16px;}
+
+  /* login scrim */
+  .scrim{position:fixed;inset:0;background:rgba(4,36,77,.55);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .scrim.hide{display:none;}
+  .login{background:#fff;border-radius:22px;max-width:380px;width:100%;box-shadow:0 30px 80px rgba(4,36,77,.45);overflow:hidden;}
+  .login .top{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:22px 24px;}
+  .login .top h3{margin:0;font-size:19px;font-weight:800;}
+  .login .top p{margin:4px 0 0;opacity:.9;font-size:13px;}
+  .login .bd{padding:20px 24px;}
+  .login .err{color:#c0392b;font-size:12.5px;margin-top:8px;display:none;}
+  .login .err.show{display:block;}
+  .muted{color:var(--muted);font-size:12px;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);z-index:70;background:var(--navy);color:#fff;padding:13px 20px;border-radius:14px;font-weight:600;font-size:14px;box-shadow:0 14px 34px rgba(4,36,77,.4);transition:transform .35s cubic-bezier(.2,.9,.3,1.4);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="logo"><span class="mk"><svg width="17" height="17" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L21 9l-5.5 3.9L17.5 20 12 16l-5.5 4 2-7.1L3 9l6.8-.7z" fill="#fff"/></svg></span>ever i9 · <span style="color:var(--blue)">Farm de Agentes</span></div>
+  <div class="conn" id="conn"><span class="dot"></span><span id="conntxt">desconectado</span></div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="pl">✨</span>
+    <div><h1>Monte seu agente</h1><p>Descreva os ajustes. Ele é criado e ativado de verdade na arqevery (Metadata API v63 + ConnectApi).</p></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>🛠️ Novo agente</h2>
+      <div class="bd">
+        <div class="fld"><label>Nome do agente</label><input type="text" id="fName" placeholder="ex.: Rafa, Recuperador de Carrinho"></div>
+        <div class="fld"><label>Foco / domínio</label><div class="pick" id="fDomain"></div></div>
+        <div class="fld"><label>O que ele faz</label><textarea id="fJob" rows="2" placeholder="ex.: reengaja leads inbound frios, valida o CNPJ e agenda call com o SDR"></textarea></div>
+        <div class="fld"><label>Tom de voz</label><div class="pick" id="fTone"></div></div>
+        <div class="fld"><label>Capacidades (actions)</label><div class="pick" id="fCaps"></div></div>
+        <div class="fld"><label>Regras que ele sempre respeita</label><textarea id="fRules" rows="2" placeholder="ex.: nunca prometa prazo; sempre confirme o CNPJ antes de gravar"></textarea></div>
+        <button class="create" id="doCreate">🚀 Criar na farm</button>
+
+        <div class="steps" id="steps" style="display:none;margin-top:14px;"></div>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🌱 Agentes na farm <span id="count" class="muted"></span></h2>
+      <div class="bd" id="list"><div class="empty">Conecte para listar…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="scrim" id="scrim">
+  <div class="login">
+    <div class="top"><h3>Conectar ao i9</h3><p>Farm de Agentes · Ever i9</p></div>
+    <div class="bd">
+      <div class="fld"><label>E-mail</label><input type="text" id="lEmail" value="admin@everi9.com"></div>
+      <div class="fld"><label>Senha</label><input type="text" id="lPass" placeholder="••••••" style="-webkit-text-security:disc;"></div>
+      <button class="create" id="doLogin">Entrar</button>
+      <div class="err" id="lErr">Credenciais inválidas.</div>
+      <p class="muted" style="margin-top:12px;">Cria agentes na org <b>ORG ARQUITETURA (arqevery, id 36)</b>.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API=''; // mesma origem do i9
+const ORG_ID=36;
+const INSTANCE='https://algartelecommartech005--arqevery.sandbox.my.salesforce.com';
+let TOKEN=localStorage.getItem('i9farm_jwt')||'';
+
+const buddy=(accent,eye)=>`<svg width="26" height="26" viewBox="0 0 60 60" aria-hidden="true">
+  <line x1="30" y1="8" x2="30" y2="2" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="30" cy="4" r="4" fill="#fff"/>
+  <rect x="8" y="8" width="44" height="40" rx="15" fill="#fff"/><rect x="15" y="15" width="30" height="24" rx="10" fill="${accent}"/>
+  ${eye==='happy'?'<path d="M22 26 q3 -4 6 0M32 26 q3 -4 6 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>':'<circle cx="24" cy="27" r="4" fill="#fff"/><circle cx="36" cy="27" r="4" fill="#fff"/>'}
+  <path d="M25 34 q5 4 10 0" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+const shade=hex=>{const n=parseInt(hex.slice(1),16);let r=Math.min(255,(n>>16)+30),g=Math.min(255,((n>>8)&255)+30),b=Math.min(255,(n&255)+30);return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);};
+const grad=c=>`linear-gradient(135deg,${c},${shade(c)})`;
+
+const DOMAINS=[['Lead','#0176D3'],['Oportunidade','#8B5CF6'],['Revenue Cloud','#06B6C7'],['Data Cloud','#38C793'],['Service','#FF6FA5'],['Account','#FFB43B'],['Personalizado','#FF7A59']];
+const TONES=['Amigável','Formal','Direto','Divertido'];
+const CAPS=['Criar registro','Consultar dados','Resumir','Recomendar','Buscar conhecimento (RAG)','Atualizar registro','Integrar externo (MCP)','Enviar e-mail'];
+let sel={domain:DOMAINS[0],tone:'Amigável',caps:['Consultar dados']};
+
+document.getElementById('fDomain').innerHTML=DOMAINS.map((d,i)=>`<button class="opt${i===0?' on':''}" data-t="dom" data-i="${i}" style="${i===0?`background:${d[1]}`:''}">${d[0]}</button>`).join('');
+document.getElementById('fTone').innerHTML=TONES.map((t,i)=>`<button class="opt${i===0?' on':''}" data-t="tone" data-v="${t}" ${i===0?'style="background:var(--blue)"':''}>${t}</button>`).join('');
+document.getElementById('fCaps').innerHTML=CAPS.map(c=>`<button class="opt${c==='Consultar dados'?' on':''}" data-t="cap" data-v="${c}" ${c==='Consultar dados'?'style="background:var(--blue)"':''}>${c}</button>`).join('');
+
+document.body.addEventListener('click',e=>{
+  const o=e.target.closest('.opt'); if(!o)return;
+  const t=o.dataset.t;
+  if(t==='dom'){sel.domain=DOMAINS[+o.dataset.i];document.querySelectorAll('[data-t=dom]').forEach(x=>{x.classList.remove('on');x.style.background='';});o.classList.add('on');o.style.background=sel.domain[1];}
+  if(t==='tone'){sel.tone=o.dataset.v;document.querySelectorAll('[data-t=tone]').forEach(x=>{x.classList.remove('on');x.style.background='';});o.classList.add('on');o.style.background='var(--blue)';}
+  if(t==='cap'){const v=o.dataset.v;const on=o.classList.toggle('on');o.style.background=on?'var(--blue)':'';if(on)sel.caps.push(v);else sel.caps=sel.caps.filter(c=>c!==v);}
+});
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3200);}
+function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · conectado':'desconectado';}
+
+async function api(path,opts={}){
+  opts.headers=Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},opts.headers||{});
+  const r=await fetch(API+path,opts);
+  if(r.status===401){logout();throw new Error('sessão expirada');}
+  return r;
+}
+
+// LOGIN
+document.getElementById('doLogin').addEventListener('click',doLogin);
+document.getElementById('lPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+async function doLogin(){
+  const email=document.getElementById('lEmail').value.trim();
+  const password=document.getElementById('lPass').value;
+  const err=document.getElementById('lErr'); err.classList.remove('show');
+  try{
+    const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok||!d.token){err.classList.add('show');return;}
+    TOKEN=d.token; localStorage.setItem('i9farm_jwt',TOKEN);
+    document.getElementById('scrim').classList.add('hide'); setConn(true); loadList();
+  }catch(e){err.classList.add('show');}
+}
+function logout(){TOKEN='';localStorage.removeItem('i9farm_jwt');setConn(false);document.getElementById('scrim').classList.remove('hide');}
+
+// CRIAR
+const PROV=['Gerando o agent spec (Role · Actions · Guardrails)','Deployando Bot + GenAiPlanner (Metadata API v63)','Ativando a versão via ConnectApi','Confirmando na org'];
+document.getElementById('doCreate').addEventListener('click',build);
+async function build(){
+  const name=document.getElementById('fName').value.trim();
+  if(!name){toast('Dá um nome pro agente 🙂');return;}
+  const body={orgId:ORG_ID,name,domain:sel.domain[0],job:document.getElementById('fJob').value.trim(),tone:sel.tone,caps:sel.caps,rules:document.getElementById('fRules').value.trim()};
+  const btn=document.getElementById('doCreate'); btn.disabled=true;
+  const res=document.getElementById('result'); res.className='result';
+  const stepsEl=document.getElementById('steps'); stepsEl.style.display='block';
+  stepsEl.innerHTML=PROV.map((s,i)=>`<div class="pstep${i===0?' on':''}" id="ps${i}"><span class="ic">${i===0?'<span class=spin></span>':''}</span>${s}</div>`).join('');
+  let cur=0; const tick=setInterval(()=>{ if(cur<PROV.length-1){const e=document.getElementById('ps'+cur);e.classList.add('done');e.querySelector('.ic').innerHTML='✓';cur++;const n=document.getElementById('ps'+cur);n.classList.add('on');n.querySelector('.ic').innerHTML='<span class=spin></span>';}},1400);
+
+  try{
+    const r=await api('/api/agent-farm/build',{method:'POST',body:JSON.stringify(body)});
+    const d=await r.json();
+    clearInterval(tick);
+    for(let i=0;i<PROV.length;i++){const e=document.getElementById('ps'+i);e.classList.add('done','on');e.querySelector('.ic').innerHTML='✓';}
+    if(d.ok){
+      const url=`${INSTANCE}/lightning/setup/EinsteinCopilot/home`;
+      res.classList.add('ok','show');
+      res.innerHTML=`✅ <b>${d.masterLabel}</b> criado na arqevery${d.activated?'<span class="badge act">ATIVO</span>':'<span class="badge inact">inativo</span>'}<br>
+        <span class="muted">DeveloperName: ${d.developerName} · componentes: ${d.deployed} · BotVersion: ${d.botVersionId||'—'}</span><br>
+        <a href="${url}" target="_blank">Abrir no Agent Builder →</a>`;
+      toast(`${d.masterLabel} entrou na farm ✨`);
+      document.getElementById('fName').value='';document.getElementById('fJob').value='';document.getElementById('fRules').value='';
+      loadList();
+    }else{
+      res.classList.add('err','show');
+      res.innerHTML=`⚠️ ${d.pending?'Deploy em andamento — tente ativar em instantes.':'Não deu certo'}<br><span class="muted">${(d.problems||[d.error||d.message||'erro']).join(' · ')}</span>`;
+    }
+  }catch(e){
+    clearInterval(tick);
+    res.classList.add('err','show'); res.innerHTML='⚠️ '+e.message;
+  }finally{ btn.disabled=false; }
+}
+
+// LISTA
+async function loadList(){
+  const box=document.getElementById('list');
+  try{
+    const r=await api('/api/agent-farm/list?orgId='+ORG_ID); const d=await r.json();
+    if(!d.ok){box.innerHTML='<div class="empty">Não consegui listar.</div>';return;}
+    document.getElementById('count').textContent=d.count?`(${d.count})`:'';
+    if(!d.agents||!d.agents.length){box.innerHTML='<div class="empty">Nenhum agente ainda. Crie o primeiro! 👈</div>';return;}
+    // status
+    let statusMap={};
+    try{
+      const q="SELECT BotDefinition.DeveloperName,Status FROM BotVersion WHERE BotDefinition.DeveloperName LIKE 'Agente_i9_%'";
+      const rs=await api('/api/orgs/'+ORG_ID+'/soql?q='+encodeURIComponent(q)); const ds=await rs.json();
+      (ds.records||[]).forEach(x=>{statusMap[x.BotDefinition.DeveloperName]=x.Status;});
+    }catch(e){}
+    const colors=['#0176D3','#8B5CF6','#06B6C7','#38C793','#FF6FA5','#FFB43B','#FF7A59'];
+    box.innerHTML=d.agents.map((a,i)=>{
+      const c=colors[i%colors.length]; const st=statusMap[a.DeveloperName];
+      const badge=st==='Active'?'<span class="badge act">ATIVO</span>':(st?'<span class="badge inact">'+st+'</span>':'');
+      return `<div class="agent"><span class="av" style="background:${grad(c)}">${buddy(c,'happy')}</span>
+        <div style="min-width:0"><div class="nm">${a.MasterLabel}${badge}</div><div class="dv">${a.DeveloperName}</div></div>
+        <a class="open" href="${INSTANCE}/lightning/setup/EinsteinCopilot/${a.Id}/edit" target="_blank">abrir →</a></div>`;
+    }).join('');
+  }catch(e){box.innerHTML='<div class="empty">'+e.message+'</div>';}
+}
+
+// init
+if(TOKEN){document.getElementById('scrim').classList.add('hide');setConn(true);loadList();}
+</script>
+</body>
+</html>
