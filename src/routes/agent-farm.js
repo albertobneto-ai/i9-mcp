@@ -40,7 +40,11 @@ const BEHAV =
   'Cada ação é um comando curto e imperativo que VOCÊ executaria se ele clicar (ex.: "Qualificar a lead teste MAP como Hot", ' +
   '"Atualizar o telefone da JJ HOMOL", "Ver detalhes da Agro Connect", "Criar uma nova lead"). Use o identificador real do registro. ' +
   'Coloque-as EXATAMENTE assim, numa única linha no fim, sem explicar: [[ACOES]]comando 1|comando 2|comando 3[[/ACOES]]. ' +
-  'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.';
+  'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
+  '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
+  'Responda com UMA linha curta (ex.: "Beleza, abrindo o formulário de nova lead 👇") e inclua no fim o token [[NEWRECORD:<Objeto>]] (ex.: [[NEWRECORD:Lead]], [[NEWRECORD:Account]]). ' +
+  'O sistema abrirá um formulário com os campos certos pra ele preencher. Se o usuário já tiver dito alguns valores, inclua-os como JSON: [[NEWRECORD:Lead:{"LastName":"Silva","Company":"ACME"}]]. ' +
+  'Só use a ferramenta create_record diretamente se o usuário pedir explicitamente "cria você mesmo" e já fornecer todos os dados.';
 
 const LEAD_CTX =
   'Você é {NAME}, agente de IA especialista em LEADS B2B da Algar Telecom, conectado à arqevery. ' +
@@ -257,7 +261,15 @@ router.post('/chat', authMiddleware, async (req, res) => {
       clean = text.replace(ma[0], '').trim();
       actions = ma[1].split('|').map((a) => a.trim()).filter(Boolean).slice(0, 4);
     }
-    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps });
+    let newRecord = null;
+    const mn = clean.match(/\[\[NEWRECORD:([A-Za-z_0-9]+)(?::([\s\S]*?))?\]\]/i);
+    if (mn) {
+      clean = clean.replace(mn[0], '').trim();
+      let prefill = {};
+      if (mn[2]) { try { prefill = JSON.parse(mn[2]); } catch (e) { prefill = {}; } }
+      newRecord = { object: mn[1], prefill };
+    }
+    return res.json({ ok: true, agentId: agent.id, text: clean, actions, steps, newRecord });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
@@ -336,6 +348,88 @@ router.post('/record-update', authMiddleware, async (req, res) => {
     const conn = await connToOrg(org);
     const r = await conn.sobject(b.object).update({ Id: b.id, ...b.fields });
     return res.json({ ok: !!r.success, id: r.id || b.id, errors: r.errors });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// ── Criação RT-aware (replica o modal "New") ──
+async function describeLayoutsRaw(conn, object) {
+  return await conn.request(`/services/data/v62.0/sobjects/${object}/describe/layouts/`);
+}
+
+// GET /create-meta?object=Lead — record types disponíveis
+router.get('/create-meta', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36, object = req.query.object;
+    if (!object) return res.status(400).json({ ok: false, error: 'object obrigatório' });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const dl = await describeLayoutsRaw(conn, object);
+    let sel = dl.recordTypeSelectorRequired; if (Array.isArray(sel)) sel = sel[0];
+    const rts = (dl.recordTypeMappings || []).filter((m) => m.active && m.available && !m.master)
+      .map((m) => ({ recordTypeId: m.recordTypeId, name: m.name, isDefault: !!m.defaultRecordTypeMapping }));
+    const desc = await describeCached(conn, object, orgId);
+    return res.json({ ok: true, object, label: desc.label, selectorRequired: !!sel && rts.length > 1, recordTypes: rts });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// GET /create-layout?object=Lead&recordTypeId=... — campos do layout daquele RT
+router.get('/create-layout', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36, object = req.query.object, rtId = req.query.recordTypeId;
+    if (!object) return res.status(400).json({ ok: false, error: 'object obrigatório' });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const dl = await describeLayoutsRaw(conn, object);
+    const maps = dl.recordTypeMappings || [];
+    const mapping = maps.find((m) => m.recordTypeId === rtId) || maps.find((m) => m.defaultRecordTypeMapping) || maps.find((m) => m.master) || maps[0];
+    const layout = await conn.request(mapping.urls.layout);
+    const secs = layout.editLayoutSections || [];
+    const desc = await describeCached(conn, object, orgId);
+    const fmap = {}, compounds = {};
+    (desc.fields || []).forEach((f) => { fmap[f.name] = f; if (f.compoundFieldName) { (compounds[f.compoundFieldName] = compounds[f.compoundFieldName] || []).push(f); } });
+    const mk = (f, reqLayout) => {
+      const o = { name: f.name, label: f.label, type: f.type, required: !!reqLayout || (!f.nillable && !f.defaultedOnCreate && f.createable) };
+      if (f.type === 'picklist' || f.type === 'multipicklist') o.options = (f.picklistValues || []).filter((p) => p.active).map((p) => p.value);
+      if (f.type === 'textarea') o.type = 'textarea';
+      return o;
+    };
+    const seen = new Set(), outSecs = [];
+    for (const s of secs) {
+      const items = [];
+      for (const row of (s.layoutRows || [])) {
+        for (const it of (row.layoutItems || [])) {
+          if (it.editableForNew === false) continue;
+          const comp = (it.layoutComponents || []).find((c) => c.type === 'Field');
+          if (!comp) continue;
+          const f = fmap[comp.value];
+          if (!f) continue;
+          const isCompound = (f.type === 'address' || f.type === 'location' || f.type === 'name' || (compounds[f.name] && !f.createable));
+          if (isCompound) {
+            (compounds[f.name] || []).filter((p) => p.createable && p.type !== 'reference' && p.type !== 'double' && p.type !== 'address' && p.type !== 'location')
+              .forEach((p) => { if (!seen.has(p.name)) { seen.add(p.name); items.push(mk(p, p.name === 'LastName')); } });
+            continue;
+          }
+          if (!f.createable || seen.has(f.name)) continue;
+          seen.add(f.name);
+          items.push(mk(f, it.required));
+        }
+      }
+      if (items.length) outSecs.push({ heading: s.heading || '', fields: items });
+    }
+    return res.json({ ok: true, object, recordTypeId: mapping.recordTypeId, recordTypeName: mapping.name, label: desc.label, sections: outSecs });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /record-create — cria o registro
+router.post('/record-create', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!b.object || !b.fields || typeof b.fields !== 'object') return res.status(400).json({ ok: false, error: 'object e fields obrigatórios' });
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const r = await conn.sobject(b.object).create(b.fields);
+    return res.json({ ok: !!r.success, id: r.id, errors: r.errors });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
