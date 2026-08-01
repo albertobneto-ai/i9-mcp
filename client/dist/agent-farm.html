@@ -371,7 +371,7 @@
   </div>
 </div></div>
 
-<div class="mapwrap hide" id="calWrap">
+<div class="mapwrap hide" id="calWrap" style="z-index:60;">
   <div class="maptop">
     <b>📆 Agenda</b>
     <button class="calnav" id="calPrev">‹</button>
@@ -394,6 +394,7 @@
     <label class="lay"><input type="checkbox" id="layMetro"> 🛰️ Metro</label>
     <label class="lay"><input type="checkbox" id="layToday" checked> 📅 Hoje</label>
     <label class="lay"><input type="checkbox" id="lay7d" checked> 🗓️ 7 dias</label>
+    <button class="calnav caltoday" id="mapCalBtn" style="width:auto;">📆 Agenda</button>
     <button class="routego" id="routeBtn">🚗 Rota de hoje</button>
     <div class="mapsearch"><input id="mapQ" placeholder="🔎 lead, conta, cidade…" autocomplete="off"><div class="mapsug hide" id="mapSug"></div></div>
     <span class="mapinfo" id="mapInfo"></span>
@@ -622,6 +623,7 @@ async function sendMsg(){
       if(d.dial)openDial(d.dial);
     if(d.openRecordId&&(!REC||d.openRecordId!==REC.id))openRecord(d.openRecordId);
       if(d.openRecordId)openRecord(d.openRecordId);
+      if(d.openCalendar)openCal();
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
   const sm2=stageMascotEl();if(sm2)sm2.classList.remove('think');const tb2=document.getElementById('thinkB');if(tb2)tb2.classList.remove('show');
@@ -1092,6 +1094,7 @@ async function loadCal(){
 }
 function openCal(){document.getElementById('calWrap').classList.remove('hide');loadCal();}
 document.getElementById('calBtn').addEventListener('click',openCal);
+document.getElementById('mapCalBtn').addEventListener('click',openCal);
 document.getElementById('calClose').addEventListener('click',()=>document.getElementById('calWrap').classList.add('hide'));
 document.getElementById('calPrev').addEventListener('click',()=>{CAL.m--;if(CAL.m<0){CAL.m=11;CAL.y--;}loadCal();});
 document.getElementById('calNext').addEventListener('click',()=>{CAL.m++;if(CAL.m>11){CAL.m=0;CAL.y++;}loadCal();});
