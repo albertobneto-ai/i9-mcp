@@ -147,6 +147,8 @@
   .mbody{padding:20px 26px;}
   .fld{margin-bottom:16px;} .fld label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:7px;}
   .fld input[type=text],.fld textarea{width:100%;border:1.5px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14.5px;color:var(--ink);resize:vertical;}
+  .fld input[type=number],.fld select{width:100%;border:1.5px solid var(--line);border-radius:13px;padding:11px 14px;font-size:14.5px;color:var(--ink);background:#fff;}
+  .fld select:focus,.fld input[type=number]:focus{border-color:var(--sky);outline:none;}
   .fld input:focus,.fld textarea:focus{border-color:var(--sky);outline:none;}
   .pick{display:flex;gap:7px;flex-wrap:wrap;} .opt{border:1.5px solid var(--line);border-radius:26px;padding:7px 13px;font-size:12.5px;font-weight:600;color:var(--muted);background:#fff;} .opt.on{color:#fff;border-color:transparent;}
   .prim{width:100%;background:linear-gradient(135deg,var(--blue),var(--spark));color:#fff;font-family:'Fredoka';font-weight:600;font-size:16px;padding:14px;border-radius:14px;margin-top:4px;transition:transform .15s;} .prim:hover{transform:translateY(-2px);} .prim:disabled{opacity:.55;transform:none;}
@@ -233,6 +235,23 @@
     <button class="prim" id="doLogin">Entrar</button>
     <div class="lerr" id="lErr">Não consegui entrar. Confira e-mail e senha.</div>
     <p class="muted" style="margin-top:12px;">Os agentes operam na org <b>arqevery</b> — leitura e escrita reais.</p>
+  </div>
+</div></div>
+
+<div class="scrim hide" id="autoScrim"><div class="modal" style="max-width:480px;">
+  <div class="mhead" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <div><h3>⚡ Auto-criar leads</h3><p style="opacity:.9;font-size:12.5px;margin:2px 0 0;">Gera leads na cidade/UF (tipo Nacional)</p></div>
+    </div>
+    <button class="xbtn" id="autoClose">×</button>
+  </div>
+  <div class="mbody">
+    <div class="fld"><label>Quantidade</label><input type="number" id="acCount" min="1" max="100" value="10"></div>
+    <div class="fld"><label>UF</label><select id="acUf"><option value="">Carregando…</option></select></div>
+    <div class="fld"><label>Cidade</label><select id="acCity" disabled><option value="">Escolha a UF primeiro</option></select></div>
+    <button class="prim" id="acGo">Gerar leads</button>
+    <div class="muted" id="acMsg" style="margin-top:10px;font-size:13px;"></div>
   </div>
 </div></div>
 
@@ -385,6 +404,7 @@ async function sendMsg(){
       hist[active.id].push({role:'assistant',text:d.text||'(sem resposta)',html:mdLite(d.text||''),steps:d.steps||[],actions:d.actions||[]});
       render();if(wrote)celebrate();
       if(d.newRecord&&d.newRecord.object)startCreate(d.newRecord.object,d.newRecord.prefill||{});
+      if(d.autoCreate&&d.autoCreate.object)openAuto({count:d.autoCreate.count,uf:d.autoCreate.uf,city:d.autoCreate.city});
     }else{hist[active.id].push({role:'assistant',text:'⚠️ '+(d.error||'deu ruim aqui'),steps:[]});render();}
   }catch(e){hist[active.id]=hist[active.id].filter(m=>!m.typing);hist[active.id].push({role:'assistant',text:'⚠️ '+e.message});render();}
   const sm2=stageMascotEl();if(sm2)sm2.classList.remove('think');const tb2=document.getElementById('thinkB');if(tb2)tb2.classList.remove('show');
@@ -496,7 +516,9 @@ async function startCreate(object,prefill){
     document.getElementById('newTitle').textContent='Nova '+(meta.label||object);
     if(meta.selectorRequired&&meta.recordTypes.length>1){
       body.innerHTML='<div class="muted" style="margin-bottom:12px;">Qual o tipo de registro?</div><div class="rtlist">'+
-        meta.recordTypes.map(rt=>`<button class="rtbtn" data-rt="${rt.recordTypeId}">${esc(rt.name)}${rt.isDefault?'<span class="rtdef">padrão</span>':''}</button>`).join('')+'</div>';
+        meta.recordTypes.map(rt=>`<button class="rtbtn" data-rt="${rt.recordTypeId}">${esc(rt.name)}${rt.isDefault?'<span class="rtdef">padrão</span>':''}</button>`).join('')+'</div>'+
+        '<button class="ghost" id="acFromNew" style="margin-top:14px;width:auto;padding:12px 16px;">⚡ Gerar várias de uma vez</button>';
+      body.querySelector('#acFromNew').addEventListener('click',()=>{document.getElementById('newScrim').classList.add('hide');openAuto({});});
       body.querySelectorAll('.rtbtn').forEach(b=>b.addEventListener('click',()=>loadCreateForm(object,b.dataset.rt,prefill)));
     }else{
       const rt=(meta.recordTypes.find(r=>r.isDefault)||meta.recordTypes[0]||{}).recordTypeId;
@@ -540,6 +562,46 @@ async function doCreate(object,rtId,selectorRequired){
 }
 document.getElementById('newClose').addEventListener('click',()=>document.getElementById('newScrim').classList.add('hide'));
 document.getElementById('newScrim').addEventListener('click',e=>{if(e.target.id==='newScrim')document.getElementById('newScrim').classList.add('hide');});
+
+// ── Auto-create em massa (UF → cidade dependente via IBGE) ──
+let ACUFS=null;
+async function openAuto(pf){pf=pf||{};
+  document.getElementById('autoScrim').classList.remove('hide');
+  document.getElementById('acMsg').textContent='';
+  if(pf.count)document.getElementById('acCount').value=pf.count;
+  const ufSel=document.getElementById('acUf');
+  if(!ACUFS){try{const r=await api('/api/agent-farm/ibge/ufs');const d=await r.json();ACUFS=d.ufs||[];}catch(e){ACUFS=[];}}
+  ufSel.innerHTML='<option value="">Selecione…</option>'+ACUFS.map(u=>`<option value="${u.sigla}">${u.sigla} — ${esc(u.nome)}</option>`).join('');
+  const citySel=document.getElementById('acCity');citySel.innerHTML='<option value="">Escolha a UF primeiro</option>';citySel.disabled=true;
+  if(pf.uf){ufSel.value=String(pf.uf).toUpperCase();await loadCities(ufSel.value,pf.city);}
+}
+async function loadCities(uf,preselect){
+  const citySel=document.getElementById('acCity');
+  if(!uf){citySel.disabled=true;citySel.innerHTML='<option value="">Escolha a UF primeiro</option>';return;}
+  citySel.disabled=true;citySel.innerHTML='<option value="">Carregando cidades…</option>';
+  try{const r=await api('/api/agent-farm/ibge/cidades?uf='+encodeURIComponent(uf));const d=await r.json();const cs=d.cidades||[];
+    citySel.innerHTML='<option value="">Selecione…</option>'+cs.map(c=>`<option ${c===preselect?'selected':''}>${esc(c)}</option>`).join('');
+    citySel.disabled=false;
+  }catch(e){citySel.innerHTML='<option value="">erro ao carregar</option>';}
+}
+async function doAuto(){
+  const count=parseInt(document.getElementById('acCount').value)||0;
+  const uf=document.getElementById('acUf').value,city=document.getElementById('acCity').value;
+  const msg=document.getElementById('acMsg');
+  if(!count||!uf||!city){msg.textContent='Preencha quantidade, UF e cidade.';return;}
+  const btn=document.getElementById('acGo');btn.disabled=true;btn.textContent='Gerando '+count+' leads…';
+  try{
+    const r=await api('/api/agent-farm/auto-create',{method:'POST',body:JSON.stringify({orgId:ORG_ID,object:'Lead',count,uf,city})});
+    const d=await r.json();
+    if(d.ok){msg.innerHTML='✅ <b>'+d.created+'</b> leads criadas em '+esc(city)+'/'+esc(uf)+(d.failed?' · '+d.failed+' falharam':'');toast(d.created+' leads criadas ✅');}
+    else{msg.textContent=d.error||'falha ao gerar';}
+  }catch(e){msg.textContent=e.message;}
+  btn.disabled=false;btn.textContent='Gerar leads';
+}
+document.getElementById('acUf').addEventListener('change',e=>loadCities(e.target.value));
+document.getElementById('acGo').addEventListener('click',doAuto);
+document.getElementById('autoClose').addEventListener('click',()=>document.getElementById('autoScrim').classList.add('hide'));
+document.getElementById('autoScrim').addEventListener('click',e=>{if(e.target.id==='autoScrim')document.getElementById('autoScrim').classList.add('hide');});
 
 // ── detecção de dispositivo (celular x desktop) ──
 (function(){
