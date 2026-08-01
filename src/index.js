@@ -18,6 +18,7 @@ import bugsRoutes from './routes/bugs.js';
 import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
+import agentFarmRoutes from './routes/agent-farm.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -165,6 +166,7 @@ app.use('/api/ever-deploy', everDeployRoutes);
 app.use('/api/bugs', bugsRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
+app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
 app.use('/api', explorerRoutes);
 
 // Job status polling
