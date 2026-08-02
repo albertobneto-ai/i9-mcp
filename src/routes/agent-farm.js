@@ -829,7 +829,7 @@ router.get('/map-data', authMiddleware, async (req, res) => {
     const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
     const conn = await connToOrg(org);
     const boost = req.query.boost === '1';
-    const lq = await conn.query("SELECT Id,Name,Company,City,State,Latitude,Longitude,Status,Rating,Phone FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
+    const lq = await conn.query("SELECT Id,Name,FirstName,LastName,Company,City,State,Street,PostalCode,Latitude,Longitude,Status,Rating,Phone,MobilePhone,Email,CNPJ__c,Segmento__c,Industry,LeadSource FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
     const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingCity != null OR BillingState != null ORDER BY LastModifiedDate DESC LIMIT 150");
     const now = new Date(); const past = new Date(now.getTime() - 7 * 864e5).toISOString(); const fut = new Date(now.getTime() + 30 * 864e5).toISOString();
     const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c,EhRelatorioVisita__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
