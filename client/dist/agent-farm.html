@@ -218,9 +218,15 @@
   .mlay:last-child{border-bottom:none;}
   .mlay input{width:18px;height:18px;accent-color:var(--blue);flex:0 0 18px;}
   .mldot{width:12px;height:12px;border-radius:50%;flex:0 0 12px;}
+  .mlay{position:relative;}
+  .mlgo{margin-left:auto;width:26px;height:26px;border-radius:8px;background:#eaf3ff;color:var(--blue);font-size:14px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex:0 0 26px;}
+  .mlgo:hover{background:var(--blue);color:#fff;}
   .mapinfo{font-size:11px;color:var(--muted);font-weight:500;}
   #mapEl{flex:1;min-height:0;}
   .mkr{font-size:22px;line-height:1;filter:drop-shadow(0 3px 4px rgba(3,45,96,.35));}
+  .sfpin{width:30px;height:40px;position:relative;filter:drop-shadow(0 4px 5px rgba(3,45,96,.4));}
+  .sfpin::before{content:'';position:absolute;top:0;left:3px;width:24px;height:24px;background:var(--pc);border:2.5px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-sizing:border-box;}
+  .sfpin span{position:absolute;top:4px;left:0;width:30px;height:20px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;z-index:1;}
   .leaflet-popup-content{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;margin:12px 14px;min-width:210px;}
   .pp-name{font-family:'Fredoka';font-weight:600;color:var(--navy);font-size:14.5px;margin-bottom:2px;}
   .pp-sub{color:var(--muted);font-size:12px;margin-bottom:8px;}
@@ -238,7 +244,8 @@
   .rb-w{background:#33ccff;color:#04364f;padding:7px 12px;border-radius:16px;text-decoration:none;font-weight:800;font-size:12px;}
   .rb-x{background:#eef2f7;color:var(--muted);padding:7px 12px;border-radius:16px;font-weight:700;font-size:12px;}
   .pmk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 3px 7px rgba(3,45,96,.4);}
-  .stopmk{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 9px rgba(3,45,96,.45);}
+  .stopmk{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 10px rgba(3,45,96,.5);}
+  .startmk{width:28px;height:28px;border-radius:50%;background:#12b76a;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 10px rgba(14,159,91,.5);}
   .mapsearch{position:relative;flex:1;min-width:0;}
   .mapsearch input{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:9px 12px;font-size:13px;background:#fff;}
   .mapsearch input:focus{border-color:var(--sky);outline:none;}
@@ -446,13 +453,13 @@
   </div>
   <div class="maplayers hide" id="mapLayerPanel">
     <div class="mlhead"><b>Camadas</b><span class="mapinfo" id="mapInfo"></span><button class="mlx" id="mlClose">✕</button></div>
-    <label class="mlay"><input type="checkbox" id="layLeads" checked><span class="mldot" style="background:#0176D3"></span> Lead Explorer</label>
-    <label class="mlay"><input type="checkbox" id="layPrio"><span class="mldot" style="background:#e0483e"></span> Por prioridade</label>
-    <label class="mlay"><input type="checkbox" id="layAccts"><span class="mldot" style="background:#7a5af8"></span> Contas</label>
-    <label class="mlay"><input type="checkbox" id="layGpon"><span class="mldot" style="background:#12b76a"></span> Cobertura GPON</label>
-    <label class="mlay"><input type="checkbox" id="layMetro"><span class="mldot" style="background:#9b8afb"></span> Estações Metro</label>
-    <label class="mlay"><input type="checkbox" id="layToday" checked><span class="mldot" style="background:#0176D3"></span> Visitas hoje</label>
-    <label class="mlay"><input type="checkbox" id="lay7d" checked><span class="mldot" style="background:#98a2b3"></span> Visitas 7 dias</label>
+    <label class="mlay"><input type="checkbox" id="layLeads" checked><span class="mldot" style="background:#0176D3"></span> Lead Explorer<button class="mlgo" data-layer="leads" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="layPrio"><span class="mldot" style="background:#e0483e"></span> Por prioridade<button class="mlgo" data-layer="leads" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="layAccts"><span class="mldot" style="background:#7a5af8"></span> Contas<button class="mlgo" data-layer="accts" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="layGpon"><span class="mldot" style="background:#12b76a"></span> Cobertura GPON<button class="mlgo" data-layer="gpon" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="layMetro"><span class="mldot" style="background:#9b8afb"></span> Estações Metro<button class="mlgo" data-layer="metro" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="layToday" checked><span class="mldot" style="background:#0176D3"></span> Visitas hoje<button class="mlgo" data-layer="today" title="Centralizar">⌖</button></label>
+    <label class="mlay"><input type="checkbox" id="lay7d" checked><span class="mldot" style="background:#98a2b3"></span> Visitas 7 dias<button class="mlgo" data-layer="week" title="Centralizar">⌖</button></label>
   </div>
   <div class="routebar hide" id="routeBar">
     <span id="routeSum"></span>
@@ -1116,12 +1123,17 @@ function loadLeaflet(){
     const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);
   });
 }
-function mkIcon(emoji){return L.divIcon({className:'',html:'<div class="mkr">'+emoji+'</div>',iconSize:[24,24],iconAnchor:[12,22],popupAnchor:[0,-20]});}
+function pinIcon(color,glyph){return L.divIcon({className:'',html:`<div class="sfpin" style="--pc:${color}"><span>${glyph||''}</span></div>`,iconSize:[30,40],iconAnchor:[15,38],popupAnchor:[0,-34]});}
+function mkIcon(emoji){
+  const map={'🎯':['#0176D3','◆'],'🏢':['#7a5af8','▲'],'🛰️':['#9b8afb','◈'],'📌':['#f79009','●'],'📅':['#12b76a','●'],'🗓️':['#98a2b3','●']};
+  const m=map[emoji]; if(m)return pinIcon(m[0],m[1]);
+  return L.divIcon({className:'',html:'<div class="mkr">'+emoji+'</div>',iconSize:[24,24],iconAnchor:[12,22],popupAnchor:[0,-20]});
+}
 function prioIcon(rating){
   const c=/very\s*hot|hot/i.test(rating||'')?'#e0483e':(/warm/i.test(rating||'')?'#f79009':(/cold/i.test(rating||'')?'#4a90d9':'#98a2b3'));
-  return L.divIcon({className:'',html:`<div class="pmk" style="background:${c}"></div>`,iconSize:[16,16],iconAnchor:[8,8],popupAnchor:[0,-8]});
+  return pinIcon(c,'●');
 }
-function stopIcon(n){return L.divIcon({className:'',html:`<div class="stopmk">${n}</div>`,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-13]});}
+function stopIcon(n){return L.divIcon({className:'',html:`<div class="stopmk">${n}</div>`,iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-14]});}
 function ppActions(id,isEvent){
   return `<div class="pp-acts">
     <button onclick="openRecord('${id}')">${isEvent?'📝 Registro da visita':'📂 Abrir'}</button>${isEvent?`<button onclick="ppAddr(this)">📍 Endereço</button>`:''}
@@ -1180,11 +1192,19 @@ window.ppSchedGo=async(id,btn)=>{
   else toast(d.error||'falha');
 };
 function evActions(x){
-  let btns=`<button onclick="openRecord('${x.Id}')">📝 Registro</button>`;
+  let btns='';
   if(!x.CheckIn){
-    btns+=`<button onclick="ppAddr(this)">📍 Endereço</button><button onclick="visitAct('checkin','${x.Id}',this)">📍 Check-in</button>`;
+    // ainda não fez check-in: agendar detalhes, endereço, check-in
+    btns+=`<button onclick="openVisitReport('${x.Id}')">📋 Dados da visita</button>`;
+    btns+=`<button onclick="ppAddr(this)">📍 Endereço</button>`;
+    btns+=`<button onclick="visitAct('checkin','${x.Id}',this)">📍 Check-in</button>`;
   } else if(!x.CheckOut){
-    btns+=`<button onclick="openVisitReport('${x.Id}')">📋 Relatório${x.Report==='Sim'?' ✅':''}</button><button onclick="visitAct('checkout','${x.Id}',this)">🏁 Check-out</button>`;
+    // em visita: relatório obrigatório + check-out (sempre visível)
+    btns+=`<button onclick="openVisitReport('${x.Id}')">📋 Relatório${x.Report==='Sim'?' ✅':''}</button>`;
+    btns+=`<button onclick="visitAct('checkout','${x.Id}',this)">🏁 Check-out</button>`;
+  } else {
+    // concluída: só ver o relatório
+    btns+=`<button onclick="openVisitReport('${x.Id}')">📋 Ver relatório</button>`;
   }
   return `<div class="pp-acts">${btns}</div>
   <div class="pp-sched pp-addrbox"><input type="text" placeholder="rua, nº, cidade - UF"><button onclick="ppAddrGo('${x.Id}',this)">OK</button></div>
@@ -1258,23 +1278,41 @@ async function loadMapData(boost){
 }
 // ── rota otimizada (vizinho mais próximo) + navegação Google Maps / Waze ──
 function hav(a,b){const R=6371,dLa=(b[0]-a[0])*Math.PI/180,dLo=(b[1]-a[1])*Math.PI/180;const x=Math.sin(dLa/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
-function buildRouteFrom(origin){
+async function buildRouteFrom(origin){
   const stops=(MAPDATA.events||[]).filter(e=>isToday(e.Start)&&!e.CheckOut).map(e=>({id:e.Id,label:e.Subject+(e.WhoName?' · '+e.WhoName:''),pos:[e._lat,e._lng]}));
   if(!stops.length){toast('Sem visitas agendadas pra hoje 🗓️');return;}
-  const order=[];let cur=origin?[...origin]:stops[0].pos.slice();const rest=[...stops];let km=0;
+  // ordena por vizinho mais próximo (haversine)
+  const order=[];let cur=origin?[...origin]:stops[0].pos.slice();const rest=[...stops];
   while(rest.length){
     let bi=0,bd=1e9;
     rest.forEach((s,i)=>{const d=hav(cur,s.pos);if(d<bd){bd=d;bi=i;}});
-    const s=rest.splice(bi,1)[0];km+=bd;order.push(s);cur=s.pos;
+    const s=rest.splice(bi,1)[0];order.push(s);cur=s.pos;
   }
   if(ROUTE){ROUTE.line&&MAP.removeLayer(ROUTE.line);(ROUTE.marks||[]).forEach(m=>MAP.removeLayer(m));}
   const pts=(origin?[origin]:[]).concat(order.map(s=>s.pos));
-  const line=L.polyline(pts,{color:'#0176D3',weight:4,opacity:.8,dashArray:'8 6'}).addTo(MAP);
-  const marks=order.map((s,i)=>L.marker(s.pos,{icon:stopIcon(i+1),zIndexOffset:1000}).addTo(MAP).bindPopup(`<div class="pp-name">Parada ${i+1}</div><div class="pp-sub">${esc(s.label)}</div>`+ppActions(s.id)));
+  // tenta rota real por ruas (OSRM); fallback linha reta
+  let line,realKm=null,realMin=null;
+  try{
+    const coords=pts.map(p=>p[1]+','+p[0]).join(';');
+    const rr=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{});
+    if(rr.ok){
+      const rj=await rr.json();
+      if(rj.routes&&rj.routes[0]){
+        const geo=rj.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+        line=L.polyline(geo,{color:'#0176D3',weight:5,opacity:.85}).addTo(MAP);
+        realKm=(rj.routes[0].distance/1000);realMin=Math.round(rj.routes[0].duration/60);
+      }
+    }
+  }catch(e){}
+  if(!line)line=L.polyline(pts,{color:'#0176D3',weight:4,opacity:.8,dashArray:'8 6'}).addTo(MAP);
+  const marks=[];
+  if(origin)marks.push(L.marker(origin,{icon:L.divIcon({className:'',html:'<div class="startmk">◉</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(MAP).bindPopup('<div class="pp-name">📍 Minha posição</div>'));
+  order.forEach((s,i)=>marks.push(L.marker(s.pos,{icon:stopIcon(i+1),zIndexOffset:1000}).addTo(MAP).bindPopup(`<div class="pp-name">Parada ${i+1}</div><div class="pp-sub">${esc(s.label)}</div>`+ppActions(s.id))));
   ROUTE={order,line,marks,origin};
-  MAP.fitBounds(line.getBounds().pad(0.2));
+  MAP.fitBounds(line.getBounds().pad(0.15));
   document.getElementById('routeBar').classList.remove('hide');
-  document.getElementById('routeSum').textContent='🚗 '+order.length+' parada(s) · ~'+km.toFixed(1)+' km (linha reta)';
+  const sum=realKm!=null?('🚗 '+order.length+' parada(s) · '+realKm.toFixed(1)+' km · ~'+realMin+' min por ruas'):('🚗 '+order.length+' parada(s) · linha reta');
+  document.getElementById('routeSum').textContent=sum;
   const o=origin?origin.join(','):order[0].pos.join(',');
   const dest=order[order.length-1].pos.join(',');
   const way=order.slice(0,-1).map(s=>s.pos.join(',')).join('|');
@@ -1310,6 +1348,24 @@ async function openMap(){
 }
 document.getElementById('mapLayers').addEventListener('click',()=>{document.getElementById('mapLayerPanel').classList.toggle('hide');});
 document.getElementById('mlClose').addEventListener('click',()=>{document.getElementById('mapLayerPanel').classList.add('hide');});
+document.querySelectorAll('.mlgo').forEach(b=>b.addEventListener('click',(e)=>{
+  e.preventDefault();e.stopPropagation();
+  fitLayer(b.dataset.layer);
+}));
+function fitLayer(which){
+  const map={leads:'leads',accts:'accts',gpon:'gpon',metro:'metro',today:'today',week:'week'}[which];
+  const lyr=MAPLAYERS[map];
+  if(!lyr){toast('Camada vazia');return;}
+  // garante a camada ligada
+  const cbId={leads:'layLeads',accts:'layAccts',gpon:'layGpon',metro:'layMetro',today:'layToday',week:'lay7d'}[which];
+  const cb=document.getElementById(cbId);if(cb&&!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change'));}
+  const layers=[];lyr.eachLayer(l=>{if(l.getLatLng)layers.push(l.getLatLng());else if(l.getBounds)layers.push(l.getBounds().getCenter());});
+  if(!layers.length){toast('Sem itens nessa camada');return;}
+  const b=L.latLngBounds(layers);
+  document.getElementById('mapLayerPanel').classList.add('hide');
+  MAP.flyToBounds(b.pad(0.15),{duration:.6,maxZoom:13});
+  toast('Centralizando na camada 🎯');
+}
 document.getElementById('mapBtn').addEventListener('click',openMap);
 document.getElementById('mapClose').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
 document.getElementById('mapBack').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
@@ -1404,7 +1460,8 @@ async function openVisitReport(eventId){
   const r=await api('/api/agent-farm/visit-report-meta?orgId='+ORG_ID+'&eventId='+encodeURIComponent(eventId));
   const d=await r.json();
   if(!d.ok){body.innerHTML='<div class="muted">'+esc(d.error||'erro')+'</div>';if(d.noCheckin)setTimeout(()=>s.classList.add('hide'),2200);return;}
-  document.getElementById('vrSub').textContent=(d.event.subject||'Visita')+(d.event.whoName?' · '+d.event.whoName:'')+' · check-in '+new Date(d.event.checkin).toLocaleTimeString('pt-BR').slice(0,5);
+  const pre=d.preCheckin;
+  document.getElementById('vrSub').textContent=(d.event.subject||'Visita')+(d.event.whoName?' · '+d.event.whoName:'')+(pre?' · agendada':' · check-in '+new Date(d.event.checkin).toLocaleTimeString('pt-BR').slice(0,5));
   body.innerHTML=
     '<div class="fld"><label>Motivo da visita *</label><select id="vrMotivo"><option value=""></option>'+d.motivos.map(m=>`<option ${m===d.event.motivo?'selected':''}>${esc(m)}</option>`).join('')+'</select></div>'+
     '<div class="fld"><label>Observações da visita *</label><textarea id="vrObs" rows="3" placeholder="o que foi tratado, próximos passos…">'+esc(d.event.observacoes||'')+'</textarea></div>'+
@@ -1413,8 +1470,8 @@ async function openVisitReport(eventId){
     '<div class="grid-2" style="display:flex;gap:10px;"><div class="fld" style="flex:2"><label>Cidade</label><input type="text" id="vrCid" value="'+esc(d.addr.cidade||'')+'"></div>'+
     '<div class="fld" style="flex:1"><label>UF</label><input type="text" id="vrUf" maxlength="2" value="'+esc(d.addr.estado||'')+'"></div></div>'+
     '<div class="fld"><label>CEP</label><input type="text" id="vrCep" value="'+esc(d.addr.cep||'')+'"></div>'+
-    '<div style="display:flex;gap:8px;margin-top:14px;"><button class="prim" id="vrSave" style="margin-top:0;">Salvar relatório</button>'+
-    (!d.event.checkout?'<button class="prim" id="vrSaveOut" style="margin-top:0;background:linear-gradient(135deg,#12b76a,#0e9f5b);">Salvar + Check-out 🏁</button>':'')+'</div>';
+    '<div style="display:flex;gap:8px;margin-top:14px;"><button class="prim" id="vrSave" style="margin-top:0;">Salvar dados</button>'+
+    ((!pre&&!d.event.checkout)?'<button class="prim" id="vrSaveOut" style="margin-top:0;background:linear-gradient(135deg,#12b76a,#0e9f5b);">Salvar + Check-out 🏁</button>':'')+'</div>';
   const save=async(thenCheckout)=>{
     const motivo=document.getElementById('vrMotivo').value,obs=document.getElementById('vrObs').value.trim();
     if(!motivo||!obs){toast('Motivo e observações são obrigatórios 📋');return;}
