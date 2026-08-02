@@ -893,7 +893,7 @@ function ppActions(id,isEvent){
     <button onclick="visitAct('task','${id}',this)">✅ Tarefa</button>
     <button onclick="visitAct('checkin','${id}',this)">📍 Check-in</button>
     <button onclick="visitAct('checkout','${id}',this)">🏁 Check-out</button>
-    ${!isEvent&&String(id).startsWith('00Q')?`<button onclick="leadEnrich('${id}',this)">⚡ Neoway</button><button onclick="leadCoverage('${id}',this)">📡 Cobertura</button>`:''}
+    ${!isEvent&&String(id).startsWith('00Q')?`<button onclick="leadEnrich('${id}',this)">⚡ Neoway</button><button onclick="leadCoverage('${id}',this)">📡 Cobertura</button><button onclick="newLeadNear('${id}')">➕ Nova lead</button>`:''}
   </div>
   <div class="pp-sched"><input type="datetime-local"><button onclick="ppSchedGo('${id}',this)">OK</button></div>
   ${isEvent?`<div class="pp-sched pp-addrbox"><input type="text" placeholder="rua, nº, cidade - UF"><button onclick="ppAddrGo('${id}',this)">OK</button></div>`:''}
@@ -908,6 +908,11 @@ window.ppAddrGo=async(id,btn)=>{
   const d=await r.json();btn.disabled=false;
   if(d.ok){toast(d.geocoded?'Endereço salvo e marcador movido 📍':'Endereço salvo ✅');btn.closest('.leaflet-popup-content').querySelector('.pp-ok').textContent='📍 Endereço atualizado';loadMapData();}
   else toast(d.error||'falha');
+};
+window.newLeadNear=(id)=>{
+  const x=(MAPDATA&&MAPDATA.leads||[]).find(l=>l.Id===id);
+  startCreate('Lead',x?{City:x.City||'',State:x.State||''}:{});
+  toast(x&&x.City?('Nova lead em '+x.City+' 📍'):'Nova lead');
 };
 window.leadEnrich=async(id,btn)=>{
   const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
