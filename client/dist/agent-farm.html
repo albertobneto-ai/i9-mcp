@@ -636,7 +636,7 @@ function select(id){
   document.getElementById('stage').innerHTML=`<span class="pod">${mascot(active.color,k)}<div class="bubble-think" id="thinkB"><span class="dots"><i></i><i></i><i></i></span></div></span>
     <div><h3>${esc(active.name)}</h3><div class="sub"><span class="d"></span>IA operacional · conectada ao seu Salesforce</div></div>`;
   document.getElementById('composer').style.display='block';
-  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado no seu Salesforce. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['CMD:leads|📋 Minhas leads','CMD:newlead|➕ Criar lead','CMD:tasks|✅ Tarefas','CMD:events|📅 Eventos']}];}
+  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado no seu Salesforce. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['Liste minhas leads','Criar nova lead','Liste minhas tarefas','Liste meus eventos']}];}
   render();
 }
 function stageMascotEl(){const s=document.getElementById('stage');return s?s.querySelector('.mascot'):null;}
