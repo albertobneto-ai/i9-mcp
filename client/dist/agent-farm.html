@@ -1294,7 +1294,9 @@ async function buildRouteFrom(origin){
   let line,realKm=null,realMin=null;
   try{
     const coords=pts.map(p=>p[1]+','+p[0]).join(';');
-    const rr=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{});
+    const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),4000);
+    const rr=await fetch('https://routing.openstreetmap.de/routed-car/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{signal:ctrl.signal});
+    clearTimeout(to);
     if(rr.ok){
       const rj=await rr.json();
       if(rj.routes&&rj.routes[0]){
@@ -1363,7 +1365,8 @@ function fitLayer(which){
   if(!layers.length){toast('Sem itens nessa camada');return;}
   const b=L.latLngBounds(layers);
   document.getElementById('mapLayerPanel').classList.add('hide');
-  MAP.flyToBounds(b.pad(0.15),{duration:.6,maxZoom:13});
+  if(layers.length===1){MAP.flyTo(layers[0],14,{duration:.6});}
+  else{MAP.flyToBounds(b.pad(0.15),{duration:.6,maxZoom:15});}
   toast('Centralizando na camada 🎯');
 }
 document.getElementById('mapBtn').addEventListener('click',openMap);
