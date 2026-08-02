@@ -290,7 +290,7 @@
     <div class="thread" id="thread">
       <div class="empty2" id="welcome">
         <div class="big" id="welcomeMascot"></div>
-        <h4 class="fred" id="welcomeTitle">Oi! Bem-vindo à farm ☁️</h4>
+        <h4 class="fred" id="welcomeTitle">Oi! Bem-vindo ao Salesforce ☁️</h4>
         <p>Escolha um agente na prateleira e peça de verdade: <b>liste minhas leads</b>, <b>altere o telefone</b>, <b>crie uma conta</b>. Ele faz na arqevery na hora.</p>
       </div>
     </div>
@@ -534,7 +534,7 @@ document.getElementById('createPod').innerHTML=mascot('#06B6C7','bot');
 document.getElementById('welcomeMascot').innerHTML=mascot('#1B96FF','lead');
 (async()=>{try{
   const r=await api('/api/agent-farm/whoami?orgId='+ORG_ID);const d=await r.json();
-  if(d.ok&&d.firstName)document.getElementById('welcomeTitle').textContent='Oi, '+d.firstName+'! Bem-vindo à farm ☁️';
+  if(d.ok&&d.firstName)document.getElementById('welcomeTitle').textContent='Oi, '+d.firstName+'! Bem-vindo ao Salesforce ☁️';
 }catch(e){}})();
 document.getElementById('doLogin').addEventListener('click',doLogin);
 document.getElementById('lPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -572,9 +572,9 @@ function select(id){
   const k=kindOf(active);
   document.querySelectorAll('.card').forEach(x=>x.classList.toggle('on',x.dataset.id===id));
   document.getElementById('stage').innerHTML=`<span class="pod">${mascot(active.color,k)}<div class="bubble-think" id="thinkB"><span class="dots"><i></i><i></i><i></i></span></div></span>
-    <div><h3>${esc(active.name)}</h3><div class="sub"><span class="d"></span>IA operacional · conectada à arqevery</div></div>`;
+    <div><h3>${esc(active.name)}</h3><div class="sub"><span class="d"></span>IA operacional · conectada ao seu Salesforce</div></div>`;
   document.getElementById('composer').style.display='block';
-  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado na arqevery. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['Liste minhas leads','Criar nova lead','Liste minhas tarefas','Liste meus eventos']}];}
+  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado no seu Salesforce. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['Liste minhas leads','Criar nova lead','Liste minhas tarefas','Liste meus eventos']}];}
   render();
 }
 function stageMascotEl(){const s=document.getElementById('stage');return s?s.querySelector('.mascot'):null;}
