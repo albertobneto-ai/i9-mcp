@@ -646,10 +646,7 @@ function render(){
     if(m.role==='me')return `<div class="msg me"><span class="av">AB</span><div class="bubble">${esc(m.text)}</div></div>`;
     if(m.typing)return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div class="bubble"><span style="color:var(--muted)">${esc(m.status||'pensando…')}</span></div></div>`;
     const chips=(m.steps&&m.steps.length)?`<div class="steps">${m.steps.map(s=>{const isQ=s.tool==='soql_query',fail=/falha/.test(s.summary);const cls=isQ?'q':(fail?'e':'w');const ic=isQ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4" stroke-linecap="round"/></svg>':(s.tool==='update_record'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>');return `<span class="chip ${cls}">${ic}${esc(s.summary)}</span>`;}).join('')}</div>`:'';
-    const acts=(m.actions&&m.actions.length)?`<div class="acts">${m.actions.map(a=>{
-      if(a.startsWith('CMD:')){const p=a.slice(4).split('|');return `<button class="act" onclick="directCmd('${p[0]}')">${p[1]||p[0]}</button>`;}
-      return `<button class="act" data-a="${encodeURIComponent(a)}">▸ ${esc(a)}</button>`;
-    }).join('')}</div>`:'';
+    const acts=(m.actions&&m.actions.length)?`<div class="acts">${m.actions.map(a=>`<button class="act" data-a="${encodeURIComponent(a)}">▸ ${esc(a)}</button>`).join('')}</div>`:'';
     return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div style="min-width:0"><div class="bubble">${chips}${m.html||esc(m.text)}</div>${acts}</div></div>`;
   }).join('');
   t.scrollTop=t.scrollHeight;
@@ -688,11 +685,7 @@ function celebrate(){
 
 async function sendMsg(){
   const inp=document.getElementById('input');const text=inp.value.trim();if(!text||busy||!active)return;
-  const tl=text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  if(/^(list[ea]r?|mostr[ae]r?|minhas?)\s*(leads?|lides?)$/i.test(tl)){inp.value='';directCmd('leads');return;}
-  if(/^(list[ea]r?|mostr[ae]r?|minhas?)\s*tarefas?$/i.test(tl)){inp.value='';directCmd('tasks');return;}
-  if(/^(list[ea]r?|mostr[ae]r?|meus?)\s*eventos?$/i.test(tl)){inp.value='';directCmd('events');return;}
-  if(/^(cri[ae]r?|nova?)\s*(lead|lide)$/i.test(tl)){inp.value='';directCmd('newlead');return;}
+
   inp.value='';busy=true;document.getElementById('send').disabled=true;
   hist[active.id].push({role:'me',text});hist[active.id].push({role:'assistant',typing:true,status:'consultando a arqevery…'});render();
   const tb=document.getElementById('thinkB');if(tb)tb.classList.add('show');
