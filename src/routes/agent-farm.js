@@ -829,8 +829,9 @@ router.get('/map-data', authMiddleware, async (req, res) => {
     const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
     const conn = await connToOrg(org);
     const boost = req.query.boost === '1';
-    const lq = await conn.query("SELECT Id,Name,FirstName,LastName,Company,City,State,Street,PostalCode,Latitude,Longitude,Status,Rating,Phone,MobilePhone,Email,CNPJ__c,Segmento__c,Industry,LeadSource FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
-    const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingCity != null OR BillingState != null ORDER BY LastModifiedDate DESC LIMIT 150");
+    // Prioriza leads com coordenadas reais (plotam sem gastar geocode). Ordena por lat preenchida primeiro.
+    const lq = await conn.query("SELECT Id,Name,FirstName,LastName,Company,City,State,Street,PostalCode,Latitude,Longitude,Status,Rating,Phone,MobilePhone,Email,CNPJ__c,Segmento__c,Industry,LeadSource FROM Lead WHERE IsConverted=false AND (Latitude != null OR City != null OR State != null) ORDER BY Latitude NULLS LAST, CreatedDate DESC LIMIT 800");
+    const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingLatitude != null OR BillingCity != null OR BillingState != null ORDER BY BillingLatitude NULLS LAST, LastModifiedDate DESC LIMIT 300");
     const now = new Date(); const past = new Date(now.getTime() - 7 * 864e5).toISOString(); const fut = new Date(now.getTime() + 30 * 864e5).toISOString();
     const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c,EhRelatorioVisita__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
     const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude', boost ? 25 : 8);
@@ -950,7 +951,7 @@ router.get('/visit-report-meta', authMiddleware, async (req, res) => {
     const q = await conn.query(`SELECT Id,Subject,WhoId,Who.Name,Location,CheckInDateTime__c,CheckOutDateTime__c,Motivo_Visita__c,Observacoes_Visita__c,EhRelatorioVisita__c FROM Event WHERE Id='${esc1(eventId)}'`);
     const ev = q.records && q.records[0];
     if (!ev) return res.json({ ok: false, error: 'evento não encontrado' });
-    if (!ev.CheckInDateTime__c) return res.json({ ok: false, noCheckin: true, error: 'O relatório de visita fica disponível após o check-in 📍' });
+    const preCheckin = !ev.CheckInDateTime__c;
     const desc = await describeCached(conn, 'Event', orgId);
     const mot = (desc.fields || []).find((f) => f.name === 'Motivo_Visita__c');
     const motivos = mot ? (mot.picklistValues || []).filter((p) => p.active).map((p) => p.value) : [];
@@ -961,7 +962,7 @@ router.get('/visit-report-meta', authMiddleware, async (req, res) => {
       const l = lq.records && lq.records[0];
       if (l) addr = { rua: l.EnderecoVisitaRua__c || l.Street || '', cidade: l.EnderecoVisitaCidade__c || l.City || '', estado: l.EnderecoVisitaEstado__c || l.State || '', cep: l.EnderecoVisitaCEP__c || l.PostalCode || '' };
     }
-    return res.json({ ok: true, event: { id: ev.Id, subject: ev.Subject, whoId: ev.WhoId, whoName: ev.Who && ev.Who.Name, checkin: ev.CheckInDateTime__c, checkout: ev.CheckOutDateTime__c, motivo: ev.Motivo_Visita__c, observacoes: ev.Observacoes_Visita__c, done: ev.EhRelatorioVisita__c === 'Sim' }, motivos, addr, isLead });
+    return res.json({ ok: true, preCheckin, event: { id: ev.Id, subject: ev.Subject, whoId: ev.WhoId, whoName: ev.Who && ev.Who.Name, checkin: ev.CheckInDateTime__c, checkout: ev.CheckOutDateTime__c, motivo: ev.Motivo_Visita__c, observacoes: ev.Observacoes_Visita__c, done: ev.EhRelatorioVisita__c === 'Sim' }, motivos, addr, isLead });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
