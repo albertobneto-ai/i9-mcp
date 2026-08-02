@@ -204,12 +204,12 @@
   .mapbtn:hover{background:#dcecff;transform:translateY(-1px);}
   .mapwrap{position:fixed;inset:0;z-index:55;background:#eef6ff;display:flex;flex-direction:column;}
   .mapwrap.hide{display:none;}
-  .maptop{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);z-index:4;}
+  .maptop{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);z-index:1000;position:relative;}
   .mticon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#eaf3ff;font-size:17px;display:flex;align-items:center;justify-content:center;transition:.15s;border:none;cursor:pointer;}
   .mticon:hover{background:#dcecff;transform:translateY(-1px);}
   .mticon:active{transform:scale(.93);}
   .routego2{background:linear-gradient(135deg,var(--blue),var(--spark));box-shadow:0 4px 12px rgba(1,118,211,.35);}
-  .maplayers{position:absolute;top:56px;left:8px;z-index:5;background:#fff;border-radius:16px;box-shadow:0 16px 44px rgba(3,45,96,.28);padding:14px 16px;min-width:230px;}
+  .maplayers{position:absolute;top:56px;left:8px;z-index:1000;background:#fff;border-radius:16px;box-shadow:0 16px 44px rgba(3,45,96,.28);padding:14px 16px;min-width:230px;}
   .maplayers.hide{display:none;}
   .mlhead{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .mlhead b{font-family:'Fredoka';font-weight:600;color:var(--navy);font-size:14px;flex:1;}
@@ -436,7 +436,7 @@
 
 <div class="mapwrap hide" id="mapWrap">
   <div class="maptop">
-    <button class="mticon" id="mapLayers" title="Camadas">☰</button>
+    <button class="mticon" id="mapBack" title="Voltar" style="font-size:20px;">←</button><button class="mticon" id="mapLayers" title="Camadas">☰</button>
     <div class="mapsearch"><input id="mapQ" placeholder="🔎 buscar lead, conta, cidade…" autocomplete="off"><div class="mapsug hide" id="mapSug"></div></div>
     <button class="mticon" id="mapRefresh" title="Atualizar">🔄</button>
     <button class="mticon" id="mapNewLead" title="Nova lead">➕</button>
@@ -753,7 +753,7 @@ function recView(){
     html+=`<div class="hacts">`;
     if(hi.phone||hi.mobile)html+=`<button title="Ligar" onclick="openDial({number:'${esc((hi.phone||hi.mobile||'').replace(/\D/g,''))}',display:'${esc(hi.phone||hi.mobile||'')}',name:'${esc(REC.name)}',leadId:'${REC.id}'})">📞</button>`;
     html+=`<button title="Agendar visita" onclick="ppSchedRec()">📅</button>`;
-    if(typeof MAP!=='undefined'&&MAPDATA){html+=`<button title="Ver no mapa" onclick="flyToRec('${REC.id}')">🗺️</button>`;}
+    html+=`<button title="Ver no mapa" onclick="flyToRec('${REC.id}')">🗺️</button>`;
     html+=`</div></div>`;
   }
   // -- status path (chevrons clicáveis) --
@@ -894,11 +894,11 @@ window.ppSchedRec=()=>{
     if(d.ok)toast('Visita agendada 📅');else toast(d.error||'falha');
   });
 };
-window.flyToRec=(id)=>{
-  if(!MAP||!MAPDATA)return;
+window.flyToRec=async(id)=>{
+  document.getElementById('recScrim').classList.add('hide');
+  if(!MAP||!MAPDATA){await openMap();await new Promise(r=>setTimeout(r,3000));}
   const x=(MAPDATA.leads||[]).find(l=>l.Id===id)||(MAPDATA.accounts||[]).find(a=>a.Id===id);
   if(!x){toast('Registro sem posição no mapa');return;}
-  document.getElementById('recScrim').classList.add('hide');
   document.getElementById('mapWrap').classList.remove('hide');
   setTimeout(()=>{MAP.invalidateSize();MAP.flyTo([x._lat,x._lng],15,{duration:.6});if(MARKS[id])setTimeout(()=>MARKS[id].openPopup(),700);},200);
 };
@@ -1299,6 +1299,7 @@ document.getElementById('mapLayers').addEventListener('click',()=>{document.getE
 document.getElementById('mlClose').addEventListener('click',()=>{document.getElementById('mapLayerPanel').classList.add('hide');});
 document.getElementById('mapBtn').addEventListener('click',openMap);
 document.getElementById('mapClose').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
+document.getElementById('mapBack').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
 
 // ── busca no mapa (lead, conta, cidade) ──
 let MARKS={};
