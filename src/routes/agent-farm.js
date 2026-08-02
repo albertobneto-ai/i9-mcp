@@ -489,18 +489,64 @@ router.get('/record', authMiddleware, async (req, res) => {
     const desc = await describeCached(conn, obj, orgId);
     const fmap = {}; (desc.fields || []).forEach((f) => { fmap[f.name] = f; });
     const SKIP = new Set(['attributes', 'IsDeleted', 'SystemModstamp', 'LastReferencedDate', 'LastViewedDate', 'PhotoUrl', 'IsUnreadByOwner', 'ActiveTrackerCount', 'IsPriorityRecord', 'RecordTypeId', 'MasterRecordId', 'JigsawContactId', 'IndividualId', 'CleanStatus', 'EmailBouncedReason', 'EmailBouncedDate']);
-    const fields = Object.entries(rec)
+    const makeField = (k, v) => {
+      const f = fmap[k] || {};
+      const type = f.type || 'string';
+      const editable = !!f.updateable && type !== 'reference';
+      const o = { name: k, label: f.label || k, value: String(v), type, editable };
+      if (type === 'picklist' || type === 'multipicklist') o.options = (f.picklistValues || []).filter((p) => p.active).map((p) => p.value);
+      return o;
+    };
+    const allFields = Object.entries(rec)
       .filter(([k, v]) => v != null && v !== '' && typeof v !== 'object' && !SKIP.has(k) && !k.endsWith('__pc'))
-      .slice(0, 50).map(([k, v]) => {
-        const f = fmap[k] || {};
-        const type = f.type || 'string';
-        const editable = !!f.updateable && type !== 'reference';
-        const o = { name: k, label: f.label || k, value: String(v), type, editable };
-        if (type === 'picklist' || type === 'multipicklist') o.options = (f.picklistValues || []).filter((p) => p.active).map((p) => p.value);
-        return o;
-      });
+      .map(([k, v]) => makeField(k, v));
+    // --- seções do layout (Lead) ---
+    const LEAD_SECTIONS = [
+      { heading: 'Informações da Lead', keys: ['Rating', 'Status', 'CNPJ__c', 'Company', 'Website', 'OwnerId', 'PercentualPreenchimento__c', 'Motivo_cancelamento__c', 'RelacionamentoLead__c'] },
+      { heading: 'Dados do contato', keys: ['FirstName', 'LastName', 'Name', 'Title', 'Email', 'LinkedIn__c'] },
+      { heading: 'Telefones para contato', keys: ['Phone', 'MobilePhone', 'Telefone3__c', 'Telefone4__c', 'Telefone5__c', 'Telefone6__c', 'Telefone7__c', 'TelefoneBlacklist__c', 'MobilePhoneBlacklist__c', 'Telefone3Blacklist__c', 'Telefone4Blacklist__c', 'Telefone5Blacklist__c', 'Telefone6Blacklist__c', 'Telefone7Blacklist__c'] },
+      { heading: 'Endereço', keys: ['Street', 'City', 'State', 'PostalCode', 'Country', 'Regional__c', 'Diretoria__c', 'Numero__c', 'Bairro__c', 'Complemento__c'] },
+      { heading: 'Endereço de visita', keys: ['EnderecoVisitaRua__c', 'EnderecoVisitaCidade__c', 'EnderecoVisitaEstado__c', 'EnderecoVisitaCEP__c', 'EnderecoMapRua__c'] },
+      { heading: 'Dados de marketing', keys: ['Segmento__c', 'Campaign__c', 'TipoLead__c', 'LeadSource', 'OrigemCanal__c', 'NomeAssociado__c', 'MatriculaAssociado__c', 'EtapaCarrinho__c'] },
+      { heading: 'Enriquecimento', keys: ['PorteEmpresa__c', 'FaixaFuncionarios__c', 'TicketPotencial__c', 'SituacaoCadastral__c', 'PorteEmpresaEnrichStatus__c', 'FaixaFuncionariosEnrichStatus__c', 'TicketPotencialEnrichStatus__c', 'SituacaoCadastralEnrichStatus__c', 'Industry'] },
+      { heading: 'Qualificação (BANT)', keys: ['OrcamentoDisponivel__c', 'NivelDecisaoContrato__c', 'NecessidadeIdentificada__c', 'PrazoContratacao__c', 'ProdutosEmpresa__c', 'FornecedoresEmpresa__c'] },
+      { heading: 'Informações de sistema', keys: ['CreatedById', 'CreatedDate', 'LastModifiedById', 'LastModifiedDate', 'Id'] },
+    ];
+    let sections = null;
+    if (obj === 'Lead') {
+      const fieldMap = {}; allFields.forEach((f) => { fieldMap[f.name] = f; });
+      sections = LEAD_SECTIONS.map((s) => {
+        const sFields = s.keys.map((k) => fieldMap[k]).filter(Boolean);
+        return sFields.length ? { heading: s.heading, fields: sFields } : null;
+      }).filter(Boolean);
+      const usedKeys = new Set(LEAD_SECTIONS.flatMap((s) => s.keys));
+      const extra = allFields.filter((f) => !usedKeys.has(f.name));
+      if (extra.length) sections.push({ heading: 'Outros campos', fields: extra });
+    }
+    // --- status path (Lead) ---
+    let statusPath = null;
+    if (obj === 'Lead') {
+      const PATH = ['Novo', 'Qualificacao', 'Conversao', 'Convertido'];
+      const CANCEL = 'Cancelado';
+      const cur = rec.Status || '';
+      const isCancelled = cur === CANCEL;
+      statusPath = { steps: PATH, current: cur, cancelled: isCancelled, cancelStep: CANCEL };
+    }
+    // --- regras de qualificação (Lead, mandadas pro front p/ validar) ---
+    let qualRules = null;
+    if (obj === 'Lead') {
+      qualRules = {
+        cancelledNoReopen: 'Lead cancelado não pode ter o status alterado.',
+        newOnCreate: 'Na criação, o status do Lead deve ser "Novo".',
+        conversionFields: {
+          message: 'Para alterar o status para "Em conversão", preencha todos os campos de qualificação.',
+          required: ['OrcamentoDisponivel__c', 'NivelDecisaoContrato__c', 'NecessidadeIdentificada__c', 'PrazoContratacao__c', 'ProdutosEmpresa__c'],
+          conditionalRequired: { field: 'FornecedoresEmpresa__c', unlessSegmento: 'Operadoras' },
+        },
+      };
+    }
     const name = rec.Name || rec.CaseNumber || rec.Subject || rec.Title || id;
-    return res.json({ ok: true, object: obj, id, name, fields, instanceUrl: conn.instanceUrl });
+    return res.json({ ok: true, object: obj, id, name, fields: allFields, sections, statusPath, qualRules, instanceUrl: conn.instanceUrl });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
