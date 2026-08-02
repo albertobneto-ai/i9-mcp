@@ -893,6 +893,7 @@ function ppActions(id,isEvent){
     <button onclick="visitAct('task','${id}',this)">✅ Tarefa</button>
     <button onclick="visitAct('checkin','${id}',this)">📍 Check-in</button>
     <button onclick="visitAct('checkout','${id}',this)">🏁 Check-out</button>
+    ${!isEvent&&String(id).startsWith('00Q')?`<button onclick="leadEnrich('${id}',this)">⚡ Neoway</button><button onclick="leadCoverage('${id}',this)">📡 Cobertura</button>`:''}
   </div>
   <div class="pp-sched"><input type="datetime-local"><button onclick="ppSchedGo('${id}',this)">OK</button></div>
   ${isEvent?`<div class="pp-sched pp-addrbox"><input type="text" placeholder="rua, nº, cidade - UF"><button onclick="ppAddrGo('${id}',this)">OK</button></div>`:''}
@@ -907,6 +908,22 @@ window.ppAddrGo=async(id,btn)=>{
   const d=await r.json();btn.disabled=false;
   if(d.ok){toast(d.geocoded?'Endereço salvo e marcador movido 📍':'Endereço salvo ✅');btn.closest('.leaflet-popup-content').querySelector('.pp-ok').textContent='📍 Endereço atualizado';loadMapData();}
   else toast(d.error||'falha');
+};
+window.leadEnrich=async(id,btn)=>{
+  const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
+  btn.disabled=true;btn.textContent='⚡ consultando…';
+  const r=await api('/api/agent-farm/enrich',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:id})});
+  const d=await r.json();btn.disabled=false;btn.textContent='⚡ Neoway';
+  if(d.ok){const x=d.data;ok.textContent='⚡ '+(x.porte||'—')+' · '+(x.faixa_funcionarios||'—')+' · ticket R$ '+((x.ticket_potencial||0).toLocaleString('pt-BR'))+' · '+(x.situacao_cadastral||'—');toast('Lead enriquecida via Neoway ⚡');try{celebrate();}catch(e){}loadMapData();}
+  else{ok.textContent='⚡ '+(d.error||'falha');toast(d.error||'falha');}
+};
+window.leadCoverage=async(id,btn)=>{
+  const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
+  btn.disabled=true;btn.textContent='📡 verificando…';
+  const r=await api('/api/agent-farm/coverage',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:id})});
+  const d=await r.json();btn.disabled=false;btn.textContent='📡 Cobertura';
+  if(d.ok){ok.textContent=d.parecer||('GPON '+(d.gpon.available?'✅':'❌')+' · Metro '+(d.metro.available?'✅':'❌'));toast('Cobertura consultada 📡');}
+  else{ok.textContent='📡 '+(d.error||'falha');toast(d.error||'falha');}
 };
 window.ppSched=(btn)=>{const s=btn.closest('.leaflet-popup-content').querySelector('.pp-sched');s.style.display=s.style.display==='flex'?'none':'flex';};
 window.ppSchedGo=async(id,btn)=>{
