@@ -962,8 +962,10 @@ function createInput(f,prefill){
   const num=['double','currency','int','percent'].includes(f.type);
   return `<input type="${num?'number':'text'}" ${base} value="${esc(v)}">`;
 }
+let PREFILL={};
 async function startCreate(object,prefill){
-  prefill=prefill||{};
+  PREFILL=prefill||{};
+  prefill=PREFILL;
   document.getElementById('newScrim').classList.remove('hide');
   document.getElementById('newTitle').textContent='Novo registro';
   const body=document.getElementById('newBody');body.innerHTML='<div class="muted">Preparando o formulário…</div>';
@@ -978,7 +980,7 @@ async function startCreate(object,prefill){
         meta.recordTypes.map(rt=>`<button class="rtbtn" data-rt="${rt.recordTypeId}">${esc(rt.name)}${rt.isDefault?'<span class="rtdef">padrão</span>':''}</button>`).join('')+'</div>'+
         '<button class="ghost" id="acFromNew" style="margin-top:14px;width:auto;padding:12px 16px;">⚡ Gerar várias de uma vez</button>';
       body.querySelector('#acFromNew').addEventListener('click',()=>{document.getElementById('newScrim').classList.add('hide');openAuto({});});
-      body.querySelectorAll('.rtbtn').forEach(b=>b.addEventListener('click',()=>loadCreateForm(object,b.dataset.rt,prefill)));
+      body.querySelectorAll('.rtbtn').forEach(b=>b.addEventListener('click',()=>loadCreateForm(object,b.dataset.rt,PREFILL)));
     }else{
       const rt=(meta.recordTypes.find(r=>r.isDefault)||meta.recordTypes[0]||{}).recordTypeId;
       loadCreateForm(object,rt,prefill);
