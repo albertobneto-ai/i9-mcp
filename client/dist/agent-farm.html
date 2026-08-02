@@ -204,12 +204,21 @@
   .mapbtn:hover{background:#dcecff;transform:translateY(-1px);}
   .mapwrap{position:fixed;inset:0;z-index:55;background:#eef6ff;display:flex;flex-direction:column;}
   .mapwrap.hide{display:none;}
-  .maptop{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);z-index:2;flex-wrap:wrap;}
-  .maptop b{font-family:'Fredoka';color:var(--navy);font-size:16px;}
-  .lay{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;}
-  .lay input{width:16px;height:16px;accent-color:var(--blue);}
-  .mapinfo{font-size:12px;color:var(--muted);margin-left:auto;}
-  .mapx{background:#eaf3ff;color:var(--navy);}
+  .maptop{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);z-index:4;}
+  .mticon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#eaf3ff;font-size:17px;display:flex;align-items:center;justify-content:center;transition:.15s;border:none;cursor:pointer;}
+  .mticon:hover{background:#dcecff;transform:translateY(-1px);}
+  .mticon:active{transform:scale(.93);}
+  .routego2{background:linear-gradient(135deg,var(--blue),var(--spark));box-shadow:0 4px 12px rgba(1,118,211,.35);}
+  .maplayers{position:absolute;top:56px;left:8px;z-index:5;background:#fff;border-radius:16px;box-shadow:0 16px 44px rgba(3,45,96,.28);padding:14px 16px;min-width:230px;}
+  .maplayers.hide{display:none;}
+  .mlhead{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .mlhead b{font-family:'Fredoka';font-weight:600;color:var(--navy);font-size:14px;flex:1;}
+  .mlx{width:28px;height:28px;border-radius:8px;background:#eef2f7;font-size:14px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;}
+  .mlay{display:flex;align-items:center;gap:9px;padding:8px 4px;font-size:13.5px;font-weight:600;color:var(--navy);cursor:pointer;border-bottom:1px solid #f4f7fb;}
+  .mlay:last-child{border-bottom:none;}
+  .mlay input{width:18px;height:18px;accent-color:var(--blue);flex:0 0 18px;}
+  .mldot{width:12px;height:12px;border-radius:50%;flex:0 0 12px;}
+  .mapinfo{font-size:11px;color:var(--muted);font-weight:500;}
   #mapEl{flex:1;min-height:0;}
   .mkr{font-size:22px;line-height:1;filter:drop-shadow(0 3px 4px rgba(3,45,96,.35));}
   .leaflet-popup-content{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;margin:12px 14px;min-width:210px;}
@@ -230,12 +239,12 @@
   .rb-x{background:#eef2f7;color:var(--muted);padding:7px 12px;border-radius:16px;font-weight:700;font-size:12px;}
   .pmk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 3px 7px rgba(3,45,96,.4);}
   .stopmk{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 4px 9px rgba(3,45,96,.45);}
-  .mapsearch{position:relative;min-width:190px;flex:1;max-width:290px;}
-  .mapsearch input{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;font-size:13px;background:#fff;}
+  .mapsearch{position:relative;flex:1;min-width:0;}
+  .mapsearch input{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:9px 12px;font-size:13px;background:#fff;}
   .mapsearch input:focus{border-color:var(--sky);outline:none;}
   .mapsug{position:absolute;top:105%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(3,45,96,.22);z-index:30;max-height:260px;overflow-y:auto;}
   .mapsug.hide{display:none;}
-  .mapsug button{display:block;width:100%;text-align:left;padding:9px 12px;font-size:12.5px;border-bottom:1px solid #f0f4fa;color:var(--ink);}
+  .mapsug button{display:block;width:100%;text-align:left;padding:9px 12px;font-size:12.5px;border-bottom:1px solid #f0f4fa;color:var(--ink);border:none;background:none;cursor:pointer;}
   .mapsug button:hover{background:#eaf3ff;}
   .mapsug small{color:var(--muted);}
   .calnav{width:34px;height:34px;border-radius:10px;background:#eaf3ff;color:var(--navy);font-size:17px;font-weight:800;}
@@ -254,7 +263,7 @@
   .evpill.dn{background:#e8f8ef;border-left-color:#0e9f5b;color:#08633a;}
   .evpill:hover{filter:brightness(.95);}
   .evmore{font-size:10px;color:var(--muted);font-weight:700;}
-  @media(max-width:640px){.calcell{min-height:64px;}.mapsearch{max-width:100%;}}
+  @media(max-width:640px){.calcell{min-height:64px;}}
   .micbtn:hover{background:#e3edf9;}
   .micbtn.miclive{background:linear-gradient(135deg,#e0483e,#b8342c);animation:crblink 1s infinite;}
   .micbtn.miclive svg path,.micbtn.miclive svg rect{stroke:#fff;}
@@ -427,27 +436,29 @@
 
 <div class="mapwrap hide" id="mapWrap">
   <div class="maptop">
-    <b>🗺️ Farm Maps</b>
-    <label class="lay"><input type="checkbox" id="layLeads" checked> 🎯 Lead Explorer</label>
-    <label class="lay"><input type="checkbox" id="layPrio"> 🔥 Por prioridade</label>
-    <label class="lay"><input type="checkbox" id="layAccts"> 🏢 Contas</label>
-    <label class="lay"><input type="checkbox" id="layGpon"> 📡 GPON</label>
-    <label class="lay"><input type="checkbox" id="layMetro"> 🛰️ Metro</label>
-    <label class="lay"><input type="checkbox" id="layToday" checked> 📅 Hoje</label>
-    <label class="lay"><input type="checkbox" id="lay7d" checked> 🗓️ 7 dias</label>
-    <button class="calnav caltoday" id="mapRefresh" style="width:auto;">🔄 Atualizar</button>
-    <button class="calnav caltoday" id="mapNewLead" style="width:auto;">➕ Nova lead</button>
-    <button class="calnav caltoday" id="mapCalBtn" style="width:auto;">📆 Agenda</button>
-    <button class="routego" id="routeBtn">🚗 Rota de hoje</button>
-    <div class="mapsearch"><input id="mapQ" placeholder="🔎 lead, conta, cidade…" autocomplete="off"><div class="mapsug hide" id="mapSug"></div></div>
-    <span class="mapinfo" id="mapInfo"></span>
-    <button class="xbtn mapx" id="mapClose">×</button>
+    <button class="mticon" id="mapLayers" title="Camadas">☰</button>
+    <div class="mapsearch"><input id="mapQ" placeholder="🔎 buscar lead, conta, cidade…" autocomplete="off"><div class="mapsug hide" id="mapSug"></div></div>
+    <button class="mticon" id="mapRefresh" title="Atualizar">🔄</button>
+    <button class="mticon" id="mapNewLead" title="Nova lead">➕</button>
+    <button class="mticon" id="mapCalBtn" title="Agenda">📆</button>
+    <button class="mticon routego2" id="routeBtn" title="Rota de hoje">🚗</button>
+    <button class="mticon" id="mapClose" title="Fechar">✕</button>
+  </div>
+  <div class="maplayers hide" id="mapLayerPanel">
+    <div class="mlhead"><b>Camadas</b><span class="mapinfo" id="mapInfo"></span><button class="mlx" id="mlClose">✕</button></div>
+    <label class="mlay"><input type="checkbox" id="layLeads" checked><span class="mldot" style="background:#0176D3"></span> Lead Explorer</label>
+    <label class="mlay"><input type="checkbox" id="layPrio"><span class="mldot" style="background:#e0483e"></span> Por prioridade</label>
+    <label class="mlay"><input type="checkbox" id="layAccts"><span class="mldot" style="background:#7a5af8"></span> Contas</label>
+    <label class="mlay"><input type="checkbox" id="layGpon"><span class="mldot" style="background:#12b76a"></span> Cobertura GPON</label>
+    <label class="mlay"><input type="checkbox" id="layMetro"><span class="mldot" style="background:#9b8afb"></span> Estações Metro</label>
+    <label class="mlay"><input type="checkbox" id="layToday" checked><span class="mldot" style="background:#0176D3"></span> Visitas hoje</label>
+    <label class="mlay"><input type="checkbox" id="lay7d" checked><span class="mldot" style="background:#98a2b3"></span> Visitas 7 dias</label>
   </div>
   <div class="routebar hide" id="routeBar">
     <span id="routeSum"></span>
     <a class="rb-g" id="routeGmaps" target="_blank" rel="noopener">🧭 Google Maps</a>
-    <a class="rb-w" id="routeWaze" target="_blank" rel="noopener">🚙 Waze (próx.)</a>
-    <button class="rb-x" id="routeClear">limpar</button>
+    <a class="rb-w" id="routeWaze" target="_blank" rel="noopener">🚙 Waze</a>
+    <button class="rb-x" id="routeClear">✕</button>
   </div>
   <div id="mapEl"></div>
 </div>
@@ -1284,6 +1295,8 @@ async function openMap(){
   setTimeout(()=>MAP.invalidateSize(),150);
   loadMapData();
 }
+document.getElementById('mapLayers').addEventListener('click',()=>{document.getElementById('mapLayerPanel').classList.toggle('hide');});
+document.getElementById('mlClose').addEventListener('click',()=>{document.getElementById('mapLayerPanel').classList.add('hide');});
 document.getElementById('mapBtn').addEventListener('click',openMap);
 document.getElementById('mapClose').addEventListener('click',()=>document.getElementById('mapWrap').classList.add('hide'));
 
@@ -1359,10 +1372,10 @@ document.getElementById('calBtn').addEventListener('click',openCal);
 document.getElementById('mapCalBtn').addEventListener('click',openCal);
 document.getElementById('mapNewLead').addEventListener('click',()=>startCreate('Lead',{}));
 document.getElementById('mapRefresh').addEventListener('click',async()=>{
-  const b=document.getElementById('mapRefresh');b.disabled=true;b.textContent='🔄 replotando…';
+  const b=document.getElementById('mapRefresh');b.disabled=true;b.style.opacity='.5';
   await loadMapData(true);
-  b.disabled=false;b.textContent='🔄 Atualizar';
-  toast('Marcadores replotados e geocode resolvido 📍');
+  b.disabled=false;b.style.opacity='';
+  toast('Marcadores replotados 📍');
 });
 document.getElementById('calClose').addEventListener('click',()=>document.getElementById('calWrap').classList.add('hide'));
 document.getElementById('calPrev').addEventListener('click',()=>{CAL.m--;if(CAL.m<0){CAL.m=11;CAL.y--;}loadCal();});
