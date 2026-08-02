@@ -1137,8 +1137,11 @@ window.ppAddrGo=async(id,btn)=>{
 };
 window.newLeadNear=(id)=>{
   const x=(MAPDATA&&MAPDATA.leads||[]).find(l=>l.Id===id);
-  startCreate('Lead',x?{City:x.City||'',State:x.State||''}:{});
-  toast(x&&x.City?('Nova lead em '+x.City+' 📍'):'Nova lead');
+  if(!x){startCreate('Lead',{});return;}
+  const pf={};
+  ['Company','City','State','Street','PostalCode','Phone','MobilePhone','Email','CNPJ__c','Segmento__c','Industry','LeadSource','Rating'].forEach(k=>{if(x[k])pf[k]=x[k];});
+  startCreate('Lead',pf);
+  toast('Nova lead'+(x.City?' em '+x.City:'')+(x.Company?' · '+x.Company:'')+' 📍');
 };
 window.leadEnrich=async(id,btn)=>{
   const ok=btn.closest('.leaflet-popup-content').querySelector('.pp-ok');
