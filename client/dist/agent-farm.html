@@ -629,7 +629,7 @@ function select(id){
   document.getElementById('stage').innerHTML=`<span class="pod">${mascot(active.color,k)}<div class="bubble-think" id="thinkB"><span class="dots"><i></i><i></i><i></i></span></div></span>
     <div><h3>${esc(active.name)}</h3><div class="sub"><span class="d"></span>IA operacional · conectada ao seu Salesforce</div></div>`;
   document.getElementById('composer').style.display='block';
-  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado no seu Salesforce. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['Liste minhas leads','Criar nova lead','Liste minhas tarefas','Liste meus eventos']}];}
+  if(!hist[id]){hist[id]=[{role:'assistant',text:`Oi! Sou ${active.name} 👋 tô conectado no seu Salesforce. Pode pedir de verdade — ou toca num atalho aqui embaixo:`,actions:['CMD:leads|📋 Minhas leads','CMD:newlead|➕ Criar lead','CMD:tasks|✅ Tarefas','CMD:events|📅 Eventos']}];}
   render();
 }
 function stageMascotEl(){const s=document.getElementById('stage');return s?s.querySelector('.mascot'):null;}
@@ -681,6 +681,11 @@ function celebrate(){
 
 async function sendMsg(){
   const inp=document.getElementById('input');const text=inp.value.trim();if(!text||busy||!active)return;
+  const tl=text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(/^(list[ea]r?|mostr[ae]r?|minhas?)\s*(leads?|lides?)$/i.test(tl)){inp.value='';directCmd('leads');return;}
+  if(/^(list[ea]r?|mostr[ae]r?|minhas?)\s*tarefas?$/i.test(tl)){inp.value='';directCmd('tasks');return;}
+  if(/^(list[ea]r?|mostr[ae]r?|meus?)\s*eventos?$/i.test(tl)){inp.value='';directCmd('events');return;}
+  if(/^(cri[ae]r?|nova?)\s*(lead|lide)$/i.test(tl)){inp.value='';directCmd('newlead');return;}
   inp.value='';busy=true;document.getElementById('send').disabled=true;
   hist[active.id].push({role:'me',text});hist[active.id].push({role:'assistant',typing:true,status:'consultando a arqevery…'});render();
   const tb=document.getElementById('thinkB');if(tb)tb.classList.add('show');
