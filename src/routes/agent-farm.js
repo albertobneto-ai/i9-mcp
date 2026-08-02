@@ -949,47 +949,91 @@ router.post('/visit-report', authMiddleware, async (req, res) => {
 const NEOWAY_URL = process.env.MULESOFT_NEOWAY_URL || 'https://i9-mcp-da48589780b2.herokuapp.com/api/mock/neoway/empresa/';
 const COVERAGE_URL = process.env.MULESOFT_COVERAGE_URL || null;
 async function neowayEnrich(conn, leadId) {
-  const q = await conn.query(`SELECT Id,Name,Company,CNPJ__c FROM Lead WHERE Id='${esc1(leadId)}'`);
+  const q = await conn.query(`SELECT Id,Name,Company,CNPJ__c,RecordType.DeveloperName,Street,City,State,PostalCode FROM Lead WHERE Id='${esc1(leadId)}'`);
   const l = q.records && q.records[0];
   if (!l) return { ok: false, error: 'lead não encontrada' };
+  if (l.RecordType && l.RecordType.DeveloperName && l.RecordType.DeveloperName !== 'Nacional') {
+    return { ok: false, error: 'regra da org: enriquecimento só para leads Nacional (RT atual: ' + l.RecordType.DeveloperName + ')' };
+  }
   const cnpj = String(l.CNPJ__c || '').replace(/\D/g, '');
   if (!cnpj) return { ok: false, error: 'lead sem CNPJ preenchido' };
+  const enderecoVazio = !l.Street && !l.City && !l.State && !l.PostalCode;
+  // Regra da org (Flow Enriquecimento): 1º busca cliente na base por CNPJ
+  let acc = null;
+  try {
+    const aq = await conn.query(`SELECT Id,Name,Industry,PorteEmpresa__c,FaixaFuncionarios__c,TicketPotencial__c,BillingStreet,BillingCity,BillingState,BillingPostalCode,BillingCountry,Bairro__c,Numero__c,Complemento__c FROM Account WHERE CNPJSemPontuacao__c='${esc1(cnpj)}' OR CNPJ__c='${esc1(l.CNPJ__c)}' LIMIT 1`);
+    acc = aq.records && aq.records[0];
+  } catch (e) {}
+  if (acc) {
+    const upd = { Id: leadId, Company: acc.Name, RelacionamentoLead__c: 'Base Existente',
+      PorteEmpresa__c: acc.PorteEmpresa__c || null, PorteEmpresaEnrichStatus__c: acc.PorteEmpresa__c ? 'OK' : 'VAZIO',
+      FaixaFuncionarios__c: acc.FaixaFuncionarios__c || null, FaixaFuncionariosEnrichStatus__c: acc.FaixaFuncionarios__c ? 'OK' : 'VAZIO',
+      TicketPotencial__c: acc.TicketPotencial__c != null ? acc.TicketPotencial__c : null, TicketPotencialEnrichStatus__c: acc.TicketPotencial__c != null ? 'OK' : 'VAZIO' };
+    if (acc.Industry) upd.Industry = acc.Industry;
+    if (enderecoVazio) {
+      if (acc.BillingStreet) upd.Street = acc.BillingStreet;
+      if (acc.BillingCity) upd.City = acc.BillingCity;
+      if (acc.BillingState) upd.State = acc.BillingState;
+      if (acc.BillingPostalCode) upd.PostalCode = acc.BillingPostalCode;
+      if (acc.BillingCountry) upd.Country = acc.BillingCountry;
+      if (acc.Bairro__c) upd.Bairro__c = acc.Bairro__c;
+      if (acc.Numero__c) upd.Numero__c = acc.Numero__c;
+      if (acc.Complemento__c) upd.Complemento__c = acc.Complemento__c;
+    }
+    try { await conn.sobject('Lead').update(upd); }
+    catch (e) { delete upd.FaixaFuncionarios__c; delete upd.PorteEmpresa__c; try { await conn.sobject('Lead').update(upd); } catch (e2) { return { ok: false, error: String(e2.message || e2) }; } }
+    try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: `⚡ Enriquecimento (regra da org): cliente da BASE EXISTENTE → ${acc.Name} · porte ${acc.PorteEmpresa__c || '—'} · ticket R$ ${(acc.TicketPotencial__c || 0).toLocaleString('pt-BR')}` }); } catch (e) {}
+    return { ok: true, relacionamento: 'Base Existente', accountId: acc.Id, data: { porte: acc.PorteEmpresa__c, faixa_funcionarios: acc.FaixaFuncionarios__c, ticket_potencial: acc.TicketPotencial__c, segmento: null, situacao_cadastral: null, company: acc.Name } };
+  }
+  // Não é da base → API externa (Neoway) e Novo Cliente
   let resp = null, status = 0;
   try { const r = await fetch(NEOWAY_URL + cnpj, { headers: { Accept: 'application/json' } }); status = r.status; if (r.ok) resp = (await r.json()).data; } catch (e) {}
   const st = (v) => (v != null && v !== '' ? 'OK' : 'VAZIO');
   if (!resp) {
-    try { await conn.sobject('Lead').update({ Id: leadId, PorteEmpresaEnrichStatus__c: 'ERRO', FaixaFuncionariosEnrichStatus__c: 'ERRO', TicketPotencialEnrichStatus__c: 'ERRO', SituacaoCadastralEnrichStatus__c: 'ERRO' }); } catch (e) {}
+    try { await conn.sobject('Lead').update({ Id: leadId, RelacionamentoLead__c: 'Novo Cliente', PorteEmpresaEnrichStatus__c: 'ERRO', FaixaFuncionariosEnrichStatus__c: 'ERRO', TicketPotencialEnrichStatus__c: 'ERRO', SituacaoCadastralEnrichStatus__c: 'ERRO' }); } catch (e) {}
     return { ok: false, error: status === 404 ? 'CNPJ não encontrado na base Neoway' : ('falha na consulta Neoway (' + status + ')') };
   }
-  const upd = { Id: leadId,
+  const segMap = { EMPRESARIAL: 'Empresarial', CORPORATIVO: 'Corporativo', OPERADORAS: 'Operadoras' };
+  const seg = segMap[String(resp.segmento || '').toUpperCase()] || resp.segmento || null;
+  const upd = { Id: leadId, RelacionamentoLead__c: 'Novo Cliente',
     PorteEmpresa__c: resp.porte || null, PorteEmpresaEnrichStatus__c: st(resp.porte),
     FaixaFuncionarios__c: resp.faixa_funcionarios || null, FaixaFuncionariosEnrichStatus__c: st(resp.faixa_funcionarios),
     TicketPotencial__c: resp.ticket_potencial != null ? resp.ticket_potencial : null, TicketPotencialEnrichStatus__c: st(resp.ticket_potencial),
-    SituacaoCadastral__c: resp.situacao_cadastral || null, SituacaoCadastralEnrichStatus__c: st(resp.situacao_cadastral),
-  };
-  if (resp.segmento) upd.Segmento__c = resp.segmento;
-  if (resp.logradouro) upd.Street = [resp.logradouro, resp.numero, resp.complemento].filter(Boolean).join(', ');
-  if (resp.cidade) upd.City = resp.cidade;
-  if (resp.estado) upd.State = resp.estado;
-  if (resp.cep) upd.PostalCode = resp.cep;
+    SituacaoCadastral__c: resp.situacao_cadastral || null, SituacaoCadastralEnrichStatus__c: st(resp.situacao_cadastral) };
+  if (seg) upd.Segmento__c = seg;
+  if (enderecoVazio) {
+    if (resp.logradouro) upd.Street = [resp.logradouro, resp.numero, resp.complemento].filter(Boolean).join(', ');
+    if (resp.cidade) upd.City = resp.cidade;
+    if (resp.estado) upd.State = resp.estado;
+    if (resp.cep) upd.PostalCode = resp.cep;
+    if (resp.bairro) upd.Bairro__c = resp.bairro;
+  }
   try { await conn.sobject('Lead').update(upd); }
   catch (e) {
     for (const k of ['FaixaFuncionarios__c', 'Segmento__c', 'PorteEmpresa__c', 'SituacaoCadastral__c']) delete upd[k];
     try { await conn.sobject('Lead').update(upd); } catch (e2) { return { ok: false, error: String(e2.message || e2) }; }
   }
-  try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: `⚡ Enriquecimento Neoway: porte ${resp.porte || '—'} · ${resp.faixa_funcionarios || '—'} · ticket potencial R$ ${(resp.ticket_potencial || 0).toLocaleString('pt-BR')} · situação ${resp.situacao_cadastral || '—'} · segmento ${resp.segmento || '—'}` }); } catch (e) {}
-  return { ok: true, data: resp };
+  try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: `⚡ Enriquecimento Neoway (regra da org): NOVO CLIENTE · porte ${resp.porte || '—'} · ${resp.faixa_funcionarios || '—'} · ticket R$ ${(resp.ticket_potencial || 0).toLocaleString('pt-BR')} · situação ${resp.situacao_cadastral || '—'} · segmento ${seg || '—'}${enderecoVazio ? ' · endereço preenchido' : ' · endereço preservado (já preenchido)'}` }); } catch (e) {}
+  return { ok: true, relacionamento: 'Novo Cliente', data: { ...resp, segmento: seg } };
 }
 async function coverageCheck(conn, leadId) {
-  const q = await conn.query(`SELECT Id,Name,City,State,EnderecoVisitaCidade__c,EnderecoVisitaEstado__c,EnderecoVisitaLatitude__c,EnderecoVisitaLongitude__c FROM Lead WHERE Id='${esc1(leadId)}'`);
+  const q = await conn.query(`SELECT Id,Name,Street,City,State,Bairro__c,EnderecoVisitaCidade__c,EnderecoVisitaEstado__c,EnderecoVisitaLatitude__c,EnderecoVisitaLongitude__c FROM Lead WHERE Id='${esc1(leadId)}'`);
   const l = q.records && q.records[0];
   if (!l) return { ok: false, error: 'lead não encontrada' };
+  // Regra da org (Flow Cobertura Rede): endereço completo obrigatório
+  const faltam = [];
+  if (!l.Street) faltam.push('rua');
+  if (!l.Bairro__c) faltam.push('bairro');
+  if (!l.City) faltam.push('cidade');
+  if (!l.State) faltam.push('UF');
+  if (faltam.length) return { ok: false, error: 'regra da org: endereço completo obrigatório para consultar cobertura — falta ' + faltam.join(', ') };
   let pos = null;
   if (l.EnderecoVisitaLatitude__c != null) pos = [l.EnderecoVisitaLatitude__c, l.EnderecoVisitaLongitude__c];
+  if (!pos) pos = await geocodeText([l.Street, l.Bairro__c, l.City, l.State].filter(Boolean).join(', '));
   if (!pos) { const city = l.EnderecoVisitaCidade__c || l.City, uf = l.EnderecoVisitaEstado__c || l.State; if (city && uf) pos = await geocodeCity(city, String(uf).slice(0, 2).toUpperCase()); }
-  if (!pos) return { ok: false, error: 'lead sem cidade/endereço para consultar cobertura' };
+  if (!pos) return { ok: false, error: 'não consegui geocodificar o endereço da lead' };
   if (COVERAGE_URL) {
-    try { const r = await fetch(COVERAGE_URL + '?lat=' + pos[0] + '&lng=' + pos[1]); if (r.ok) { const d = await r.json(); return { ok: true, source: 'mulesoft', ...d }; } } catch (e) {}
+    try { const r = await fetch(COVERAGE_URL + '?lat=' + pos[0] + '&lng=' + pos[1]); if (r.ok) { const d = await r.json(); return { ok: true, source: 'mulesoft', hasViability: !!(d.summary && d.summary.hasViability), ...d }; } } catch (e) {}
   }
   let bg = null; for (const g of GPON_TERR) { const d = havKm(pos, [g.lat, g.lng]); if (!bg || d < bg.distKm) bg = { city: g.city, uf: g.uf, distKm: d, km: g.km }; }
   const gpon = { available: bg ? bg.distKm <= bg.km : false, city: bg && bg.city, distKm: bg && Math.round(bg.distKm * 10) / 10 };
@@ -999,9 +1043,10 @@ async function coverageCheck(conn, leadId) {
     for (const m of (mq.records || [])) { const d = havKm(pos, [m.Latitude__c, m.Longitude__c]); if (!bm || d < bm.distKm) bm = { station: m.Name, anel: m.Anel_Associado__c, distKm: d }; }
   } catch (e) {}
   const metro = { available: bm ? bm.distKm <= 2.5 : false, station: bm && bm.station, anel: bm && bm.anel, distKm: bm && Math.round(bm.distKm * 10) / 10 };
-  const parecer = `📡 Cobertura de rede: GPON ${gpon.available ? '✅ disponível' : '❌ fora da mancha'} (${gpon.city || '—'}, ${gpon.distKm != null ? gpon.distKm + ' km' : '—'}) · Metro ${metro.available ? '✅ ' + metro.station + ' / ' + (metro.anel || '') : '❌ sem estação próxima'}${metro.distKm != null ? ' (' + metro.distKm + ' km)' : ''}`;
+  const hasViability = !!(gpon.available || metro.available);
+  const parecer = `📡 Cobertura de rede (endereço completo ✓): hasViability ${hasViability ? '✅' : '❌'} · GPON ${gpon.available ? '✅ disponível' : '❌ fora da mancha'} (${gpon.city || '—'}, ${gpon.distKm != null ? gpon.distKm + ' km' : '—'}) · Metro ${metro.available ? '✅ ' + metro.station + ' / ' + (metro.anel || '') : '❌ sem estação próxima'}${metro.distKm != null ? ' (' + metro.distKm + ' km)' : ''}`;
   try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: parecer }); } catch (e) {}
-  return { ok: true, source: 'territorio', gpon, metro, parecer, pos };
+  return { ok: true, source: 'territorio', hasViability, gpon, metro, parecer, pos };
 }
 router.post('/enrich', authMiddleware, async (req, res) => {
   try {
