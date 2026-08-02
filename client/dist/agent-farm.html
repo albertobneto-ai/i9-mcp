@@ -84,6 +84,19 @@
   .rtdef{font-size:10px;font-weight:800;background:var(--mint);color:#fff;padding:2px 7px;border-radius:20px;margin-left:8px;}
   .reqmark{color:#d9534f;font-weight:800;}
   #recScrim #recBody{flex:1;min-height:0;overflow-y:auto;}
+  .spath{display:flex;margin:0 -18px;padding:10px 12px;overflow-x:auto;gap:0;background:#f6f9ff;border-bottom:1px solid var(--line);}
+  .spath .step{position:relative;padding:9px 20px 9px 28px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;background:#eef2f7;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%);}
+  .spath .step:first-child{padding-left:16px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);}
+  .spath .step.done{background:#d1fadf;color:#08633a;}
+  .spath .step.cur{background:var(--blue);color:#fff;}
+  .spath .step.cancel{background:#fde8e8;color:#b42318;}
+  .recsec{margin:0 0 2px;}
+  .recsec .sechdr{display:flex;align-items:center;gap:8px;padding:11px 18px;background:linear-gradient(90deg,#f6f9ff,#fff);border-bottom:1px solid var(--line);cursor:pointer;font-family:'Fredoka';font-weight:600;font-size:13.5px;color:var(--navy);}
+  .recsec .sechdr .arr{transition:.2s;font-size:11px;}
+  .recsec.collapsed .sechdr .arr{transform:rotate(-90deg);}
+  .recsec.collapsed .secbody{display:none;}
+  .secbody{padding:0;}
+  .qualwarn{margin:2px 18px 10px;padding:10px 12px;background:#fff4e5;border-left:3px solid #f79009;border-radius:0 8px 8px 0;font-size:12px;color:#8a4c04;font-weight:600;}
   .recagent{flex:0 0 auto;border-top:1px solid var(--line);background:linear-gradient(0deg,#eef6ff,#fff);padding:11px 18px 14px;}
   .ragReply{font-size:13.5px;color:var(--ink);max-height:150px;overflow-y:auto;margin-bottom:9px;}
   .ragReply:empty{display:none;}
@@ -681,7 +694,7 @@ async function openRecord(id){
   document.getElementById('recTitle').textContent='Registro';
   document.getElementById('recSub').textContent=id;
   document.getElementById('recEdit').style.display='none';
-  const body=document.getElementById('recBody');body.innerHTML='<div class="muted">Carregando da arqevery…</div>';
+  const body=document.getElementById('recBody');body.innerHTML='<div class="muted">Carregando…</div>';
   try{
     const r=await api('/api/agent-farm/record?orgId='+ORG_ID+'&id='+encodeURIComponent(id));
     const d=await r.json();
@@ -693,9 +706,49 @@ function recView(){
   document.getElementById('recTitle').textContent=REC.name;
   document.getElementById('recSub').textContent=REC.object+' · '+REC.id;
   document.getElementById('recEdit').style.display=REC.fields.some(f=>f.editable)?'flex':'none';
-  const rows=REC.fields.map(f=>`<div class="recrow"><span class="k">${esc(f.label)}</span><span class="v">${esc(f.value)}</span></div>`).join('');
+  let html='';
+  // -- status path (chevrons) --
+  if(REC.statusPath){
+    const sp=REC.statusPath;const steps=sp.steps;const ci=steps.indexOf(sp.current);
+    html+='<div class="spath">';
+    steps.forEach((s,i)=>{
+      const cls=sp.cancelled?'':(i<ci?'done':(i===ci?'cur':''));
+      html+=`<div class="step ${cls}">${esc(s)}</div>`;
+    });
+    if(sp.cancelled)html+=`<div class="step cancel">Cancelado</div>`;
+    html+='</div>';
+  }
+  // -- seções ou flat --
+  const secs=REC.sections||[{heading:null,fields:REC.fields}];
+  secs.forEach((sec,si)=>{
+    const isPhones=sec.heading&&/telefone/i.test(sec.heading);
+    const collapsed=isPhones||/sistema|duplicidade|marketing/i.test(sec.heading||'');
+    html+=`<div class="recsec ${collapsed?'collapsed':''}">`;
+    if(sec.heading)html+=`<div class="sechdr" onclick="this.parentElement.classList.toggle('collapsed')"><span class="arr">▼</span> ${esc(sec.heading)}</div>`;
+    html+='<div class="secbody">';
+    sec.fields.forEach(f=>{html+=`<div class="recrow"><span class="k">${esc(f.label)}</span><span class="v">${esc(f.value)}</span></div>`;});
+    html+='</div></div>';
+  });
+  // -- regras de qualificação (aviso visual se faltam campos BANT) --
+  if(REC.qualRules&&REC.statusPath){
+    const sp=REC.statusPath;
+    if(sp.cancelled){html+='<div class="qualwarn">🚫 '+esc(REC.qualRules.cancelledNoReopen)+'</div>';}
+    else if(sp.current==='Qualificacao'){
+      const qr=REC.qualRules.conversionFields;const fm={};(REC.fields||[]).forEach(f=>{fm[f.name]=f.value;});
+      const falta=qr.required.filter(k=>!fm[k]);
+      const seg=fm['Segmento__c'];
+      if(seg!=='Operadoras'&&!fm[qr.conditionalRequired.field])falta.push(qr.conditionalRequired.field);
+      if(falta.length){
+        const labels=falta.map(k=>{const f=(REC.fields||[]).find(x=>x.name===k);return f?f.label:k;});
+        html+='<div class="qualwarn">⚠️ Para avançar para Conversão, preencha: '+esc(labels.join(', '))+'</div>';
+      }
+    }
+  }
   const url=(REC.instanceUrl||'')+'/lightning/r/'+encodeURIComponent(REC.object)+'/'+REC.id+'/view';
-  document.getElementById('recBody').innerHTML='<div class="recgrid">'+rows+'</div><a class="recopen" href="'+url+'" target="_blank" rel="noopener">Abrir no Salesforce ↗</a>';
+  html+='<a class="recopen" href="'+url+'" target="_blank" rel="noopener">Abrir no Salesforce ↗</a>';
+  document.getElementById('recBody').innerHTML=html;
+}
+function recEditX(){
 }
 function fieldInput(f){
   const id='ef_'+f.name;
@@ -708,11 +761,21 @@ function fieldInput(f){
 }
 function recEdit(){
   document.getElementById('recEdit').style.display='none';
-  const rows=REC.fields.map(f=> f.editable
-    ? `<div class="recrow edit"><span class="k">${esc(f.label)}</span>${fieldInput(f)}</div>`
-    : `<div class="recrow"><span class="k">${esc(f.label)}</span><span class="v" style="opacity:.5">${esc(f.value)}</span></div>`).join('');
-  document.getElementById('recBody').innerHTML='<div class="recgrid recedit">'+rows+'</div>'+
-    '<div style="display:flex;gap:8px;margin-top:16px;"><button class="prim" id="recSave" style="margin-top:0;">Salvar alterações</button><button class="ghost" id="recCancel" style="margin-top:0;width:auto;padding:14px 18px;">Cancelar</button></div>';
+  let html='';
+  const secs=REC.sections||[{heading:null,fields:REC.fields}];
+  secs.forEach(sec=>{
+    html+='<div class="recsec">';
+    if(sec.heading)html+=`<div class="sechdr" onclick="this.parentElement.classList.toggle('collapsed')"><span class="arr">▼</span> ${esc(sec.heading)}</div>`;
+    html+='<div class="secbody">';
+    sec.fields.forEach(f=>{
+      html+=f.editable
+        ?`<div class="recrow edit"><span class="k">${esc(f.label)}</span>${fieldInput(f)}</div>`
+        :`<div class="recrow"><span class="k">${esc(f.label)}</span><span class="v" style="opacity:.5">${esc(f.value)}</span></div>`;
+    });
+    html+='</div></div>';
+  });
+  html+='<div style="display:flex;gap:8px;margin:16px 18px;"><button class="prim" id="recSave" style="margin-top:0;">Salvar alterações</button><button class="ghost" id="recCancel" style="margin-top:0;width:auto;padding:14px 18px;">Cancelar</button></div>';
+  document.getElementById('recBody').innerHTML=html;
   document.getElementById('recSave').addEventListener('click',recSave);
   document.getElementById('recCancel').addEventListener('click',recView);
 }
