@@ -290,7 +290,7 @@
     <div class="thread" id="thread">
       <div class="empty2" id="welcome">
         <div class="big" id="welcomeMascot"></div>
-        <h4 class="fred">Oi! Bem-vindo à farm ☁️</h4>
+        <h4 class="fred" id="welcomeTitle">Oi! Bem-vindo à farm ☁️</h4>
         <p>Escolha um agente na prateleira e peça de verdade: <b>liste minhas leads</b>, <b>altere o telefone</b>, <b>crie uma conta</b>. Ele faz na arqevery na hora.</p>
       </div>
     </div>
@@ -532,6 +532,10 @@ async function api(path,opts={}){opts.headers=Object.assign({'Content-Type':'app
 document.getElementById('loginPod').innerHTML=mascot('#0176D3','lead');
 document.getElementById('createPod').innerHTML=mascot('#06B6C7','bot');
 document.getElementById('welcomeMascot').innerHTML=mascot('#1B96FF','lead');
+(async()=>{try{
+  const r=await api('/api/agent-farm/whoami?orgId='+ORG_ID);const d=await r.json();
+  if(d.ok&&d.firstName)document.getElementById('welcomeTitle').textContent='Oi, '+d.firstName+'! Bem-vindo à farm ☁️';
+}catch(e){}})();
 document.getElementById('doLogin').addEventListener('click',doLogin);
 document.getElementById('lPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 async function doLogin(){
