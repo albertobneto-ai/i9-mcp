@@ -477,7 +477,20 @@ function mascot(accent,kind){
 
 function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · arqevery':'desconectado';}
 function toast(m){const t=document.getElementById('toast');t.innerHTML='<span>✨</span>'+esc(m);t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3300);}
-function chipDock(){let d=document.getElementById('chipDock');if(!d){d=document.createElement('div');d.id='chipDock';d.className='chipdock';document.body.appendChild(d);}return d;}
+function chipDock(){
+  let bg=document.getElementById('chipBg');
+  if(!bg){bg=document.createElement('div');bg.id='chipBg';bg.style.cssText='position:fixed;inset:0;z-index:79;background:rgba(3,45,96,.35);backdrop-filter:blur(2px);display:none;';bg.addEventListener('click',closeChips);document.body.appendChild(bg);}
+  let d=document.getElementById('chipDock');
+  if(!d){d=document.createElement('div');d.id='chipDock';d.className='chipdock';document.body.appendChild(d);}
+  return d;
+}
+function closeChips(){
+  const c=document.getElementById('dialChip');if(c)c.style.display='none';
+  const r=document.getElementById('recChip');if(r)r.style.display='none';
+  const bg=document.getElementById('chipBg');if(bg)bg.style.display='none';
+  clearTimeout(window._dialT);clearTimeout(window._recT);
+}
+function showChipBg(){const bg=document.getElementById('chipBg');if(bg)bg.style.display='block';}
 function openDial(d){
   if(!d||!d.number)return;
   const tel='tel:+'+d.number;
@@ -485,8 +498,9 @@ function openDial(d){
   let chip=document.getElementById('dialChip');
   if(!chip){chip=document.createElement('a');chip.id='dialChip';chip.className='dialchip';dock.appendChild(chip);}
   chip.href=tel;chip.innerHTML='📞 Ligar para '+esc(d.display||d.number);chip.style.display='inline-flex';
-  chip.onclick=()=>{setTimeout(()=>{chip.style.display='none';const rc=document.getElementById('recChip');if(rc)rc.style.display='none';},400);};
-  clearTimeout(window._dialT);window._dialT=setTimeout(()=>{chip.style.display='none';},45000);
+  chip.onclick=()=>{setTimeout(closeChips,400);};
+  showChipBg();
+  clearTimeout(window._dialT);window._dialT=setTimeout(closeChips,45000);
   if(d.leadId){
     let rc=document.getElementById('recChip');
     if(!rc){rc=document.createElement('button');rc.id='recChip';rc.className='recchip';dock.appendChild(rc);}
@@ -498,7 +512,7 @@ function openDial(d){
       if(ok!==false){chip.style.display='none';toast('Gravando 🔴 abrindo o telefone…');setTimeout(()=>{window.location.href=tel;},600);}
       else{rc.innerHTML='🎙️ Gravar & ligar (viva-voz)';rc.style.display='inline-flex';}
     };
-    clearTimeout(window._recT);window._recT=setTimeout(()=>{rc.style.display='none';},45000);
+    clearTimeout(window._recT);window._recT=setTimeout(closeChips,45000);
   }
 }
 
