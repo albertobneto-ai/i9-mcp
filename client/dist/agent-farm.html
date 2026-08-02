@@ -105,11 +105,7 @@
   .spath .step{cursor:pointer;transition:.15s;}
   .spath .step:hover{filter:brightness(.9);}
   .spath .step.cancel-btn{background:#fde8e8;color:#b42318;cursor:pointer;}
-  .cancelmodal{position:fixed;inset:0;z-index:70;background:rgba(3,45,96,.5);display:flex;align-items:center;justify-content:center;padding:18px;}
-  .cancelmodal .cbox{background:#fff;border-radius:18px;padding:22px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(3,45,96,.3);}
-  .cancelmodal .cbox h4{margin:0 0 14px;font-family:'Fredoka';color:var(--navy);}
-  .cancelmodal .cbox select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font-size:14px;margin-bottom:12px;}
-  .cancelmodal .cbox .cbtn{display:flex;gap:8px;}
+
   .qualwarn{margin:2px 18px 10px;padding:10px 12px;background:#fff4e5;border-left:3px solid #f79009;border-radius:0 8px 8px 0;font-size:12px;color:#8a4c04;font-weight:600;}
   .recagent{flex:0 0 auto;border-top:1px solid var(--line);background:linear-gradient(0deg,#eef6ff,#fff);padding:11px 18px 14px;}
   .ragReply{font-size:13.5px;color:var(--ink);max-height:150px;overflow-y:auto;margin-bottom:9px;}
@@ -784,35 +780,86 @@ async function advanceStatus(newStatus){
   if(!REC||REC.object!=='Lead')return;
   if(newStatus===REC.statusPath.current){toast('Já está neste status');return;}
   if(newStatus==='Cancelado'){openCancelModal();return;}
-  const btn=event&&event.target;if(btn)btn.style.opacity='.5';
   const r=await api('/api/agent-farm/advance-status',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:REC.id,newStatus})});
   const d=await r.json();
-  if(btn)btn.style.opacity='';
   if(d.ok){toast('Status avançado para '+newStatus+' ✅');try{celebrate();}catch(e){}await openRecord(REC.id);}
-  else if(d.needBANT){toast('⚠️ '+d.error);}
+  else if(d.needBANT){openBANTModal(d.missing,newStatus);}
   else if(d.rule==='cancelledNoReopen'){toast('🚫 '+d.error);}
   else toast(d.error||'falha');
 }
+function floatModal(id,html){
+  let m=document.getElementById(id);if(m)m.remove();
+  m=document.createElement('div');m.id=id;
+  m.style.cssText='position:fixed;inset:0;z-index:80;background:rgba(3,45,96,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px;';
+  m.innerHTML='<div style="background:#fff;border-radius:18px;padding:24px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(3,45,96,.35);max-height:80vh;overflow-y:auto;">'+html+'</div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  return m;
+}
 function openCancelModal(){
   const motivos=REC.cancelMotivos||[];
-  let m=document.getElementById('cancelModal');
-  if(m)m.remove();
-  m=document.createElement('div');m.id='cancelModal';m.className='cancelmodal';
-  m.innerHTML=`<div class="cbox"><h4>🚫 Cancelar lead</h4>
-    <p style="font-size:13px;color:var(--muted);margin:0 0 10px;">Selecione o motivo do cancelamento:</p>
-    <select id="cancelSel"><option value="">— selecione o motivo —</option>${motivos.map(v=>'<option value="'+v+'">'+v.replace(/_/g,' ')+'</option>').join('')}</select>
-    <div class="cbtn"><button class="prim" id="cancelOk" style="margin-top:0;">Cancelar lead</button><button class="ghost" id="cancelNo" style="margin-top:0;width:auto;padding:14px 18px;">Voltar</button></div></div>`;
-  document.body.appendChild(m);
+  const html=`<h4 style="font-family:'Fredoka';color:var(--navy);margin:0 0 12px;">🚫 Cancelar lead</h4>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">Selecione o motivo do cancelamento:</p>
+    <select id="cancelSel" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font-size:14px;margin-bottom:14px;">
+      <option value="">— selecione o motivo —</option>${motivos.map(v=>'<option value="'+v+'">'+v.replace(/_/g,' ')+'</option>').join('')}</select>
+    <div style="display:flex;gap:8px;">
+      <button class="prim" id="cancelOk" style="margin-top:0;flex:1;">Cancelar lead</button>
+      <button class="ghost" id="cancelNo" style="margin-top:0;width:auto;padding:14px 18px;">Voltar</button>
+    </div>`;
+  const m=floatModal('cancelModal',html);
   document.getElementById('cancelNo').addEventListener('click',()=>m.remove());
-  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
   document.getElementById('cancelOk').addEventListener('click',async()=>{
     const mot=document.getElementById('cancelSel').value;
     if(!mot){toast('Selecione o motivo');return;}
     const btn=document.getElementById('cancelOk');btn.disabled=true;btn.textContent='Cancelando…';
     const r=await api('/api/agent-farm/advance-status',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:REC.id,newStatus:'Cancelado',motivo:mot})});
     const d=await r.json();
-    if(d.ok){m.remove();toast('Lead cancelada 🚫');await openRecord(REC.id);}
+    if(d.ok){m.remove();toast('Lead cancelada 🚫');try{celebrate();}catch(e){}await openRecord(REC.id);}
     else{toast(d.error||'falha');btn.disabled=false;btn.textContent='Cancelar lead';}
+  });
+}
+function openBANTModal(missing,targetStatus){
+  const bantFields={
+    'Orçamento Disponível':{name:'OrcamentoDisponivel__c',type:'picklist'},
+    'Nível de Decisão':{name:'NivelDecisaoContrato__c',type:'picklist'},
+    'Necessidade Identificada':{name:'NecessidadeIdentificada__c',type:'picklist'},
+    'Prazo de Contratação':{name:'PrazoContratacao__c',type:'picklist'},
+    'Produtos da Empresa':{name:'ProdutosEmpresa__c',type:'text'},
+    'Fornecedores':{name:'FornecedoresEmpresa__c',type:'text'},
+  };
+  let fieldsHtml='';
+  (missing||[]).forEach(label=>{
+    const bf=bantFields[label];
+    if(!bf)return;
+    const fDesc=(REC.fields||[]).find(f=>f.name===bf.name);
+    const opts=(fDesc&&fDesc.options)||[];
+    if(opts.length){
+      fieldsHtml+=`<div class="fld"><label>${esc(label)} *</label><select class="bfi" data-f="${bf.name}" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;"><option value=""></option>${opts.map(o=>'<option>'+esc(o)+'</option>').join('')}</select></div>`;
+    } else {
+      fieldsHtml+=`<div class="fld"><label>${esc(label)} *</label><input class="bfi" data-f="${bf.name}" type="text" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;"></div>`;
+    }
+  });
+  const html=`<h4 style="font-family:'Fredoka';color:var(--navy);margin:0 0 8px;">⚠️ Qualificação obrigatória</h4>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">Preencha os campos abaixo para avançar para ${esc(targetStatus)}:</p>
+    ${fieldsHtml}
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="prim" id="bantOk" style="margin-top:0;flex:1;">Salvar e avançar</button>
+      <button class="ghost" id="bantNo" style="margin-top:0;width:auto;padding:14px 18px;">Cancelar</button>
+    </div>`;
+  const m=floatModal('bantModal',html);
+  document.getElementById('bantNo').addEventListener('click',()=>m.remove());
+  document.getElementById('bantOk').addEventListener('click',async()=>{
+    const fields={};let empty=false;
+    m.querySelectorAll('.bfi').forEach(el=>{const v=el.value.trim();if(!v)empty=true;fields[el.dataset.f]=v;});
+    if(empty){toast('Preencha todos os campos obrigatórios');return;}
+    const btn=document.getElementById('bantOk');btn.disabled=true;btn.textContent='Salvando…';
+    const r1=await api('/api/agent-farm/record-update',{method:'POST',body:JSON.stringify({orgId:ORG_ID,id:REC.id,object:'Lead',fields})});
+    const d1=await r1.json();
+    if(!d1.ok){toast(d1.error||'falha ao salvar campos');btn.disabled=false;btn.textContent='Salvar e avançar';return;}
+    const r2=await api('/api/agent-farm/advance-status',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:REC.id,newStatus:targetStatus})});
+    const d2=await r2.json();
+    if(d2.ok){m.remove();toast('Status avançado para '+targetStatus+' ✅');try{celebrate();}catch(e){}await openRecord(REC.id);}
+    else{toast(d2.error||'falha ao avançar');btn.disabled=false;btn.textContent='Salvar e avançar';}
   });
 }
 window.ppSchedRec=()=>{
