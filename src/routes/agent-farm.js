@@ -728,8 +728,8 @@ function jitter(id, base) {
   const dx = ((h % 1000) / 1000 - 0.5) * 0.06, dy = (((h >> 10) % 1000) / 1000 - 0.5) * 0.06;
   return [base[0] + dx, base[1] + dy];
 }
-async function coordsFor(recs, cityF, stateF, latF, lngF) {
-  let newGeo = 0;
+async function coordsFor(recs, cityF, stateF, latF, lngF, budget) {
+  let newGeo = 0; const MAXG = budget || 8;
   const out = [];
   for (const r of recs) {
     let pos = null;
@@ -739,7 +739,7 @@ async function coordsFor(recs, cityF, stateF, latF, lngF) {
       if (city && uf) {
         const key = (city + '|' + uf).toLowerCase();
         if (_geo[key]) pos = jitter(r.Id, _geo[key]);
-        else if (newGeo < 8) { newGeo++; const g = await geocodeCity(city, uf); if (g) pos = jitter(r.Id, g); }
+        else if (newGeo < MAXG) { newGeo++; const g = await geocodeCity(city, uf); if (g) pos = jitter(r.Id, g); }
         if (!pos && UF_CENTER[uf]) pos = jitter(r.Id, UF_CENTER[uf]);
       } else if (UF_CENTER[uf]) pos = jitter(r.Id, UF_CENTER[uf]);
     }
@@ -752,14 +752,15 @@ router.get('/map-data', authMiddleware, async (req, res) => {
     const orgId = req.query.orgId || 36;
     const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
     const conn = await connToOrg(org);
+    const boost = req.query.boost === '1';
     const lq = await conn.query("SELECT Id,Name,Company,City,State,Latitude,Longitude,Status,Rating,Phone FROM Lead WHERE IsConverted=false AND (City != null OR State != null) ORDER BY CreatedDate DESC LIMIT 250");
     const aq = await conn.query("SELECT Id,Name,BillingCity,BillingState,BillingLatitude,BillingLongitude,Phone,Industry FROM Account WHERE BillingCity != null OR BillingState != null ORDER BY LastModifiedDate DESC LIMIT 150");
     const now = new Date(); const past = new Date(now.getTime() - 7 * 864e5).toISOString(); const fut = new Date(now.getTime() + 30 * 864e5).toISOString();
     const eq = await conn.query(`SELECT Id,Subject,StartDateTime,Location,WhoId,Who.Name,CheckInDateTime__c,CheckOutDateTime__c,CheckInLatitude__c,CheckInLongitude__c,EhRelatorioVisita__c FROM Event WHERE StartDateTime >= ${past} AND StartDateTime <= ${fut} ORDER BY StartDateTime LIMIT 100`);
-    const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude');
-    const accounts = await coordsFor((aq.records || []).map((r) => { delete r.attributes; return r; }), 'BillingCity', 'BillingState', 'BillingLatitude', 'BillingLongitude');
+    const leads = await coordsFor((lq.records || []).map((r) => { delete r.attributes; return r; }), 'City', 'State', 'Latitude', 'Longitude', boost ? 25 : 8);
+    const accounts = await coordsFor((aq.records || []).map((r) => { delete r.attributes; return r; }), 'BillingCity', 'BillingState', 'BillingLatitude', 'BillingLongitude', boost ? 15 : 8);
     const leadPos = {}; leads.forEach((l) => { leadPos[l.Id] = [l._lat, l._lng]; });
-    let geoBudget = 5;
+    let geoBudget = boost ? 15 : 5;
     const events = [];
     for (const e of (eq.records || [])) {
       let pos = null;
