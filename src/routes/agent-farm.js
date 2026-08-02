@@ -43,6 +43,7 @@ const BEHAV =
   'Coloque-as EXATAMENTE assim, numa única linha no fim, sem explicar: [[ACOES]]comando 1|comando 2|comando 3[[/ACOES]]. ' +
   'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
   '\n\nABRIR REGISTRO: quando o usuário pedir para ABRIR/VER/MOSTRAR um registro ou atividade específica ("abra a tarefa da ligação", "abre a lead X", "mostra o evento de visita"), localize o Id com soql_query ou get_activities se necessário e termine a resposta com o token [[OPEN:<Id>]] — o sistema abre o registro num modal para o usuário ver e editar. Responda com 1 linha curta antes do token.' +
+  '\n\nINTEGRAÇÕES MULESOFT: enrich_lead consulta a Neoway pelo CNPJ e grava porte/faixa/ticket/situação/segmento/endereço na lead (com status de enriquecimento). check_coverage verifica viabilidade de rede GPON e Metro para o endereço da lead. Depois de usar, resuma o resultado de forma vendedora (ex.: ticket potencial, cobertura disponível = oportunidade).' +
   '\n\nCALENDÁRIO VISUAL: quando o usuário pedir para VER/ABRIR o calendário ou a agenda ("abre meu calendário", "mostra a agenda", "calendário de visitas"), responda 1 linha curta e inclua o token [[CALENDAR]] — o sistema abre a tela de calendário com os agendamentos.' +
   '\n\nLIGAÇÃO GRAVADA / TRANSCRIÇÃO: gravações de chamadas ficam na Task de Subject EXATAMENTE "Ligação (gravada)" — a Description contém a transcrição e o áudio vai anexado. Quando pedirem "a ligação gravada", "a transcrição", "o registro da chamada", busque: SELECT Id,CreatedDate FROM Task WHERE Subject = \'Ligação (gravada)\' AND WhoId = \'<leadId>\' ORDER BY CreatedDate DESC LIMIT 1 e abra com [[OPEN:<Id>]]. NUNCA confunda com as tarefas de cadência ("Cadência x/5 · Ligação..."), que são passos futuros, não gravações. Se não houver nenhuma "Ligação (gravada)" na lead, diga que ainda não há chamada gravada.' +
   '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
@@ -142,6 +143,10 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { fromDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, toDate: { type: 'string', description: 'YYYY-MM-DD (default +7d)' }, whoId: { type: 'string', description: 'filtrar por lead/contato (opcional)' } }, required: [] } },
   { name: 'get_activities', description: 'Timeline de um registro: todas as Tarefas e Eventos (abertos e concluídos) de uma lead/conta/opp em ordem cronológica. Use para "mostre a cadência", "atividades da lead", "histórico de toques".',
     input_schema: { type: 'object', properties: { recordId: { type: 'string' } }, required: ['recordId'] } },
+  { name: 'enrich_lead', description: 'Enriquecimento Neoway via MuleSoft: consulta o CNPJ da lead e grava porte, faixa de funcionários, ticket potencial, situação cadastral, segmento e endereço fiscal nos campos de enriquecimento da Lead. Use quando pedirem "enriquece a lead", "consulta o CNPJ", "dados da Neoway".',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' } }, required: ['leadId'] } },
+  { name: 'check_coverage', description: 'Cobertura de rede via MuleSoft: verifica viabilidade GPON e Metro (estações reais) para o endereço/cidade da lead. Use quando pedirem "tem cobertura?", "viabilidade", "GPON/Metro disponível?".',
+    input_schema: { type: 'object', properties: { leadId: { type: 'string' } }, required: ['leadId'] } },
   { name: 'apply_cadence', description: 'Aplica uma CADÊNCIA de sales engagement na lead: cria a sequência de toques (tarefas com datas escalonadas a partir de startDate). Se steps não for informado, usa a cadência padrão B2B de 5 toques em 9 dias (Ligação D0, E-mail D+1, Ligação D+3, E-mail D+5, Ligação break-up D+8).',
     input_schema: { type: 'object', properties: { leadId: { type: 'string' }, startDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, steps: { type: 'array', items: { type: 'object', properties: { dayOffset: { type: 'number' }, kind: { type: 'string', description: 'call | email | task | visita' }, subject: { type: 'string' } }, required: ['dayOffset', 'subject'] } } }, required: ['leadId'] } },
 ];
@@ -273,6 +278,8 @@ async function execTool(conn, orgId, name, input) {
     const events = (eq.records || []).map((e) => ({ id: e.Id, type: 'Event', subject: e.Subject, start: e.StartDateTime, location: e.Location }));
     return { ok: true, tasks, events, total: tasks.length + events.length };
   }
+  if (name === 'enrich_lead') return out.ok ? 'enriqueceu via Neoway (porte ' + ((out.data && out.data.porte) || '—') + ')' : `falha no enriquecimento (${out.error || 'erro'})`;
+  if (name === 'check_coverage') return out.ok ? ('cobertura: GPON ' + (out.gpon && out.gpon.available ? 'OK' : 'não') + ' · Metro ' + (out.metro && out.metro.available ? 'OK' : 'não')) : `falha na cobertura (${out.error || 'erro'})`;
   if (name === 'apply_cadence') {
     if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
     const start = input.startDate ? new Date(input.startDate + 'T12:00:00-03:00') : new Date();
@@ -295,6 +302,13 @@ async function execTool(conn, orgId, name, input) {
       if (r && r.success) created.push({ id: r.id, subject: s.subject, date: t.ActivityDate });
     }
     return { ok: created.length > 0, created, count: created.length };
+  }
+  if (name === 'enrich_lead') {
+    if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
+    return await neowayEnrich(conn, input.leadId);
+  }
+  if (name === 'check_coverage') {
+    return await coverageCheck(conn, input.leadId);
   }
   return { ok: false, error: 'ferramenta desconhecida: ' + name };
 }
@@ -699,6 +713,17 @@ router.post('/call-log', authMiddleware, async (req, res) => {
 });
 
 // ── Farm Maps: camadas no mapa + ações de visita (check-in/out nos campos do épico Visitas) ──
+const GPON_TERR = [
+  { city: 'Uberlândia', uf: 'MG', lat: -18.9186, lng: -48.2772, km: 14 }, { city: 'Uberaba', uf: 'MG', lat: -19.7472, lng: -47.9381, km: 10 },
+  { city: 'Araguari', uf: 'MG', lat: -18.6489, lng: -48.1930, km: 7 }, { city: 'Patos de Minas', uf: 'MG', lat: -18.5789, lng: -46.5181, km: 7 },
+  { city: 'Ituiutaba', uf: 'MG', lat: -18.9772, lng: -49.4639, km: 6 }, { city: 'Araxá', uf: 'MG', lat: -19.5902, lng: -46.9438, km: 6 },
+  { city: 'Patrocínio', uf: 'MG', lat: -18.9436, lng: -46.9925, km: 5 }, { city: 'Franca', uf: 'SP', lat: -20.5386, lng: -47.4008, km: 8 },
+  { city: 'Ribeirão Preto', uf: 'SP', lat: -21.1775, lng: -47.8103, km: 12 }, { city: 'Campinas', uf: 'SP', lat: -22.9099, lng: -47.0626, km: 12 },
+  { city: 'São José do Rio Preto', uf: 'SP', lat: -20.8113, lng: -49.3758, km: 8 }, { city: 'Goiânia', uf: 'GO', lat: -16.6869, lng: -49.2648, km: 12 },
+  { city: 'Anápolis', uf: 'GO', lat: -16.3281, lng: -48.9530, km: 7 }, { city: 'Rio Verde', uf: 'GO', lat: -17.7923, lng: -50.9192, km: 6 },
+  { city: 'Itumbiara', uf: 'GO', lat: -18.4192, lng: -49.2150, km: 5 }, { city: 'Divinópolis', uf: 'MG', lat: -20.1446, lng: -44.8912, km: 6 },
+];
+function havKm(a, b) { const R = 6371, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const x = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
 const UF_CENTER = { AC: [-9.02, -70.81], AL: [-9.57, -36.78], AP: [1.41, -51.77], AM: [-4.15, -63.15], BA: [-12.58, -41.7], CE: [-5.2, -39.53], DF: [-15.78, -47.93], ES: [-19.19, -40.34], GO: [-15.98, -49.86], MA: [-5.42, -45.44], MT: [-12.95, -55.51], MS: [-20.51, -54.54], MG: [-18.51, -44.55], PA: [-3.79, -52.48], PB: [-7.12, -36.72], PR: [-24.89, -51.55], PE: [-8.38, -37.86], PI: [-7.72, -42.97], RJ: [-22.25, -42.66], RN: [-5.81, -36.59], RS: [-29.75, -53.32], RO: [-10.83, -63.34], RR: [2.05, -61.4], SC: [-27.45, -50.95], SP: [-22.19, -48.79], SE: [-10.57, -37.44], TO: [-9.46, -48.26] };
 const _geo = {};
 async function geocodeText(q) {
@@ -780,16 +805,7 @@ router.get('/map-data', authMiddleware, async (req, res) => {
       metro = (mq.records || []).map((m) => ({ Id: m.Id, Name: m.Name, Anel: m.Anel_Associado__c, Bairro: m.Neighborhood__c, _lat: m.Latitude__c, _lng: m.Longitude__c }));
     } catch (e) {}
     // Cobertura GPON — cidades de referência do território Algar (Triângulo/interior SP/GO/oeste MG)
-    const gpon = [
-      { city: 'Uberlândia', uf: 'MG', lat: -18.9186, lng: -48.2772, km: 14 }, { city: 'Uberaba', uf: 'MG', lat: -19.7472, lng: -47.9381, km: 10 },
-      { city: 'Araguari', uf: 'MG', lat: -18.6489, lng: -48.1930, km: 7 }, { city: 'Patos de Minas', uf: 'MG', lat: -18.5789, lng: -46.5181, km: 7 },
-      { city: 'Ituiutaba', uf: 'MG', lat: -18.9772, lng: -49.4639, km: 6 }, { city: 'Araxá', uf: 'MG', lat: -19.5902, lng: -46.9438, km: 6 },
-      { city: 'Patrocínio', uf: 'MG', lat: -18.9436, lng: -46.9925, km: 5 }, { city: 'Franca', uf: 'SP', lat: -20.5386, lng: -47.4008, km: 8 },
-      { city: 'Ribeirão Preto', uf: 'SP', lat: -21.1775, lng: -47.8103, km: 12 }, { city: 'Campinas', uf: 'SP', lat: -22.9099, lng: -47.0626, km: 12 },
-      { city: 'São José do Rio Preto', uf: 'SP', lat: -20.8113, lng: -49.3758, km: 8 }, { city: 'Goiânia', uf: 'GO', lat: -16.6869, lng: -49.2648, km: 12 },
-      { city: 'Anápolis', uf: 'GO', lat: -16.3281, lng: -48.9530, km: 7 }, { city: 'Rio Verde', uf: 'GO', lat: -17.7923, lng: -50.9192, km: 6 },
-      { city: 'Itumbiara', uf: 'GO', lat: -18.4192, lng: -49.2150, km: 5 }, { city: 'Divinópolis', uf: 'MG', lat: -20.1446, lng: -44.8912, km: 6 },
-    ];
+    const gpon = GPON_TERR;
     return res.json({ ok: true, leads, accounts, events, metro, gpon });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
@@ -926,6 +942,82 @@ router.post('/visit-report', authMiddleware, async (req, res) => {
       try { await conn.sobject('Lead').update(updLd); } catch (e) {}
     }
     return res.json({ ok: !!r.success, eventId: b.eventId, geocoded, errors: r.errors });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// ── Integrações MuleSoft: enriquecimento Neoway + cobertura de rede ──
+const NEOWAY_URL = process.env.MULESOFT_NEOWAY_URL || 'https://i9-mcp-da48589780b2.herokuapp.com/api/mock/neoway/empresa/';
+const COVERAGE_URL = process.env.MULESOFT_COVERAGE_URL || null;
+async function neowayEnrich(conn, leadId) {
+  const q = await conn.query(`SELECT Id,Name,Company,CNPJ__c FROM Lead WHERE Id='${esc1(leadId)}'`);
+  const l = q.records && q.records[0];
+  if (!l) return { ok: false, error: 'lead não encontrada' };
+  const cnpj = String(l.CNPJ__c || '').replace(/\D/g, '');
+  if (!cnpj) return { ok: false, error: 'lead sem CNPJ preenchido' };
+  let resp = null, status = 0;
+  try { const r = await fetch(NEOWAY_URL + cnpj, { headers: { Accept: 'application/json' } }); status = r.status; if (r.ok) resp = (await r.json()).data; } catch (e) {}
+  const st = (v) => (v != null && v !== '' ? 'OK' : 'VAZIO');
+  if (!resp) {
+    try { await conn.sobject('Lead').update({ Id: leadId, PorteEmpresaEnrichStatus__c: 'ERRO', FaixaFuncionariosEnrichStatus__c: 'ERRO', TicketPotencialEnrichStatus__c: 'ERRO', SituacaoCadastralEnrichStatus__c: 'ERRO' }); } catch (e) {}
+    return { ok: false, error: status === 404 ? 'CNPJ não encontrado na base Neoway' : ('falha na consulta Neoway (' + status + ')') };
+  }
+  const upd = { Id: leadId,
+    PorteEmpresa__c: resp.porte || null, PorteEmpresaEnrichStatus__c: st(resp.porte),
+    FaixaFuncionarios__c: resp.faixa_funcionarios || null, FaixaFuncionariosEnrichStatus__c: st(resp.faixa_funcionarios),
+    TicketPotencial__c: resp.ticket_potencial != null ? resp.ticket_potencial : null, TicketPotencialEnrichStatus__c: st(resp.ticket_potencial),
+    SituacaoCadastral__c: resp.situacao_cadastral || null, SituacaoCadastralEnrichStatus__c: st(resp.situacao_cadastral),
+  };
+  if (resp.segmento) upd.Segmento__c = resp.segmento;
+  if (resp.logradouro) upd.Street = [resp.logradouro, resp.numero, resp.complemento].filter(Boolean).join(', ');
+  if (resp.cidade) upd.City = resp.cidade;
+  if (resp.estado) upd.State = resp.estado;
+  if (resp.cep) upd.PostalCode = resp.cep;
+  try { await conn.sobject('Lead').update(upd); }
+  catch (e) {
+    for (const k of ['FaixaFuncionarios__c', 'Segmento__c', 'PorteEmpresa__c', 'SituacaoCadastral__c']) delete upd[k];
+    try { await conn.sobject('Lead').update(upd); } catch (e2) { return { ok: false, error: String(e2.message || e2) }; }
+  }
+  try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: `⚡ Enriquecimento Neoway: porte ${resp.porte || '—'} · ${resp.faixa_funcionarios || '—'} · ticket potencial R$ ${(resp.ticket_potencial || 0).toLocaleString('pt-BR')} · situação ${resp.situacao_cadastral || '—'} · segmento ${resp.segmento || '—'}` }); } catch (e) {}
+  return { ok: true, data: resp };
+}
+async function coverageCheck(conn, leadId) {
+  const q = await conn.query(`SELECT Id,Name,City,State,EnderecoVisitaCidade__c,EnderecoVisitaEstado__c,EnderecoVisitaLatitude__c,EnderecoVisitaLongitude__c FROM Lead WHERE Id='${esc1(leadId)}'`);
+  const l = q.records && q.records[0];
+  if (!l) return { ok: false, error: 'lead não encontrada' };
+  let pos = null;
+  if (l.EnderecoVisitaLatitude__c != null) pos = [l.EnderecoVisitaLatitude__c, l.EnderecoVisitaLongitude__c];
+  if (!pos) { const city = l.EnderecoVisitaCidade__c || l.City, uf = l.EnderecoVisitaEstado__c || l.State; if (city && uf) pos = await geocodeCity(city, String(uf).slice(0, 2).toUpperCase()); }
+  if (!pos) return { ok: false, error: 'lead sem cidade/endereço para consultar cobertura' };
+  if (COVERAGE_URL) {
+    try { const r = await fetch(COVERAGE_URL + '?lat=' + pos[0] + '&lng=' + pos[1]); if (r.ok) { const d = await r.json(); return { ok: true, source: 'mulesoft', ...d }; } } catch (e) {}
+  }
+  let bg = null; for (const g of GPON_TERR) { const d = havKm(pos, [g.lat, g.lng]); if (!bg || d < bg.distKm) bg = { city: g.city, uf: g.uf, distKm: d, km: g.km }; }
+  const gpon = { available: bg ? bg.distKm <= bg.km : false, city: bg && bg.city, distKm: bg && Math.round(bg.distKm * 10) / 10 };
+  let bm = null;
+  try {
+    const mq = await conn.query('SELECT Name,Anel_Associado__c,Latitude__c,Longitude__c FROM Metro_Station__c WHERE Latitude__c != null');
+    for (const m of (mq.records || [])) { const d = havKm(pos, [m.Latitude__c, m.Longitude__c]); if (!bm || d < bm.distKm) bm = { station: m.Name, anel: m.Anel_Associado__c, distKm: d }; }
+  } catch (e) {}
+  const metro = { available: bm ? bm.distKm <= 2.5 : false, station: bm && bm.station, anel: bm && bm.anel, distKm: bm && Math.round(bm.distKm * 10) / 10 };
+  const parecer = `📡 Cobertura de rede: GPON ${gpon.available ? '✅ disponível' : '❌ fora da mancha'} (${gpon.city || '—'}, ${gpon.distKm != null ? gpon.distKm + ' km' : '—'}) · Metro ${metro.available ? '✅ ' + metro.station + ' / ' + (metro.anel || '') : '❌ sem estação próxima'}${metro.distKm != null ? ' (' + metro.distKm + ' km)' : ''}`;
+  try { await conn.sobject('FeedItem').create({ ParentId: leadId, Type: 'TextPost', Body: parecer }); } catch (e) {}
+  return { ok: true, source: 'territorio', gpon, metro, parecer, pos };
+}
+router.post('/enrich', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    return res.json(await neowayEnrich(conn, b.leadId));
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+router.post('/coverage', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    return res.json(await coverageCheck(conn, b.leadId));
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
