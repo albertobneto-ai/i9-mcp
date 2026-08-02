@@ -96,6 +96,20 @@
   .recsec.collapsed .sechdr .arr{transform:rotate(-90deg);}
   .recsec.collapsed .secbody{display:none;}
   .secbody{padding:0;}
+  .rechdr{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 18px;background:#f6f9ff;border-bottom:1px solid var(--line);align-items:center;font-size:12.5px;color:var(--ink);}
+  .rechdr .hi{display:flex;align-items:center;gap:5px;font-weight:600;}
+  .rechdr .hi a{color:var(--blue);text-decoration:none;font-weight:700;}
+  .rechdr .hacts{display:flex;gap:6px;margin-left:auto;}
+  .rechdr .hacts button{width:32px;height:32px;border-radius:9px;background:#eaf3ff;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .rechdr .hacts button:hover{background:var(--blue);filter:brightness(1.1);}
+  .spath .step{cursor:pointer;transition:.15s;}
+  .spath .step:hover{filter:brightness(.9);}
+  .spath .step.cancel-btn{background:#fde8e8;color:#b42318;cursor:pointer;}
+  .cancelmodal{position:fixed;inset:0;z-index:70;background:rgba(3,45,96,.5);display:flex;align-items:center;justify-content:center;padding:18px;}
+  .cancelmodal .cbox{background:#fff;border-radius:18px;padding:22px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(3,45,96,.3);}
+  .cancelmodal .cbox h4{margin:0 0 14px;font-family:'Fredoka';color:var(--navy);}
+  .cancelmodal .cbox select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font-size:14px;margin-bottom:12px;}
+  .cancelmodal .cbox .cbtn{display:flex;gap:8px;}
   .qualwarn{margin:2px 18px 10px;padding:10px 12px;background:#fff4e5;border-left:3px solid #f79009;border-radius:0 8px 8px 0;font-size:12px;color:#8a4c04;font-weight:600;}
   .recagent{flex:0 0 auto;border-top:1px solid var(--line);background:linear-gradient(0deg,#eef6ff,#fff);padding:11px 18px 14px;}
   .ragReply{font-size:13.5px;color:var(--ink);max-height:150px;overflow-y:auto;margin-bottom:9px;}
@@ -707,15 +721,30 @@ function recView(){
   document.getElementById('recSub').textContent=REC.object+' · '+REC.id;
   document.getElementById('recEdit').style.display=REC.fields.some(f=>f.editable)?'flex':'none';
   let html='';
-  // -- status path (chevrons) --
+  // -- header info (phone, email, rating, ações) --
+  if(REC.headerInfo){
+    const hi=REC.headerInfo;
+    html+='<div class="rechdr">';
+    if(hi.phone)html+=`<div class="hi">📞 <a href="tel:${esc(hi.phone)}">${esc(hi.phone)}</a></div>`;
+    if(hi.mobile&&hi.mobile!==hi.phone)html+=`<div class="hi">📱 <a href="tel:${esc(hi.mobile)}">${esc(hi.mobile)}</a></div>`;
+    if(hi.email)html+=`<div class="hi">✉️ <a href="mailto:${esc(hi.email)}">${esc(hi.email)}</a></div>`;
+    if(hi.rating)html+=`<div class="hi">${hi.rating==='Hot'?'🔥':hi.rating==='Warm'?'🟠':'🔵'} ${esc(hi.rating)}</div>`;
+    html+=`<div class="hacts">`;
+    if(hi.phone||hi.mobile)html+=`<button title="Ligar" onclick="openDial({number:'${esc((hi.phone||hi.mobile||'').replace(/\D/g,''))}',display:'${esc(hi.phone||hi.mobile||'')}',name:'${esc(REC.name)}',leadId:'${REC.id}'})">📞</button>`;
+    html+=`<button title="Agendar visita" onclick="ppSchedRec()">📅</button>`;
+    if(typeof MAP!=='undefined'&&MAPDATA){html+=`<button title="Ver no mapa" onclick="flyToRec('${REC.id}')">🗺️</button>`;}
+    html+=`</div></div>`;
+  }
+  // -- status path (chevrons clicáveis) --
   if(REC.statusPath){
     const sp=REC.statusPath;const steps=sp.steps;const ci=steps.indexOf(sp.current);
     html+='<div class="spath">';
     steps.forEach((s,i)=>{
       const cls=sp.cancelled?'':(i<ci?'done':(i===ci?'cur':''));
-      html+=`<div class="step ${cls}">${esc(s)}</div>`;
+      html+=`<div class="step ${cls}" onclick="advanceStatus('${esc(s)}')">${esc(s)}</div>`;
     });
     if(sp.cancelled)html+=`<div class="step cancel">Cancelado</div>`;
+    else html+=`<div class="step cancel-btn" onclick="advanceStatus('Cancelado')">✕</div>`;
     html+='</div>';
   }
   // -- seções ou flat --
@@ -750,6 +779,57 @@ function recView(){
 }
 function recEditX(){
 }
+// ── avançar status no path (com regras) ──
+async function advanceStatus(newStatus){
+  if(!REC||REC.object!=='Lead')return;
+  if(newStatus===REC.statusPath.current){toast('Já está neste status');return;}
+  if(newStatus==='Cancelado'){openCancelModal();return;}
+  const btn=event&&event.target;if(btn)btn.style.opacity='.5';
+  const r=await api('/api/agent-farm/advance-status',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:REC.id,newStatus})});
+  const d=await r.json();
+  if(btn)btn.style.opacity='';
+  if(d.ok){toast('Status avançado para '+newStatus+' ✅');try{celebrate();}catch(e){}await openRecord(REC.id);}
+  else if(d.needBANT){toast('⚠️ '+d.error);}
+  else if(d.rule==='cancelledNoReopen'){toast('🚫 '+d.error);}
+  else toast(d.error||'falha');
+}
+function openCancelModal(){
+  const motivos=REC.cancelMotivos||[];
+  let m=document.getElementById('cancelModal');
+  if(m)m.remove();
+  m=document.createElement('div');m.id='cancelModal';m.className='cancelmodal';
+  m.innerHTML=`<div class="cbox"><h4>🚫 Cancelar lead</h4>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 10px;">Selecione o motivo do cancelamento:</p>
+    <select id="cancelSel"><option value="">— selecione o motivo —</option>${motivos.map(v=>'<option value="'+v+'">'+v.replace(/_/g,' ')+'</option>').join('')}</select>
+    <div class="cbtn"><button class="prim" id="cancelOk" style="margin-top:0;">Cancelar lead</button><button class="ghost" id="cancelNo" style="margin-top:0;width:auto;padding:14px 18px;">Voltar</button></div></div>`;
+  document.body.appendChild(m);
+  document.getElementById('cancelNo').addEventListener('click',()=>m.remove());
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.getElementById('cancelOk').addEventListener('click',async()=>{
+    const mot=document.getElementById('cancelSel').value;
+    if(!mot){toast('Selecione o motivo');return;}
+    const btn=document.getElementById('cancelOk');btn.disabled=true;btn.textContent='Cancelando…';
+    const r=await api('/api/agent-farm/advance-status',{method:'POST',body:JSON.stringify({orgId:ORG_ID,leadId:REC.id,newStatus:'Cancelado',motivo:mot})});
+    const d=await r.json();
+    if(d.ok){m.remove();toast('Lead cancelada 🚫');await openRecord(REC.id);}
+    else{toast(d.error||'falha');btn.disabled=false;btn.textContent='Cancelar lead';}
+  });
+}
+window.ppSchedRec=()=>{
+  const inp=prompt('Data e hora da visita (ex.: 2026-08-05 14:00):');
+  if(!inp)return;
+  api('/api/agent-farm/visit-action',{method:'POST',body:JSON.stringify({orgId:ORG_ID,kind:'schedule',recordId:REC.id,startDateTime:inp.replace(' ','T')+':00-03:00',subject:'Visita'})}).then(r=>r.json()).then(d=>{
+    if(d.ok)toast('Visita agendada 📅');else toast(d.error||'falha');
+  });
+};
+window.flyToRec=(id)=>{
+  if(!MAP||!MAPDATA)return;
+  const x=(MAPDATA.leads||[]).find(l=>l.Id===id)||(MAPDATA.accounts||[]).find(a=>a.Id===id);
+  if(!x){toast('Registro sem posição no mapa');return;}
+  document.getElementById('recScrim').classList.add('hide');
+  document.getElementById('mapWrap').classList.remove('hide');
+  setTimeout(()=>{MAP.invalidateSize();MAP.flyTo([x._lat,x._lng],15,{duration:.6});if(MARKS[id])setTimeout(()=>MARKS[id].openPopup(),700);},200);
+};
 function fieldInput(f){
   const id='ef_'+f.name;
   if(f.type==='boolean') return `<input class="ei" type="checkbox" id="${id}" data-f="${f.name}" data-type="boolean" ${f.value==='true'?'checked':''}>`;
