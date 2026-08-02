@@ -1066,4 +1066,16 @@ router.post('/coverage', authMiddleware, async (req, res) => {
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
+// GET /api/agent-farm/whoami — usuário Salesforce da org conectada
+router.get('/whoami', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const id = await conn.identity();
+    const name = id.display_name || id.username || '';
+    return res.json({ ok: true, name, firstName: name.split(' ')[0] || name });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
 export default router;
