@@ -546,7 +546,12 @@ router.get('/record', authMiddleware, async (req, res) => {
       };
     }
     const name = rec.Name || rec.CaseNumber || rec.Subject || rec.Title || id;
-    return res.json({ ok: true, object: obj, id, name, fields: allFields, sections, statusPath, qualRules, instanceUrl: conn.instanceUrl });
+    let headerInfo = null;
+    if (obj === 'Lead') {
+      headerInfo = { phone: rec.Phone, mobile: rec.MobilePhone, email: rec.Email, rating: rec.Rating, city: rec.City, state: rec.State, company: rec.Company };
+    }
+    const cancelMotivos = obj === 'Lead' ? (fmap['Motivo_cancelamento__c'] || {}).picklistValues ? ((fmap['Motivo_cancelamento__c'] || {}).picklistValues || []).filter(p => p.active).map(p => p.value) : [] : null;
+    return res.json({ ok: true, object: obj, id, name, fields: allFields, sections, statusPath, qualRules, headerInfo, cancelMotivos, instanceUrl: conn.instanceUrl });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
@@ -1121,6 +1126,43 @@ router.get('/whoami', authMiddleware, async (req, res) => {
     const id = await conn.identity();
     const name = id.display_name || id.username || '';
     return res.json({ ok: true, name, firstName: name.split(' ')[0] || name });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// POST /api/agent-farm/advance-status — avança/retrocede status da Lead respeitando regras
+router.post('/advance-status', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {}; const orgId = b.orgId || 36;
+    if (!WRITE_ORGS.has(Number(orgId))) return res.json({ ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` });
+    if (!b.leadId || !b.newStatus) return res.json({ ok: false, error: 'leadId e newStatus obrigatórios' });
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false, error: 'org' });
+    const conn = await connToOrg(org);
+    const q = await conn.query(`SELECT Id,Status,Segmento__c,OrcamentoDisponivel__c,NivelDecisaoContrato__c,NecessidadeIdentificada__c,PrazoContratacao__c,ProdutosEmpresa__c,FornecedoresEmpresa__c,Motivo_cancelamento__c FROM Lead WHERE Id='${esc1(b.leadId)}'`);
+    const lead = q.records && q.records[0];
+    if (!lead) return res.json({ ok: false, error: 'lead não encontrada' });
+    const cur = lead.Status;
+    const next = b.newStatus;
+    // regra: cancelado não reabre
+    if (cur === 'Cancelado') return res.json({ ok: false, error: 'Lead cancelado não pode ter o status alterado.', rule: 'cancelledNoReopen' });
+    // regra: cancelamento exige motivo
+    if (next === 'Cancelado') {
+      if (!b.motivo) return res.json({ ok: false, needMotivo: true, error: 'Informe o motivo do cancelamento.' });
+      const r = await conn.sobject('Lead').update({ Id: b.leadId, Status: 'Cancelado', Motivo_cancelamento__c: b.motivo });
+      return res.json({ ok: !!r.success, errors: r.errors });
+    }
+    // regra: avançar pra Conversao exige BANT
+    if (next === 'Conversao' && cur === 'Qualificacao') {
+      const falta = [];
+      if (!lead.OrcamentoDisponivel__c) falta.push('Orçamento Disponível');
+      if (!lead.NivelDecisaoContrato__c) falta.push('Nível de Decisão');
+      if (!lead.NecessidadeIdentificada__c) falta.push('Necessidade Identificada');
+      if (!lead.PrazoContratacao__c) falta.push('Prazo de Contratação');
+      if (!lead.ProdutosEmpresa__c) falta.push('Produtos da Empresa');
+      if (lead.Segmento__c !== 'Operadoras' && !lead.FornecedoresEmpresa__c) falta.push('Fornecedores');
+      if (falta.length) return res.json({ ok: false, needBANT: true, missing: falta, error: 'Para avançar para Conversão, preencha: ' + falta.join(', ') });
+    }
+    const r = await conn.sobject('Lead').update({ Id: b.leadId, Status: next });
+    return res.json({ ok: !!r.success, errors: r.errors });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
