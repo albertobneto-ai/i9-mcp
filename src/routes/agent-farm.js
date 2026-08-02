@@ -278,8 +278,6 @@ async function execTool(conn, orgId, name, input) {
     const events = (eq.records || []).map((e) => ({ id: e.Id, type: 'Event', subject: e.Subject, start: e.StartDateTime, location: e.Location }));
     return { ok: true, tasks, events, total: tasks.length + events.length };
   }
-  if (name === 'enrich_lead') return out.ok ? 'enriqueceu via Neoway (porte ' + ((out.data && out.data.porte) || '—') + ')' : `falha no enriquecimento (${out.error || 'erro'})`;
-  if (name === 'check_coverage') return out.ok ? ('cobertura: GPON ' + (out.gpon && out.gpon.available ? 'OK' : 'não') + ' · Metro ' + (out.metro && out.metro.available ? 'OK' : 'não')) : `falha na cobertura (${out.error || 'erro'})`;
   if (name === 'apply_cadence') {
     if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
     const start = input.startDate ? new Date(input.startDate + 'T12:00:00-03:00') : new Date();
@@ -327,6 +325,8 @@ function stepSummary(name, input, out) {
   if (name === 'post_chatter') return out.ok ? `postou no Chatter (${out.id})` : `falha no Chatter (${out.error || JSON.stringify(out.errors || '')})`;
   if (name === 'get_calendar') return `consultou agenda: ${out.count != null ? out.count : 0} evento(s)`;
   if (name === 'get_activities') return `timeline: ${out.total != null ? out.total : 0} atividade(s)`;
+  if (name === 'enrich_lead') return out.ok ? 'enriqueceu via Neoway (porte ' + ((out.data && out.data.porte) || '—') + ')' : `falha no enriquecimento (${out.error || 'erro'})`;
+  if (name === 'check_coverage') return out.ok ? ('cobertura: GPON ' + (out.gpon && out.gpon.available ? 'OK' : 'não') + ' · Metro ' + (out.metro && out.metro.available ? 'OK' : 'não')) : `falha na cobertura (${out.error || 'erro'})`;
   if (name === 'apply_cadence') return out.ok ? `aplicou cadência: ${out.count} toque(s) criados` : `falha na cadência (${out.error || 'erro'})`;
   return name;
 }
