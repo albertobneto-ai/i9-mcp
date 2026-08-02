@@ -405,6 +405,7 @@
     <label class="lay"><input type="checkbox" id="layMetro"> 🛰️ Metro</label>
     <label class="lay"><input type="checkbox" id="layToday" checked> 📅 Hoje</label>
     <label class="lay"><input type="checkbox" id="lay7d" checked> 🗓️ 7 dias</label>
+    <button class="calnav caltoday" id="mapRefresh" style="width:auto;">🔄 Atualizar</button>
     <button class="calnav caltoday" id="mapNewLead" style="width:auto;">➕ Nova lead</button>
     <button class="calnav caltoday" id="mapCalBtn" style="width:auto;">📆 Agenda</button>
     <button class="routego" id="routeBtn">🚗 Rota de hoje</button>
@@ -988,8 +989,8 @@ function renderLayers(){
   const tCount=MAPDATA.events.filter(e=>isToday(e.Start)).length;
   document.getElementById('mapInfo').textContent=MAPDATA.leads.length+' leads · '+MAPDATA.accounts.length+' contas · '+tCount+' hoje · '+(MAPDATA.metro||[]).length+' estações';
 }
-async function loadMapData(){
-  const r=await api('/api/agent-farm/map-data?orgId='+ORG_ID);
+async function loadMapData(boost){
+  const r=await api('/api/agent-farm/map-data?orgId='+ORG_ID+(boost?'&boost=1':''));
   const d=await r.json();
   if(!d.ok){toast(d.error||'falha no mapa');return;}
   MAPDATA=d;renderLayers();
@@ -1120,6 +1121,12 @@ function openCal(){document.getElementById('calWrap').classList.remove('hide');l
 document.getElementById('calBtn').addEventListener('click',openCal);
 document.getElementById('mapCalBtn').addEventListener('click',openCal);
 document.getElementById('mapNewLead').addEventListener('click',()=>startCreate('Lead',{}));
+document.getElementById('mapRefresh').addEventListener('click',async()=>{
+  const b=document.getElementById('mapRefresh');b.disabled=true;b.textContent='🔄 replotando…';
+  await loadMapData(true);
+  b.disabled=false;b.textContent='🔄 Atualizar';
+  toast('Marcadores replotados e geocode resolvido 📍');
+});
 document.getElementById('calClose').addEventListener('click',()=>document.getElementById('calWrap').classList.add('hide'));
 document.getElementById('calPrev').addEventListener('click',()=>{CAL.m--;if(CAL.m<0){CAL.m=11;CAL.y--;}loadCal();});
 document.getElementById('calNext').addEventListener('click',()=>{CAL.m++;if(CAL.m>11){CAL.m=0;CAL.y++;}loadCal();});
