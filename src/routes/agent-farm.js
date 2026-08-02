@@ -9,7 +9,7 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-haiku-4-5-20251001';
 const WRITE_ORGS = new Set([36]); // só arqevery permite escrita (HOMOL/DevEvery = read-only)
 
 async function getOrgById(id) {
@@ -1164,6 +1164,38 @@ router.post('/advance-status', authMiddleware, async (req, res) => {
     const r = await conn.sobject('Lead').update({ Id: b.leadId, Status: next });
     return res.json({ ok: !!r.success, errors: r.errors });
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
+// ── Listagens diretas (sem IA — zero crédito) ──
+router.get('/list-leads', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false });
+    const conn = await connToOrg(org);
+    const limit = Math.min(Number(req.query.limit) || 15, 50);
+    const offset = Number(req.query.offset) || 0;
+    const q = await conn.query(`SELECT Id,Name,Company,Status,Rating,Phone,Email,City,CreatedDate FROM Lead WHERE IsConverted=false ORDER BY CreatedDate DESC LIMIT ${limit} OFFSET ${offset}`);
+    const total = await conn.query('SELECT COUNT() FROM Lead WHERE IsConverted=false');
+    return res.json({ ok: true, records: (q.records||[]).map(r=>{delete r.attributes;return r;}), total: total.totalSize, limit, offset });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message||e) }); }
+});
+router.get('/list-tasks', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false });
+    const conn = await connToOrg(org);
+    const q = await conn.query("SELECT Id,Subject,Status,ActivityDate,Who.Name,Priority FROM Task WHERE Status != 'Completed' ORDER BY ActivityDate NULLS LAST LIMIT 20");
+    return res.json({ ok: true, records: (q.records||[]).map(r=>{const o={Id:r.Id,Subject:r.Subject,Status:r.Status,Date:r.ActivityDate,Who:r.Who&&r.Who.Name,Priority:r.Priority};return o;}) });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message||e) }); }
+});
+router.get('/list-events', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId || 36;
+    const org = await getOrgById(orgId); if (!org) return res.status(404).json({ ok: false });
+    const conn = await connToOrg(org);
+    const q = await conn.query("SELECT Id,Subject,StartDateTime,Location,Who.Name FROM Event WHERE StartDateTime >= TODAY ORDER BY StartDateTime LIMIT 20");
+    return res.json({ ok: true, records: (q.records||[]).map(r=>({Id:r.Id,Subject:r.Subject,Start:r.StartDateTime,Location:r.Location,Who:r.Who&&r.Who.Name})) });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message||e) }); }
 });
 
 export default router;
