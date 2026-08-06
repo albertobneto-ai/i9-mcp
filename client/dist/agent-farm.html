@@ -372,7 +372,7 @@
 <div class="scrim hide" id="visitScrim"><div class="modal" style="max-width:520px;">
   <div class="mhead" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.jpg" alt=""></span>
       <div><h3>📋 Relatório de Visita</h3><p id="vrSub" style="opacity:.9;font-size:12.5px;margin:2px 0 0;"></p></div>
     </div>
     <button class="xbtn" id="vrClose">×</button>
@@ -383,7 +383,7 @@
 <div class="scrim hide" id="autoScrim"><div class="modal" style="max-width:480px;">
   <div class="mhead" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.jpg" alt=""></span>
       <div><h3>⚡ Auto-criar leads</h3><p style="opacity:.9;font-size:12.5px;margin:2px 0 0;">Gera leads na cidade/UF (tipo Nacional)</p></div>
     </div>
     <button class="xbtn" id="autoClose">×</button>
@@ -400,7 +400,7 @@
 <div class="scrim hide" id="newScrim"><div class="modal" style="max-width:600px;">
   <div class="mhead" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.png" alt=""></span>
+      <span class="pod" style="width:44px;height:44px;flex:0 0 44px;"><img class="mascot" src="/mascote.jpg" alt=""></span>
       <div><h3 id="newTitle">Novo registro</h3><p style="opacity:.9;font-size:12.5px;margin:2px 0 0;">Formulário conectado à arqevery</p></div>
     </div>
     <button class="xbtn" id="newClose">×</button>
@@ -420,7 +420,7 @@
   <div class="recagent" id="recAgent">
     <div class="ragReply" id="ragReply"></div>
     <div class="raginbar">
-      <span class="ragav"><img class="mascot" src="/mascote.png" alt=""></span>
+      <span class="ragav"><img class="mascot" src="/mascote.jpg" alt=""></span>
       <input id="ragInput" placeholder="peça pro agente: edite o telefone, ligue, envie e-mail…">
       <button class="micbtn" id="micRag" title="Falar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0176D3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
       <button class="ragsend" id="ragSend"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 12l16-8-6 8 6 8z" fill="#fff"/></svg></button>
@@ -490,7 +490,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 
 // ── mascote SVG
 function mascot(accent,kind){
-  return `<img class="mascot" src="/mascote.png" alt="Ever iA" draggable="false" style="--d:${(Math.random()*2).toFixed(2)}s">`;
+  return `<img class="mascot" src="/mascote.jpg" alt="Ever iA" draggable="false" style="--d:${(Math.random()*2).toFixed(2)}s">`;
 }
 
 function setConn(on){const c=document.getElementById('conn');c.classList.toggle('on',on);document.getElementById('conntxt').textContent=on?'i9 · arqevery':'desconectado';}
@@ -593,7 +593,7 @@ async function api(path,opts={}){opts.headers=Object.assign({'Content-Type':'app
 // login
 document.getElementById('loginPod').innerHTML=mascot('#0176D3','lead');
 document.getElementById('createPod').innerHTML=mascot('#06B6C7','bot');
-document.getElementById('welcomeMascot').innerHTML=mascot('#1B96FF','lead');
+document.getElementById('welcomeMascot').innerHTML='<img src="/mascote.jpg" alt="Algar AI" style="width:140px;height:auto;border-radius:20px;filter:drop-shadow(0 8px 20px rgba(0,100,50,.35));">';
 (async()=>{try{
   const r=await api('/api/agent-farm/whoami?orgId='+ORG_ID);const d=await r.json();
   if(d.ok&&d.firstName)document.getElementById('welcomeTitle').textContent='Oi, '+d.firstName+'! Bem-vindo ao Salesforce ☁️';
@@ -644,10 +644,10 @@ function render(){
   const t=document.getElementById('thread');const k=kindOf(active);
   t.innerHTML=hist[active.id].map(m=>{
     if(m.role==='me')return `<div class="msg me"><span class="av">AB</span><div class="bubble">${esc(m.text)}</div></div>`;
-    if(m.typing)return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div class="bubble"><span style="color:var(--muted)">${esc(m.status||'pensando…')}</span></div></div>`;
+    if(m.typing)return `<div class="msg"><span class="av"><img src="/mascote.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></span><div class="bubble"><span style="color:var(--muted)">${esc(m.status||'pensando…')}</span></div></div>`;
     const chips=(m.steps&&m.steps.length)?`<div class="steps">${m.steps.map(s=>{const isQ=s.tool==='soql_query',fail=/falha/.test(s.summary);const cls=isQ?'q':(fail?'e':'w');const ic=isQ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4" stroke-linecap="round"/></svg>':(s.tool==='update_record'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>');return `<span class="chip ${cls}">${ic}${esc(s.summary)}</span>`;}).join('')}</div>`:'';
     const acts=(m.actions&&m.actions.length)?`<div class="acts">${m.actions.map(a=>`<button class="act" data-a="${encodeURIComponent(a)}">▸ ${esc(a)}</button>`).join('')}</div>`:'';
-    return `<div class="msg"><span class="av">${mascot(active.color,k)}</span><div style="min-width:0"><div class="bubble">${chips}${m.html||esc(m.text)}</div>${acts}</div></div>`;
+    return `<div class="msg"><span class="av"><img src="/mascote.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></span><div style="min-width:0"><div class="bubble">${chips}${m.html||esc(m.text)}</div>${acts}</div></div>`;
   }).join('');
   t.scrollTop=t.scrollHeight;
 }
@@ -1539,7 +1539,7 @@ async function ragSend(){
   const btn=document.getElementById('ragSend');if(btn.disabled)return;btn.disabled=true;
   inp.value='';
   const reply=document.getElementById('ragReply');
-  reply.innerHTML='<span class="ragthink"><img class="mascot" src="/mascote.png" alt="">pensando…</span>';
+  reply.innerHTML='<span class="ragthink"><img class="mascot" src="/mascote.jpg" alt="">pensando…</span>';
   const ctx='CONTEXTO: o usuário está com o registro '+REC.object+' de Id '+REC.id+' aberto (nome: '+REC.name+'). Quando ele disser "esta lead", "este registro", "essa conta" ou "tal campo", refere-se a ESTE registro. Use o Id '+REC.id+' diretamente nas ferramentas (update_record, send_email, log_call, convert_lead), sem precisar procurar.';
   try{
     const r=await api('/api/agent-farm/chat',{method:'POST',body:JSON.stringify({agentId:ag.id,orgId:ORG_ID,messages:[{role:'user',content:ctx+'\n\nPedido do usuário: '+text}]})});
