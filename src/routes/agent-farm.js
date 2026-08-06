@@ -319,7 +319,13 @@ async function execTool(conn, orgId, name, input) {
 }
 
 function stepSummary(name, input, out) {
-  if (name === 'soql_query') return `consultou ${out.totalSize != null ? out.totalSize : (out.records ? out.records.length : 0)} registro(s)`;
+  if (name === 'soql_query') {
+    const q = (input.query || '').toUpperCase();
+    const obj = q.match(/FROM\s+(\w+)/i);
+    const label = obj ? obj[1] : 'registro';
+    const n = out.totalSize != null ? out.totalSize : (out.records ? out.records.length : 0);
+    return n > 0 ? `${n} ${label}(s) encontrado(s)` : `nenhum ${label} encontrado`;
+  }
   if (name === 'update_record') return out.ok ? `atualizou ${input.sobject} ${out.id}` : `falha ao atualizar (${out.error || 'erro'})`;
   if (name === 'create_record') return out.ok ? `criou ${input.sobject} ${out.id}` : `falha ao criar (${out.error || 'erro'})`;
   if (name === 'convert_lead') return out.ok ? `converteu a lead → Opp ${out.opportunityId || '—'}` : `falha ao converter (${out.error || 'erro'})`;
