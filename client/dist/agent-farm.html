@@ -658,14 +658,41 @@ function mdLite(s){
   s=s.replace(/\[\[(?:REC|OPEN|NEWRECORD|AUTOCREATE|ACOES)[^\]]*?(\]\])?/gi,'');
   const lines=s.split('\n');let out=[],i=0;
   while(i<lines.length){
-    if(/^\s*\|.*\|\s*$/.test(lines[i])&&i+1<lines.length&&/^\s*\|[-: |]+\|\s*$/.test(lines[i+1])){
-      const head=lines[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+    const ln=lines[i];
+    // tabelas
+    if(/^\s*\|.*\|\s*$/.test(ln)&&i+1<lines.length&&/^\s*\|[-: |]+\|\s*$/.test(lines[i+1])){
+      const head=ln.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
       i+=2;const rows=[];
       while(i<lines.length&&/^\s*\|.*\|\s*$/.test(lines[i])){rows.push(lines[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));i++;}
       out.push('<table><thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>').join('')+'</tbody></table>');
-    }else{out.push(lines[i]);i++;}
+      continue;
+    }
+    // headers
+    if(/^#{3,}\s+/.test(ln)){out.push('<div class="md-h3">'+ln.replace(/^#+\s+/,'')+'</div>');i++;continue;}
+    if(/^#{2}\s+/.test(ln)){out.push('<div class="md-h2">'+ln.replace(/^#+\s+/,'')+'</div>');i++;continue;}
+    if(/^#\s+/.test(ln)){out.push('<div class="md-h1">'+ln.replace(/^#+\s+/,'')+'</div>');i++;continue;}
+    // separadores
+    if(/^-{3,}\s*$/.test(ln)){out.push('<hr class="md-hr">');i++;continue;}
+    // listas (- ou *)
+    if(/^\s*[-*]\s+/.test(ln)){
+      let items=[];
+      while(i<lines.length&&/^\s*[-*]\s+/.test(lines[i])){items.push(lines[i].replace(/^\s*[-*]\s+/,''));i++;}
+      out.push('<ul class="md-ul">'+items.map(x=>'<li>'+x+'</li>').join('')+'</ul>');
+      continue;
+    }
+    // listas numeradas
+    if(/^\s*\d+[.)]\s+/.test(ln)){
+      let items=[];
+      while(i<lines.length&&/^\s*\d+[.)]\s+/.test(lines[i])){items.push(lines[i].replace(/^\s*\d+[.)]\s+/,''));i++;}
+      out.push('<ol class="md-ol">'+items.map(x=>'<li>'+x+'</li>').join('')+'</ol>');
+      continue;
+    }
+    // linha vazia
+    if(!ln.trim()){out.push('<div class="md-spacer"></div>');i++;continue;}
+    // texto normal
+    out.push('<div class="md-p">'+ln+'</div>');i++;
   }
-  return out.join('\n').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  return out.join('').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
 }
 
 document.getElementById('thread').addEventListener('click',e=>{const b=e.target.closest('.act');if(!b||busy)return;document.getElementById('input').value=decodeURIComponent(b.dataset.a);sendMsg();});
