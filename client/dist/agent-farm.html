@@ -720,7 +720,7 @@ async function sendMsg(){
   const msgs=hist[active.id].filter(m=>!m.typing).map(m=>({role:m.role==='me'?'user':'assistant',content:m.text}));
   try{
     const r=await api('/api/agent-farm/chat',{method:'POST',body:JSON.stringify({agentId:active.id,orgId:ORG_ID,messages:msgs})});
-    const d=await r.json();
+    const d=await r.json().catch(()=>({error:'O servidor demorou demais. Tente um pedido menor (ex.: criar 1 lead de cada vez).'}));
     hist[active.id]=hist[active.id].filter(m=>!m.typing);
     if(d.ok){const wrote=(d.steps||[]).some(s=>s.tool!=='soql_query'&&!/falha/.test(s.summary));
       hist[active.id].push({role:'assistant',text:d.text||'(sem resposta)',html:mdLite(d.text||''),steps:d.steps||[],actions:d.actions||[]});
