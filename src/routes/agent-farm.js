@@ -44,6 +44,7 @@ const BEHAV =
   'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
   '\n\nABRIR REGISTRO: quando o usuário pedir para ABRIR/VER/MOSTRAR um registro ou atividade específica ("abra a tarefa da ligação", "abre a lead X", "mostra o evento de visita"), localize o Id com soql_query ou get_activities se necessário e termine a resposta com o token [[OPEN:<Id>]] — o sistema abre o registro num modal para o usuário ver e editar. Responda com 1 linha curta antes do token.' +
   '\n\nINTEGRAÇÕES MULESOFT: enrich_lead consulta a Neoway pelo CNPJ e grava porte/faixa/ticket/situação/segmento/endereço na lead (com status de enriquecimento). check_coverage verifica viabilidade de rede GPON e Metro para o endereço da lead. Depois de usar, resuma o resultado de forma vendedora (ex.: ticket potencial, cobertura disponível = oportunidade).' +
+  '\n\nBATCH: quando precisar criar múltiplos registros (ex.: 8 leads de prospects), use create_records_batch com todos de uma vez em vez de criar um por um. É muito mais rápido e evita timeout.' +
   '\n\nPROSPECÇÃO: quando o usuário pedir "pesquise novos clientes", "quero prospectar", "sugira prospects", "me indique empresas", "buscar novos clientes" ou similar, ANTES de pesquisar, pergunte:\n"Quer que eu busque **empresas novas** (que ainda não são clientes da Algar) ou **leads/clientes que já estão no Salesforce**?"\n- Se responder NOVOS/empresas novas/mercado/internet: use web_search para pesquisar empresas do segmento/região que o usuário indicar (ou da região do território Algar: Uberlândia, Uberaba, Ribeirão Preto, Franca, Campinas, Goiânia etc). Monte uma lista com nome, ramo, porte estimado e por que seria um bom prospect pra Algar. Sugira criar leads no Salesforce.\n- Se responder JÁ CLIENTE/leads/da Algar/do Salesforce/da base: use soql_query para buscar leads/contas na org. Filtre por rating, status, cidade, segmento conforme o pedido.\n- Se o contexto já deixar claro (ex.: "pesquise novos clientes de tecnologia em Uberlândia"), não precisa perguntar — vá direto pro web_search.' +
   '\n\nPESQUISA DE EMPRESA: quando o usuário pedir "pesquise esta empresa", "analise esta empresa", "me fale sobre esta empresa" ou similar, use web_search para buscar informações sobre a empresa (Company da lead aberta ou o nome que o usuário informar). Pesquise em múltiplas buscas se necessário. Monte um briefing de prospecção completo contendo:' +
   '\n1. **Sobre a empresa**: ramo de atuação, porte, número de funcionários, o que entrega/vende, principais clientes se disponível' +
@@ -151,6 +152,8 @@ const TOOLS = [
     input_schema: { type: 'object', properties: { fromDate: { type: 'string', description: 'YYYY-MM-DD (default hoje)' }, toDate: { type: 'string', description: 'YYYY-MM-DD (default +7d)' }, whoId: { type: 'string', description: 'filtrar por lead/contato (opcional)' } }, required: [] } },
   { name: 'get_activities', description: 'Timeline de um registro: todas as Tarefas e Eventos (abertos e concluídos) de uma lead/conta/opp em ordem cronológica. Use para "mostre a cadência", "atividades da lead", "histórico de toques".',
     input_schema: { type: 'object', properties: { recordId: { type: 'string' } }, required: ['recordId'] } },
+  { name: 'create_records_batch', description: 'Cria múltiplos registros do mesmo objeto de uma vez (batch). Use quando precisar criar várias leads, tarefas ou registros. Muito mais rápido que criar um por um.',
+    input_schema: { type: 'object', properties: { sobject: { type: 'string', description: 'Nome do objeto (ex: Lead)' }, records: { type: 'array', items: { type: 'object' }, description: 'Array de registros com os campos a preencher' } }, required: ['sobject', 'records'] } },
   { name: 'enrich_lead', description: 'Enriquecimento Neoway via MuleSoft: consulta o CNPJ da lead e grava porte, faixa de funcionários, ticket potencial, situação cadastral, segmento e endereço fiscal nos campos de enriquecimento da Lead. Use quando pedirem "enriquece a lead", "consulta o CNPJ", "dados da Neoway".',
     input_schema: { type: 'object', properties: { leadId: { type: 'string' } }, required: ['leadId'] } },
   { name: 'check_coverage', description: 'Cobertura de rede via MuleSoft: verifica viabilidade GPON e Metro (estações reais) para o endereço/cidade da lead. Use quando pedirem "tem cobertura?", "viabilidade", "GPON/Metro disponível?".',
@@ -309,6 +312,17 @@ async function execTool(conn, orgId, name, input) {
     }
     return { ok: created.length > 0, created, count: created.length };
   }
+  if (name === 'create_records_batch') {
+    if (!canWrite) return { ok: false, error: 'escrita bloqueada (read-only)' };
+    try {
+      const results = await conn.sobject(input.sobject).create(input.records);
+      const created = Array.isArray(results) ? results : [results];
+      const ok = created.filter(r => r.success);
+      const fail = created.filter(r => !r.success);
+      return { ok: true, total: created.length, created: ok.length, failed: fail.length, ids: ok.map(r => r.id) };
+    } catch (e) { return { ok: false, error: String(e.message || e) }; }
+  }
+  if (name === 'create_records_batch') return out.ok ? `criou ${out.created} ${input.sobject}(s) em batch` : `falha batch (${out.error || 'erro'})`;
   if (name === 'enrich_lead') {
     if (!canWrite) return { ok: false, error: `escrita bloqueada na org ${orgId} (read-only)` };
     return await neowayEnrich(conn, input.leadId);
@@ -339,6 +353,7 @@ function stepSummary(name, input, out) {
   if (name === 'post_chatter') return out.ok ? `postou no Chatter (${out.id})` : `falha no Chatter (${out.error || JSON.stringify(out.errors || '')})`;
   if (name === 'get_calendar') return `consultou agenda: ${out.count != null ? out.count : 0} evento(s)`;
   if (name === 'get_activities') return `timeline: ${out.total != null ? out.total : 0} atividade(s)`;
+  if (name === 'create_records_batch') return out.ok ? `criou ${out.created} ${input.sobject}(s) em batch` : `falha batch (${out.error || 'erro'})`;
   if (name === 'enrich_lead') return out.ok ? 'enriqueceu via Neoway (porte ' + ((out.data && out.data.porte) || '—') + ')' : `falha no enriquecimento (${out.error || 'erro'})`;
   if (name === 'check_coverage') return out.ok ? ('cobertura: GPON ' + (out.gpon && out.gpon.available ? 'OK' : 'não') + ' · Metro ' + (out.metro && out.metro.available ? 'OK' : 'não')) : `falha na cobertura (${out.error || 'erro'})`;
   if (name === 'apply_cadence') return out.ok ? `aplicou cadência: ${out.count} toque(s) criados` : `falha na cadência (${out.error || 'erro'})`;
