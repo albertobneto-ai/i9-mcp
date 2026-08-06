@@ -44,6 +44,13 @@ const BEHAV =
   'Se a ação precisar de um dado que você não tem (ex.: o novo telefone), tudo bem sugerir mesmo assim — ao ser clicada você pergunta o valor.' +
   '\n\nABRIR REGISTRO: quando o usuário pedir para ABRIR/VER/MOSTRAR um registro ou atividade específica ("abra a tarefa da ligação", "abre a lead X", "mostra o evento de visita"), localize o Id com soql_query ou get_activities se necessário e termine a resposta com o token [[OPEN:<Id>]] — o sistema abre o registro num modal para o usuário ver e editar. Responda com 1 linha curta antes do token.' +
   '\n\nINTEGRAÇÕES MULESOFT: enrich_lead consulta a Neoway pelo CNPJ e grava porte/faixa/ticket/situação/segmento/endereço na lead (com status de enriquecimento). check_coverage verifica viabilidade de rede GPON e Metro para o endereço da lead. Depois de usar, resuma o resultado de forma vendedora (ex.: ticket potencial, cobertura disponível = oportunidade).' +
+  '\n\nPESQUISA DE EMPRESA: quando o usuário pedir "pesquise esta empresa", "analise esta empresa", "me fale sobre esta empresa" ou similar, use web_search para buscar informações sobre a empresa (Company da lead aberta ou o nome que o usuário informar). Pesquise em múltiplas buscas se necessário. Monte um briefing de prospecção completo contendo:' +
+  '\n1. **Sobre a empresa**: ramo de atuação, porte, número de funcionários, o que entrega/vende, principais clientes se disponível' +
+  '\n2. **Presença digital**: site, redes sociais, notícias recentes' +
+  '\n3. **Concorrentes/fornecedores atuais**: quais empresas de telecom/TI atendem ou podem atender essa empresa (concorrentes da Algar)' +
+  '\n4. **Oportunidade Algar**: com base no perfil, recomende quais produtos/serviços da Algar seriam ideais (Fibra corporativa, MPLS, SD-WAN, Cloud, Dados, IoT, Contact Center, Colaboração/UcaaS, Segurança, Gestão de TI)' +
+  '\n5. **Abordagem sugerida**: tom, gancho comercial, argumentos com base no que descobriu' +
+  '\nSeja vendedor e proativo. Use emojis. Termine com próximos passos concretos (ex.: "agende uma visita", "aplique a cadência").' +
   '\n\nCALENDÁRIO VISUAL: quando o usuário pedir para VER/ABRIR o calendário ou a agenda ("abre meu calendário", "mostra a agenda", "calendário de visitas"), responda 1 linha curta e inclua o token [[CALENDAR]] — o sistema abre a tela de calendário com os agendamentos.' +
   '\n\nLIGAÇÃO GRAVADA / TRANSCRIÇÃO: gravações de chamadas ficam na Task de Subject EXATAMENTE "Ligação (gravada)" — a Description contém a transcrição e o áudio vai anexado. Quando pedirem "a ligação gravada", "a transcrição", "o registro da chamada", busque: SELECT Id,CreatedDate FROM Task WHERE Subject = \'Ligação (gravada)\' AND WhoId = \'<leadId>\' ORDER BY CreatedDate DESC LIMIT 1 e abra com [[OPEN:<Id>]]. NUNCA confunda com as tarefas de cadência ("Cadência x/5 · Ligação..."), que são passos futuros, não gravações. Se não houver nenhuma "Ligação (gravada)" na lead, diga que ainda não há chamada gravada.' +
   '\n\nCRIAR VIA FORMULÁRIO: quando o usuário quiser CRIAR um registro (ex.: "quero criar uma lead", "criar uma conta"), NÃO peça os campos no chat nem use a ferramenta de criar. ' +
@@ -341,7 +348,7 @@ async function agenticRun(system, messages, conn, orgId) {
     const res = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, tools: TOOLS, messages: convo }),
+      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, tools: [...TOOLS, { type: 'web_search_20250305', name: 'web_search', max_uses: 5 }], messages: convo }),
     });
     if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const data = await res.json();
@@ -349,6 +356,10 @@ async function agenticRun(system, messages, conn, orgId) {
     if (data.stop_reason === 'tool_use') {
       const results = [];
       for (const blk of data.content) {
+        if (blk.type === 'tool_use' && blk.name === 'web_search') {
+          steps.push({ tool: 'web_search', input: blk.input, summary: 'pesquisou: ' + (blk.input.query || '').slice(0, 60) });
+          continue;
+        }
         if (blk.type !== 'tool_use') continue;
         let out;
         try { out = await execTool(conn, orgId, blk.name, blk.input || {}); }
