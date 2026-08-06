@@ -400,6 +400,22 @@ router.post('/agents', authMiddleware, async (req, res) => {
   } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
 });
 
+// PATCH /api/agent-farm/agents/:id — atualiza agente
+router.patch('/agents/:id', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const sets = []; const vals = []; let n = 1;
+    if (b.name) { sets.push('name=$' + n); vals.push(b.name); n++; }
+    if (b.emoji) { sets.push('emoji=$' + n); vals.push(b.emoji); n++; }
+    if (b.tag) { sets.push('tag=$' + n); vals.push(b.tag); n++; }
+    if (b.context) { sets.push('context=$' + n); vals.push(b.context); n++; }
+    if (!sets.length) return res.json({ ok: false, error: 'nada pra atualizar' });
+    vals.push(req.params.id);
+    await pool.query('UPDATE farm_agents SET ' + sets.join(',') + ' WHERE id=$' + n, vals);
+    return res.json({ ok: true });
+  } catch (e) { return res.status(500).json({ ok: false, error: String(e.message || e) }); }
+});
+
 // POST /api/agent-farm/chat — { agentId, orgId=36, messages:[{role,content}] } → ação real na org
 router.post('/chat', authMiddleware, async (req, res) => {
   try {
