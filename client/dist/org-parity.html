@@ -134,6 +134,7 @@ tr.detail-row:hover{background:var(--ice)!important;}
     <button class="btn" id="toggle-matched">Mostrar iguais</button>
     <button class="action-link" id="expand-all">Expandir todos</button>
     <button class="action-link" id="collapse-all">Colapsar</button>
+    <button class="btn" id="export-txt">Exportar TXT</button>
     <div class="count" id="result-count"></div>
   </div>
   <div class="table-wrap">
@@ -157,6 +158,73 @@ document.querySelectorAll(".gadget").forEach(function(el){el.addEventListener("c
 document.getElementById("search").addEventListener("input",function(e){sQ=e.target.value;render();});
 document.getElementById("expand-all").addEventListener("click",function(){var f=gF();for(var i=0;i<f.length;i++){if(f[i].d)ex[f[i].id]=true;}render();});
 document.getElementById("collapse-all").addEventListener("click",function(){ex={};render();});
+
+function exportTXT(){
+  var f=gF();
+  var lines=[];
+  lines.push("═══════════════════════════════════════════════════════════════");
+  lines.push("  PARIDADE DE ORGS — HOMOL (100) ↔ PROD (199)");
+  lines.push("  Verificado em 08/08/2026 09:41");
+  lines.push("═══════════════════════════════════════════════════════════════");
+  lines.push("");
+  lines.push("  RESUMO");
+  lines.push("  ───────────────────────────────────────");
+  lines.push("  Analisados:    9549");
+  lines.push("  Iguais:        5434");
+  lines.push("  Divergentes:   9");
+  lines.push("  Só HOMOL:      ");
+  lines.push("  Só PROD:       ");
+  lines.push("");
+  lines.push("  Filtro ativo: " + (aS==="issues"?"Divergências":aS) + (aC!=="all"?" | Categoria: "+aC:""));
+  lines.push("  Itens exportados: " + f.length);
+  lines.push("");
+  lines.push("═══════════════════════════════════════════════════════════════");
+  lines.push("");
+  var cats={fields:"OBJETOS & CAMPOS",ps:"PERMISSION SETS",vr:"VALIDATION RULES",flows:"FLOWS",apex:"APEX",lwc:"LWC / AURA"};
+  var grouped={};
+  for(var i=0;i<f.length;i++){
+    var d=f[i];
+    if(!grouped[d.c])grouped[d.c]=[];
+    grouped[d.c].push(d);
+  }
+  var catOrder=["fields","vr","flows","apex","ps","lwc"];
+  for(var ci=0;ci<catOrder.length;ci++){
+    var c=catOrder[ci];
+    if(!grouped[c]||grouped[c].length===0)continue;
+    var items=grouped[c];
+    lines.push("  "+cats[c]+" ("+items.length+")");
+    lines.push("  ───────────────────────────────────────");
+    lines.push("");
+    for(var j=0;j<items.length;j++){
+      var d=items[j];
+      var statusLabel=SM[d.s]?SM[d.s].lb:d.s;
+      lines.push("    "+d.n);
+      lines.push("      Tipo:   "+d.t+" · "+d.o);
+      lines.push("      Status: "+statusLabel);
+      if(d.h)lines.push("      HOMOL:  "+d.h);
+      if(d.p)lines.push("      PROD:   "+d.p);
+      if(d.d)lines.push("      Detalhe: "+d.d);
+      lines.push("");
+    }
+    lines.push("");
+  }
+  lines.push("═══════════════════════════════════════════════════════════════");
+  lines.push("  Gerado por I9 Explorer — CRM B2B Algar Telecom");
+  lines.push("  Confidencial — Uso Interno");
+  lines.push("═══════════════════════════════════════════════════════════════");
+  var text=lines.join("\n");
+  var blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;
+  a.download="paridade-homol-prod-"+ new Date().toISOString().slice(0,10)+".txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById("export-txt").addEventListener("click",exportTXT);
+
 render();
 </script>
 </body>
