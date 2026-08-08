@@ -16,6 +16,7 @@ import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
 import bugsRoutes from './routes/bugs.js';
 import migrateRoutes from './routes/migrate.js';
+import setupScanRoutes from './routes/setup-scan.js';
 import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
@@ -166,6 +167,7 @@ app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 app.use('/api/bugs', bugsRoutes);
 app.use('/api/migrate', migrateRoutes);
+app.use('/api/orgs', setupScanRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
 app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
