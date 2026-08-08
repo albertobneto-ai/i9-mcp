@@ -1,4 +1,4 @@
-// src/routes/migrate.js — Temporary: encrypt existing plaintext credentials
+// src/routes/migrate.js — Encrypt existing plaintext credentials
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { encrypt, isEncrypted } from '../services/crypto.js';
@@ -10,6 +10,11 @@ const router = express.Router();
 router.post('/encrypt-credentials', authMiddleware, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
   try {
+    // Step 1: Ensure columns are TEXT (not VARCHAR) to hold encrypted values
+    await pool.query('ALTER TABLE orgs ALTER COLUMN password TYPE TEXT');
+    await pool.query('ALTER TABLE orgs ALTER COLUMN security_token TYPE TEXT');
+
+    // Step 2: Encrypt all plaintext credentials
     const { rows: orgs } = await pool.query('SELECT id, name, password, security_token FROM orgs');
     const results = [];
     for (const org of orgs) {
