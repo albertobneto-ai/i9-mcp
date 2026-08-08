@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Paridade de Orgs — I9 Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--rail-bg:#141518;--rail-line:#2a2b30;--rail-fog:#8b8d96;--rail-ice:#f7f8fa;--paper:#e7e8ec;--ice:#f7f8fa;--white:#fff;--line:#d3d5da;--steel:#8b8d96;--fog:#6b6d75;--ink:#1a1b1e;--radius:3px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-size:13.5px;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh;}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em;margin:0;}
+.shell{display:grid;grid-template-columns:56px 1fr;min-height:100vh;}
+
+/* ── RAIL ── */
+.rail{background:var(--rail-bg);border-right:1px solid var(--rail-line);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;}
+.rail-logo{width:28px;height:28px;border:1px solid var(--rail-fog);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:12px;margin-bottom:22px;color:var(--rail-ice);}
+.rail-btn{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--rail-fog);cursor:pointer;font-size:15px;border:1px solid transparent;transition:all .15s;position:relative;}
+.rail-btn:hover{color:var(--rail-ice);border-color:var(--rail-line);}
+.rail-btn.active{color:var(--rail-bg);background:var(--rail-ice);}
+.rail-btn .tip{display:none;position:absolute;left:44px;background:var(--ink);color:var(--ice);padding:4px 10px;border-radius:var(--radius);font-size:11px;font-family:'Inter';white-space:nowrap;z-index:20;pointer-events:none;}
+.rail-btn:hover .tip{display:block;}
+.rail-spacer{flex:1;}
+.rail-sep{width:20px;height:1px;background:var(--rail-line);margin:8px 0;}
+.rail-avatar{width:26px;height:26px;border-radius:50%;background:var(--rail-fog);font-size:10.5px;display:flex;align-items:center;justify-content:center;color:var(--rail-bg);font-weight:700;}
+.main{display:flex;flex-direction:column;min-height:100vh;overflow:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{border-bottom:1px solid var(--rail-line);background:var(--rail-bg);padding:14px 26px;display:flex;align-items:center;gap:24px;}
+.brandblock{display:flex;flex-direction:column;gap:2px;min-width:170px;}
+.brandblock .eyebrow{color:var(--rail-fog);font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;}
+.brandblock h1{font-size:17px;font-weight:600;color:var(--rail-ice);}
+.topbar .spacer{flex:1;}
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--rail-fog);}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.topbar .org-pill{display:flex;align-items:center;gap:8px;border:1px solid var(--rail-line);padding:6px 14px;border-radius:var(--radius);color:var(--rail-fog);font-size:11px;font-family:'IBM Plex Mono',monospace;}
+.topbar .org-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--rail-fog);}
+.topbar .ts{color:var(--rail-fog);font-size:10.5px;}
+
+/* ── SWATCHES ── */
+.swatch{width:9px;height:9px;border:1.3px solid var(--steel);border-radius:2px;display:inline-block;flex-shrink:0;}
+.swatch.ok{background:var(--ink);border-color:var(--ink);}
+.swatch.diff{background:repeating-linear-gradient(135deg,var(--ink) 0 2px,transparent 2px 4px);border-color:var(--ink);}
+.swatch.absent{background:transparent;border-style:dashed;}
+.swatch.extra{background:var(--steel);border-color:var(--steel);}
+
+/* ── GADGETS ── */
+.gadgets{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);flex-shrink:0;}
+.gadget{background:var(--ice);padding:16px 18px;cursor:pointer;transition:background .15s;}
+.gadget:hover{background:var(--white);}
+.gadget.active{background:var(--white);box-shadow:inset 0 -2px 0 var(--ink);}
+.gadget-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.gadget-icon{font-size:14px;color:var(--fog);}
+.gadget-value{font-family:'Space Grotesk';font-size:26px;font-weight:600;}
+.gadget-label{font-size:11.5px;font-weight:600;margin-top:2px;}
+.gadget-sub{color:var(--fog);font-size:10.5px;margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── TOOLBAR ── */
+.toolbar{padding:14px 26px;display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+.search-box{position:relative;width:260px;}
+.search-box input{width:100%;padding:7px 12px 7px 30px;border:1px solid var(--line);border-radius:var(--radius);font-size:12.5px;font-family:'Inter',sans-serif;background:var(--white);color:var(--ink);outline:none;transition:border-color .15s;}
+.search-box input:focus{border-color:var(--steel);}
+.search-box input::placeholder{color:var(--steel);}
+.search-box .si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--steel);font-size:13px;}
+.btn{border:1px solid var(--line);background:var(--white);color:var(--ink);padding:7px 14px;border-radius:var(--radius);font-size:12px;cursor:pointer;font-family:'Inter';font-weight:500;transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--steel);background:var(--ice);}
+.btn.active{background:var(--ink);color:var(--ice);border-color:var(--ink);}
+.btn-group{display:flex;}.btn-group .btn{border-radius:0;}.btn-group .btn:first-child{border-radius:var(--radius) 0 0 var(--radius);}.btn-group .btn:last-child{border-radius:0 var(--radius) var(--radius) 0;}.btn-group .btn+.btn{border-left:none;}
+.toolbar .count{font-size:11px;color:var(--fog);margin-left:auto;font-family:'IBM Plex Mono';}
+.toolbar .action-link{font-size:11.5px;color:var(--ink);cursor:pointer;font-weight:600;border:none;background:none;font-family:'Inter';text-decoration:underline;text-underline-offset:2px;}
+
+/* ── TABLE ── */
+.table-wrap{flex:1;overflow:auto;padding:0 26px 26px;}
+.panel{border:1px solid var(--line);background:var(--ice);border-radius:var(--radius);overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:var(--ice);padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--fog);border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:5;}
+tbody tr{background:var(--white);cursor:pointer;transition:background .1s;border-left:3px solid transparent;}
+tbody tr:hover{background:var(--ice);}
+tbody tr.bl-diff{border-left-color:var(--ink);}
+tbody tr.bl-absent{border-left-color:var(--steel);border-left-style:dashed;}
+tbody tr.bl-extra{border-left-color:var(--steel);}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+
+/* ── COMPONENT NAME — prominent ── */
+.comp-name{display:block;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.02em;}
+.comp-obj{display:block;font-size:10.5px;color:var(--fog);margin-top:2px;font-family:'Inter';}
+
+.val-cell{font-family:'IBM Plex Mono',monospace;font-size:11.5px;}
+.val-null{color:var(--line);font-style:italic;}
+.status-cell{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;}
+.chevron{font-size:10px;color:var(--steel);transition:transform .15s;display:inline-block;width:14px;text-align:center;}
+.chevron.open{transform:rotate(90deg);}
+
+/* ── DETAIL ROW ── */
+tr.detail-row{background:var(--ice)!important;}
+tr.detail-row:hover{background:var(--ice)!important;}
+.detail-box{padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--white);font-size:12.5px;line-height:1.7;}
+.detail-box .detail-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--fog);margin-bottom:4px;}
+.detail-box p{margin-bottom:6px;}
+.detail-box .detail-values{display:flex;gap:20px;font-size:11px;color:var(--fog);font-family:'IBM Plex Mono';}
+.detail-box .detail-values strong{color:var(--ink);}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--fog);}
+.empty-state .icon{font-size:32px;margin-bottom:10px;opacity:.3;}
+.empty-state .title{font-size:13px;font-weight:600;}
+.empty-state .sub{font-size:11.5px;margin-top:4px;color:var(--steel);}
+
+@page{size:A4 landscape;margin:1.2cm;}
+@media print{body{overflow:visible;height:auto;}.rail{display:none;}.shell{grid-template-columns:1fr;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- RAIL -->
+<div class="rail">
+  <div class="rail-logo">i9</div>
+  <div class="rail-btn active" data-cat="all" title="Todos">◉<span class="tip">Todos</span></div>
+  <div class="rail-btn" data-cat="fields" title="Objetos & Campos">◫<span class="tip">Objetos & Campos</span></div>
+  <div class="rail-btn" data-cat="ps" title="Permission Sets">⛊<span class="tip">Permission Sets</span></div>
+  <div class="rail-btn" data-cat="fls" title="FLS / ObjectPerms">◩<span class="tip">FLS / ObjectPerms</span></div>
+  <div class="rail-btn" data-cat="vr" title="Validation Rules">⚑<span class="tip">Validation Rules</span></div>
+  <div class="rail-btn" data-cat="flows" title="Flows">⚡<span class="tip">Flows</span></div>
+  <div class="rail-btn" data-cat="apex" title="Apex">{ }<span class="tip">Apex</span></div>
+  <div class="rail-btn" data-cat="lwc" title="LWC / Aura">◧<span class="tip">LWC / Aura</span></div>
+  <div class="rail-btn" data-cat="rt" title="Record Types">▤<span class="tip">Record Types</span></div>
+  <div class="rail-spacer"></div>
+  <div class="rail-sep"></div>
+  <div class="rail-avatar">AB</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="topbar">
+    <div class="brandblock"><span class="eyebrow">I9 Explorer</span><h1>Paridade de Orgs</h1></div>
+    <div class="spacer"></div>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch ok"></span> Igual</div>
+      <div class="legend-item"><span class="swatch diff"></span> Divergente</div>
+      <div class="legend-item"><span class="swatch absent"></span> Só HOMOL</div>
+      <div class="legend-item"><span class="swatch extra"></span> Só PROD</div>
+    </div>
+    <div class="org-pill"><span class="dot"></span>HOMOL 100 ↔ PROD 199</div>
+    <div class="ts" id="timestamp"></div>
+  </div>
+
+  <div class="gadgets">
+    <div class="gadget" data-filter="all"><div class="gadget-top"><span class="gadget-icon">⇄</span></div><div class="gadget-value" id="gv-total">—</div><div class="gadget-label">Analisados</div><div class="gadget-sub">Componentes</div></div>
+    <div class="gadget" data-filter="matched"><div class="gadget-top"><span class="gadget-icon"><span class="swatch ok"></span></span></div><div class="gadget-value" id="gv-matched">—</div><div class="gadget-label">Iguais</div><div class="gadget-sub" id="gs-pct"></div></div>
+    <div class="gadget" data-filter="divergent"><div class="gadget-top"><span class="gadget-icon"><span class="swatch diff"></span></span></div><div class="gadget-value" id="gv-divergent">—</div><div class="gadget-label">Divergentes</div><div class="gadget-sub">Requer ação</div></div>
+    <div class="gadget" data-filter="homol-only"><div class="gadget-top"><span class="gadget-icon"><span class="swatch absent"></span></span></div><div class="gadget-value" id="gv-homol">—</div><div class="gadget-label">Só HOMOL</div><div class="gadget-sub">Ausente em PROD</div></div>
+    <div class="gadget" data-filter="prod-only"><div class="gadget-top"><span class="gadget-icon"><span class="swatch extra"></span></span></div><div class="gadget-value" id="gv-prod">—</div><div class="gadget-label">Só PROD</div><div class="gadget-sub">Ausente em HOMOL</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box"><span class="si">⌕</span><input type="text" id="search" placeholder="Buscar componente..."></div>
+    <div class="btn-group">
+      <button class="btn active" data-status="issues">Divergências</button>
+      <button class="btn" data-status="divergent">Divergente</button>
+      <button class="btn" data-status="homol-only">Só HOMOL</button>
+      <button class="btn" data-status="prod-only">Só PROD</button>
+    </div>
+    <button class="btn" id="toggle-matched">Mostrar iguais</button>
+    <button class="action-link" id="expand-all">Expandir todos</button>
+    <button class="action-link" id="collapse-all">Colapsar</button>
+    <div class="count" id="result-count"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="panel">
+      <table>
+        <thead><tr>
+          <th style="width:20px"></th>
+          <th>Componente</th>
+          <th>Tipo</th>
+          <th>HOMOL</th>
+          <th>PROD</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="empty" style="display:none">
+      <div class="icon">✓</div>
+      <div class="title">Nenhuma divergência nesta categoria.</div>
+      <div class="sub">Ative "Mostrar iguais" para ver todos os componentes.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const D=[
+  {id:1,c:"fields",n:"Lead.ScoreDataCloud__c",t:"CustomField",o:"Lead",s:"homol-only",h:"Number(3,0)",p:null,d:"Campo de score do Data Cloud. Não existe em produção — depende da integração DC."},
+  {id:2,c:"fields",n:"Lead.SegmentoIA__c",t:"CustomField",o:"Lead",s:"homol-only",h:"Picklist (4 valores)",p:null,d:"Segmentação automática via IA. Criado para POC em HOMOL."},
+  {id:3,c:"fields",n:"Lead.UltimaConsultaSerasa__c",t:"CustomField",o:"Lead",s:"homol-only",h:"DateTime",p:null,d:"Timestamp da última consulta Serasa. Necessário para PS_Partner_Lead_FLS funcionar."},
+  {id:4,c:"fields",n:"Lead.StatusConversao__c",t:"CustomField",o:"Lead",s:"divergent",h:"Picklist — 7 valores",p:"Picklist — 5 valores",d:"Faltam em PROD: 'Em Análise' e 'Recusado'. Adicionados na sprint do portal parceiro."},
+  {id:5,c:"fields",n:"Account.CNAENormalizado__c",t:"CustomField",o:"Account",s:"homol-only",h:"Text(10)",p:null,d:"Campo de normalização CNAE. Criado para corrigir bug de duplicação."},
+  {id:6,c:"fields",n:"Lead.CNPJ__c",t:"CustomField",o:"Lead",s:"matched",h:"Text(18)",p:"Text(18)",d:null},
+  {id:7,c:"fields",n:"Lead.Segmento__c",t:"CustomField",o:"Lead",s:"matched",h:"Picklist (6)",p:"Picklist (6)",d:null},
+  {id:8,c:"fields",n:"Lead.Diretoria__c",t:"CustomField",o:"Lead",s:"matched",h:"Picklist (4)",p:"Picklist (4)",d:null},
+  {id:9,c:"fields",n:"Lead.OrigemCanal__c",t:"CustomField",o:"Lead",s:"matched",h:"Picklist (3)",p:"Picklist (3)",d:null},
+  {id:10,c:"fields",n:"Account.RazaoSocial__c",t:"CustomField",o:"Account",s:"matched",h:"Text(255)",p:"Text(255)",d:null},
+  {id:50,c:"fields",n:"Opportunity.ValorMensal__c",t:"CustomField",o:"Opportunity",s:"matched",h:"Currency(16,2)",p:"Currency(16,2)",d:null},
+  {id:11,c:"ps",n:"PS_AlgarPartner_Portal",t:"PermissionSet",o:"—",s:"matched",h:"18 ObjPerms, 94 FLS",p:"18 ObjPerms, 94 FLS",d:null},
+  {id:12,c:"ps",n:"PS_Partner_Lead_FLS",t:"PermissionSet",o:"—",s:"divergent",h:"11 FieldPermissions",p:"8 FieldPermissions",d:"Faltam em PROD: ScoreDataCloud__c, SegmentoIA__c, UltimaConsultaSerasa__c. Causa raiz: campos não existem em PROD."},
+  {id:13,c:"ps",n:"PS_Partner_Account_FLS",t:"PermissionSet",o:"—",s:"matched",h:"22 FLS",p:"22 FLS",d:null},
+  {id:14,c:"ps",n:"PS_AlgarPartner_IntegracaoCRM",t:"PermissionSet",o:"—",s:"matched",h:"4 ObjPerms, 12 FLS",p:"4 ObjPerms, 12 FLS",d:null},
+  {id:15,c:"ps",n:"PS_Lead_Explorer_DC_FLS",t:"PermissionSet",o:"—",s:"homol-only",h:"6 FPs (Lead DC)",p:null,d:"FLS Data Cloud para Lead. Sem equivalente em PROD."},
+  {id:16,c:"ps",n:"PS_Vendedor_Externo",t:"PermissionSet",o:"—",s:"prod-only",h:null,p:"14 FLS em Opportunity",d:"Criada diretamente em produção. Sem rastreio em HOMOL — investigar origem."},
+  {id:17,c:"fls",n:"Partner Dealer → Lead.ScoreDataCloud__c",t:"FieldPermission",o:"Lead",s:"homol-only",h:"Read",p:null,d:"FLS de campo que só existe em HOMOL."},
+  {id:18,c:"fls",n:"Partner Dealer → Lead.CNPJ__c",t:"FieldPermission",o:"Lead",s:"matched",h:"Read",p:"Read",d:null},
+  {id:19,c:"fls",n:"Admin → Account.CNAENormalizado__c",t:"FieldPermission",o:"Account",s:"homol-only",h:"Read/Edit",p:null,d:"Campo não existe em PROD — FLS consequentemente ausente."},
+  {id:20,c:"vr",n:"VR_Lead_CNPJObrigatorio",t:"ValidationRule",o:"Lead",s:"matched",h:"Ativa",p:"Ativa",d:null},
+  {id:21,c:"vr",n:"VR_Lead_QualificacaoObrigatoria",t:"ValidationRule",o:"Lead",s:"divergent",h:"Ativa",p:"Inativa",d:"Inativa em PROD — possível hotfix. Verificar com o time se a desativação foi intencional."},
+  {id:22,c:"vr",n:"VR_Lead_SegmentoRegra",t:"ValidationRule",o:"Lead",s:"homol-only",h:"Ativa",p:null,d:"VR nova de sprint recente. Ainda não deployada para PROD."},
+  {id:23,c:"vr",n:"VR_Account_CNPJFormato",t:"ValidationRule",o:"Account",s:"matched",h:"Ativa",p:"Ativa",d:null},
+  {id:24,c:"vr",n:"VR_Account_SerasaObrigatoria",t:"ValidationRule",o:"Account",s:"matched",h:"Ativa",p:"Ativa",d:null},
+  {id:25,c:"flows",n:"Lead_AtribuicaoRegional",t:"Record-Triggered",o:"Lead",s:"matched",h:"v12 · Ativo",p:"v12 · Ativo",d:null},
+  {id:26,c:"flows",n:"Lead_AS_SharePartner",t:"Record-Triggered",o:"Lead",s:"divergent",h:"v4 · Ativo",p:"v3 · Ativo",d:"Versão ativa diferente. v4 contém fix de sharing para novos roles de parceiro. Comparar body XML para confirmar divergência funcional."},
+  {id:27,c:"flows",n:"Account_CriacaoComSerasa",t:"Record-Triggered",o:"Account",s:"matched",h:"v8 · Ativo",p:"v8 · Ativo",d:null},
+  {id:28,c:"flows",n:"AlgarPartnerAI_InboundRouting",t:"Omni-Channel",o:"—",s:"homol-only",h:"v1 · Ativo",p:null,d:"Flow de roteamento do Agentforce Service Agent. Ainda em desenvolvimento."},
+  {id:29,c:"flows",n:"Opp_AtualizaForecast",t:"Scheduled",o:"Opportunity",s:"matched",h:"v2 · Ativo",p:"v2 · Ativo",d:null},
+  {id:30,c:"apex",n:"PartnerCalendarController",t:"Apex Class",o:"—",s:"homol-only",h:"4 métodos",p:null,d:"Controller do CRMB2B-483 (Calendar). Deploy para PROD pendente aprovação."},
+  {id:31,c:"apex",n:"PartnerCalendarControllerTest",t:"Apex Test",o:"—",s:"homol-only",h:"7 testes, 100%",p:null,d:"Test class do Calendar controller."},
+  {id:32,c:"apex",n:"LeadConversionHandler",t:"Apex Class",o:"—",s:"matched",h:"v3",p:"v3",d:null},
+  {id:33,c:"apex",n:"SerasaConsultaPorCnpj",t:"Apex Class",o:"—",s:"matched",h:"v5",p:"v5",d:null},
+  {id:34,c:"apex",n:"LeadTrigger",t:"Apex Trigger",o:"Lead",s:"matched",h:"v2",p:"v2",d:null},
+  {id:35,c:"lwc",n:"partnerHomeDashboard",t:"LWC",o:"—",s:"matched",h:"✓",p:"✓",d:null},
+  {id:36,c:"lwc",n:"partnerLeadList",t:"LWC",o:"—",s:"matched",h:"✓",p:"✓",d:null},
+  {id:37,c:"lwc",n:"partnerLeadDetail",t:"LWC",o:"—",s:"matched",h:"✓",p:"✓",d:null},
+  {id:38,c:"lwc",n:"partnerCalendar",t:"LWC",o:"—",s:"homol-only",h:"✓",p:null,d:"LWC do CRMB2B-483. Depende do PartnerCalendarController."},
+  {id:39,c:"lwc",n:"novoLeadModal",t:"LWC",o:"—",s:"matched",h:"✓ (v20)",p:"✓ (v20)",d:null},
+  {id:40,c:"lwc",n:"AccountNewOverride",t:"Aura",o:"—",s:"matched",h:"✓",p:"✓",d:null},
+  {id:41,c:"rt",n:"Lead.B2B",t:"RecordType",o:"Lead",s:"matched",h:"Ativo",p:"Ativo",d:null},
+  {id:42,c:"rt",n:"Lead.Partner",t:"RecordType",o:"Lead",s:"matched",h:"Ativo",p:"Ativo",d:null},
+  {id:43,c:"rt",n:"Account.PessoaJuridica",t:"RecordType",o:"Account",s:"matched",h:"Ativo",p:"Ativo",d:null},
+  {id:44,c:"rt",n:"Opportunity.B2B",t:"RecordType",o:"Opportunity",s:"matched",h:"Ativo",p:"Ativo",d:null}
+];
+
+const SM={matched:{sw:"ok",lb:"Igual",bl:""},"homol-only":{sw:"absent",lb:"Só HOMOL",bl:"bl-absent"},"prod-only":{sw:"extra",lb:"Só PROD",bl:"bl-extra"},divergent:{sw:"diff",lb:"Divergente",bl:"bl-diff"}};
+let aC="all",aS="issues",sM=false,sQ="",ex=new Set();
+
+function cn(){const c={total:D.length,matched:0,"homol-only":0,"prod-only":0,divergent:0};D.forEach(d=>c[d.s]++);return c;}
+
+function gF(){
+  let r=D;
+  if(aC!=="all")r=r.filter(d=>d.c===aC);
+  if(aS==="issues")r=sM?r:r.filter(d=>d.s!=="matched");
+  else if(aS)r=r.filter(d=>d.s===aS);
+  if(sQ){const q=sQ.toLowerCase();r=r.filter(d=>d.n.toLowerCase().includes(q)||d.t.toLowerCase().includes(q)||(d.d||"").toLowerCase().includes(q));}
+  const o={divergent:0,"homol-only":1,"prod-only":2,matched:3};
+  return[...r].sort((a,b)=>o[a.s]-o[b.s]);
+}
+
+function render(){
+  const c=cn(),pct=((c.matched/c.total)*100).toFixed(1);
+  document.getElementById("gv-total").textContent=c.total;
+  document.getElementById("gv-matched").textContent=c.matched;
+  document.getElementById("gv-divergent").textContent=c.divergent;
+  document.getElementById("gv-homol").textContent=c["homol-only"];
+  document.getElementById("gv-prod").textContent=c["prod-only"];
+  document.getElementById("gs-pct").textContent=pct+"% paridade";
+  document.getElementById("timestamp").textContent=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  document.querySelectorAll(".rail-btn").forEach(el=>el.classList.toggle("active",el.dataset.cat===aC));
+  document.querySelectorAll(".btn-group .btn").forEach(el=>el.classList.toggle("active",el.dataset.status===aS));
+  const tb=document.getElementById("toggle-matched");tb.classList.toggle("active",sM);tb.textContent=sM?"Ocultar iguais":"Mostrar iguais";
+  const f=gF(),tbody=document.getElementById("table-body"),em=document.getElementById("empty");
+  document.getElementById("result-count").textContent=f.length+(f.length===1?" item":" itens");
+  if(!f.length){tbody.innerHTML="";em.style.display="block";return;}em.style.display="none";
+  let html="";
+  f.forEach(d=>{
+    const isE=ex.has(d.id),st=SM[d.s];
+    html+=`<tr class="${st.bl}" onclick="tR(${d.id})">
+      <td><span class="chevron ${isE?"open":""}">▶</span></td>
+      <td>
+        <span class="comp-name">${d.n}</span>
+        <span class="comp-obj">${d.t} · ${d.o}</span>
+      </td>
+      <td class="val-cell">${d.h||'<span class="val-null">—</span>'}</td>
+      <td class="val-cell">${d.p||'<span class="val-null">—</span>'}</td>
+      <td><div class="status-cell"><span class="swatch ${st.sw}"></span>${st.lb}</div></td>
+    </tr>`;
+    if(isE&&d.d){
+      html+=`<tr class="detail-row"><td></td><td colspan="4">
+        <div class="detail-box">
+          <div class="detail-label">Detalhe</div>
+          <p>${d.d}</p>
+          <div class="detail-values">
+            ${d.h?`<span><strong>HOMOL:</strong> ${d.h}</span>`:""}
+            ${d.p?`<span><strong>PROD:</strong> ${d.p}</span>`:""}
+          </div>
+        </div>
+      </td></tr>`;
+    }
+  });
+  tbody.innerHTML=html;
+}
+
+function tR(id){const item=D.find(d=>d.id===id);if(!item||!item.d)return;ex.has(id)?ex.delete(id):ex.add(id);render();}
+document.querySelectorAll(".rail-btn").forEach(el=>el.addEventListener("click",()=>{aC=el.dataset.cat;render();}));
+document.querySelectorAll(".btn-group .btn").forEach(el=>el.addEventListener("click",()=>{aS=el.dataset.status;sM=false;render();}));
+document.getElementById("toggle-matched").addEventListener("click",()=>{sM=!sM;if(sM)aS="issues";render();});
+document.querySelectorAll(".gadget").forEach(el=>el.addEventListener("click",()=>{const f=el.dataset.filter;if(f==="all"){aS="issues";sM=false;}else if(f==="matched"){aS="issues";sM=true;}else{aS=f;sM=false;}render();}));
+document.getElementById("search").addEventListener("input",e=>{sQ=e.target.value;render();});
+document.getElementById("expand-all").addEventListener("click",()=>{gF().filter(d=>d.d).forEach(d=>ex.add(d.id));render();});
+document.getElementById("collapse-all").addEventListener("click",()=>{ex.clear();render();});
+render();
+</script>
+</body>
+</html>
