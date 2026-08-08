@@ -3,6 +3,7 @@ import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { testConnection, describeObject, runSoql, runToolingQuery, metadataCreate, metadataUpdate, metadataRead, metadataRetrieve, metadataDeployZipAsync, checkDeployStatusById, activateRule, deployApexClass, deployFlow, updateProfileFLS, connectToOrg } from '../services/sf-multi.js';
 import pool from '../config/db.js';
+import { encrypt } from '../services/crypto.js';
 
 const router = express.Router();
 
@@ -34,12 +35,16 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'name, login_url, username, password obrigatorios' });
     }
 
+    // Encrypt sensitive fields before storing
+    const encPassword = encrypt(password);
+    const encToken = encrypt(security_token || '');
+
     // Salvar sem testar conexão (conexão lazy na primeira chamada)
     let orgId = null;
 
     const result = await pool.query(
       'INSERT INTO orgs (name, login_url, username, password, security_token, org_type, org_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, name, login_url, username, org_type',
-      [name, login_url, username, password, security_token || '', org_type || 'sandbox', orgId]
+      [name, login_url, username, encPassword, encToken, org_type || 'sandbox', orgId]
     );
     res.status(201).json({ status: 'created', org: result.rows[0], id: result.rows[0].id });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -56,8 +61,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (name) { sets.push('name=$'+n); vals.push(name); n++; }
     if (login_url) { sets.push('login_url=$'+n); vals.push(login_url); n++; }
     if (username) { sets.push('username=$'+n); vals.push(username); n++; }
-    if (password) { sets.push('password=$'+n); vals.push(password); n++; }
-    if (security_token !== undefined) { sets.push('security_token=$'+n); vals.push(security_token); n++; }
+    if (password) { sets.push('password=$'+n); vals.push(encrypt(password)); n++; }
+    if (security_token !== undefined) { sets.push('security_token=$'+n); vals.push(encrypt(security_token)); n++; }
     if (org_type) { sets.push('org_type=$'+n); vals.push(org_type); n++; }
     if (!sets.length) return res.status(400).json({ error: 'Nada para atualizar' });
     vals.push(req.params.id);
@@ -408,3 +413,4 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
 });
 
 export default router;
+

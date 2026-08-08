@@ -1,5 +1,6 @@
 // src/services/sf-multi.js — Conexão multi-org Salesforce via jsforce
 import jsforce from 'jsforce';
+import { decrypt } from './crypto.js';
 
 // Cache de conexões ativas (evita re-login a cada request)
 const connections = {};
@@ -22,7 +23,10 @@ export async function connectToOrg(org) {
     version: '62.0',
   });
 
-  await conn.login(org.username, org.password + (org.security_token || ''));
+  // Decrypt credentials before login
+  const password = decrypt(org.password);
+  const token = decrypt(org.security_token);
+  await conn.login(org.username, password + (token || ''));
   connections[key] = conn;
   return conn;
 }
@@ -731,7 +735,7 @@ export async function deployMetadataPackage(org, zipBuffer, options = {}) {
 export async function readComponentMeta(org, type, fullName) {
   const conn = await connectToOrg(org);
   if (['ApexClass', 'ApexTrigger'].includes(type)) {
-    const safeName = fullName.replace(/'/g, "\\'");
+    const safeName = fullName.replace(/'/g, "\'");
     const res = await conn.tooling.query(
       `SELECT Name, CreatedDate, LastModifiedDate, LastModifiedBy.Name FROM ${type} WHERE Name = '${safeName}' LIMIT 1`
     );
