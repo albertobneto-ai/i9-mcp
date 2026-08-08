@@ -15,6 +15,7 @@ import everDeployRoutes from './routes/ever-deploy.js';
 import mockApisRoutes from './routes/mock-apis.js';
 import { authMiddleware } from './middleware/auth.js';
 import bugsRoutes from './routes/bugs.js';
+import migrateRoutes from './routes/migrate.js';
 import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
@@ -164,6 +165,7 @@ app.use('/api/devops', devopsRoutes);
 app.use('/api/ever-deploy', everDeployRoutes);
   app.use('/api/mock', mockApisRoutes);  // Mock APIs para teste de NCs
 app.use('/api/bugs', bugsRoutes);
+app.use('/api/migrate', migrateRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
 app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
@@ -213,54 +215,107 @@ app.post('/api/analyze-error', authMiddleware, async (req, res) => {
     if (!step || !error) return res.status(400).json({ error: 'step e error obrigatórios' });
 
     const { callRouted } = await import('./services/claude.js');
-    const sysPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting de deploys automatizados via jsforce/Node.js.\n\n' +
-      'Analise o erro e sugira correção EXECUTÁVEL no formato que NOSSO orquestrador aceita.\n\n' +
-      'RESPONDA neste formato:\n' +
-      '1. **Causa:** (1-2 linhas)\n' +
-      '2. **Correção:** (o que mudar)\n\n' +
-      'Depois, OBRIGATORIAMENTE inclua um bloco com o step corrigido:\n' +
-      '```json\n[{"action":"...", ...}]\n```\n\n' +
-      '═══ ACTIONS VÁLIDAS (uma destas em cada step) ═══\n' +
-      '• create-field — criar CustomField (USAR SEMPRE para campos, não metadata-create). Params: object, field, label, type, length?, picklist?, description?, required?\n' +
-      '• metadata-create — criar metadado complexo (NÃO use para CustomField, use create-field). Params: type, body (config completa). Use para: ValidationRule, MatchingRule, DuplicateRule, RecordType, PermissionSet, etc.\n' +
-      '• metadata-update — atualizar metadado. Params: type, fullName, body\n' +
-      '• metadata-delete — deletar metadado. Params: type, fullName\n' +
-      '• apex-class — criar/atualizar Apex Class. Params: name, body\n' +
-      '• apex-trigger — criar/atualizar Trigger. Params: name, body, objectName, events\n' +
-      '• layout-add-field — adicionar campo a layout. Params: layoutName, fieldName, sectionLabel, behavior\n' +
-      '• profile-fls — atualizar FLS de Profile. Params: profileName, fieldPermissions\n' +
-      '• activate-rule — ativar MR/DR. Params: ruleType, ruleName\n' +
-      '• soql — executar SOQL. Params: query, description?\n' +
-      '• validate — validar (Tooling/metadata-read). Params: type, fullName, expectedActive?\n' +
-      '• apex — Apex anônimo. Params: code\n' +
-      '• manual-step — passo manual descritivo. Params: description, instructions?\n\n' +
-      '═══ FORMATOS ESPECIAIS (ATENÇÃO) ═══\n\n' +
-      '🔸 Picklist no create-field — use APENAS array de strings:\n' +
-      '   { "action":"create-field", "object":"Account", "field":"Origem__c", "label":"Origem", "type":"Picklist", "picklist":["Edição Manual","SERASA","Neoway","MuleSoft","Data Cloud"] }\n' +
-      '   NUNCA usar valueSet, valueSetDefinition, fullName/default/label — isso é XML, NÃO funciona via jsforce!\n\n' +
-      '🔸 Lookup no create-field:\n' +
-      '   { "action":"create-field", "object":"Account", "field":"Parent__c", "label":"Conta Pai", "type":"Lookup", "referenceTo":"Account", "relationshipLabel":"Filhas" }\n\n' +
-      '🔸 Number/Currency:\n' +
-      '   { "action":"create-field", "object":"Lead", "field":"Score__c", "label":"Score", "type":"Number", "precision":10, "scale":2 }\n\n' +
-      '🔸 ValidationRule (via metadata-create):\n' +
-      '   { "action":"metadata-create", "metadataType":"ValidationRule", "body":{ "fullName":"Account.NomeRegra", "active":true, "errorConditionFormula":"...", "errorMessage":"..." } }\n\n' +
-      '═══ REGRAS ═══\n' +
-      '• Se campo não existe → create-field (cria o campo faltante)\n' +
-      '• Se SOQL falha por campo inexistente → primeiro create-field, depois soql\n' +
-      '• Se objeto não existe → metadata-create CustomObject\n' +
-      '• Se Picklist falhou com erro XML/valueSet → REESCREVA com formato array simples acima\n' +
-      '• Se NÃO for automatizável (Named Credential, OWD Settings) → escreva "MANUAL" e explique\n' +
-      '• Sempre retorne array JSON: [{"action":"..."}], mesmo que seja 1 step só\n' +
+    const sysPrompt = 'Você é um arquiteto Salesforce especialista em troubleshooting de deploys automatizados via jsforce/Node.js.
+
+' +
+      'Analise o erro e sugira correção EXECUTÁVEL no formato que NOSSO orquestrador aceita.
+
+' +
+      'RESPONDA neste formato:
+' +
+      '1. **Causa:** (1-2 linhas)
+' +
+      '2. **Correção:** (o que mudar)
+
+' +
+      'Depois, OBRIGATORIAMENTE inclua um bloco com o step corrigido:
+' +
+      '```json
+[{"action":"...", ...}]
+```
+
+' +
+      '═══ ACTIONS VÁLIDAS (uma destas em cada step) ═══
+' +
+      '• create-field — criar CustomField (USAR SEMPRE para campos, não metadata-create). Params: object, field, label, type, length?, picklist?, description?, required?
+' +
+      '• metadata-create — criar metadado complexo (NÃO use para CustomField, use create-field). Params: type, body (config completa). Use para: ValidationRule, MatchingRule, DuplicateRule, RecordType, PermissionSet, etc.
+' +
+      '• metadata-update — atualizar metadado. Params: type, fullName, body
+' +
+      '• metadata-delete — deletar metadado. Params: type, fullName
+' +
+      '• apex-class — criar/atualizar Apex Class. Params: name, body
+' +
+      '• apex-trigger — criar/atualizar Trigger. Params: name, body, objectName, events
+' +
+      '• layout-add-field — adicionar campo a layout. Params: layoutName, fieldName, sectionLabel, behavior
+' +
+      '• profile-fls — atualizar FLS de Profile. Params: profileName, fieldPermissions
+' +
+      '• activate-rule — ativar MR/DR. Params: ruleType, ruleName
+' +
+      '• soql — executar SOQL. Params: query, description?
+' +
+      '• validate — validar (Tooling/metadata-read). Params: type, fullName, expectedActive?
+' +
+      '• apex — Apex anônimo. Params: code
+' +
+      '• manual-step — passo manual descritivo. Params: description, instructions?
+
+' +
+      '═══ FORMATOS ESPECIAIS (ATENÇÃO) ═══
+
+' +
+      '🔸 Picklist no create-field — use APENAS array de strings:
+' +
+      '   { "action":"create-field", "object":"Account", "field":"Origem__c", "label":"Origem", "type":"Picklist", "picklist":["Edição Manual","SERASA","Neoway","MuleSoft","Data Cloud"] }
+' +
+      '   NUNCA usar valueSet, valueSetDefinition, fullName/default/label — isso é XML, NÃO funciona via jsforce!
+
+' +
+      '🔸 Lookup no create-field:
+' +
+      '   { "action":"create-field", "object":"Account", "field":"Parent__c", "label":"Conta Pai", "type":"Lookup", "referenceTo":"Account", "relationshipLabel":"Filhas" }
+
+' +
+      '🔸 Number/Currency:
+' +
+      '   { "action":"create-field", "object":"Lead", "field":"Score__c", "label":"Score", "type":"Number", "precision":10, "scale":2 }
+
+' +
+      '🔸 ValidationRule (via metadata-create):
+' +
+      '   { "action":"metadata-create", "metadataType":"ValidationRule", "body":{ "fullName":"Account.NomeRegra", "active":true, "errorConditionFormula":"...", "errorMessage":"..." } }
+
+' +
+      '═══ REGRAS ═══
+' +
+      '• Se campo não existe → create-field (cria o campo faltante)
+' +
+      '• Se SOQL falha por campo inexistente → primeiro create-field, depois soql
+' +
+      '• Se objeto não existe → metadata-create CustomObject
+' +
+      '• Se Picklist falhou com erro XML/valueSet → REESCREVA com formato array simples acima
+' +
+      '• Se NÃO for automatizável (Named Credential, OWD Settings) → escreva "MANUAL" e explique
+' +
+      '• Sempre retorne array JSON: [{"action":"..."}], mesmo que seja 1 step só
+' +
       'Português do Brasil. Seja direto.';
 
     const result = await callRouted('chat', sysPrompt,
-      [{ role: 'user', content: 'Org: ' + (orgName || 'N/A') + '\nStep: ' + JSON.stringify(step) + '\nErro: ' + error }],
+      [{ role: 'user', content: 'Org: ' + (orgName || 'N/A') + '
+Step: ' + JSON.stringify(step) + '
+Erro: ' + error }],
       2048
     );
 
     // Extrair JSON do step corrigido
     let fixSteps = null;
-    const jsonMatch = result.text.match(/```json\n([\s\S]*?)```/);
+    const jsonMatch = result.text.match(/```json
+([\s\S]*?)```/);
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[1].trim());
@@ -439,5 +494,3 @@ app.get('/api/debug/ip', async (req, res) => {
 initControlTables().catch(e => console.error('[control] init falhou:', e.message));
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
-
-
