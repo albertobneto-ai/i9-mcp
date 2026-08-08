@@ -11,208 +11,161 @@ async function getOrgById(id) {
   return r.rows[0] || null;
 }
 
+// Safe query helper — returns records or error object, never throws
+async function safeQuery(conn, soql, isTooling = false) {
+  try {
+    const result = isTooling ? await conn.tooling.query(soql) : await conn.query(soql);
+    return { ok: true, totalSize: result.totalSize, records: result.records || [] };
+  } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
+}
+
+async function safeMetadataRead(conn, type, fullNames) {
+  try {
+    const result = await conn.metadata.read(type, fullNames);
+    const items = Array.isArray(result) ? result : result?.fullName ? [result] : [];
+    return { ok: true, records: items };
+  } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
+}
+
 // ══════════════════════════════════════════════
 // EXPERIENCE CLOUD SCANNER
 // ══════════════════════════════════════════════
-
 async function scanExperienceCloud(conn) {
-  const results = {};
+  const r = {};
 
-  // 1. Networks (Sites) — ativos, URLs, status
-  try {
-    const networks = await conn.query("SELECT Id, Name, Status, UrlPathPrefix, Description FROM Network WHERE Status = 'Live' OR Status = 'Active'");
-    results.networks = networks.records.map(n => ({ id: n.Id, name: n.Name, status: n.Status, urlPrefix: n.UrlPathPrefix, description: n.Description }));
-  } catch (e) { results.networks = { error: e.message }; }
+  // Networks (Sites)
+  r.networks = await safeQuery(conn, "SELECT Id, Name, Status, UrlPathPrefix, Description FROM Network");
 
-  // 2. NetworkMemberGroups — quem tem acesso a cada site
-  try {
-    const members = await conn.query("SELECT Id, NetworkId, ParentId FROM NetworkMemberGroup");
-    results.networkMemberGroups = members.records.map(m => ({ id: m.Id, networkId: m.NetworkId, parentId: m.ParentId }));
-  } catch (e) { results.networkMemberGroups = { error: e.message }; }
+  // Network Member Groups
+  r.networkMemberGroups = await safeQuery(conn, "SELECT Id, NetworkId, ParentId FROM NetworkMemberGroup");
 
-  // 3. External Users (Partner + Customer)
-  try {
-    const extUsers = await conn.query("SELECT Id, Username, Name, Profile.Name, UserType, IsActive, ContactId, Contact.AccountId, Contact.Account.Name FROM User WHERE UserType IN ('PowerPartner','CustomerSuccess','CspLitePortal','PowerCustomerSuccess') ORDER BY IsActive DESC, Name LIMIT 200");
-    results.externalUsers = { totalSize: extUsers.totalSize, records: extUsers.records.map(u => ({ id: u.Id, username: u.Username, name: u.Name, profileName: u.Profile?.Name, userType: u.UserType, isActive: u.IsActive, contactId: u.ContactId, accountName: u.Contact?.Account?.Name })) };
-  } catch (e) { results.externalUsers = { error: e.message }; }
+  // External Users (Partner + Customer)
+  r.externalUsers = await safeQuery(conn,
+    "SELECT Id, Username, Name, Profile.Name, UserType, IsActive, ContactId, Contact.Account.Name " +
+    "FROM User WHERE UserType IN ('PowerPartner','CustomerSuccess','CspLitePortal','PowerCustomerSuccess') " +
+    "ORDER BY IsActive DESC, Name LIMIT 200");
 
-  // 4. Sharing Sets
-  try {
-    const conn2 = conn;
-    const sharingSetMeta = await conn2.tooling.query("SELECT Id, DeveloperName, MasterLabel FROM SharingSet");
-    results.sharingSets = sharingSetMeta.records || [];
-  } catch (e) {
-    // SharingSet might not be queryable via Tooling, try metadata
-    try {
-      const ss = await conn.metadata.read('SharingSet', '*');
-      results.sharingSets = Array.isArray(ss) ? ss : ss?.fullName ? [ss] : [];
-    } catch (e2) { results.sharingSets = { error: e.message + ' / ' + e2.message }; }
+  // Navigation Menu Items
+  r.navigationMenuItems = await safeQuery(conn,
+    "SELECT Id, Label, Type, Target, Position, NavigationLinkSetId FROM NavigationMenuItem ORDER BY NavigationLinkSetId, Position LIMIT 200");
+
+  // Guest Users
+  r.guestUsers = await safeQuery(conn,
+    "SELECT Id, Name, Username, ProfileId, Profile.Name FROM User WHERE UserType = 'Guest' AND IsActive = true");
+
+  // Experience Bundles via Tooling
+  r.experienceBundles = await safeQuery(conn,
+    "SELECT Id, DeveloperName FROM ExperienceBundle", true);
+
+  // Permission Sets assigned to external user profiles
+  r.externalPermSets = await safeQuery(conn,
+    "SELECT PermissionSet.Name, PermissionSet.Label, AssigneeId, Assignee.Name, Assignee.UserType " +
+    "FROM PermissionSetAssignment WHERE Assignee.UserType IN ('PowerPartner','CustomerSuccess','Guest') " +
+    "ORDER BY PermissionSet.Name LIMIT 200");
+
+  // Sharing Rules (criteria-based on key objects)
+  r.sharingRules = await safeQuery(conn,
+    "SELECT Id, Name, SobjectType FROM SharingCriteriaRule WHERE SobjectType IN ('Lead','Account','Contact','Opportunity','Case') LIMIT 100");
+  // Fallback
+  if (!r.sharingRules.ok) {
+    r.sharingRules = await safeQuery(conn,
+      "SELECT Id, DeveloperName FROM CriteriaBasedSharingRule LIMIT 100");
   }
 
-  // 5. Navigation Menu Items
-  try {
-    const navItems = await conn.query("SELECT Id, Label, Type, Target, Position, NavigationLinkSetId FROM NavigationMenuItem ORDER BY NavigationLinkSetId, Position LIMIT 200");
-    results.navigationMenuItems = navItems.records;
-  } catch (e) { results.navigationMenuItems = { error: e.message }; }
-
-  // 6. Experience Bundles (via Tooling API)
-  try {
-    const bundles = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, NamespacePrefix FROM ExperienceBundle");
-    results.experienceBundles = bundles.records || [];
-  } catch (e) { results.experienceBundles = { error: e.message }; }
-
-  // 7. Guest User Profile analysis
-  try {
-    const guestUsers = await conn.query("SELECT Id, Name, Username, ProfileId, Profile.Name FROM User WHERE UserType = 'Guest' AND IsActive = true");
-    results.guestUsers = guestUsers.records.map(u => ({ id: u.Id, name: u.Name, username: u.Username, profileId: u.ProfileId, profileName: u.Profile?.Name }));
-  } catch (e) { results.guestUsers = { error: e.message }; }
-
-  // 8. Sharing Rules per key objects
-  try {
-    const sharingRules = await conn.tooling.query("SELECT Id, DeveloperName, SobjectType FROM SharingRules WHERE SobjectType IN ('Lead','Account','Contact','Opportunity','Case') LIMIT 100");
-    results.sharingRules = sharingRules.records || [];
-  } catch (e) {
-    // Fallback: query CriteriaBasedSharingRule
-    try {
-      const cbsr = await conn.query("SELECT Id, DeveloperName, SobjectType FROM CriteriaBasedSharingRule LIMIT 100");
-      results.sharingRules = cbsr.records || [];
-    } catch (e2) { results.sharingRules = { error: e.message }; }
-  }
-
-  // 9. Custom Permissions assigned to External profiles
-  try {
-    const customPerms = await conn.query("SELECT Id, Parent.Name, Parent.Profile.Name, Parent.IsOwnedByProfile, SetupEntityId, SetupEntity.DeveloperName FROM SetupEntityAccess WHERE SetupEntity.Type = 'CustomPermission' AND Parent.Profile.UserType IN ('PowerPartner','CustomerSuccess','Guest') LIMIT 200");
-    results.externalCustomPermissions = customPerms.records || [];
-  } catch (e) { results.externalCustomPermissions = { error: e.message }; }
-
-  return results;
+  return r;
 }
 
 // ══════════════════════════════════════════════
 // AGENTFORCE SCANNER
 // ══════════════════════════════════════════════
-
 async function scanAgentforce(conn) {
-  const results = {};
+  const r = {};
 
-  // 1. BotDefinition (Agents)
-  try {
-    const bots = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, Status FROM BotDefinition ORDER BY MasterLabel");
-    results.agents = bots.records || [];
-  } catch (e) { results.agents = { error: e.message }; }
+  // BotDefinition (Agents) — via SOQL (works on v62.0)
+  r.agents = await safeQuery(conn,
+    "SELECT Id, DeveloperName, MasterLabel FROM BotDefinition ORDER BY MasterLabel");
 
-  // 2. BotVersion (versões de cada agent)
-  try {
-    const versions = await conn.tooling.query("SELECT Id, DeveloperName, BotDefinitionId, Number, Status FROM BotVersion ORDER BY BotDefinitionId, Number DESC LIMIT 50");
-    results.agentVersions = versions.records || [];
-  } catch (e) { results.agentVersions = { error: e.message }; }
+  // BotVersion — via SOQL
+  r.agentVersions = await safeQuery(conn,
+    "SELECT Id, DeveloperName, BotDefinitionId, Status FROM BotVersion ORDER BY BotDefinitionId, Status LIMIT 50");
 
-  // 3. GenAiFunction (Agent Actions — custom + standard)
-  try {
-    const actions = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, Description, IsStandard FROM GenAiFunction ORDER BY IsStandard, MasterLabel LIMIT 200");
-    results.agentActions = { totalSize: actions.totalSize, records: actions.records || [] };
-  } catch (e) { results.agentActions = { error: e.message }; }
+  // GenAiFunction (Agent Actions) — Tooling v63.0+, graceful fail on v62.0
+  r.agentActions = await safeQuery(conn,
+    "SELECT Id, DeveloperName FROM GenAiFunction LIMIT 200", true);
 
-  // 4. GenAiPlanner (Topics — instructions + action bindings)
-  try {
-    const planners = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, Description FROM GenAiPlanner ORDER BY MasterLabel LIMIT 50");
-    results.agentTopics = planners.records || [];
-  } catch (e) { results.agentTopics = { error: e.message }; }
+  // GenAiPlanner (Topics)
+  r.agentTopics = await safeQuery(conn,
+    "SELECT Id, DeveloperName FROM GenAiPlanner LIMIT 50", true);
 
-  // 5. GenAiPlugin (Skills / action bundles)
-  try {
-    const plugins = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, Description FROM GenAiPlugin ORDER BY MasterLabel LIMIT 50");
-    results.agentPlugins = plugins.records || [];
-  } catch (e) { results.agentPlugins = { error: e.message }; }
+  // GenAiPlugin (Skills)
+  r.agentPlugins = await safeQuery(conn,
+    "SELECT Id, DeveloperName FROM GenAiPlugin LIMIT 50", true);
 
-  // 6. GenAiPlannerFunctionRel (which actions are assigned to which topics)
-  try {
-    const rels = await conn.tooling.query("SELECT Id, GenAiFunctionId, GenAiPlannerId FROM GenAiPlannerFunctionRel LIMIT 200");
-    results.topicActionBindings = rels.records || [];
-  } catch (e) { results.topicActionBindings = { error: e.message }; }
+  // GenAiPlannerFunctionRel (topic→action bindings)
+  r.topicActionBindings = await safeQuery(conn,
+    "SELECT Id, GenAiFunctionId, GenAiPlannerId FROM GenAiPlannerFunctionRel LIMIT 200", true);
 
-  // 7. AiAssistantSettings (Einstein GPT Copilot enabled?)
-  try {
-    const settings = await conn.tooling.query("SELECT Id, DeveloperName, IsEinsteinGptEnabled FROM AiAssistantSettings LIMIT 5");
-    results.aiSettings = settings.records || [];
-  } catch (e) {
-    // Try via Setup entity
-    try {
-      const settings2 = await conn.query("SELECT Id, SetupOwnerId FROM SetupEntityAccess WHERE SetupEntity.DeveloperName = 'EinsteinGPTPlatformPerm' LIMIT 5");
-      results.aiSettings = { einsteinGptPermAssigned: settings2.totalSize > 0, records: settings2.records };
-    } catch (e2) { results.aiSettings = { error: e.message }; }
+  // EmbeddedServiceConfig — Tooling (works)
+  r.embeddedServiceConfigs = await safeQuery(conn,
+    "SELECT Id, DeveloperName, MasterLabel, Site FROM EmbeddedServiceConfig", true);
+
+  // Invocable Flows (AutoLaunchedFlow = potential agent actions)
+  r.invocableFlows = await safeQuery(conn,
+    "SELECT Id, Definition.DeveloperName, ProcessType, Status FROM Flow WHERE ProcessType = 'AutoLaunchedFlow' AND Status = 'Active' LIMIT 200", true);
+
+  // Apex classes with @InvocableMethod
+  const apexResult = await safeQuery(conn,
+    "SELECT Id, Name, Body FROM ApexClass WHERE Status = 'Active' AND NamespacePrefix = null LIMIT 500", true);
+  if (apexResult.ok) {
+    r.invocableApexClasses = {
+      ok: true,
+      records: apexResult.records.filter(c => c.Body && c.Body.includes('@InvocableMethod')).map(c => ({ Id: c.Id, Name: c.Name })),
+    };
+    r.invocableApexClasses.totalSize = r.invocableApexClasses.records.length;
+  } else {
+    r.invocableApexClasses = apexResult;
   }
 
-  // 8. EmbeddedServiceConfig (Service Agent deployments — web chat, messaging)
-  try {
-    const embedded = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, Site FROM EmbeddedServiceConfig LIMIT 20");
-    results.embeddedServiceConfigs = embedded.records || [];
-  } catch (e) { results.embeddedServiceConfigs = { error: e.message }; }
+  // Omni-Channel config
+  r.serviceChannels = await safeQuery(conn,
+    "SELECT Id, DeveloperName, MasterLabel, RelatedEntity FROM ServiceChannel LIMIT 50");
 
-  // 9. Flows exposed as Agent Actions (invocable flows)
-  try {
-    const invocableFlows = await conn.tooling.query("SELECT Id, DeveloperName, MasterLabel, ProcessType, Status FROM FlowDefinition WHERE ProcessType = 'AutoLaunchedFlow' AND ActiveVersionId != null LIMIT 100");
-    results.invocableFlows = { totalSize: invocableFlows.totalSize, records: invocableFlows.records || [] };
-  } catch (e) {
-    try {
-      const flows2 = await conn.tooling.query("SELECT Id, Definition.DeveloperName, ProcessType, Status FROM Flow WHERE ProcessType = 'AutoLaunchedFlow' AND Status = 'Active' LIMIT 100");
-      results.invocableFlows = { totalSize: flows2.totalSize, records: flows2.records || [] };
-    } catch (e2) { results.invocableFlows = { error: e.message }; }
-  }
-
-  // 10. Apex classes with @InvocableMethod (potential agent actions)
-  try {
-    const invocableApex = await conn.tooling.query("SELECT Id, Name, Body FROM ApexClass WHERE Status = 'Active' AND NamespacePrefix = null LIMIT 300");
-    const withInvocable = (invocableApex.records || []).filter(c => c.Body && c.Body.includes('@InvocableMethod'));
-    results.invocableApexClasses = withInvocable.map(c => ({ id: c.Id, name: c.Name }));
-  } catch (e) { results.invocableApexClasses = { error: e.message }; }
-
-  return results;
+  return r;
 }
 
 // ══════════════════════════════════════════════
-// UNIFIED SCAN ENDPOINT
+// ENDPOINTS
 // ══════════════════════════════════════════════
 
 // GET /api/orgs/:id/setup-scan?scope=experience,agentforce (or 'all')
 router.get('/:id/setup-scan', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
-    if (!org) return res.status(404).json({ error: 'Org não encontrada' });
+    if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
-
     const scopeParam = (req.query.scope || 'all').toLowerCase();
     const scopes = scopeParam === 'all' ? ['experience', 'agentforce'] : scopeParam.split(',').map(s => s.trim());
-
     const scan = { org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), scopes };
-
-    if (scopes.includes('experience')) {
-      scan.experienceCloud = await scanExperienceCloud(conn);
-    }
-
-    if (scopes.includes('agentforce')) {
-      scan.agentforce = await scanAgentforce(conn);
-    }
-
+    if (scopes.includes('experience')) scan.experienceCloud = await scanExperienceCloud(conn);
+    if (scopes.includes('agentforce')) scan.agentforce = await scanAgentforce(conn);
     res.json(scan);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/orgs/:id/setup-scan/experience — shortcut
+// Shortcuts
 router.get('/:id/setup-scan/experience', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
-    if (!org) return res.status(404).json({ error: 'Org não encontrada' });
+    if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
     res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), experienceCloud: await scanExperienceCloud(conn) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/orgs/:id/setup-scan/agentforce — shortcut
 router.get('/:id/setup-scan/agentforce', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
-    if (!org) return res.status(404).json({ error: 'Org não encontrada' });
+    if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
     res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), agentforce: await scanAgentforce(conn) });
   } catch (err) { res.status(500).json({ error: err.message }); }
