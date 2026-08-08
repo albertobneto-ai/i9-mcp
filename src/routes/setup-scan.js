@@ -1,10 +1,8 @@
 // src/routes/setup-scan.js — Setup Scanner: Experience Cloud + Agentforce
-// Uses v62.0 for standard queries, v63.0 ONLY for GenAi* objects
+// v62.0 for standard queries + metadata.list for GenAi* objects
 import express from 'express';
-import jsforce from 'jsforce';
 import { authMiddleware } from '../middleware/auth.js';
 import { connectToOrg } from '../services/sf-multi.js';
-import { decrypt } from '../services/crypto.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -14,23 +12,7 @@ async function getOrgById(id) {
   return r.rows[0] || null;
 }
 
-// Secondary connection at v63.0 — ONLY for GenAi* objects
-const v63Connections = {};
-async function connectV63(org) {
-  const key = 'v63_' + (org.id || org.username);
-  if (v63Connections[key]) {
-    try { await v63Connections[key].identity(); return v63Connections[key]; }
-    catch { delete v63Connections[key]; }
-  }
-  const conn = new jsforce.Connection({ loginUrl: org.login_url, version: '63.0' });
-  const password = decrypt(org.password);
-  const token = decrypt(org.security_token);
-  await conn.login(org.username, password + (token || ''));
-  v63Connections[key] = conn;
-  return conn;
-}
-
-// Safe query helper
+// Safe SOQL/Tooling query
 async function q(conn, soql, isTooling = false) {
   try {
     const result = isTooling ? await conn.tooling.query(soql) : await conn.query(soql);
@@ -38,8 +20,29 @@ async function q(conn, soql, isTooling = false) {
   } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
 }
 
+// Safe metadata.list — lists all components of a given type
+async function metaList(conn, typeName) {
+  try {
+    const result = await conn.metadata.list([{ type: typeName }]);
+    const items = Array.isArray(result) ? result : result ? [result] : [];
+    return { ok: true, totalSize: items.length, records: items.map(i => ({
+      fullName: i.fullName, type: i.type, id: i.id,
+      createdDate: i.createdDate, lastModifiedDate: i.lastModifiedDate,
+      manageableState: i.manageableState, namespacePrefix: i.namespacePrefix
+    })) };
+  } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
+}
+
+// Safe metadata.read — reads full detail of a component
+async function metaRead(conn, typeName, fullName) {
+  try {
+    const result = await conn.metadata.read(typeName, fullName);
+    return { ok: true, data: result };
+  } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
+}
+
 // ══════════════════════════════════════════════
-// EXPERIENCE CLOUD SCANNER (v62.0)
+// EXPERIENCE CLOUD SCANNER
 // ══════════════════════════════════════════════
 async function scanExperienceCloud(conn) {
   const r = {};
@@ -57,6 +60,7 @@ async function scanExperienceCloud(conn) {
     "SELECT PermissionSet.Name, PermissionSet.Label, AssigneeId, Assignee.Name, Assignee.UserType " +
     "FROM PermissionSetAssignment WHERE Assignee.UserType IN ('PowerPartner','CustomerSuccess','Guest') " +
     "ORDER BY PermissionSet.Name LIMIT 200");
+  r.experienceBundles = await metaList(conn, 'ExperienceBundle');
   r.sharingRules = await q(conn,
     "SELECT Id, Name, SobjectType FROM SharingCriteriaRule WHERE SobjectType IN ('Lead','Account','Contact','Opportunity','Case') LIMIT 100");
   if (!r.sharingRules.ok) {
@@ -66,17 +70,49 @@ async function scanExperienceCloud(conn) {
 }
 
 // ══════════════════════════════════════════════
-// AGENTFORCE SCANNER (v62.0 + v63.0 for GenAi*)
+// AGENTFORCE SCANNER
 // ══════════════════════════════════════════════
-async function scanAgentforce(conn, conn63) {
+async function scanAgentforce(conn) {
   const r = {};
 
-  // v62.0 — standard objects
+  // Agents via SOQL
   r.agents = await q(conn, "SELECT Id, DeveloperName, MasterLabel FROM BotDefinition ORDER BY MasterLabel");
   r.agentVersions = await q(conn, "SELECT Id, DeveloperName, BotDefinitionId, Status FROM BotVersion ORDER BY BotDefinitionId, Status LIMIT 50");
+
+  // GenAi* via metadata.list (bypasses SOQL/Tooling API version issues)
+  r.agentActions = await metaList(conn, 'GenAiFunction');
+  r.agentTopics = await metaList(conn, 'GenAiPlanner');
+  r.agentPlugins = await metaList(conn, 'GenAiPlugin');
+
+  // Agent full config via metadata.read (for each agent found)
+  if (r.agents.ok && r.agents.records.length > 0) {
+    const agentDetails = [];
+    for (const agent of r.agents.records) {
+      const detail = await metaRead(conn, 'Bot', agent.DeveloperName);
+      if (detail.ok) {
+        const d = detail.data;
+        agentDetails.push({
+          developerName: d.fullName,
+          label: d.label,
+          agentType: d.agentType,
+          type: d.type,
+          description: d.description,
+          botUser: d.botUser,
+          sessionTimeout: d.sessionTimeout,
+          richContentEnabled: d.richContentEnabled,
+          versionsCount: Array.isArray(d.botVersions) ? d.botVersions.length : d.botVersions ? 1 : 0
+        });
+      }
+    }
+    r.agentConfigs = { ok: true, totalSize: agentDetails.length, records: agentDetails };
+  }
+
+  // EmbeddedServiceConfig via metadata.list
+  r.embeddedServiceConfigs = await metaList(conn, 'EmbeddedServiceConfig');
+
+  // Invocable Flows
   r.invocableFlows = await q(conn,
     "SELECT Id, Definition.DeveloperName, ProcessType, Status FROM Flow WHERE ProcessType = 'AutoLaunchedFlow' AND Status = 'Active' LIMIT 200", true);
-  r.serviceChannels = await q(conn, "SELECT Id, DeveloperName, MasterLabel, RelatedEntity FROM ServiceChannel LIMIT 50");
 
   // Apex with @InvocableMethod
   const apexResult = await q(conn,
@@ -88,22 +124,8 @@ async function scanAgentforce(conn, conn63) {
     r.invocableApexClasses = apexResult;
   }
 
-  // v63.0 — GenAi* objects (Agentforce-specific)
-  if (conn63) {
-    r.agentActions = await q(conn63, "SELECT Id, DeveloperName, MasterLabel, Description FROM GenAiFunction ORDER BY MasterLabel LIMIT 200", true);
-    r.agentTopics = await q(conn63, "SELECT Id, DeveloperName, MasterLabel, Description FROM GenAiPlanner ORDER BY MasterLabel LIMIT 50", true);
-    r.agentPlugins = await q(conn63, "SELECT Id, DeveloperName, MasterLabel FROM GenAiPlugin ORDER BY MasterLabel LIMIT 50", true);
-    r.topicActionBindings = await q(conn63, "SELECT Id, GenAiFunctionId, GenAiPlannerId FROM GenAiPlannerFunctionRel LIMIT 200", true);
-    r.embeddedServiceConfigs = await q(conn63, "SELECT Id, DeveloperName, MasterLabel, Site FROM EmbeddedServiceConfig LIMIT 20", true);
-    r.experienceBundles = await q(conn63, "SELECT Id, DeveloperName FROM ExperienceBundle LIMIT 20", true);
-  } else {
-    r.agentActions = { ok: false, error: 'v63.0 connection unavailable' };
-    r.agentTopics = { ok: false, error: 'v63.0 connection unavailable' };
-    r.agentPlugins = { ok: false, error: 'v63.0 connection unavailable' };
-    r.topicActionBindings = { ok: false, error: 'v63.0 connection unavailable' };
-    r.embeddedServiceConfigs = { ok: false, error: 'v63.0 connection unavailable' };
-    r.experienceBundles = { ok: false, error: 'v63.0 connection unavailable' };
-  }
+  // Service Channels
+  r.serviceChannels = await q(conn, "SELECT Id, DeveloperName, MasterLabel, RelatedEntity FROM ServiceChannel LIMIT 50");
 
   return r;
 }
@@ -117,13 +139,11 @@ router.get('/:id/setup-scan', authMiddleware, async (req, res) => {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
-    let conn63 = null;
-    try { conn63 = await connectV63(org); } catch (e) { /* v63 not available, graceful */ }
     const scopeParam = (req.query.scope || 'all').toLowerCase();
     const scopes = scopeParam === 'all' ? ['experience', 'agentforce'] : scopeParam.split(',').map(s => s.trim());
-    const scan = { org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), scopes, apiVersions: { standard: '62.0', genai: conn63 ? '63.0' : 'unavailable' } };
+    const scan = { org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), scopes };
     if (scopes.includes('experience')) scan.experienceCloud = await scanExperienceCloud(conn);
-    if (scopes.includes('agentforce')) scan.agentforce = await scanAgentforce(conn, conn63);
+    if (scopes.includes('agentforce')) scan.agentforce = await scanAgentforce(conn);
     res.json(scan);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -142,9 +162,7 @@ router.get('/:id/setup-scan/agentforce', authMiddleware, async (req, res) => {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
-    let conn63 = null;
-    try { conn63 = await connectV63(org); } catch (e) { /* graceful */ }
-    res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), apiVersions: { standard: '62.0', genai: conn63 ? '63.0' : 'unavailable' }, agentforce: await scanAgentforce(conn, conn63) });
+    res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), agentforce: await scanAgentforce(conn) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
