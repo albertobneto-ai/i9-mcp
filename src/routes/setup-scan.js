@@ -55,10 +55,7 @@ async function scanSecurity(conn) {
     "SELECT Id, Name, UserType FROM Profile ORDER BY Name LIMIT 200");
 
   // OWD (Organization-Wide Defaults)
-  r.orgWideDefaults = await q(conn,
-    "SELECT Id, SobjectType, DefaultAccess, DefaultExternalAccess " +
-    "FROM Organization WHERE Id != null LIMIT 1");
-  // OWD is not directly queryable via SOQL. Use CustomObject metadata instead
+  // OWD per key object via EntityDefinition
   const owdObjects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case'];
   const owdResults = [];
   for (const obj of owdObjects) {
@@ -110,7 +107,7 @@ async function scanAutomation(conn) {
 
   // Validation Rules (active)
   r.validationRules = await q(conn,
-    "SELECT Id, ValidationName, EntityDefinition.QualifiedApiName, Active, Description, ErrorMessage " +
+    "SELECT Id, ValidationName, EntityDefinition.QualifiedApiName, Active, ErrorMessage " +
     "FROM ValidationRule WHERE Active = true ORDER BY EntityDefinition.QualifiedApiName LIMIT 300", true);
 
   // Apex Triggers
@@ -233,8 +230,7 @@ async function scanUsers(conn) {
 
   // Frozen users
   r.frozenUsers = await q(conn,
-    "SELECT UserId, User.Name, User.Username, User.Profile.Name " +
-    "FROM UserLogin WHERE IsFrozen = true LIMIT 50");
+    "SELECT UserId FROM UserLogin WHERE IsFrozen = true LIMIT 50");
 
   // Last login distribution (users who never logged in)
   r.neverLoggedIn = await q(conn,
