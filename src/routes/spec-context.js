@@ -48,11 +48,11 @@ router.get('/:id/spec-context/:object', authMiddleware, async (req, res) => {
 
     // 1. Custom Fields
     context.customFields = await q(conn,
-      `SELECT QualifiedApiName, DataType, Label, IsRequired FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
+      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
 
     // 2. Standard Fields (key ones)
     context.standardFields = await q(conn,
-      `SELECT QualifiedApiName, DataType, Label, IsRequired FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = false AND IsCompound = false ORDER BY QualifiedApiName LIMIT 200`);
+      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = false AND IsCompound = false ORDER BY QualifiedApiName LIMIT 200`);
 
     // 3. Record Types
     context.recordTypes = await q(conn,
@@ -64,7 +64,7 @@ router.get('/:id/spec-context/:object', authMiddleware, async (req, res) => {
 
     // 5. Flows related to this object
     context.relatedFlows = await q(conn,
-      `SELECT Id, Definition.DeveloperName, ProcessType, Status, TriggerType FROM Flow WHERE Status = 'Active' AND (ProcessType = 'AutoLaunchedFlow' OR ProcessType = 'RecordTriggeredFlow') LIMIT 200`, true);
+      `SELECT Id, Definition.DeveloperName, ProcessType, Status FROM Flow WHERE Status = 'Active' LIMIT 300`, true);
     // Filter flows that reference this object (by name convention)
     if (context.relatedFlows.ok) {
       const objLower = obj.toLowerCase().replace('__c', '');
@@ -126,7 +126,7 @@ router.get('/:id/spec-context', authMiddleware, async (req, res) => {
 
       // Custom Fields
       ctx.customFields = await q(conn,
-        `SELECT QualifiedApiName, DataType, Label, IsRequired FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
+        `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
 
       // Record Types
       ctx.recordTypes = await q(conn,
@@ -159,7 +159,7 @@ router.get('/:id/spec-context', authMiddleware, async (req, res) => {
 
     // Active Flows across all objects
     const flowResult = await q(conn,
-      "SELECT Definition.DeveloperName, ProcessType, TriggerType FROM Flow WHERE Status = 'Active' LIMIT 300", true);
+      "SELECT Definition.DeveloperName, ProcessType FROM Flow WHERE Status = 'Active' LIMIT 300", true);
     if (flowResult.ok) {
       const relevantFlows = flowResult.records.filter(f => {
         const name = (f.Definition?.DeveloperName || '').toLowerCase();
