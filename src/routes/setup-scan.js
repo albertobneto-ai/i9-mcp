@@ -55,21 +55,11 @@ async function scanSecurity(conn) {
     "SELECT Id, Name, UserType FROM Profile ORDER BY Name LIMIT 200");
 
   // OWD (Organization-Wide Defaults)
-  // OWD per key object via EntityDefinition
-  const owdObjects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case'];
-  const owdResults = [];
-  for (const obj of owdObjects) {
-    const desc = await q(conn,
-      `SELECT Id, SobjectType, InternalSharingModel, ExternalSharingModel FROM EntityDefinition WHERE QualifiedApiName = '${obj}'`);
-    if (desc.ok && desc.records.length > 0) {
-      owdResults.push({
-        object: obj,
-        internal: desc.records[0].InternalSharingModel,
-        external: desc.records[0].ExternalSharingModel
-      });
-    }
-  }
-  r.orgWideDefaults = { ok: true, totalSize: owdResults.length, records: owdResults };
+  // OWD per key object via EntityDefinition (batch query)
+  r.orgWideDefaults = await q(conn,
+    "SELECT QualifiedApiName, InternalSharingModel, ExternalSharingModel " +
+    "FROM EntityDefinition WHERE QualifiedApiName IN ('Lead','Account','Contact','Opportunity','Case') " +
+    "ORDER BY QualifiedApiName");
 
   // Sharing Rules (criteria-based)
   r.sharingRules = await q(conn,
@@ -108,7 +98,7 @@ async function scanAutomation(conn) {
   // Validation Rules (active)
   r.validationRules = await q(conn,
     "SELECT Id, ValidationName, EntityDefinition.QualifiedApiName, Active, ErrorMessage " +
-    "FROM ValidationRule WHERE Active = true ORDER BY EntityDefinition.QualifiedApiName LIMIT 300", true);
+    "FROM ValidationRule WHERE Active = true ORDER BY EntityDefinition.QualifiedApiName LIMIT 100", true);
 
   // Apex Triggers
   r.apexTriggers = await q(conn,
