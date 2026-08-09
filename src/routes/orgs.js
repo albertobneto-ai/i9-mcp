@@ -278,6 +278,19 @@ router.post('/:id/batch-deploy', authMiddleware, async (req, res) => {
           const item = Array.isArray(r) ? r[0] : r;
           const ok = item?.success !== false && item?.id;
           results.push({ step: step.type, ok: !!ok, id: item?.id, message: ok ? `✅ Tooling create ${step.type}: ${item.id}` : `❌ ${JSON.stringify(item?.errors || r).substring(0, 300)}` });
+        } else if (step.action === 'tooling-delete') {
+          const conn = await connectToOrg(org);
+          const ids = step.ids || (step.id ? [step.id] : (step.body?.Id ? [step.body.Id] : []));
+          for (const delId of ids) {
+            try {
+              const r = await conn.tooling.sobject(step.type).delete(delId);
+              const item = Array.isArray(r) ? r[0] : r;
+              const ok = item?.success !== false;
+              results.push({ step: step.type, ok: !!ok, id: delId, message: ok ? `✅ Tooling delete ${step.type}: ${delId}` : `❌ ${JSON.stringify(item?.errors || r).substring(0, 300)}` });
+            } catch (e) {
+              results.push({ step: step.type, ok: false, id: delId, message: `❌ Tooling delete ${step.type} ${delId}: ${e.message}` });
+            }
+          }
         } else if (step.action === 'flow-fix') {
           // Retrieve Flow XML, string-replace values, rebuild ZIP with archiver, redeploy
           const conn = await connectToOrg(org);
