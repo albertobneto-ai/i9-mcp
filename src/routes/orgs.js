@@ -126,6 +126,24 @@ router.get('/:id/tooling', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/orgs/:id/apexlog/:logId/body — baixa o corpo (texto) de um ApexLog (read-only)
+// Usado pela skill babysitter para coletar debug logs. Zero escrita na org.
+router.get('/:id/apexlog/:logId/body', authMiddleware, async (req, res) => {
+  try {
+    const org = await getOrgById(req.params.id);
+    if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
+    const conn = await connectToOrg(org);
+    const url = `${conn.instanceUrl}/services/data/v62.0/sobjects/ApexLog/${req.params.logId}/Body`;
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${conn.accessToken}` } });
+    if (!r.ok) {
+      const txt = await r.text();
+      return res.status(r.status).json({ error: `ApexLog Body fetch ${r.status}`, detail: txt.substring(0, 300) });
+    }
+    const body = await r.text();
+    res.type('text/plain').send(body);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /api/orgs/:id/metadata-read/:type/:fullName — Read metadata (read-only)
 router.get('/:id/metadata-read/:type/:fullName', authMiddleware, async (req, res) => {
   try {
