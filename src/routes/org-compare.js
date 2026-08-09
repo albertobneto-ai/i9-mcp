@@ -76,11 +76,11 @@ async function compareObjects(srcConn, tgtConn) {
   // Custom Fields per key object
   const keyObjects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case'];
   for (const obj of keyObjects) {
-    const srcFields = await q(srcConn, `SELECT DeveloperName, DataType, Label FROM CustomField WHERE TableEnumOrId = '${obj}'`, true);
-    const tgtFields = await q(tgtConn, `SELECT DeveloperName, DataType, Label FROM CustomField WHERE TableEnumOrId = '${obj}'`, true);
+    const srcFields = await q(srcConn, \`SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '\${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 200\`);
+    const tgtFields = await q(tgtConn, \`SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '\${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 200\`);
     if (srcFields.ok && tgtFields.ok) {
       r['fields_' + obj] = diffByKey(srcFields.records, tgtFields.records,
-        rec => rec.DeveloperName,
+        rec => rec.QualifiedApiName,
         (s, t) => s.DataType === t.DataType
       );
     } else {
