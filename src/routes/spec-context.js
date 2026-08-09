@@ -48,11 +48,11 @@ router.get('/:id/spec-context/:object', authMiddleware, async (req, res) => {
 
     // 1. Custom Fields
     context.customFields = await q(conn,
-      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
+      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND QualifiedApiName LIKE '%__c' ORDER BY QualifiedApiName LIMIT 300`);
 
     // 2. Standard Fields (key ones)
     context.standardFields = await q(conn,
-      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = false AND IsCompound = false ORDER BY QualifiedApiName LIMIT 200`);
+      `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND NOT QualifiedApiName LIKE '%__c' ORDER BY QualifiedApiName LIMIT 200`);
 
     // 3. Record Types
     context.recordTypes = await q(conn,
@@ -126,7 +126,7 @@ router.get('/:id/spec-context', authMiddleware, async (req, res) => {
 
       // Custom Fields
       ctx.customFields = await q(conn,
-        `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND IsCustom = true ORDER BY QualifiedApiName LIMIT 300`);
+        `SELECT QualifiedApiName, DataType, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${obj}' AND QualifiedApiName LIKE '%__c' ORDER BY QualifiedApiName LIMIT 300`);
 
       // Record Types
       ctx.recordTypes = await q(conn,
