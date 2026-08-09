@@ -1,5 +1,5 @@
-// src/routes/setup-scan.js — Setup Scanner: Experience Cloud + Agentforce
-// v62.0 for standard queries + metadata.list for GenAi* objects
+// src/routes/setup-scan.js — Setup Scanner: Full Org Raio-X
+// Scopes: security, automation, objects, integration, users, data, experience, agentforce
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { connectToOrg } from '../services/sf-multi.js';
@@ -20,7 +20,7 @@ async function q(conn, soql, isTooling = false) {
   } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
 }
 
-// Safe metadata.list — lists all components of a given type
+// Safe metadata.list
 async function metaList(conn, typeName) {
   try {
     const result = await conn.metadata.list([{ type: typeName }]);
@@ -33,16 +33,259 @@ async function metaList(conn, typeName) {
   } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
 }
 
-// Safe metadata.read — reads full detail of a component
-async function metaRead(conn, typeName, fullName) {
-  try {
-    const result = await conn.metadata.read(typeName, fullName);
-    return { ok: true, data: result };
-  } catch (e) { return { ok: false, error: e.message?.substring(0, 150) }; }
+// ══════════════════════════════════════════════
+// F1 — SECURITY
+// ══════════════════════════════════════════════
+async function scanSecurity(conn) {
+  const r = {};
+
+  // Permission Sets
+  r.permissionSets = await q(conn,
+    "SELECT Id, Name, Label, IsOwnedByProfile, PermissionSetGroupId, License.Name " +
+    "FROM PermissionSet WHERE IsOwnedByProfile = false AND NamespacePrefix = null " +
+    "ORDER BY Label LIMIT 200");
+
+  // Permission Set Groups
+  r.permissionSetGroups = await q(conn,
+    "SELECT Id, DeveloperName, MasterLabel, Status " +
+    "FROM PermissionSetGroup WHERE NamespacePrefix = null ORDER BY MasterLabel LIMIT 100");
+
+  // Profiles (custom only)
+  r.profiles = await q(conn,
+    "SELECT Id, Name, UserType FROM Profile ORDER BY Name LIMIT 200");
+
+  // OWD (Organization-Wide Defaults)
+  r.orgWideDefaults = await q(conn,
+    "SELECT Id, SobjectType, DefaultAccess, DefaultExternalAccess " +
+    "FROM Organization WHERE Id != null LIMIT 1");
+  // OWD is not directly queryable via SOQL. Use CustomObject metadata instead
+  const owdObjects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case'];
+  const owdResults = [];
+  for (const obj of owdObjects) {
+    const desc = await q(conn,
+      `SELECT Id, SobjectType, InternalSharingModel, ExternalSharingModel FROM EntityDefinition WHERE QualifiedApiName = '${obj}'`);
+    if (desc.ok && desc.records.length > 0) {
+      owdResults.push({
+        object: obj,
+        internal: desc.records[0].InternalSharingModel,
+        external: desc.records[0].ExternalSharingModel
+      });
+    }
+  }
+  r.orgWideDefaults = { ok: true, totalSize: owdResults.length, records: owdResults };
+
+  // Sharing Rules (criteria-based)
+  r.sharingRules = await q(conn,
+    "SELECT Id, Name, SobjectType FROM SharingCriteriaRule ORDER BY SobjectType LIMIT 200");
+  if (!r.sharingRules.ok) {
+    r.sharingRules = await q(conn,
+      "SELECT Id, DeveloperName FROM CriteriaBasedSharingRule LIMIT 200");
+  }
+
+  // FLS Coverage — count of FieldPermissions per PS for key objects
+  r.fieldPermissionsCoverage = await q(conn,
+    "SELECT Parent.Name, Parent.Label, SobjectType, COUNT(Id) fieldCount " +
+    "FROM FieldPermissions WHERE SobjectType IN ('Lead','Account','Contact','Opportunity') " +
+    "GROUP BY Parent.Name, Parent.Label, SobjectType ORDER BY Parent.Label, SobjectType LIMIT 500");
+
+  // PS License Assignments
+  r.psLicenses = await q(conn,
+    "SELECT PermissionSetLicense.DeveloperName, PermissionSetLicense.MasterLabel, COUNT(Id) assignCount " +
+    "FROM PermissionSetLicenseAssign GROUP BY PermissionSetLicense.DeveloperName, PermissionSetLicense.MasterLabel " +
+    "ORDER BY PermissionSetLicense.MasterLabel LIMIT 100");
+
+  return r;
 }
 
 // ══════════════════════════════════════════════
-// EXPERIENCE CLOUD SCANNER
+// F1 — AUTOMATION
+// ══════════════════════════════════════════════
+async function scanAutomation(conn) {
+  const r = {};
+
+  // Active Flows
+  r.activeFlows = await q(conn,
+    "SELECT Id, Definition.DeveloperName, ProcessType, Status, Description " +
+    "FROM Flow WHERE Status = 'Active' ORDER BY Definition.DeveloperName LIMIT 300", true);
+
+  // Validation Rules (active)
+  r.validationRules = await q(conn,
+    "SELECT Id, ValidationName, EntityDefinition.QualifiedApiName, Active, Description, ErrorMessage " +
+    "FROM ValidationRule WHERE Active = true ORDER BY EntityDefinition.QualifiedApiName LIMIT 300", true);
+
+  // Apex Triggers
+  r.apexTriggers = await q(conn,
+    "SELECT Id, Name, TableEnumOrId, Status, UsageAfterDelete, UsageAfterInsert, UsageAfterUpdate, " +
+    "UsageBeforeDelete, UsageBeforeInsert, UsageBeforeUpdate " +
+    "FROM ApexTrigger WHERE Status = 'Active' AND NamespacePrefix = null ORDER BY Name LIMIT 100", true);
+
+  // Apex Classes (custom only, count)
+  r.apexClasses = await q(conn,
+    "SELECT COUNT(Id) total FROM ApexClass WHERE NamespacePrefix = null AND Status = 'Active'", true);
+
+  // Scheduled Jobs
+  r.scheduledJobs = await q(conn,
+    "SELECT Id, CronJobDetail.Name, State, NextFireTime, PreviousFireTime, CronExpression " +
+    "FROM CronTrigger WHERE State = 'WAITING' ORDER BY NextFireTime LIMIT 50");
+
+  // Process Builders (legacy — count only)
+  r.processBuilders = await q(conn,
+    "SELECT COUNT(Id) total FROM Flow WHERE ProcessType = 'Workflow' AND Status = 'Active'", true);
+
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// F1 — OBJECTS
+// ══════════════════════════════════════════════
+async function scanObjects(conn) {
+  const r = {};
+
+  // Custom Objects
+  r.customObjects = await q(conn,
+    "SELECT Id, QualifiedApiName, Label, DeveloperName " +
+    "FROM EntityDefinition WHERE IsCustomSetting = false AND QualifiedApiName LIKE '%__c' " +
+    "AND PublisherId = '<local>' ORDER BY Label LIMIT 200");
+
+  // Custom Fields per key objects
+  const keyObjects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case'];
+  const fieldCounts = [];
+  for (const obj of keyObjects) {
+    const fc = await q(conn,
+      `SELECT COUNT(Id) total FROM CustomField WHERE TableEnumOrId = '${obj}'`, true);
+    fieldCounts.push({
+      object: obj,
+      customFields: fc.ok ? (fc.records[0]?.total || fc.totalSize) : 'error'
+    });
+  }
+  r.customFieldsByObject = { ok: true, totalSize: fieldCounts.length, records: fieldCounts };
+
+  // Record Types
+  r.recordTypes = await q(conn,
+    "SELECT Id, Name, SobjectType, IsActive, DeveloperName " +
+    "FROM RecordType WHERE IsActive = true ORDER BY SobjectType, Name LIMIT 200");
+
+  // Page Layouts (via metadata.list)
+  r.pageLayouts = await metaList(conn, 'Layout');
+
+  // Compact Layouts
+  r.compactLayouts = await metaList(conn, 'CompactLayout');
+
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// F1 — INTEGRATION
+// ══════════════════════════════════════════════
+async function scanIntegration(conn) {
+  const r = {};
+
+  // Named Credentials
+  r.namedCredentials = await metaList(conn, 'NamedCredential');
+
+  // External Credentials
+  r.externalCredentials = await metaList(conn, 'ExternalCredential');
+
+  // Auth Providers
+  r.authProviders = await q(conn,
+    "SELECT Id, DeveloperName, FriendlyName, ProviderType " +
+    "FROM AuthProvider ORDER BY FriendlyName LIMIT 50");
+
+  // Connected Apps
+  r.connectedApps = await metaList(conn, 'ConnectedApp');
+
+  // Remote Site Settings
+  r.remoteSiteSettings = await metaList(conn, 'RemoteSiteSetting');
+
+  // External Data Sources
+  r.externalDataSources = await q(conn,
+    "SELECT Id, DeveloperName, MasterLabel, Type " +
+    "FROM ExternalDataSource ORDER BY MasterLabel LIMIT 50");
+
+  // Platform Event Channels
+  r.platformEventChannels = await metaList(conn, 'PlatformEventChannel');
+
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// F1 — USERS
+// ══════════════════════════════════════════════
+async function scanUsers(conn) {
+  const r = {};
+
+  // Users by Profile (active)
+  r.usersByProfile = await q(conn,
+    "SELECT Profile.Name, COUNT(Id) userCount " +
+    "FROM User WHERE IsActive = true " +
+    "GROUP BY Profile.Name ORDER BY COUNT(Id) DESC LIMIT 100");
+
+  // Users by UserType
+  r.usersByType = await q(conn,
+    "SELECT UserType, COUNT(Id) userCount " +
+    "FROM User WHERE IsActive = true " +
+    "GROUP BY UserType ORDER BY COUNT(Id) DESC");
+
+  // Total active/inactive
+  r.userCounts = await q(conn,
+    "SELECT IsActive, COUNT(Id) userCount " +
+    "FROM User GROUP BY IsActive");
+
+  // Frozen users
+  r.frozenUsers = await q(conn,
+    "SELECT UserId, User.Name, User.Username, User.Profile.Name " +
+    "FROM UserLogin WHERE IsFrozen = true LIMIT 50");
+
+  // Last login distribution (users who never logged in)
+  r.neverLoggedIn = await q(conn,
+    "SELECT COUNT(Id) total FROM User WHERE IsActive = true AND LastLoginDate = null");
+
+  // Users logged in last 30 days
+  r.recentLogins = await q(conn,
+    "SELECT COUNT(Id) total FROM User WHERE IsActive = true AND LastLoginDate = LAST_N_DAYS:30");
+
+  // License consumption
+  r.licenses = await q(conn,
+    "SELECT Name, TotalLicenses, UsedLicenses, Status " +
+    "FROM UserLicense WHERE Status = 'Active' ORDER BY Name LIMIT 50");
+
+  // PS Assignments (top 20 most assigned)
+  r.topPsAssignments = await q(conn,
+    "SELECT PermissionSet.Name, PermissionSet.Label, COUNT(Id) assignCount " +
+    "FROM PermissionSetAssignment WHERE PermissionSet.IsOwnedByProfile = false " +
+    "GROUP BY PermissionSet.Name, PermissionSet.Label " +
+    "ORDER BY COUNT(Id) DESC LIMIT 20");
+
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// F1 — DATA
+// ══════════════════════════════════════════════
+async function scanData(conn) {
+  const r = {};
+  const objects = ['Lead', 'Account', 'Contact', 'Opportunity', 'Case', 'Task', 'Event', 'Order'];
+  const counts = [];
+
+  for (const obj of objects) {
+    const c = await q(conn, `SELECT COUNT() FROM ${obj}`);
+    counts.push({
+      object: obj,
+      count: c.ok ? c.totalSize : 'error: ' + (c.error || '').substring(0, 60)
+    });
+  }
+
+  r.recordCounts = { ok: true, totalSize: counts.length, records: counts };
+
+  // Custom objects with most records (top 10)
+  // Can't easily query all custom objects count, so skip for now
+  // Would need describe + individual COUNT queries
+
+  return r;
+}
+
+// ══════════════════════════════════════════════
+// EXPERIENCE CLOUD (existing)
 // ══════════════════════════════════════════════
 async function scanExperienceCloud(conn) {
   const r = {};
@@ -70,99 +313,97 @@ async function scanExperienceCloud(conn) {
 }
 
 // ══════════════════════════════════════════════
-// AGENTFORCE SCANNER
+// AGENTFORCE (existing)
 // ══════════════════════════════════════════════
 async function scanAgentforce(conn) {
   const r = {};
-
-  // Agents via SOQL
   r.agents = await q(conn, "SELECT Id, DeveloperName, MasterLabel FROM BotDefinition ORDER BY MasterLabel");
   r.agentVersions = await q(conn, "SELECT Id, DeveloperName, BotDefinitionId, Status FROM BotVersion ORDER BY BotDefinitionId, Status LIMIT 50");
-
-  // GenAi* via metadata.list (bypasses SOQL/Tooling API version issues)
   r.agentActions = await metaList(conn, 'GenAiFunction');
   r.agentTopics = await metaList(conn, 'GenAiPlanner');
   r.agentPlugins = await metaList(conn, 'GenAiPlugin');
 
-  // Agent full config via metadata.read (for each agent found)
   if (r.agents.ok && r.agents.records.length > 0) {
-    const agentDetails = [];
+    const details = [];
     for (const agent of r.agents.records) {
-      const detail = await metaRead(conn, 'Bot', agent.DeveloperName);
-      if (detail.ok) {
-        const d = detail.data;
-        agentDetails.push({
-          developerName: d.fullName,
-          label: d.label,
-          agentType: d.agentType,
-          type: d.type,
-          description: d.description,
-          botUser: d.botUser,
-          sessionTimeout: d.sessionTimeout,
-          richContentEnabled: d.richContentEnabled,
-          versionsCount: Array.isArray(d.botVersions) ? d.botVersions.length : d.botVersions ? 1 : 0
-        });
-      }
+      try {
+        const d = await conn.metadata.read('Bot', agent.DeveloperName);
+        if (d && d.fullName) {
+          details.push({
+            developerName: d.fullName, label: d.label, agentType: d.agentType,
+            type: d.type, description: d.description,
+            versionsCount: Array.isArray(d.botVersions) ? d.botVersions.length : d.botVersions ? 1 : 0
+          });
+        }
+      } catch (e) { /* skip */ }
     }
-    r.agentConfigs = { ok: true, totalSize: agentDetails.length, records: agentDetails };
+    r.agentConfigs = { ok: true, totalSize: details.length, records: details };
   }
 
-  // EmbeddedServiceConfig via metadata.list
   r.embeddedServiceConfigs = await metaList(conn, 'EmbeddedServiceConfig');
-
-  // Invocable Flows
   r.invocableFlows = await q(conn,
     "SELECT Id, Definition.DeveloperName, ProcessType, Status FROM Flow WHERE ProcessType = 'AutoLaunchedFlow' AND Status = 'Active' LIMIT 200", true);
 
-  // Apex with @InvocableMethod
   const apexResult = await q(conn,
     "SELECT Id, Name, Body FROM ApexClass WHERE Status = 'Active' AND NamespacePrefix = null LIMIT 500", true);
   if (apexResult.ok) {
     const filtered = apexResult.records.filter(c => c.Body && c.Body.includes('@InvocableMethod')).map(c => ({ Id: c.Id, Name: c.Name }));
     r.invocableApexClasses = { ok: true, totalSize: filtered.length, records: filtered };
-  } else {
-    r.invocableApexClasses = apexResult;
-  }
+  } else { r.invocableApexClasses = apexResult; }
 
-  // Service Channels
   r.serviceChannels = await q(conn, "SELECT Id, DeveloperName, MasterLabel, RelatedEntity FROM ServiceChannel LIMIT 50");
-
   return r;
 }
+
+// ══════════════════════════════════════════════
+// SCOPE REGISTRY
+// ══════════════════════════════════════════════
+const ALL_SCOPES = ['security', 'automation', 'objects', 'integration', 'users', 'data', 'experience', 'agentforce'];
+
+const SCANNERS = {
+  security: scanSecurity,
+  automation: scanAutomation,
+  objects: scanObjects,
+  integration: scanIntegration,
+  users: scanUsers,
+  data: scanData,
+  experience: scanExperienceCloud,
+  agentforce: scanAgentforce,
+};
 
 // ══════════════════════════════════════════════
 // ENDPOINTS
 // ══════════════════════════════════════════════
 
+// GET /api/orgs/:id/setup-scan?scope=security,automation (or 'all')
 router.get('/:id/setup-scan', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
     const scopeParam = (req.query.scope || 'all').toLowerCase();
-    const scopes = scopeParam === 'all' ? ['experience', 'agentforce'] : scopeParam.split(',').map(s => s.trim());
+    const scopes = scopeParam === 'all' ? ALL_SCOPES : scopeParam.split(',').map(s => s.trim());
     const scan = { org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), scopes };
-    if (scopes.includes('experience')) scan.experienceCloud = await scanExperienceCloud(conn);
-    if (scopes.includes('agentforce')) scan.agentforce = await scanAgentforce(conn);
+    for (const scope of scopes) {
+      if (SCANNERS[scope]) {
+        scan[scope] = await SCANNERS[scope](conn);
+      }
+    }
     res.json(scan);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/:id/setup-scan/experience', authMiddleware, async (req, res) => {
+// Dynamic shortcut: GET /api/orgs/:id/setup-scan/:scope
+router.get('/:id/setup-scan/:scope', authMiddleware, async (req, res) => {
   try {
+    const scope = req.params.scope.toLowerCase();
+    if (!SCANNERS[scope]) return res.status(400).json({ error: `Unknown scope: ${scope}. Available: ${ALL_SCOPES.join(', ')}` });
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org not found' });
     const conn = await connectToOrg(org);
-    res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), experienceCloud: await scanExperienceCloud(conn) });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.get('/:id/setup-scan/agentforce', authMiddleware, async (req, res) => {
-  try {
-    const org = await getOrgById(req.params.id);
-    if (!org) return res.status(404).json({ error: 'Org not found' });
-    const conn = await connectToOrg(org);
-    res.json({ org: { id: org.id, name: org.name }, timestamp: new Date().toISOString(), agentforce: await scanAgentforce(conn) });
+    const scan = { org: { id: org.id, name: org.name }, timestamp: new Date().toISOString() };
+    scan[scope] = await SCANNERS[scope](conn);
+    res.json(scan);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
