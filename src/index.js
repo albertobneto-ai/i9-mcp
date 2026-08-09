@@ -21,6 +21,7 @@ import orgCompareRoutes from './routes/org-compare.js';
 import agentBuilderRoutes from './routes/agent-builder.js';
 import specContextRoutes from './routes/spec-context.js';
 import pipelineRoutes from './routes/pipeline.js';
+import revenueCloudRoutes from './routes/revenue-cloud.js';
 import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
@@ -176,6 +177,7 @@ app.use('/api/orgs', orgCompareRoutes);
 app.use('/api/orgs', agentBuilderRoutes);
 app.use('/api/orgs', specContextRoutes);
 app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/orgs', revenueCloudRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
 app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
