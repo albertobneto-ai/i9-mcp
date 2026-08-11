@@ -180,7 +180,7 @@ router.post('/:id/metadata-deploy-zip', authMiddleware, async (req, res) => {
   try {
     const org = await getOrgById(req.params.id);
     if (!org) return res.status(404).json({ error: 'Org nao encontrada' });
-    const result = await metadataDeployZipAsync(org, req.body.zipBase64);
+    const result = await metadataDeployZipAsync(org, req.body.zipBase64, { checkOnly: req.body.checkOnly === true });
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
