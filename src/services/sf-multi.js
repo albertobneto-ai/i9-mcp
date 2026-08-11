@@ -153,11 +153,13 @@ export async function metadataRetrieve(org, types) {
   }
   return status;
 }
-export async function metadataDeployZipAsync(org, zipBase64) {
+export async function metadataDeployZipAsync(org, zipBase64, opts = {}) {
   const conn = await connectToOrg(org);
   const buf = Buffer.from(zipBase64, 'base64');
-  const result = await conn.metadata.deploy(buf, { rollbackOnError: true, singlePackage: true });
-  return { id: result.id };
+  const deployOpts = { rollbackOnError: true, singlePackage: true };
+  if (opts.checkOnly === true) deployOpts.checkOnly = true;
+  const result = await conn.metadata.deploy(buf, deployOpts);
+  return { id: result.id, checkOnly: !!opts.checkOnly };
 }
 
 export async function checkDeployStatusById(org, deployId) {
