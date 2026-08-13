@@ -28,6 +28,7 @@ import controlRoutes, { initControlTables } from './routes/control.js';
 import agentFarmRoutes from './routes/agent-farm.js';
 import tracelogRoutes from './routes/tracelog.js';
 import specsRoutes from './routes/specs.js';
+import hotfixRoutes, { initHotfixTables } from './routes/hotfix.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -152,6 +153,8 @@ app.get('/api/init-db', async (req, res) => {
     await initAlmTables();
     // Control i9
     await initControlTables();
+    // Hotfix Registry
+    await initHotfixTables();
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
@@ -185,6 +188,7 @@ app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /a
 app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
 app.use('/api/tracelog', tracelogRoutes);  // TraceLog — diagnóstico de sessão
 app.use('/api/specs', specsRoutes);  // Spec Registry — catálogo de especificações
+app.use('/api/hotfix', hotfixRoutes);  // Hotfix Registry — controle de correções v1/v2 + esteira de orgs
 app.use('/api', explorerRoutes);
 
 // Job status polling
@@ -380,6 +384,13 @@ app.get('/rlm-poc', (req, res) => {
 app.get(['/farm', '/farm.html'], (req, res) => {
   res.sendFile(path.join(clientDist, 'agent-farm.html'), err => {
     if (err) res.status(404).json({ error: 'Farm page not found' });
+  });
+});
+
+// Hotfix Registry — URL amigável
+app.get('/hotfix', (req, res) => {
+  res.sendFile(path.join(clientDist, 'hotfix.html'), err => {
+    if (err) res.status(404).json({ error: 'Hotfix page not found' });
   });
 });
 
