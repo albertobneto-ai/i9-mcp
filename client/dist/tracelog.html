@@ -144,6 +144,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .t-mode{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;white-space:nowrap}
 .t-mode-realtime     {background:var(--blue-bg);color:var(--blue)}
 .t-mode-investigation{background:var(--purple-bg);color:var(--purple)}
+.t-org-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;white-space:nowrap;background:var(--pill-bg);color:var(--text-2);text-transform:uppercase}
 
 .t-row2{display:flex;align-items:center;gap:0;flex-wrap:wrap}
 .t-trace-id{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.04em;font-family:'SF Mono','Fira Code','Consolas',monospace;background:var(--pill-bg);padding:1px 7px;border-radius:4px;margin-right:4px;flex-shrink:0}
@@ -579,6 +580,7 @@ function buildCard(t){
           <span class="t-user">${t.user}</span>
           <span class="t-badge t-badge-${t.phase==='done'?t.status:t.phase}">${statusLabels[t.phase==='done'?t.status:t.phase]||t.status}</span>
           ${modeHtml}
+          <span class="t-org-badge">${t.org}</span>
         </div>
         <div class="t-row2">
           <span class="t-trace-id">${t.id}</span>
