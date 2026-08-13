@@ -1,633 +1,451 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Deploys — SF Agent</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy Registry · Ohana Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #050308;
-    --violet: #7c3aed;
-    --violet-soft: #a78bfa;
-    --cyan: #06b6d4;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: rgba(255,255,255,0.92);
-    --text-dim: rgba(255,255,255,0.55);
-    --text-mute: rgba(255,255,255,0.35);
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.14);
-    --surface: rgba(255,255,255,0.04);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Geist', -apple-system, sans-serif;
-    line-height: 1.5;
-    min-height: 100vh;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    top: -10%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 60%;
-    background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .layout {
-    position: relative;
-    z-index: 1;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 24px 32px 60px;
-  }
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-    font-size: 15px;
-  }
-  .brand-mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: conic-gradient(from 0deg, var(--violet), var(--cyan), var(--violet));
-    position: relative;
-  }
-  .brand-mark::after {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    background: var(--bg);
-    border-radius: 4px;
-  }
-  .back-btn {
-    padding: 8px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 100px;
-    font-size: 13px;
-    cursor: pointer;
-    font-family: inherit;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-  }
-  .back-btn:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--border-strong);
-  }
-  h1 {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin-bottom: 4px;
-  }
-  .subtitle {
-    color: var(--text-dim);
-    font-size: 14px;
-    margin-bottom: 28px;
-  }
+:root {
+  --bg:#f7f8fa;--surface:#ffffff;--surface-hover:#f0f2f5;
+  --card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --card-shadow-hover:0 4px 14px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --border:#e8eaed;--text:#1a1a1a;--text-2:#4a4a4a;--text-3:#888;--text-4:#b0b0b0;--text-ice:#d0d3d8;
+  --pill-bg:#f0f2f5;--pill-active-bg:#1a1a1a;--pill-active-text:#fff;
+  --buddy-bg:#f4f5f7;--code-bg:#1a1a1a;--code-text:#bbb;
+  --green:#2e7d32;--green-bg:#e8f5e9;--amber:#e65100;--amber-bg:#fff3e0;
+  --red:#c62828;--red-bg:#ffebee;--blue:#1565c0;--blue-bg:#e3f2fd;
+  --grey:#616161;--grey-bg:#f5f5f5;
+  --radius:16px;--radius-sm:10px;--font:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:68px}
 
-  /* Filters */
-  .filters {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .filter-input, .filter-select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 9px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .filter-input { min-width: 240px; }
-  .filter-input:focus, .filter-select:focus { border-color: var(--violet-soft); }
-  .filter-input::placeholder { color: var(--text-mute); }
-  .btn-clear {
-    color: var(--text-dim);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 6px 10px;
-    font-family: inherit;
-  }
-  .btn-clear:hover { color: var(--text); }
+/* ═══════ HEADER ═══════ */
+.header{background:var(--surface);padding:18px 16px 14px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
+.header-row{display:flex;align-items:center;gap:10px}
+.header-icon{width:44px;height:44px;background:var(--pill-active-bg);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-icon svg{width:22px;height:22px}
+.header-text{flex:1}
+.header-title{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.header-sub{font-size:11px;font-weight:500;color:var(--text-3);margin-top:1px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.live-label{font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.06em;vertical-align:middle}
 
-  /* Table */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  thead {
-    background: rgba(255,255,255,0.03);
-  }
-  th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr {
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
-  }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(255,255,255,0.02); }
-  tbody tr.expanded { background: rgba(124,58,237,0.06); }
-  td { padding: 14px 16px; font-size: 13px; vertical-align: middle; }
-  .us-link {
-    font-family: 'Geist Mono', monospace;
-    font-weight: 500;
-    color: var(--violet-soft);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .us-link:hover { color: #fff; }
-  .chevron {
-    display: inline-block;
-    transition: transform 0.2s;
-    color: var(--text-mute);
-  }
-  tr.expanded .chevron { transform: rotate(90deg); color: var(--violet-soft); }
+/* ═══════ GREETING ═══════ */
+.greeting{padding:16px 16px 12px}
+.greeting-card{background:var(--pill-active-bg);color:#fff;border-radius:var(--radius);padding:20px 18px;position:relative;overflow:hidden}
+.greeting-card::before{content:'';position:absolute;right:-20px;top:-20px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.04)}
+.greeting-hi{font-size:20px;font-weight:800;margin-bottom:4px;position:relative}
+.greeting-msg{font-size:12px;font-weight:500;opacity:.65;line-height:1.5;position:relative}
+.greeting-stats{display:flex;gap:18px;margin-top:14px;position:relative}
+.g-stat-num{font-size:22px;font-weight:900;line-height:1}
+.g-stat-label{font-size:9px;font-weight:600;opacity:.5;letter-spacing:.08em;margin-top:2px}
 
-  .org-tag {
-    font-family: 'Geist Mono', monospace;
-    font-size: 11px;
-    background: rgba(255,255,255,0.05);
-    padding: 3px 8px;
-    border-radius: 5px;
-    color: var(--text-dim);
-  }
-  .metrics {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    font-family: 'Geist Mono', monospace;
-    font-size: 12px;
-  }
-  .metric-pill {
-    padding: 3px 8px;
-    border-radius: 5px;
-    font-weight: 500;
-  }
-  .metric-pill.success { background: rgba(16,185,129,0.12); color: var(--success); }
-  .metric-pill.error { background: rgba(239,68,68,0.12); color: var(--danger); }
-  .metric-pill.total { color: var(--text-dim); }
-  .timestamp {
-    font-family: 'Geist Mono', monospace;
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 100px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .status-badge.ok { background: rgba(16,185,129,0.12); color: var(--success); }
-  .status-badge.err { background: rgba(239,68,68,0.12); color: var(--danger); }
-  .status-badge.mix { background: rgba(245,158,11,0.12); color: var(--warning); }
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
+/* ═══════ SEARCH + PILLS ═══════ */
+.search-wrap{padding:0 16px 10px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:0 14px;transition:border-color .15s,box-shadow .15s}
+.search-box:focus-within{border-color:#aaa;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+.search-icon{flex-shrink:0;color:var(--text-4)}
+.search-icon svg{width:16px;height:16px;display:block}
+.search-input{flex:1;border:none;outline:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text);padding:11px 0}
+.search-input::placeholder{color:var(--text-4)}
+.pills-section{padding:0 16px 8px}
+.pills-label{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.08em;margin-bottom:7px}
+.pills-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-family:var(--font);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-3);cursor:pointer;transition:all .12s;user-select:none}
+.pill:hover{border-color:#ccc;color:var(--text-2)}
+.pill.active{background:var(--pill-active-bg);color:var(--pill-active-text);border-color:var(--pill-active-bg)}
+.section-bar{padding:12px 16px 6px;display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:14px;font-weight:800}
+.section-count{font-size:11px;font-weight:600;color:var(--text-4)}
 
-  .actions { display: flex; gap: 6px; justify-content: flex-end; }
-  .icon-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: all 0.15s;
-    font-family: inherit;
-  }
-  .icon-btn:hover {
-    color: var(--violet-soft);
-    border-color: rgba(167,139,250,0.4);
-    background: rgba(124,58,237,0.08);
-  }
-  .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .icon-btn.busy { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ═══════ SVG SPRITE ═══════ */
+svg.sprite{display:none}
 
-  /* Expanded detail */
-  tr.detail-row { background: rgba(124,58,237,0.04); }
-  tr.detail-row td { padding: 0; }
-  .detail-wrap {
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-  }
-  .detail-title {
-    font-size: 12px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 10px;
-    font-family: 'Geist Mono', monospace;
-  }
-  .step-list { display: flex; flex-direction: column; gap: 6px; }
-  .step {
-    display: grid;
-    grid-template-columns: 24px 1fr 140px 100px;
-    gap: 12px;
-    align-items: center;
-    padding: 8px 10px;
-    background: rgba(0,0,0,0.25);
-    border-radius: 8px;
-    font-size: 12px;
-  }
-  .step-num {
-    font-family: 'Geist Mono', monospace;
-    color: var(--text-mute);
-  }
-  .step-name {
-    font-family: 'Geist Mono', monospace;
-    color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .step-action {
-    font-family: 'Geist Mono', monospace;
-    color: var(--violet-soft);
-    font-size: 11px;
-  }
-  .step-result {
-    font-size: 11px;
-    text-align: right;
-    font-family: 'Geist Mono', monospace;
-  }
-  .step-result.success { color: var(--success); }
-  .step-result.error { color: var(--danger); }
-  .step-result.exists { color: var(--cyan); }
+/* ═══════ CARDS ═══════ */
+.feed{padding:0 12px 20px}
 
-  .empty {
-    padding: 60px 24px;
-    text-align: center;
-    color: var(--text-dim);
-  }
-  .empty-icon {
-    font-size: 40px;
-    margin-bottom: 8px;
-    opacity: 0.5;
-  }
-  .loading {
-    padding: 40px 24px;
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 13px;
-  }
-  .footer-info {
-    margin-top: 16px;
-    font-size: 12px;
-    color: var(--text-mute);
-    text-align: center;
-    font-family: 'Geist Mono', monospace;
-  }
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    padding: 14px 20px;
-    background: var(--surface);
-    border: 1px solid var(--border-strong);
-    backdrop-filter: blur(20px);
-    border-radius: 12px;
-    color: var(--text);
-    font-size: 13px;
-    display: none;
-    z-index: 100;
-  }
-  .toast.show { display: block; }
-  .toast.error { border-color: rgba(239,68,68,0.5); }
+.d-card{background:var(--surface);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--card-shadow);overflow:hidden;transition:box-shadow .2s}
+.d-head{padding:14px 14px 12px;cursor:pointer;display:flex;gap:11px;user-select:none}
+.d-buddy{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.d-buddy svg{width:20px;height:20px}
+.d-card.open .d-buddy{transform:scale(1.1) rotate(-6deg)}
+.d-info{flex:1;min-width:0}
+.d-row1{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap}
+.d-component{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.d-badge svg{width:10px;height:10px}
+.d-badge-success{background:var(--green-bg);color:var(--green)}
+.d-badge-error{background:var(--red-bg);color:var(--red)}
+.d-badge-exists{background:var(--grey-bg);color:var(--grey)}
+.d-action-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;background:var(--blue-bg);color:var(--blue);white-space:nowrap}
+.d-org-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;background:var(--pill-bg);color:var(--text-2);text-transform:uppercase;white-space:nowrap}
+.d-row2{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.d-meta{font-size:11px;font-weight:500;color:var(--text-3)}
+.d-meta::before{content:' · ';color:var(--text-ice)}
+.d-meta:first-child::before{display:none}
+.d-us{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.04em;font-family:'SF Mono','Fira Code','Consolas',monospace;background:var(--pill-bg);padding:1px 7px;border-radius:4px;margin-right:4px;flex-shrink:0}
+.d-chevron{font-size:14px;color:var(--text-4);flex-shrink:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1);align-self:center}
+.d-card.open .d-chevron{transform:rotate(180deg)}
+
+/* BODY */
+.d-body{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
+.d-card.open .d-body{max-height:4000px}
+.d-content{padding:0 14px 16px}
+
+.d-desc{font-size:12px;font-weight:500;color:var(--text-2);line-height:1.65;margin-bottom:14px;background:var(--buddy-bg);padding:12px 14px;border-radius:var(--radius-sm);position:relative}
+.d-desc::before{content:'';position:absolute;top:-5px;left:14px;width:10px;height:10px;background:var(--buddy-bg);transform:rotate(45deg)}
+
+/* result message */
+.d-result-msg{font-size:11px;font-weight:500;color:var(--text-3);margin-bottom:10px;padding:8px 12px;border-radius:8px}
+.d-result-msg.success{background:var(--green-bg);color:var(--green);border-left:3px solid var(--green)}
+.d-result-msg.error{background:var(--red-bg);color:var(--red);border-left:3px solid var(--red)}
+
+/* previous/after state */
+.d-tabs{display:flex;background:var(--pill-bg);border-radius:var(--radius-sm);padding:3px;margin-bottom:10px}
+.d-tab{flex:1;font-family:var(--font);font-size:11px;font-weight:700;padding:8px 4px;border:none;background:transparent;color:var(--text-3);border-radius:8px;cursor:pointer;transition:all .15s}
+.d-tab:hover{color:var(--text-2)}
+.d-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.d-tab:disabled{opacity:.25;cursor:not-allowed}
+.d-code{background:var(--code-bg);border-radius:var(--radius-sm);padding:14px;font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:10.5px;line-height:1.8;color:var(--code-text);overflow-x:auto;max-height:280px;overflow-y:auto;white-space:pre;scrollbar-width:thin;scrollbar-color:#333 transparent}
+.d-code::-webkit-scrollbar{width:4px;height:4px}
+.d-code::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+/* TIMELINE dentro do card expandido */
+.d-timeline{margin-top:10px}
+.d-tl-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px}
+.d-tl-item:last-child{border-bottom:none}
+.d-tl-time{color:var(--text-4);font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:10px;min-width:70px;flex-shrink:0}
+.d-tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.d-tl-dot.success{background:var(--green)}
+.d-tl-dot.error{background:var(--red)}
+.d-tl-dot.exists{background:var(--text-4)}
+.d-tl-body{flex:1;min-width:0}
+.d-tl-comp{font-weight:700;color:var(--text);margin-bottom:2px;word-break:break-word}
+.d-tl-desc{color:var(--text-3);line-height:1.5}
+.d-tl-action{font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:4px;margin-left:6px}
+
+/* ═══════ BUDDY BAR ═══════ */
+.buddy-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px 12px;z-index:100;display:flex;align-items:center;justify-content:space-around}
+.bb-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform .2s}
+.bb-item:active{transform:scale(.9)}
+.bb-icon svg{width:24px;height:24px}
+.bb-label{font-size:9px;font-weight:700;color:var(--text-4);letter-spacing:.04em}
+.bb-item.active .bb-label{color:var(--text)}
+.bb-item.active .bb-icon svg{stroke:var(--text)}
+
+.toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(30px);opacity:0;background:var(--pill-active-bg);color:#fff;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:999;transition:all .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:90vw;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.empty{display:none;padding:50px 20px;text-align:center}
+.empty-title{font-size:15px;font-weight:800;margin-bottom:4px}
+.empty-sub{font-size:12px;color:var(--text-3)}
+.loading{padding:40px 20px;text-align:center;color:var(--text-3);font-size:13px;font-weight:600}
+
+@media(max-width:380px){.header-title{font-size:16px}.greeting-hi{font-size:18px}.d-component{font-size:13px}}
 </style>
 </head>
 <body>
 
-<div class="layout">
-  <div class="header">
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <span>SF Agent · Deploys</span>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+  <symbol id="i-minus-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+</svg>
+
+<header class="header">
+  <div class="header-row">
+    <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-box"/></svg></div>
+    <div class="header-text">
+      <div class="header-title">Deploy Registry</div>
+      <div class="header-sub">Ohana Edition · i9 DevOps</div>
     </div>
-    <a href="/" class="back-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      Voltar ao chat
-    </a>
+    <div class="header-right"><span class="live-dot"></span><span class="live-label">LIVE</span></div>
   </div>
+</header>
 
-  <h1>Auditoria de Deploys</h1>
-  <p class="subtitle">Histórico de User Stories executadas, componentes deployados e ações realizadas pelo SF Agent.</p>
-
-  <div class="filters">
-    <input type="text" id="search" class="filter-input" placeholder="Buscar US (ex: ALGAR-CRM-90)" />
-    <select id="org" class="filter-select">
-      <option value="">Todas as orgs</option>
-    </select>
-    <select id="result" class="filter-select">
-      <option value="">Todos os resultados</option>
-      <option value="success">Sucesso</option>
-      <option value="error">Erro</option>
-      <option value="exists">Já existia</option>
-    </select>
-    <input type="date" id="from" class="filter-select" />
-    <input type="date" id="to" class="filter-select" />
-    <button class="btn-clear" onclick="clearFilters()">Limpar</button>
+<div class="greeting">
+  <div class="greeting-card">
+    <div class="greeting-hi">Registro de deploys</div>
+    <div class="greeting-msg">Todas as alterações em orgs Salesforce, registradas automaticamente pelo Claude Agent.</div>
+    <div class="greeting-stats">
+      <div class="g-stat"><div class="g-stat-num" id="statTotal">0</div><div class="g-stat-label">AÇÕES</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statOk">0</div><div class="g-stat-label">SUCESSO</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statErr">0</div><div class="g-stat-label">ERRO</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statUS">0</div><div class="g-stat-label">US</div></div>
+    </div>
   </div>
-
-  <div class="table-wrap">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>User Story</th>
-          <th>Org</th>
-          <th>Componentes</th>
-          <th>Início</th>
-          <th>Última ação</th>
-          <th>Status</th>
-          <th style="text-align:right">Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="7" class="loading">Carregando...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="footer-info" id="footer">—</div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon"><svg><use href="#i-search"/></svg></span>
+    <input class="search-input" id="searchInput" placeholder="Buscar US, componente, org..." oninput="applyFilters()">
+  </div>
+</div>
+
+<div class="pills-section">
+  <div class="pills-label">RESULTADO</div>
+  <div class="pills-row" id="resultPills">
+    <button class="pill active" onclick="togglePill(this,'result','')">Todos</button>
+    <button class="pill" onclick="togglePill(this,'result','success')">Sucesso</button>
+    <button class="pill" onclick="togglePill(this,'result','error')">Erro</button>
+    <button class="pill" onclick="togglePill(this,'result','exists')">Existente</button>
+  </div>
+</div>
+
+<div class="pills-section">
+  <div class="pills-label">AMBIENTE</div>
+  <div class="pills-row" id="orgPills"></div>
+</div>
+
+<div class="section-bar">
+  <div class="section-title">Deploys</div>
+  <div class="section-count" id="feedCount">carregando...</div>
+</div>
+
+<div class="loading" id="loadingState">Carregando deploys...</div>
+<div class="feed" id="feed" style="display:none"></div>
+<div class="empty" id="emptyState">
+  <div class="empty-title">Nenhum deploy encontrado</div>
+  <div class="empty-sub">Ajuste os filtros ou aguarde o próximo deploy.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav class="buddy-bar">
+  <div class="bb-item active">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-box"/></svg></span>
+    <span class="bb-label">Deploys</span>
+  </div>
+  <div class="bb-item" onclick="window.location.href='tracelog.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-radio"/></svg></span>
+    <span class="bb-label">TraceLog</span>
+  </div>
+</nav>
 
 <script>
-  const TOKEN = localStorage.getItem('i9mcp_token');
-  if (!TOKEN) { window.location.href = '/'; }
+const ICO={
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check-circle"/></svg>',
+  err:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-x-circle"/></svg>',
+  exists:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-minus-circle"/></svg>',
+  code:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-code"/></svg>',
+  layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-layers"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-settings"/></svg>',
+  db:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-database"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg>',
+  zap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-zap"/></svg>',
+};
 
-  const tbody = document.getElementById('tbody');
-  const footer = document.getElementById('footer');
-  const elSearch = document.getElementById('search');
-  const elOrg = document.getElementById('org');
-  const elResult = document.getElementById('result');
-  const elFrom = document.getElementById('from');
-  const elTo = document.getElementById('to');
-  const toast = document.getElementById('toast');
+const ACTION_ICONS={
+  'create-field':ICO.db, 'metadata-deploy-xml':ICO.layers, 'metadata-create':ICO.layers,
+  'metadata-update':ICO.layers, 'apex-class':ICO.code, 'apex-trigger':ICO.code,
+  'lwc':ICO.code, 'flow':ICO.zap, 'profile-fls':ICO.shield, 'ps-fls':ICO.shield,
+  'assign-ps-to-user':ICO.shield, 'sobject-insert':ICO.db, 'sobject-delete':ICO.db,
+  'assign-layout':ICO.settings, 'assign-custom-permission':ICO.shield,
+  'tooling-create':ICO.settings, 'tooling-update':ICO.settings,
+};
 
-  let debounce;
-  function onFilterChange() {
-    clearTimeout(debounce);
-    debounce = setTimeout(load, 250);
+const RESULT_COLORS={
+  success:{bg:'#e8f5e9',icon:ICO.ok},
+  error:{bg:'#ffebee',icon:ICO.err},
+  exists:{bg:'#f5f5f5',icon:ICO.exists},
+};
+
+let allData=[];
+let detailCache={};
+const filters={result:'',org:'',search:''};
+
+// ═══════ AUTH ═══════
+async function getToken(){
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@everi9.com',password:'admin2026'})});
+    const d=await r.json();
+    return d.token;
+  }catch(e){return null}
+}
+
+// ═══════ LOAD ═══════
+async function loadDeploys(){
+  const token=await getToken();
+  if(!token){document.getElementById('loadingState').textContent='Erro de autenticação';return;}
+
+  try{
+    const r=await fetch('/api/deploys/list?limit=200',{headers:{'Authorization':'Bearer '+token}});
+    const data=await r.json();
+    allData=data.items||[];
+
+    // Build org pills
+    const orgs=data.orgs||[];
+    const orgRow=document.getElementById('orgPills');
+    orgRow.innerHTML='<button class="pill active" onclick="togglePill(this,\'org\',\'\')">Todos</button>'+
+      orgs.map(o=>`<button class="pill" onclick="togglePill(this,'org','${o}')">${o.replace('ORG ','')}</button>`).join('');
+
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('feed').style.display='block';
+
+    window._token=token;
+    applyFilters();
+  }catch(e){
+    document.getElementById('loadingState').textContent='Erro ao carregar: '+e.message;
   }
-  elSearch.addEventListener('input', onFilterChange);
-  elOrg.addEventListener('change', onFilterChange);
-  elResult.addEventListener('change', onFilterChange);
-  elFrom.addEventListener('change', onFilterChange);
-  elTo.addEventListener('change', onFilterChange);
+}
 
-  function clearFilters() {
-    elSearch.value = '';
-    elOrg.value = '';
-    elResult.value = '';
-    elFrom.value = '';
-    elTo.value = '';
-    load();
-  }
+function togglePill(el,group,value){
+  document.querySelectorAll(`#${group}Pills .pill`).forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  filters[group]=value;
+  applyFilters();
+}
 
-  function showToast(msg, type = 'info') {
-    toast.textContent = msg;
-    toast.className = 'toast show ' + (type === 'error' ? 'error' : '');
-    setTimeout(() => toast.classList.remove('show'), 3500);
-  }
-
-  function formatDate(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function statusOf(item) {
-    if (item.errors > 0 && item.success > 0) return { label: 'Misto', cls: 'mix' };
-    if (item.errors > 0) return { label: 'Erro', cls: 'err' };
-    return { label: 'OK', cls: 'ok' };
-  }
-
-  async function load() {
-    const params = new URLSearchParams();
-    if (elSearch.value.trim()) params.set('search', elSearch.value.trim());
-    if (elOrg.value) params.set('org', elOrg.value);
-    if (elResult.value) params.set('result', elResult.value);
-    if (elFrom.value) params.set('from', elFrom.value + 'T00:00:00');
-    if (elTo.value) params.set('to', elTo.value + 'T23:59:59');
-
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
-
-    try {
-      const r = await fetch('/api/deploys/list?' + params.toString(), {
-        headers: { Authorization: 'Bearer ' + TOKEN }
-      });
-      if (r.status === 401) { window.location.href = '/'; return; }
-      const data = await r.json();
-
-      // Atualiza dropdown de orgs (primeira carga)
-      if (elOrg.options.length === 1 && data.orgs) {
-        for (const o of data.orgs) {
-          const opt = document.createElement('option');
-          opt.value = o; opt.textContent = o;
-          elOrg.appendChild(opt);
-        }
-      }
-
-      if (!data.items || !data.items.length) {
-        tbody.innerHTML = `
-          <tr><td colspan="7">
-            <div class="empty">
-              <div class="empty-icon">📭</div>
-              Nenhuma User Story encontrada com esses filtros.
-            </div>
-          </td></tr>`;
-        footer.textContent = '—';
-        return;
-      }
-
-      tbody.innerHTML = '';
-      for (const item of data.items) renderRow(item);
-      footer.textContent = `${data.items.length} de ${data.total} User Stories`;
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty">Erro: ${err.message}</td></tr>`;
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const visible=allData.filter(d=>{
+    if(filters.result){
+      if(filters.result==='success'&&d.success===0)return false;
+      if(filters.result==='error'&&d.errors===0)return false;
+      if(filters.result==='exists'&&d.exists===0)return false;
     }
-  }
+    if(filters.org&&d.org_name!==filters.org)return false;
+    if(q&&!`${d.us_number} ${d.org_name} ${d.last_action}`.toLowerCase().includes(q))return false;
+    return true;
+  });
 
-  function renderRow(item) {
-    const st = statusOf(item);
-    const tr = document.createElement('tr');
-    tr.dataset.us = item.us_number;
-    tr.innerHTML = `
-      <td>
-        <span class="us-link" onclick="toggleDetail('${item.us_number}', this)">
-          <span class="chevron">▶</span>${item.us_number}
-        </span>
-      </td>
-      <td><span class="org-tag">${item.org_name || '—'}</span></td>
-      <td>
-        <div class="metrics">
-          <span class="metric-pill total">${item.total}</span>
-          ${item.success > 0 ? `<span class="metric-pill success">✓ ${item.success}</span>` : ''}
-          ${item.errors > 0 ? `<span class="metric-pill error">✗ ${item.errors}</span>` : ''}
+  document.getElementById('feedCount').textContent=`${visible.length} user stories`;
+  document.getElementById('emptyState').style.display=visible.length?'none':'block';
+  document.getElementById('feed').style.display=visible.length?'block':'none';
+  renderFeed(visible);
+  updateStats(visible);
+}
+
+function updateStats(data){
+  let total=0,ok=0,err=0;
+  data.forEach(d=>{total+=d.total;ok+=d.success;err+=d.errors;});
+  document.getElementById('statTotal').textContent=total;
+  document.getElementById('statOk').textContent=ok;
+  document.getElementById('statErr').textContent=err;
+  document.getElementById('statUS').textContent=data.length;
+}
+
+function renderFeed(data){
+  const feed=document.getElementById('feed');
+  feed.innerHTML='';
+  data.forEach(d=>feed.appendChild(buildCard(d)));
+}
+
+function fmtDate(iso){
+  if(!iso)return'—';
+  try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+  catch(_){return iso.substring(0,16)}
+}
+
+function buildCard(d){
+  const card=document.createElement('div');
+  card.className='d-card';
+  card.dataset.us=d.us_number;
+
+  const hasErrors=d.errors>0;
+  const buddyBg=hasErrors?'#ffebee':d.exists>0&&d.success===0?'#f5f5f5':'#e8f5e9';
+  const buddyIcon=hasErrors?ICO.err:ICO.ok;
+  const actionIcon=ACTION_ICONS[d.last_action]||ICO.layers;
+
+  const badges=[];
+  if(d.success>0)badges.push(`<span class="d-badge d-badge-success">${ICO.ok} ${d.success}</span>`);
+  if(d.errors>0)badges.push(`<span class="d-badge d-badge-error">${ICO.err} ${d.errors}</span>`);
+  if(d.exists>0)badges.push(`<span class="d-badge d-badge-exists">${ICO.exists} ${d.exists}</span>`);
+
+  const orgShort=(d.org_name||'').replace('ORG ','');
+
+  card.innerHTML=`
+    <div class="d-head" onclick="toggleCard('${d.us_number}')">
+      <div class="d-buddy" style="background:${buddyBg}">${actionIcon}</div>
+      <div class="d-info">
+        <div class="d-row1">
+          <span class="d-component">${d.us_number}</span>
+          ${badges.join('')}
+          <span class="d-org-badge">${orgShort}</span>
         </div>
-      </td>
-      <td class="timestamp">${formatDate(item.first_at)}</td>
-      <td class="timestamp">${formatDate(item.last_at)}</td>
-      <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
-      <td>
-        <div class="actions">
-          <button class="icon-btn" title="Baixar pra VS Code (SFDX)" onclick="exportZip('${item.us_number}', this)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </button>
-          <button class="icon-btn" title="Copiar nome da US" onclick="copyUs('${item.us_number}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
+        <div class="d-row2">
+          <span class="d-meta">${d.total} ações</span>
+          <span class="d-meta">${d.last_action}</span>
+          <span class="d-meta">${fmtDate(d.last_at)}</span>
         </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
+      </div>
+      <span class="d-chevron">▾</span>
+    </div>
+    <div class="d-body">
+      <div class="d-content" id="detail-${d.us_number}">
+        <div class="loading" style="padding:16px">Carregando detalhes...</div>
+      </div>
+    </div>`;
 
-  async function toggleDetail(us, anchor) {
-    const tr = anchor.closest('tr');
-    const next = tr.nextElementSibling;
-    if (next && next.classList.contains('detail-row') && next.dataset.us === us) {
-      next.remove();
-      tr.classList.remove('expanded');
-      return;
+  return card;
+}
+
+async function toggleCard(us){
+  const card=document.querySelector(`.d-card[data-us="${us}"]`);
+  if(!card)return;
+  const wasOpen=card.classList.contains('open');
+  card.classList.toggle('open');
+
+  if(!wasOpen&&!detailCache[us]){
+    // Load detail
+    try{
+      const r=await fetch(`/api/deploys/${encodeURIComponent(us)}`,{headers:{'Authorization':'Bearer '+window._token}});
+      const data=await r.json();
+      detailCache[us]=data;
+      renderDetail(us,data);
+    }catch(e){
+      document.getElementById(`detail-${us}`).innerHTML=`<div class="d-result-msg error">Erro ao carregar: ${e.message}</div>`;
     }
-    // Remove qualquer outra detail-row aberta
-    document.querySelectorAll('tr.detail-row').forEach(r => r.remove());
-    document.querySelectorAll('tr.expanded').forEach(r => r.classList.remove('expanded'));
-
-    tr.classList.add('expanded');
-    const detail = document.createElement('tr');
-    detail.className = 'detail-row';
-    detail.dataset.us = us;
-    detail.innerHTML = `<td colspan="7"><div class="detail-wrap"><div class="detail-title">Carregando componentes...</div></div></td>`;
-    tr.parentNode.insertBefore(detail, tr.nextSibling);
-
-    try {
-      const r = await fetch('/api/deploys/' + encodeURIComponent(us), {
-        headers: { Authorization: 'Bearer ' + TOKEN }
-      });
-      const data = await r.json();
-      const steps = data.components || [];
-      if (!steps.length) {
-        detail.querySelector('.detail-wrap').innerHTML = '<div class="detail-title">Sem componentes.</div>';
-        return;
-      }
-      const list = steps.map((s, i) => {
-        const resClass = s.result === 'success' ? 'success' : s.result === 'error' ? 'error' : 'exists';
-        return `
-          <div class="step">
-            <span class="step-num">${String(i+1).padStart(2,'0')}</span>
-            <span class="step-name" title="${s.component || ''}">${s.component || '—'}</span>
-            <span class="step-action">${s.action || '—'}</span>
-            <span class="step-result ${resClass}">${s.result || '—'}</span>
-          </div>
-        `;
-      }).join('');
-      detail.querySelector('.detail-wrap').innerHTML = `
-        <div class="detail-title">${steps.length} passos · ${data.org_name || ''}</div>
-        <div class="step-list">${list}</div>
-      `;
-    } catch (err) {
-      detail.querySelector('.detail-wrap').innerHTML = `<div class="detail-title" style="color:var(--danger)">Erro: ${err.message}</div>`;
-    }
+  }else if(detailCache[us]){
+    renderDetail(us,detailCache[us]);
   }
+}
 
-  async function exportZip(us, btn) {
-    const original = btn.innerHTML;
-    btn.classList.add('busy');
-    btn.disabled = true;
-    try {
-      const r = await fetch('/api/exports/package/' + encodeURIComponent(us), {
-        headers: { Authorization: 'Bearer ' + TOKEN }
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = us + '.zip';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showToast('📦 ' + us + '.zip baixado');
-    } catch (err) {
-      showToast('Erro ao gerar export: ' + err.message, 'error');
-    } finally {
-      btn.classList.remove('busy');
-      btn.disabled = false;
-      btn.innerHTML = original;
-    }
-  }
+function renderDetail(us,data){
+  const panel=document.getElementById(`detail-${us}`);
+  if(!panel||!data.components)return;
 
-  function copyUs(us) {
-    navigator.clipboard.writeText(us).then(
-      () => showToast('Copiado: ' + us),
-      () => showToast('Falha ao copiar', 'error')
-    );
-  }
+  const comps=data.components;
+  const timeline=comps.map(c=>{
+    const t=fmtDate(c.created_at);
+    const dot=c.result||'success';
+    return `<div class="d-tl-item">
+      <div class="d-tl-time">${t}</div>
+      <div class="d-tl-dot ${dot}"></div>
+      <div class="d-tl-body">
+        <div class="d-tl-comp">${c.component||'—'}<span class="d-tl-action">${c.action||'—'}</span></div>
+        ${c.description?`<div class="d-tl-desc">${c.description}</div>`:''}
+        ${c.result==='error'&&c.result_message?`<div class="d-result-msg error" style="margin-top:4px">${c.result_message}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
 
-  load();
+  panel.innerHTML=`
+    <div class="d-desc">
+      ${comps.length} ações entre ${fmtDate(data.first_at)} e ${fmtDate(data.last_at)}
+    </div>
+    <div class="d-timeline">${timeline}</div>`;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+loadDeploys();
 </script>
-
 </body>
 </html>
