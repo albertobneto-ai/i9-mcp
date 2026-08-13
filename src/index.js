@@ -26,6 +26,7 @@ import explorerRoutes from './routes/explorer.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
 import agentFarmRoutes from './routes/agent-farm.js';
+import tracelogRoutes from './routes/tracelog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -181,6 +182,7 @@ app.use('/api/orgs', revenueCloudRoutes);
 app.use('/api/rlm-poc', rlmPocRoutes);  // POC Pricing Headless RLM (arqevery)
 app.use('/api/control', controlRoutes);  // Control i9 — antes do catch-all /api
 app.use('/api/agent-farm', agentFarmRoutes);  // Farm de Agentes Agentforce
+app.use('/api/tracelog', tracelogRoutes);  // TraceLog — diagnóstico de sessão
 app.use('/api', explorerRoutes);
 
 // Job status polling
