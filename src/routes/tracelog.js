@@ -208,4 +208,14 @@ router.patch('/:trace_id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── DELETE /api/tracelog/:trace_id — remove trace ──
+router.delete('/:trace_id', async (req, res) => {
+  try {
+    const traceId = req.params.trace_id.toUpperCase();
+    const r = await pool.query(`DELETE FROM tracelog_results WHERE trace_id = $1 RETURNING trace_id`, [traceId]);
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Trace not found' });
+    res.json({ deleted: traceId });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
