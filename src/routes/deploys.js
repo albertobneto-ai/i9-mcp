@@ -143,4 +143,34 @@ router.get('/:us', authMiddleware, async (req, res) => {
   }
 });
 
+// ── POST /api/deploys/register — registrar ação em org (usado pelo Claude Agent via bash) ──
+router.post('/register', async (req, res) => {
+  try {
+    const {
+      us_number, component, action, description,
+      result = 'success', result_message,
+      org_id, org_name, user_name = 'Claude Agent',
+      previous_state, after_state
+    } = req.body;
+
+    if (!component || !action) {
+      return res.status(400).json({ error: 'component and action are required' });
+    }
+
+    const r = await pool.query(
+      `INSERT INTO deploy_log (us_number, component, action, description, result, result_message, org_id, org_name, user_name, previous_state)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING id, us_number, component, action, result, created_at`,
+      [us_number || 'MANUAL', component, action, description,
+       result, result_message, org_id || null, org_name || null,
+       user_name, previous_state || null]
+    );
+
+    res.status(201).json(r.rows[0]);
+  } catch (err) {
+    console.error('[deploys/register] erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
