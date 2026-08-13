@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Registry · Ohana Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f8fa;--surface:#ffffff;--surface-hover:#f0f2f5;
+  --card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --card-shadow-hover:0 4px 14px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --border:#e8eaed;--text:#1a1a1a;--text-2:#4a4a4a;--text-3:#888;--text-4:#b0b0b0;--text-ice:#d0d3d8;
+  --pill-bg:#f0f2f5;--pill-active-bg:#1a1a1a;--pill-active-text:#fff;
+  --buddy-bg:#f4f5f7;--code-bg:#1a1a1a;--code-text:#bbb;
+  --green:#2e7d32;--green-bg:#e8f5e9;--amber:#e65100;--amber-bg:#fff3e0;
+  --red:#c62828;--red-bg:#ffebee;--blue:#1565c0;--blue-bg:#e3f2fd;
+  --purple:#6a1b9a;--purple-bg:#f3e5f5;
+  --grey:#616161;--grey-bg:#f5f5f5;
+  --radius:16px;--radius-sm:10px;--font:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:68px}
+
+.header{background:var(--surface);padding:18px 16px 14px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
+.header-row{display:flex;align-items:center;gap:10px}
+.header-icon{width:44px;height:44px;background:var(--pill-active-bg);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-icon svg{width:22px;height:22px}
+.header-text{flex:1}
+.header-title{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.header-sub{font-size:11px;font-weight:500;color:var(--text-3);margin-top:1px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.live-label{font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.06em;vertical-align:middle}
+
+.greeting{padding:16px 16px 12px}
+.greeting-card{background:var(--pill-active-bg);color:#fff;border-radius:var(--radius);padding:20px 18px;position:relative;overflow:hidden}
+.greeting-card::before{content:'';position:absolute;right:-20px;top:-20px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.04)}
+.greeting-hi{font-size:20px;font-weight:800;margin-bottom:4px;position:relative}
+.greeting-msg{font-size:12px;font-weight:500;opacity:.65;line-height:1.5;position:relative}
+.greeting-stats{display:flex;gap:18px;margin-top:14px;position:relative}
+.g-stat-num{font-size:22px;font-weight:900;line-height:1}
+.g-stat-label{font-size:9px;font-weight:600;opacity:.5;letter-spacing:.08em;margin-top:2px}
+
+.search-wrap{padding:0 16px 10px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:0 14px;transition:border-color .15s,box-shadow .15s}
+.search-box:focus-within{border-color:#aaa;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+.search-icon{flex-shrink:0;color:var(--text-4)}
+.search-icon svg{width:16px;height:16px;display:block}
+.search-input{flex:1;border:none;outline:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text);padding:11px 0}
+.search-input::placeholder{color:var(--text-4)}
+.pills-section{padding:0 16px 8px}
+.pills-label{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.08em;margin-bottom:7px}
+.pills-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-family:var(--font);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-3);cursor:pointer;transition:all .12s;user-select:none}
+.pill:hover{border-color:#ccc;color:var(--text-2)}
+.pill.active{background:var(--pill-active-bg);color:var(--pill-active-text);border-color:var(--pill-active-bg)}
+.section-bar{padding:12px 16px 6px;display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:14px;font-weight:800}
+.section-count{font-size:11px;font-weight:600;color:var(--text-4)}
+
+/* ═══════ SVG ═══════ */
+svg.sprite{display:none}
+
+/* ═══════ SPEC CARDS ═══════ */
+.feed{padding:0 12px 20px}
+
+.s-card{background:var(--surface);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--card-shadow);overflow:hidden;transition:box-shadow .2s}
+.s-head{padding:14px 14px 12px;cursor:pointer;display:flex;gap:11px;user-select:none}
+.s-buddy{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.s-buddy svg{width:20px;height:20px}
+.s-card.open .s-buddy{transform:scale(1.1) rotate(-6deg)}
+.s-info{flex:1;min-width:0}
+.s-row1{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap}
+.s-title{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+.s-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.s-badge svg{width:10px;height:10px}
+.s-badge-published{background:var(--green-bg);color:var(--green)}
+.s-badge-draft{background:var(--amber-bg);color:var(--amber)}
+.s-badge-superseded{background:var(--grey-bg);color:var(--grey)}
+
+.s-version{font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.04em;background:var(--blue-bg);color:var(--blue);white-space:nowrap}
+
+.s-type-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.04em;white-space:nowrap}
+.s-type-spec{background:var(--purple-bg);color:var(--purple)}
+.s-type-adr{background:var(--blue-bg);color:var(--blue)}
+.s-type-hf{background:var(--green-bg);color:var(--green)}
+.s-type-cenarios{background:var(--amber-bg);color:var(--amber)}
+.s-type-qa{background:var(--grey-bg);color:var(--grey)}
+
+.s-row2{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.s-spec-id{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.04em;font-family:'SF Mono','Fira Code','Consolas',monospace;background:var(--pill-bg);padding:1px 7px;border-radius:4px;margin-right:4px;flex-shrink:0}
+.s-us{font-size:10px;font-weight:700;color:var(--blue);font-family:'SF Mono','Fira Code','Consolas',monospace;background:var(--blue-bg);padding:1px 7px;border-radius:4px;margin-right:4px;flex-shrink:0}
+.s-meta{font-size:11px;font-weight:500;color:var(--text-3)}
+.s-meta::before{content:' · ';color:var(--text-ice)}
+.s-meta:first-child::before{display:none}
+.s-chevron{font-size:14px;color:var(--text-4);flex-shrink:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1);align-self:center}
+.s-card.open .s-chevron{transform:rotate(180deg)}
+
+/* BODY */
+.s-body{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
+.s-card.open .s-body{max-height:3000px}
+.s-content{padding:0 14px 16px}
+
+/* Download button */
+.s-download{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--buddy-bg);border-radius:var(--radius-sm);margin-bottom:12px;cursor:pointer;transition:background .15s;text-decoration:none;color:var(--text)}
+.s-download:hover{background:var(--surface-hover)}
+.s-download-icon{width:32px;height:32px;border-radius:8px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-download-icon svg{width:16px;height:16px;stroke:var(--blue)}
+.s-download-info{flex:1}
+.s-download-name{font-size:12px;font-weight:700;color:var(--text)}
+.s-download-size{font-size:10px;color:var(--text-4)}
+
+/* Version history */
+.s-versions-title{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.s-versions-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.s-ver-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.s-ver-item:last-child{border-bottom:none}
+.s-ver-num{font-size:11px;font-weight:800;color:var(--blue);background:var(--blue-bg);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-ver-num.current{background:var(--green-bg);color:var(--green)}
+.s-ver-num.old{background:var(--grey-bg);color:var(--grey)}
+.s-ver-body{flex:1;min-width:0}
+.s-ver-date{font-size:10px;font-weight:600;color:var(--text-4);margin-bottom:2px}
+.s-ver-changelog{font-size:12px;font-weight:500;color:var(--text-2);line-height:1.5}
+.s-ver-status{font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px}
+
+/* ═══════ BUDDY BAR ═══════ */
+.buddy-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px 12px;z-index:100;display:flex;align-items:center;justify-content:space-around}
+.bb-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform .2s}
+.bb-item:active{transform:scale(.9)}
+.bb-icon svg{width:24px;height:24px}
+.bb-label{font-size:9px;font-weight:700;color:var(--text-4);letter-spacing:.04em}
+.bb-item.active .bb-label{color:var(--text)}
+.bb-item.active .bb-icon svg{stroke:var(--text)}
+
+.empty{display:none;padding:50px 20px;text-align:center}
+.empty-title{font-size:15px;font-weight:800;margin-bottom:4px}
+.empty-sub{font-size:12px;color:var(--text-3)}
+
+@media(max-width:380px){.header-title{font-size:16px}.greeting-hi{font-size:18px}.s-title{font-size:13px}}
+</style>
+</head>
+<body>
+
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></symbol>
+  <symbol id="i-check-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></symbol>
+  <symbol id="i-git-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+</svg>
+
+<header class="header">
+  <div class="header-row">
+    <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-book"/></svg></div>
+    <div class="header-text">
+      <div class="header-title">Spec Registry</div>
+      <div class="header-sub">Ohana Edition · i9 DevOps</div>
+    </div>
+    <div class="header-right"><span class="live-dot"></span><span class="live-label">LIVE</span></div>
+  </div>
+</header>
+
+<div class="greeting">
+  <div class="greeting-card">
+    <div class="greeting-hi">Especificações técnicas</div>
+    <div class="greeting-msg">Catálogo de specs, ADRs, histórias funcionais e cenários de teste — com versionamento completo.</div>
+    <div class="greeting-stats">
+      <div class="g-stat"><div class="g-stat-num" id="statTotal">8</div><div class="g-stat-label">DOCS</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statPublished">5</div><div class="g-stat-label">PUBLICADOS</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statDraft">2</div><div class="g-stat-label">RASCUNHO</div></div>
+      <div class="g-stat"><div class="g-stat-num" id="statVersions">19</div><div class="g-stat-label">VERSÕES</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon"><svg><use href="#i-search"/></svg></span>
+    <input class="search-input" id="searchInput" placeholder="Buscar spec, US, título..." oninput="applyFilters()">
+  </div>
+</div>
+
+<div class="pills-section">
+  <div class="pills-label">TIPO</div>
+  <div class="pills-row" id="typePills">
+    <button class="pill active" onclick="togglePill(this,'type','ALL')">Todos</button>
+    <button class="pill" onclick="togglePill(this,'type','spec')">Spec</button>
+    <button class="pill" onclick="togglePill(this,'type','adr')">ADR</button>
+    <button class="pill" onclick="togglePill(this,'type','hf')">HF</button>
+    <button class="pill" onclick="togglePill(this,'type','cenarios')">Cenários</button>
+    <button class="pill" onclick="togglePill(this,'type','qa')">QA</button>
+  </div>
+</div>
+<div class="pills-section">
+  <div class="pills-label">STATUS</div>
+  <div class="pills-row" id="statusPills">
+    <button class="pill active" onclick="togglePill(this,'status','ALL')">Todos</button>
+    <button class="pill" onclick="togglePill(this,'status','published')">Publicado</button>
+    <button class="pill" onclick="togglePill(this,'status','draft')">Rascunho</button>
+  </div>
+</div>
+
+<div class="section-bar">
+  <div class="section-title">Documentos</div>
+  <div class="section-count" id="feedCount">8 specs</div>
+</div>
+
+<div class="feed" id="feed"></div>
+
+<div class="empty" id="emptyState">
+  <div class="empty-title">Nenhuma spec encontrada</div>
+  <div class="empty-sub">Ajuste os filtros ou solicite uma nova spec no chat com /spec.</div>
+</div>
+
+<nav class="buddy-bar">
+  <div class="bb-item" onclick="window.location.href='deploys.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-box"/></svg></span>
+    <span class="bb-label">Deploys</span>
+  </div>
+  <div class="bb-item" onclick="window.location.href='tracelog.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-radio"/></svg></span>
+    <span class="bb-label">TraceLog</span>
+  </div>
+  <div class="bb-item active">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-book"/></svg></span>
+    <span class="bb-label">Specs</span>
+  </div>
+</nav>
+
+<script>
+const ICO={
+  file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-file-text"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-book"/></svg>',
+  clipboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-clipboard"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check-square"/></svg>',
+  branch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-git-branch"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"/></svg>',
+};
+
+const TYPE_CONFIG={
+  spec:     {icon:ICO.file,      bg:'#f3e5f5', badge:'s-type-spec',     label:'Spec Técnica'},
+  adr:      {icon:ICO.branch,    bg:'#e3f2fd', badge:'s-type-adr',      label:'ADR'},
+  hf:       {icon:ICO.clipboard, bg:'#e8f5e9', badge:'s-type-hf',       label:'História Funcional'},
+  cenarios: {icon:ICO.check,     bg:'#fff3e0', badge:'s-type-cenarios', label:'Cenários de Teste'},
+  qa:       {icon:ICO.check,     bg:'#f5f5f5', badge:'s-type-qa',       label:'QA Tester'},
+};
+
+// ═══════════════════════════════════════
+// DATA — fetched from GET /api/specs
+// ═══════════════════════════════════════
+let specs = [];
+
+function transformSpec(row) {
+  return {
+    spec_id: row.spec_id,
+    us_number: row.us_number,
+    title: row.title,
+    type: row.type || 'spec',
+    version: row.version || 1,
+    status: row.status || 'draft',
+    org: row.org,
+    file_url: row.file_url,
+    file_name: row.file_name,
+    file_size: row.file_size,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    versions: row.versions_json || [{ v: row.version || 1, date: row.created_at, status: row.status, changelog: row.changelog || 'Versão inicial' }]
+  };
+}
+
+async function loadSpecs() {
+  try {
+    const resp = await fetch('/api/specs?limit=100');
+    const data = await resp.json();
+    specs = (data.specs || []).map(transformSpec);
+  } catch (e) {
+    console.error('Failed to load specs:', e);
+    specs = [];
+  }
+  applyFilters();
+}
+
+// ═══════ STATE ═══════
+const filters={type:'ALL',status:'ALL'};
+
+function togglePill(el,group,value){
+  document.querySelectorAll(`#${group}Pills .pill`).forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  filters[group]=value;
+  applyFilters();
+}
+
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const visible=specs.filter(s=>{
+    if(filters.type!=='ALL'&&s.type!==filters.type)return false;
+    if(filters.status!=='ALL'&&s.status!==filters.status)return false;
+    if(q&&!`${s.spec_id} ${s.us_number||''} ${s.title} ${s.type}`.toLowerCase().includes(q))return false;
+    return true;
+  });
+  document.getElementById('feedCount').textContent=`${visible.length} specs`;
+  document.getElementById('emptyState').style.display=visible.length?'none':'block';
+  renderFeed(visible);
+  updateStats(visible);
+}
+
+function updateStats(data){
+  document.getElementById('statTotal').textContent=data.length;
+  document.getElementById('statPublished').textContent=data.filter(s=>s.status==='published').length;
+  document.getElementById('statDraft').textContent=data.filter(s=>s.status==='draft').length;
+  let totalV=0;data.forEach(s=>totalV+=s.versions.length);
+  document.getElementById('statVersions').textContent=totalV;
+}
+
+function fmtDate(iso){
+  if(!iso)return'—';
+  try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+  catch(_){return iso.substring(0,16)}
+}
+
+function fmtDateShort(iso){
+  if(!iso)return'—';
+  try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}
+  catch(_){return iso.substring(0,10)}
+}
+
+function renderFeed(data){
+  const feed=document.getElementById('feed');
+  feed.innerHTML='';
+  data.forEach(s=>feed.appendChild(buildCard(s)));
+}
+
+function buildCard(s){
+  const card=document.createElement('div');
+  card.className='s-card';
+  card.dataset.id=s.spec_id;
+
+  const tc=TYPE_CONFIG[s.type]||TYPE_CONFIG.spec;
+  const statusLabels={published:'Publicado',draft:'Rascunho',superseded:'Substituído'};
+
+  const usHtml=s.us_number?`<span class="s-us">${s.us_number}</span>`:'';
+
+  // Download section
+  let downloadHtml='';
+  if(s.file_url&&s.file_name){
+    downloadHtml=`<a class="s-download" href="${s.file_url}" target="_blank">
+      <div class="s-download-icon">${ICO.download}</div>
+      <div class="s-download-info">
+        <div class="s-download-name">${s.file_name}</div>
+        <div class="s-download-size">${s.file_size||'—'}</div>
+      </div>
+    </a>`;
+  } else {
+    downloadHtml=`<div class="s-download" style="opacity:.5;cursor:default">
+      <div class="s-download-icon" style="background:var(--grey-bg)">${ICO.file}</div>
+      <div class="s-download-info">
+        <div class="s-download-name" style="color:var(--text-3)">Documento ainda não gerado</div>
+        <div class="s-download-size">Solicite via /spec no chat</div>
+      </div>
+    </div>`;
+  }
+
+  // Version history
+  const versionsHtml=s.versions.map(v=>{
+    const isCurrent=v.v===s.version;
+    const numCls=isCurrent?'current':'old';
+    const stLabel=statusLabels[v.status]||v.status;
+    const stCls=v.status==='published'?'s-badge-published':v.status==='draft'?'s-badge-draft':'s-badge-superseded';
+    return `<div class="s-ver-item">
+      <div class="s-ver-num ${numCls}">v${v.v}</div>
+      <div class="s-ver-body">
+        <div class="s-ver-date">${fmtDateShort(v.date)}<span class="s-ver-status s-badge ${stCls}">${stLabel}</span></div>
+        <div class="s-ver-changelog">${v.changelog}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  card.innerHTML=`
+    <div class="s-head" onclick="toggleCard('${s.spec_id}')">
+      <div class="s-buddy" style="background:${tc.bg}">${tc.icon}</div>
+      <div class="s-info">
+        <div class="s-row1">
+          <span class="s-title">${s.title}</span>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+          <span class="s-badge s-badge-${s.status}">${statusLabels[s.status]}</span>
+          <span class="s-version">v${s.version}</span>
+          <span class="s-badge ${tc.badge}">${tc.label}</span>
+          ${s.org?`<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--pill-bg);color:var(--text-2)">${s.org}</span>`:''}
+        </div>
+        <div class="s-row2">
+          <span class="s-spec-id">${s.spec_id}</span>
+          ${usHtml}
+          <span class="s-meta">${fmtDateShort(s.updated_at)}</span>
+          <span class="s-meta">${s.versions.length} versões</span>
+        </div>
+      </div>
+      <span class="s-chevron">▾</span>
+    </div>
+    <div class="s-body">
+      <div class="s-content">
+        ${downloadHtml}
+        <div class="s-versions-title">Histórico de versões</div>
+        ${versionsHtml}
+      </div>
+    </div>`;
+
+  return card;
+}
+
+function toggleCard(id){
+  const card=document.querySelector(`.s-card[data-id="${id}"]`);
+  if(card)card.classList.toggle('open');
+}
+
+loadSpecs();
+</script>
+</body>
+</html>
