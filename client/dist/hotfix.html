@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotfix Registry · Ohana Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --bg:#f7f8fa;--surface:#ffffff;--surface-hover:#f0f2f5;
+  --card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --card-shadow-hover:0 4px 14px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --border:#e8eaed;--text:#1a1a1a;--text-2:#4a4a4a;--text-3:#888;--text-4:#b0b0b0;--text-ice:#d0d3d8;
+  --pill-bg:#f0f2f5;--pill-active-bg:#1a1a1a;--pill-active-text:#fff;
+  --buddy-bg:#f4f5f7;--code-bg:#1a1a1a;--code-text:#bbb;
+  --green:#2e7d32;--green-bg:#e8f5e9;--amber:#e65100;--amber-bg:#fff3e0;
+  --red:#c62828;--red-bg:#ffebee;--blue:#1565c0;--blue-bg:#e3f2fd;
+  --purple:#6a1b9a;--purple-bg:#f3e5f5;
+  --grey:#616161;--grey-bg:#f5f5f5;
+  --radius:16px;--radius-sm:10px;--font:'Nunito',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:76px}
+
+/* ═══════ HEADER ═══════ */
+.header{background:var(--surface);padding:18px 16px 14px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
+.header-row{display:flex;align-items:center;gap:10px;max-width:1000px;margin:0 auto}
+.header-icon{width:44px;height:44px;background:var(--pill-active-bg);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-icon svg{width:22px;height:22px}
+.header-text{flex:1}
+.header-title{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.header-sub{font-size:11px;font-weight:500;color:var(--text-3);margin-top:1px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.live-label{font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.06em;vertical-align:middle}
+
+/* ═══════ SUMMARY STRIP ═══════ */
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 12px;box-shadow:var(--card-shadow)}
+.stat-num{font-size:24px;font-weight:900;letter-spacing:-.03em;line-height:1}
+.stat-lbl{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-top:5px}
+.stat.ok .stat-num{color:var(--green)}
+.stat.pend .stat-num{color:var(--amber)}
+.stat.prod .stat-num{color:var(--blue)}
+.stat.back .stat-num{color:var(--blue)}
+
+/* ═══════ FILTERS ═══════ */
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.pill{font-family:var(--font);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-3);cursor:pointer;transition:all .12s;user-select:none}
+.pill.active{background:var(--pill-active-bg);color:#fff;border-color:var(--pill-active-bg)}
+
+/* ═══════ HOTFIX CARD ═══════ */
+.hf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--card-shadow);margin-bottom:14px;overflow:hidden;transition:box-shadow .18s}
+.hf-card:hover{box-shadow:var(--card-shadow-hover)}
+.hf-head{padding:16px 18px;cursor:pointer;display:flex;align-items:flex-start;gap:12px}
+.hf-id{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--pill-active-bg);padding:4px 9px;border-radius:7px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.hf-main{flex:1;min-width:0}
+.hf-title{font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.3}
+.hf-meta{font-size:11px;color:var(--text-3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hf-comp{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text-2)}
+.hf-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.02em;display:inline-flex;align-items:center;gap:4px}
+.badge.green{background:var(--green-bg);color:var(--green)}
+.badge.amber{background:var(--amber-bg);color:var(--amber)}
+.badge.blue{background:var(--blue-bg);color:var(--blue)}
+.badge.red{background:var(--red-bg);color:var(--red)}
+.badge.purple{background:var(--purple-bg);color:var(--purple)}
+.badge.grey{background:var(--grey-bg);color:var(--grey)}
+.hf-chev{color:var(--text-4);flex-shrink:0;transition:transform .2s;margin-top:2px}
+.hf-card.open .hf-chev{transform:rotate(180deg)}
+
+/* ═══════ EXPANDED BODY ═══════ */
+.hf-body{display:none;border-top:1px solid var(--border);padding:0}
+.hf-card.open .hf-body{display:block}
+.hf-section{padding:16px 18px;border-bottom:1px solid var(--border)}
+.hf-section:last-child{border-bottom:none}
+.hf-sec-lbl{font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.hf-desc{font-size:13px;color:var(--text-2);line-height:1.55}
+
+/* meta grid */
+.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.meta-item{background:var(--grey-bg);border-radius:8px;padding:9px 11px}
+.meta-k{font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+.meta-v{font-size:12px;font-weight:600;color:var(--text);margin-top:2px;font-family:var(--mono);word-break:break-all}
+
+/* ═══════ VERSION DIFF ═══════ */
+.ver-tabs{display:flex;gap:6px;margin-bottom:12px}
+.ver-tab{font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-3);cursor:pointer;transition:all .12s}
+.ver-tab.active{background:var(--pill-active-bg);color:#fff;border-color:var(--pill-active-bg)}
+.ver-tab .vtag{font-family:var(--mono);font-weight:800}
+.code-block{background:var(--code-bg);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--code-text);white-space:pre}
+.code-block .add{background:rgba(46,125,50,.22);color:#a5d6a7;display:block;margin:0 -16px;padding:0 16px}
+.code-block .del{background:rgba(198,40,40,.22);color:#ef9a9a;display:block;margin:0 -16px;padding:0 16px}
+.code-block .ctx{color:#888;display:block}
+.diff-legend{display:flex;gap:14px;margin-top:8px;font-size:10px;font-weight:600;color:var(--text-3)}
+.diff-legend .lg-add:before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;background:#a5d6a7;margin-right:4px;vertical-align:middle}
+.diff-legend .lg-del:before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;background:#ef9a9a;margin-right:4px;vertical-align:middle}
+
+/* pipeline steps (sub-etapas técnicas) */
+.pipe{display:flex;align-items:center;gap:0}
+.pstep{flex:1;text-align:center;position:relative}
+.pstep-dot{width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.pstep.done .pstep-dot{background:var(--green-bg);color:var(--green)}
+.pstep.pending .pstep-dot{background:var(--amber-bg);color:var(--amber)}
+.pstep.waiting .pstep-dot{background:var(--grey-bg);color:var(--text-4)}
+.pstep-lbl{font-size:10px;font-weight:700;color:var(--text-2)}
+.pstep-sub{font-size:9px;color:var(--text-3);margin-top:1px}
+.pline{position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--border);z-index:-1}
+.pstep.done .pline{background:var(--green)}
+
+/* ═══════ GADGET ESTEIRA DE ORGS (arqevery → HOMOL → PROD) ═══════ */
+.org-rail{display:flex;align-items:stretch;gap:2px;background:var(--grey-bg);border-radius:12px;padding:6px;position:relative;margin:20px 0 6px}
+.org-stn{flex:1;min-width:0;text-align:center;padding:14px 6px;border-radius:9px;position:relative;transition:all .15s}
+.org-stn .org-name{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:-.01em}
+.org-stn .org-id{font-size:9px;font-weight:600;color:var(--text-4);margin-top:1px}
+.org-stn .org-state{font-size:9px;font-weight:700;margin-top:6px;padding:2px 8px;border-radius:10px;display:inline-block}
+/* estação: já passou (deployado e ok) */
+.org-stn.passed{background:var(--green-bg)}
+.org-stn.passed .org-name{color:var(--green)}
+.org-stn.passed .org-state{background:var(--green);color:#fff}
+/* estação: código está AQUI agora (posição atual) */
+.org-stn.current{background:var(--pill-active-bg);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.org-stn.current .org-name{color:#fff}
+.org-stn.current .org-id{color:#999}
+.org-stn.current .org-state{background:var(--amber);color:#fff}
+.org-stn.current::after{content:'▸ VOCÊ ESTÁ AQUI';position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;letter-spacing:.05em;color:var(--amber);white-space:nowrap;z-index:2}
+/* estação: ainda falta (não deployado) */
+.org-stn.todo{background:transparent;border:1.5px dashed var(--border)}
+.org-stn.todo .org-name{color:var(--text-4)}
+.org-stn.todo .org-state{background:var(--grey-bg);color:var(--text-3)}
+/* estação: pulada (não faz parte do caminho desta correção) */
+.org-stn.skip{background:transparent;opacity:.45}
+.org-stn.skip .org-name{color:var(--text-4)}
+.org-stn.skip .org-state{background:var(--grey-bg);color:var(--text-4)}
+/* estação: back-promotion pendente (a origem precisa receber de volta) */
+.org-stn.backfill{background:transparent;border:1.5px dashed var(--blue)}
+.org-stn.backfill .org-name{color:var(--blue)}
+.org-stn.backfill .org-state{background:var(--blue-bg);color:var(--blue)}
+.org-stn.backfill::after{content:'↩ SINCRONIZAR DE VOLTA';position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;letter-spacing:.04em;color:var(--blue);white-space:nowrap;z-index:2}
+/* seta entre estações */
+.org-arrow{display:flex;align-items:center;justify-content:center;width:52px;color:var(--text-4);flex-shrink:0;flex-direction:column;gap:3px;padding:0 2px}
+.org-arrow.active{color:var(--green)}
+.org-arrow.next{color:var(--amber)}
+.org-arrow.back{color:var(--blue)}
+.org-arrow svg{width:18px;height:18px}
+.org-arrow .arr-lbl{font-size:8px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;text-align:center;white-space:nowrap}
+/* legenda do gadget */
+.rail-legend{display:flex;gap:14px;margin-top:10px;font-size:10px;font-weight:600;color:var(--text-3);flex-wrap:wrap}
+.rail-legend span{display:inline-flex;align-items:center;gap:5px}
+.rail-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.rl-passed{background:var(--green)}
+.rl-current{background:var(--pill-active-bg)}
+.rl-todo{background:#fff;border:1.5px dashed var(--border)}
+.rl-skip{background:var(--text-4);opacity:.5}
+.rl-back{background:#fff;border:1.5px dashed var(--blue)}
+
+/* ═══════ BUDDY BAR ═══════ */
+.buddy-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px 12px;z-index:100;display:flex;align-items:center;justify-content:space-around;max-width:1000px;margin:0 auto}
+.bb-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:transform .2s}
+.bb-item:active{transform:scale(.9)}
+.bb-icon svg{width:24px;height:24px}
+.bb-label{font-size:9px;font-weight:700;color:var(--text-4);letter-spacing:.04em}
+.bb-item.active .bb-label{color:var(--text)}
+
+@media(max-width:640px){
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .meta-grid{grid-template-columns:1fr}
+}
+
+.empty{text-align:center;color:var(--text-4);font-size:13px;font-weight:600;padding:40px 0}
+.loading{text-align:center;color:var(--text-3);font-size:13px;font-weight:600;padding:40px 0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">Hotfix Registry</div>
+      <div class="header-sub"><span class="live-dot"></span><span class="live-label">CRM B2B ALGAR · arqevery ↔ HOMOL → PROD</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="summary" id="summary"></div>
+  <div class="filters" id="filters"></div>
+  <div id="cards"><div class="loading">Carregando hotfixes…</div></div>
+</div>
+
+<nav class="buddy-bar">
+  <div class="bb-item" onclick="window.location.href='deploys.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
+    <span class="bb-label">Deploys</span>
+  </div>
+  <div class="bb-item" onclick="window.location.href='tracelog.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49M7.76 16.24a6 6 0 010-8.49M19.07 4.93a10 10 0 010 14.14M4.93 19.07a10 10 0 010-14.14"/></svg></span>
+    <span class="bb-label">TraceLog</span>
+  </div>
+  <div class="bb-item" onclick="window.location.href='specs.html'">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></span>
+    <span class="bb-label">Specs</span>
+  </div>
+  <div class="bb-item active">
+    <span class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg></span>
+    <span class="bb-label">Hotfix</span>
+  </div>
+</nav>
+
+<script>
+let HOTFIXES=[]; let FILTER='all';
+const ORG_META={arqevery:{name:'arqevery',id:'org 36 · dev'},HOMOL:{name:'HOMOL',id:'org 100 · homolog.'},PROD:{name:'PROD',id:'org 199 · produção'}};
+const ARROW_R='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const ARROW_L='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function stnClass(state){return {passed:'passed',current:'current',todo:'todo',backfill:'backfill',na:'skip',skip:'skip'}[state]||'todo';}
+function stateLabel(state){return {passed:'v2 ativo',current:'v2 ATIVO',todo:'falta deploy',backfill:'falta backfill',na:'não usada',skip:'não usada'}[state]||'falta deploy';}
+
+function buildRail(hf){
+  const a=hf.status_arqevery||'na', h=hf.status_homol||'na', p=hf.status_prod||'todo', bf=hf.backfill_arqevery||'na';
+  // arqevery state: se backfill pendente, mostra backfill; senão usa status_arqevery
+  const aState = bf==='backfill' ? 'backfill' : a;
+  const stn=(org,state)=>`<div class="org-stn ${stnClass(state)}"><div class="org-name">${ORG_META[org].name}</div><div class="org-id">${ORG_META[org].id}</div><div class="org-state">${stateLabel(state)}</div></div>`;
+  // seta esquerda: back-promotion (só quando arqevery=backfill e homol=current)
+  const leftArrow = (bf==='backfill') ? `<div class="org-arrow back"><span class="arr-lbl">volta</span>${ARROW_L}</div>` : `<div class="org-arrow"><span class="arr-lbl">segue</span>${ARROW_R}</div>`;
+  const rightArrow = `<div class="org-arrow next"><span class="arr-lbl">promover</span>${ARROW_R}</div>`;
+  return `<div class="org-rail">${stn('arqevery',aState)}${leftArrow}${stn('HOMOL',h)}${rightArrow}${stn('PROD',p)}</div>
+    <div class="rail-legend"><span><i class="rl-passed"></i>passou</span><span><i class="rl-current"></i>está aqui</span><span><i class="rl-todo"></i>falta (promover)</span><span><i class="rl-back"></i>falta (sincronizar de volta)</span></div>`;
+}
+
+function buildBadges(hf){
+  const bads=[];
+  if(hf.status_prod==='todo') bads.push('<span class="badge amber">→ falta PROD</span>');
+  if(hf.status_prod==='passed') bads.push('<span class="badge green">✓ em PROD</span>');
+  if(hf.backfill_arqevery==='backfill') bads.push('<span class="badge blue">↩ falta arqevery</span>');
+  if(hf.area) bads.push(`<span class="badge purple">${esc(hf.area)}</span>`);
+  bads.push(`<span class="badge grey">${esc(hf.tipo||'Apex')} · v2</span>`);
+  return bads.join('');
+}
+
+function renderCode(hf){
+  if(!hf.codigo_v1 && !hf.codigo_v2) return '';
+  return `<div class="hf-section">
+    <div class="hf-sec-lbl">Versionamento do componente — v1 (antes) → v2 (depois)</div>
+    <div class="ver-tabs">
+      <div class="ver-tab" onclick="showVer(this,'v1')"><span class="vtag">v1</span> · antes</div>
+      <div class="ver-tab active" onclick="showVer(this,'v2')"><span class="vtag">v2</span> · depois</div>
+    </div>
+    <div class="code-block" data-ver="v1" style="display:none">${esc(hf.codigo_v1||'(sem registro)')}</div>
+    <div class="code-block" data-ver="v2">${esc(hf.codigo_v2||'(sem registro)')}</div>
+  </div>`;
+}
+
+function renderCard(hf,open){
+  return `<div class="hf-card ${open?'open':''}" onclick="this.classList.toggle('open')">
+    <div class="hf-head">
+      <div class="hf-id">${esc(hf.codigo)}</div>
+      <div class="hf-main">
+        <div class="hf-title">${esc(hf.titulo)}</div>
+        <div class="hf-meta"><span class="hf-comp">${esc(hf.componente||'')}</span><span>·</span><span>${esc(hf.org_origem||'')}</span><span>·</span><span>${hf.created_at?new Date(hf.created_at).toLocaleDateString('pt-BR'):''}</span></div>
+        <div class="hf-badges">${buildBadges(hf)}</div>
+      </div>
+      <div class="hf-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    </div>
+    <div class="hf-body" onclick="event.stopPropagation()">
+      <div class="hf-section">
+        <div class="hf-sec-lbl">Onde a correção está — esteira de orgs</div>
+        ${buildRail(hf)}
+      </div>
+      ${hf.descricao?`<div class="hf-section"><div class="hf-sec-lbl">O que este hotfix corrige</div><div class="hf-desc">${hf.descricao.replace(/\n/g,'<br>')}</div></div>`:''}
+      ${renderCode(hf)}
+      <div class="hf-section">
+        <div class="hf-sec-lbl">Rastreabilidade técnica</div>
+        <div class="meta-grid">
+          ${hf.deploy_id_homol?`<div class="meta-item"><div class="meta-k">Deploy ID (HOMOL)</div><div class="meta-v">${esc(hf.deploy_id_homol)}</div></div>`:''}
+          ${hf.deploy_id_prod?`<div class="meta-item"><div class="meta-k">Deploy ID (PROD)</div><div class="meta-v">${esc(hf.deploy_id_prod)}</div></div>`:''}
+          ${hf.hash_v1?`<div class="meta-item"><div class="meta-k">Hash v1</div><div class="meta-v">${esc(hf.hash_v1)}</div></div>`:''}
+          ${hf.hash_v2?`<div class="meta-item"><div class="meta-k">Hash v2</div><div class="meta-v">${esc(hf.hash_v2)}</div></div>`:''}
+          ${hf.backup_ref?`<div class="meta-item"><div class="meta-k">Backup v1</div><div class="meta-v">${esc(hf.backup_ref)}</div></div>`:''}
+          ${hf.bug_ref?`<div class="meta-item"><div class="meta-k">Bug ref</div><div class="meta-v">${esc(hf.bug_ref)}</div></div>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSummary(s){
+  document.getElementById('summary').innerHTML=`
+    <div class="stat"><div class="stat-num">${s.total||0}</div><div class="stat-lbl">Hotfixes</div></div>
+    <div class="stat ok"><div class="stat-num">${s.em_homol||0}</div><div class="stat-lbl">Em HOMOL</div></div>
+    <div class="stat pend"><div class="stat-num">${s.falta_prod||0}</div><div class="stat-lbl">Falta PROD</div></div>
+    <div class="stat back"><div class="stat-num">${s.falta_backfill||0}</div><div class="stat-lbl">Falta backfill</div></div>`;
+}
+
+function renderFilters(areas){
+  const opts=['all',...areas];
+  document.getElementById('filters').innerHTML=opts.map(o=>`<div class="pill ${o===FILTER?'active':''}" onclick="setFilter('${esc(o)}')">${o==='all'?'Todos':esc(o)}</div>`).join('');
+}
+function setFilter(f){FILTER=f;render();}
+
+function render(){
+  const cards=document.getElementById('cards');
+  let list=HOTFIXES;
+  if(FILTER!=='all') list=list.filter(h=>h.area===FILTER);
+  if(!list.length){cards.innerHTML='<div class="empty">Nenhum hotfix registrado ainda.</div>';return;}
+  cards.innerHTML=list.map((h,i)=>renderCard(h,i===0)).join('')+'<div class="empty" style="padding:20px 0">Os próximos hotfixes aparecem aqui conforme forem registrados.</div>';
+}
+
+function showVer(tab,ver){
+  const sec=tab.closest('.hf-section');
+  sec.querySelectorAll('.ver-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  sec.querySelectorAll('.code-block').forEach(b=>{b.style.display=b.dataset.ver===ver?'block':'none';});
+}
+
+async function load(){
+  try{
+    const r=await fetch('/api/hotfix/list?limit=100');
+    const d=await r.json();
+    HOTFIXES=d.items||[];
+    renderSummary(d.summary||{});
+    renderFilters(d.areas||[]);
+    render();
+  }catch(e){
+    console.error('Falha ao carregar hotfixes:',e);
+    document.getElementById('cards').innerHTML='<div class="empty">Erro ao carregar. Verifique a conexão.</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
