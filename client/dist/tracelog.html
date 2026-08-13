@@ -412,6 +412,8 @@ function transformTrace(row) {
     ts: row.created_at || row.t0,
     org: row.org,
     user: row.user_name || row.user_alias || '—',
+    userId: row.user_id || '',
+    userAlias: row.user_alias || '',
     mode: row.mode || 'realtime',
     type: row.user_type || 'interno',
     duration: row.duration,
@@ -584,10 +586,10 @@ function buildCard(t){
         </div>
         <div class="t-row2">
           <span class="t-trace-id">${t.id}</span>
-          <span class="t-meta">${t.org.toLowerCase()}</span>
+          ${t.userId?`<span class="t-meta" style="font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:10px;color:var(--text-4)">${t.userId}</span>`:''}
+          <span class="t-meta">${t.type}</span>
           <span class="t-meta">${when}</span>
           ${t.duration?`<span class="t-meta">${t.duration}</span>`:''}
-          <span class="t-meta">${t.type}</span>
         </div>
       </div>
       <span class="t-chevron">▾</span>
