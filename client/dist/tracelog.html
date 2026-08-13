@@ -637,9 +637,19 @@ function renderPanel(id,tab,t){
   if(tab==='chain'&&t.chain){
     panel.innerHTML=`<div class="t-chain">${t.chain.map(renderChainLine).join('\n')}</div>`;
   } else if(tab==='logins'&&t.logins){
-    let html=`<div class="t-logins">${t.logins.map(l=>
-      `<span class="ll ll-${l.cls}">${l.time}  ${l.status.padEnd(22)}  ${l.type.padEnd(20)}  ${l.ip}</span>`
-    ).join('\n')}</div>`;
+    const rows=t.logins.map(l=>{
+      // Formatar data+hora se disponível
+      let dt=l.time||'';
+      if(l.full_time){
+        try{
+          const d=new Date(l.full_time);
+          dt=d.toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        }catch(_){}
+      }
+      const icon=l.cls==='ok'?'✓':l.cls==='loop'?'⚠':'✗';
+      return `<span class="ll ll-${l.cls}">${icon} ${dt.padEnd(22)} ${l.status.padEnd(24)} ${(l.type||'').padEnd(18)} ${l.ip||''}</span>`;
+    }).join('\n');
+    let html=`<div class="t-logins"><span class="ll" style="color:#666;font-weight:700">  ${'DATA/HORA'.padEnd(22)} ${'STATUS'.padEnd(24)} ${'TIPO'.padEnd(18)} IP</span>\n${rows}</div>`;
     if(t.members){
       html+=t.members.map(m=>`<div class="t-member" style="margin-top:10px">
         <span class="t-member-name">${m.name}</span>
