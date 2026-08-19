@@ -6,6 +6,8 @@ Uso:
   python3 sfdoc.py <URL> [--links] [--html] [--max N] [--json]
   python3 sfdoc.py --toc atlas.en-us.apexcode.meta            # árvore completa de um guia developer
   python3 sfdoc.py --search "governor limits" atlas.en-us.apexcode.meta  # busca no TOC
+  python3 sfdoc.py --trailhead "revenue cloud pricing"          # busca no catálogo Trailhead (GraphQL público)
+  python3 sfdoc.py <URL trailhead módulo/unidade/trail> --links  # conteúdo SSR (via B)
 
 Vias (tenta em ordem, nunca desiste sem passar por todas):
   A) developer.salesforce.com /docs/atlas.*  -> JSON API get_document_content (sem browser)
@@ -152,6 +154,21 @@ def via_headless(url, is_help):
     out["links"] = L
     return out if out["text"].strip() else None
 
+def trailhead_search(term, first=30):
+    """Busca pública no catálogo do Trailhead (GraphQL do próprio site, sem login). Retorna lista (type,label,url,minutes,points)."""
+    q='{ indexPageSearch(criteria:{text:%s}, first:%d, filter:{dynamic:[]}) { totalCount edges { node { learning { type label url minuteTotal pointTotal description } } } } }' % (json.dumps(term), first)
+    body=json.dumps({"operationName":None,"variables":{},"query":q}).encode()
+    req=urllib.request.Request("https://trailhead.salesforce.com/services/mobile/graphql", data=body, method="POST",
+                               headers={"Content-Type":"application/json","User-Agent":UA["User-Agent"]})
+    d=json.loads(urllib.request.urlopen(req, timeout=60).read())
+    if "errors" in d: raise RuntimeError(str(d["errors"])[:300])
+    s=d["data"]["indexPageSearch"]; out=[]
+    for e in s["edges"]:
+        n=e["node"]["learning"]; u=n["url"]
+        if u.startswith("/"): u="https://trailhead.salesforce.com"+u
+        out.append((n["type"], n["label"], u, n.get("minuteTotal"), n.get("pointTotal")))
+    return s["totalCount"], out
+
 def fetch(url):
     c = cache_get(url)
     if c: c["via"] += " [cache]"; return c
@@ -172,7 +189,12 @@ def main():
     ap.add_argument("--links", action="store_true"); ap.add_argument("--html", action="store_true")
     ap.add_argument("--json", action="store_true"); ap.add_argument("--max", type=int, default=20000)
     ap.add_argument("--toc"); ap.add_argument("--search", nargs=2, metavar=("TERMO", "META"))
+    ap.add_argument("--trailhead", metavar="TERMO", help="busca no catálogo do Trailhead (trails/módulos/projetos)")
     a = ap.parse_args()
+    if a.trailhead:
+        total, rows = trailhead_search(a.trailhead)
+        for t,l,u,m,pt in rows: print(f"{t:13} {l[:62]:62} {u}")
+        print(f"# {len(rows)} de {total} resultados (refine o termo)"); return
     if a.toc or a.search:
         meta = a.toc or a.search[1]
         ver, d = dev_version(meta)
