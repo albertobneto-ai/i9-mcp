@@ -62,6 +62,26 @@ Armadilhas conhecidas:
 
 Quando citar, `SOURCE_VIA` informa qual mecanismo entregou o conteúdo; a URL citada ao usuário continua sendo a URL canônica (help/developer), não a do endpoint interno.
 
+
+## FLUXO "PRECISO DE DOC SOBRE X" (dossiê de documentação oficial — validado 19/08/2026 com Account Hierarchy)
+
+Gatilhos: "preciso de doc sobre X", "me traz a documentação de X", "dossiê de X", "tudo que a Salesforce publica sobre X", "doc completa de X com imagens". Entrega: **um único HTML** (`/mnt/user-data/outputs/Dossie_Doc_<X>.html`) no template `templates/dossie-doc.html` (Manual Gênio: hero navy→brand, TOC, seções numeradas, cards, citações, figuras base64). Só HTML por padrão — PDF apenas se pedido.
+
+### Passos (executar nesta ordem; Gates 1 e 4 do modo RIGOR no chat)
+1. **LOCALIZAR (3 fontes em paralelo, sem baixar conteúdo ainda)**
+   - Help: `web_search "help.salesforce.com <X>"` para achar 1 artigo-âncora → `sfdoc.py <URL> --json` → o bloco `links` traz a ÁRVORE LATERAL inteira daquela área (ex.: todas as páginas de Accounts em Sales Basics) → filtrar por palavra-chave no título/URL → candidatos.
+   - Developer: `sfdoc.py --search "<X>" atlas.en-us.object_reference.meta` (objetos/campos) + guias pertinentes (apexcode, api, api_meta, revenue_lifecycle_management_dev_guide, etc.).
+   - Trailhead: `sfdoc.py --trailhead "<X>"` → módulo → `sfdoc.py <módulo> --links` lista as unidades.
+2. **TRIAR no chat**: lista numerada de candidatos por fonte (título + URL + nº estimado). Temas grandes (>15 páginas de help) → pedir corte ao usuário; temas simples → seguir direto, declarando a seleção. Help custa 30–60s/página (headless); developer/trailhead ~1s.
+3. **LER**: `sfdoc.py <URL> --json` para cada aprovada (texto + `images` com src/alt). Baixar só as imagens que ilustram o tema (help e Trailhead servem de CDN público — `sf-zdocs-cdn-prod.zoominsoftware.com` e `res.cloudinary.com`), **abrir cada imagem com `view`** para descrever o que mostra (a legenda é do arquiteto; o alt original vai em `<small>`).
+4. **ESTRUTURAR por assunto, não por fonte**: ordem padrão Conceito → Modelo de dados (Developer) → Configuração/Setup passo a passo com cliques exatos (Help) → Considerações e limites (Help, em tabela LEX×Classic quando houver) → Boas práticas/visão do usuário (Trailhead) → Visão de arquiteto (critério de decisão + armadilhas + integração/carga, marcado INFERIDO) → Fontes, verificação e fronteira (tabela fonte/página/via + fora de escopo + NÃO VERIFICADO + validação humana). Cada afirmação com badge b-v/b-i/b-n; citações em inglês com link; prosa em PT-BR. Ver `templates/COMPONENTES.md`.
+5. **GERAR** o HTML (Python escreve o arquivo; imagens em base64 inline) → `present_files`. Não perguntar formato: HTML é o padrão acordado; oferecer PDF só se o usuário pedir.
+
+### Regras
+- Nunca web_fetch em help/developer; sempre o helper. Nunca blog/fórum como fonte (Salesforce Ben etc. aparecem no web_search — ignorar para citação; podem só apontar para a página oficial).
+- Tudo que não veio da página lida = INFERIDO ou NÃO VERIFICADO, explícito. Não inventar limites/números.
+- Imagens: embutir as da página oficial; nunca substituir por imagem de terceiros.
+
 ## The workflow
 
 For every Salesforce technical/functional question, follow these steps in order. Do not skip them, even if you "think you know" the answer — the whole point of this skill is to break that habit.
