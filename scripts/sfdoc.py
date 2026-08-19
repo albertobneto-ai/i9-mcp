@@ -169,6 +169,33 @@ def trailhead_search(term, first=30):
         out.append((n["type"], n["label"], u, n.get("minuteTotal"), n.get("pointTotal")))
     return s["totalCount"], out
 
+def extract_images(html_src, base_url):
+    out=[]
+    for tag in re.findall(r'<img[^>]+>', html_src or "", flags=re.I):
+        src=re.search(r'src="([^"]+)"', tag); alt=re.search(r'alt="([^"]*)"', tag)
+        if not src: continue
+        u=urllib.parse.urljoin(base_url, html.unescape(src.group(1)))
+        if u.endswith(".gif") and "trailhead/en-us" in u: continue   # ícones de Note/Tip
+        if "sprite" in u or "icon" in u.lower(): continue
+        out.append({"src":u, "alt": html.unescape(alt.group(1)) if alt else ""})
+    return out
+
+def download_images(imgs, outdir):
+    os.makedirs(outdir, exist_ok=True); saved=[]
+    for i,im in enumerate(imgs,1):
+        try:
+            st,b=http_get(im["src"], timeout=60)
+            ext=".png"
+            if b[:3]==b"\xff\xd8\xff": ext=".jpg"
+            elif b[:4]==b"GIF8": ext=".gif"
+            elif b[:4]==b"RIFF": ext=".webp"
+            elif b[:5]==b"<svg " or b[:5]==b"<?xml": ext=".svg"
+            fp=os.path.join(outdir, f"img{i:02d}{ext}"); open(fp,"wb").write(b)
+            saved.append({**im,"file":fp,"bytes":len(b)})
+        except Exception as e:
+            saved.append({**im,"file":None,"error":str(e)[:80]})
+    return saved
+
 def fetch(url):
     c = cache_get(url)
     if c: c["via"] += " [cache]"; return c
@@ -190,6 +217,7 @@ def main():
     ap.add_argument("--json", action="store_true"); ap.add_argument("--max", type=int, default=20000)
     ap.add_argument("--toc"); ap.add_argument("--search", nargs=2, metavar=("TERMO", "META"))
     ap.add_argument("--trailhead", metavar="TERMO", help="busca no catálogo do Trailhead (trails/módulos/projetos)")
+    ap.add_argument("--images", nargs="?", const="LIST", metavar="DIR", help="lista imagens da página (src+alt); com DIR, baixa para a pasta")
     a = ap.parse_args()
     if a.trailhead:
         total, rows = trailhead_search(a.trailhead)
@@ -208,12 +236,19 @@ def main():
         return
     if not a.url: ap.error("URL obrigatória")
     r = fetch(a.url)
-    if a.json: print(json.dumps(r, ensure_ascii=False)); sys.exit(0 if r["text"] else 2)
+    if a.json:
+        r["images"]=extract_images(r.get("html",""), a.url)
+        print(json.dumps(r, ensure_ascii=False)); sys.exit(0 if r["text"] else 2)
     print(f"TITLE: {r['title']}\nSOURCE_VIA: {r['via']}\nURL: {a.url}\n")
     if not r["text"]:
         print("ERROS:"); [print(" -", e) for e in r.get("errors", [])]; sys.exit(2)
     print(r["html"][:a.max] if a.html else r["text"][:a.max])
     if len(r["text"]) > a.max: print(f"\n[... truncado em {a.max} chars; use --max N]")
+    if a.images:
+        imgs=extract_images(r.get("html",""), a.url)
+        if a.images!="LIST": imgs=download_images(imgs, a.images)
+        print(f"\nIMAGES ({len(imgs)}):")
+        for im in imgs: print(f"  {im.get('file') or '-':40} | {im['alt'][:70]:70} | {im['src']}")
     if a.links:
         print(f"\nLINKS ({len(r['links'])}):")
         for l in r["links"]: print(f"  {l['text'][:55]:55} {l['url']}")
