@@ -42,6 +42,7 @@ python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py "<URL>" --link
 python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py "<URL>" --html --max 60000 # HTML bruto (tabelas)
 python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py --toc atlas.en-us.apexcode.meta          # árvore completa de um guia developer
 python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py --search "governor" atlas.en-us.apexcode.meta  # achar a página certa pelo TOC
+python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py --trailhead "revenue cloud pricing"   # busca no catálogo Trailhead; depois ler a URL com o helper
 ```
 
 Vias (verificadas em 19/08/2026):
@@ -51,6 +52,7 @@ Vias (verificadas em 19/08/2026):
 | B | `developer.salesforce.com/docs/platform/*`, `architect.salesforce.com`, `docs.mulesoft.com`, PDFs `resources.docs.salesforce.com` | HTTP direto (SSR) + strip HTML / `pdftotext` | Não |
 | C | `help.salesforce.com/s/articleView?id=...` | Chrome headless (Playwright, `/home/claude/.cache/puppeteer/chrome/linux-131.0.6778.204/`), intercepta resposta Aura `/s/sfsites/aura` campo `Content__c` (HTML do artigo) + links do TOC via seletor Playwright (atravessa shadow DOM — `document.querySelectorAll` NÃO enxerga) | Sim (~30-60s) |
 | D | qualquer | Chrome headless + `document.body.innerText` | Sim |
+| E | `trailhead.salesforce.com` | Conteúdo de trail/módulo/unidade é **público e SSR** (não precisa login — login só conta badge/progresso) → via B lê direto. Busca no catálogo: `--trailhead "termo"` usa o GraphQL público `POST https://trailhead.salesforce.com/services/mobile/graphql` (query `indexPageSearch`) — sem browser, sem credencial. Links de um módulo listam as unidades; links de uma trail listam os módulos. Um 404 no Trailhead é conteúdo RETIRADO/URL mudada (não bloqueio) → buscar de novo com `--trailhead`. Nunca usar credenciais do usuário para automatizar Trailhead (desnecessário + viola ToS). | Não |
 
 Armadilhas conhecidas:
 - WAF do `developer.salesforce.com` devolve **403 para User-Agent de browser** vindo de script sem fingerprint; UA `curl/8.5.0` passa. O helper já usa isso — não trocar.
