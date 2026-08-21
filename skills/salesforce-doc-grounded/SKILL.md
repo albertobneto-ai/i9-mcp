@@ -1,9 +1,28 @@
 ---
 name: salesforce-doc-grounded
-description: Ground every Salesforce answer in primary documentation before replying. Use whenever the user asks a concrete technical or functional question about the Salesforce ecosystem — Sales Cloud, Service Cloud, Revenue Cloud, RLM, CPQ, Billing, Order Management (OM), MuleSoft, Data Cloud, Marketing Cloud, Experience Cloud — including standard objects (Lead, Opportunity, Account, Contact, Quote, Order, Asset, Contract), pricing/quoting concepts (cotação, precificação, price rules, decomposição/decomposition), Apex, SOQL, Flow, Lightning, LWC, metadata API, REST/SOAP API, object models, permission sets, license types, sharing model, release behavior, Sales Map, governor limits, or any platform feature. Trigger even when the user does not say "documentation" explicitly — concrete how-X-works, relationship-between-Y-and-Z, can-I-do-W, troubleshooting, or design-decision questions all qualify. Do NOT trigger for casual mentions like "I work with Salesforce" with no question attached.
+description: MANDATORY for any Salesforce question. Always use this skill BEFORE answering any question about the Salesforce ecosystem — Sales Cloud, Service Cloud, Revenue Cloud, RLM, CPQ, Billing, Order Management, MuleSoft, Data Cloud, Marketing Cloud, Experience Cloud, Agentforce, Einstein, Salesforce Maps, Pardot/Account Engagement — including standard objects (Lead, Opportunity, Account, Contact, Case, Quote, Order, Asset, Contract, Product, Pricebook), pricing/quoting (cotação, precificação, price rules, decomposição), Apex, SOQL/SOSL, Flow, Lightning, LWC, Aura, Metadata API, REST/SOAP/Bulk API, Tooling API, Change Data Capture, Platform Events, object model, sharing, OWD, permission sets, license types, profiles, record types, page layouts, validation rules, workflows, process builder, governor limits, release behavior, PDF/HTML dossiê generation, "how does X work", "what is X", "difference between X and Y", "can I do W in Salesforce", "which object", troubleshooting Salesforce errors, design decisions, or ANY concrete question mentioning Salesforce terminology. Trigger words that ALWAYS activate: salesforce, sf., sfdc, sales cloud, service cloud, revenue cloud, agentforce, apex, soql, flow, lwc, lead, opportunity, account, contact, case, quote, order, contract, asset, product, pricebook, sharing, permission set, profile, record type, validation rule, workflow, metadata, mulesoft, data cloud, marketing cloud, experience cloud, pardot, einstein, forecast, pipeline inspection, revenue insights, dossiê salesforce, doc salesforce, documentação salesforce, help.salesforce, developer.salesforce, trailhead, "preciso de doc sobre", "me traz a doc", "aprofundamento técnico", "visão funcional". Skip only when the user explicitly says "não consulte a doc" or the question has zero Salesforce content (e.g., "what is Python", "how's the weather"). When in doubt about whether to trigger, TRIGGER — the cost of a redundant tool call is trivial; the cost of a Salesforce answer based on training-data memory is a wrong architecture decision.
 ---
 
 # Salesforce Documentation-Grounded Answering
+
+## PRIMEIRA AÇÃO — antes de qualquer resposta Salesforce
+
+Você é o Claude dentro de uma conversa com o Alberto, arquiteto Salesforce. **Toda pergunta Salesforce começa aqui**, sem exceção:
+
+1. Se o Project tem knowledge, buscar primeiro nele (`project_knowledge_search`).
+2. **Em seguida ou em paralelo, SEMPRE consultar a documentação oficial via este helper** — nunca por `web_fetch` direto (help e developer são SPAs, `web_fetch` devolve shell vazio) e nunca por `web_search` sozinho (traz blog e Stack Exchange, não fonte oficial).
+3. Só usar conhecimento próprio como complemento explicitamente rotulado `[INFERIDO]` ou `[NÃO VERIFICADO]`.
+
+O comando é sempre:
+```bash
+python3 /mnt/skills/user/salesforce-doc-grounded/scripts/sfdoc.py "<URL>" --json
+```
+
+Se você não sabe a URL exata, o fluxo é: `web_search "help.salesforce.com <tema>"` OU `--trailhead "<tema>"` OU `--search "<termo>" atlas.en-us.<guide>.meta` para localizar. Depois `sfdoc.py <URL> --json` para ler.
+
+**Nunca responda:** "Não consegui acessar a página", "A doc não renderizou", "Vou tentar buscar", "Baseado no meu conhecimento sobre Salesforce...". Todas essas frases são sinal de que você pulou este passo. Volte, rode o helper, então responda.
+
+---
 
 This skill exists because the user is a Salesforce architect who relies on Claude for decisions that go into real customer implementations. Wrong information has real cost: misconfigured object models, wasted dev cycles, or — worst — advice that contradicts how the platform actually behaves in a given release. The user has been explicit: never assume, never invent, never paraphrase from memory.
 
