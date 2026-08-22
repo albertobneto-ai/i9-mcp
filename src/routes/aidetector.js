@@ -1,13 +1,10 @@
 import express from 'express';
 import * as claude from '../services/claude.js';
+import pool from '../config/db.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Prompt canônico do AIDETECTOR (espelha a skill /mnt/skills/user/aidetector).
-// Auditoria de credibilidade de entregável técnico: detecta "cara de IA/template/
-// genérico" e refina contra o design system que JÁ se aplica. NÃO deploya nada —
-// devolve auditoria + refatoração como TEXTO.
 const AIDETECTOR_SYSTEM = `# IDENTIDADE
 Você é um Product Designer Sênior + Design Engineer especialista em credibilidade
 de entregáveis técnicos (não conversão de consumidor final). Sua especialidade é
@@ -54,18 +51,11 @@ O código/documento reescrito reusando os tokens do design system informado. Com
 O que a refatoração ainda não resolveu (limitações reais).
 ## 4. Fronteira
 Fora de escopo, o que exige decisão humana, e o lembrete de que aplicar exige
-autorização + gates (backup → checkOnly → deploy → verificação → registro).
+autorização + gates (backup -> checkOnly -> deploy -> verificação -> registro).
 Responda em português do Brasil.`;
 
-router.post('/', authMiddleware, async (req, res) => {
-  const { artefato, superficie, designSystem, publico, acao } = req.body || {};
-  if (!artefato || !superficie || !designSystem) {
-    return res.status(400).json({
-      error: 'Campos obrigatórios: artefato, superficie, designSystem'
-    });
-  }
-  const userContent =
-`# CONTEXTO
+function buildUserContent({ artefato, superficie, designSystem, publico, acao }) {
+  return `# CONTEXTO
 Superfície a auditar: ${superficie}
 Design system que se aplica: ${designSystem}
 Público do artefato: ${publico || 'não informado'}
@@ -73,21 +63,49 @@ Ação principal que o usuário deve realizar: ${acao || 'não informada'}
 
 # ARTEFATO ATUAL
 ${artefato}`;
+}
 
+// Background — roda APÓS a resposta HTTP (handler não-await), evitando o H12 (30s)
+// do router Heroku em geração longa com Opus.
+async function processAidetectorJob(jobId, ctx) {
+  const messages = [{ role: 'user', content: buildUserContent(ctx) }];
+  let text, model;
   try {
-    const text = await claude.callAny(claude.MODELS.OPUS, AIDETECTOR_SYSTEM,
-      [{ role: 'user', content: userContent }], 16000);
-    return res.json({ text, model: claude.MODELS.OPUS });
+    text = await claude.callAny(claude.MODELS.OPUS, AIDETECTOR_SYSTEM, messages, 16000);
+    model = claude.MODELS.OPUS;
   } catch (e) {
-    // fallback Sonnet se Opus indisponível
-    try {
-      const text = await claude.callAny(claude.MODELS.SONNET, AIDETECTOR_SYSTEM,
-        [{ role: 'user', content: userContent }], 16000);
-      return res.json({ text, model: claude.MODELS.SONNET + ' (fallback)' });
-    } catch (e2) {
-      console.error('aidetector fail:', e2.message);
-      return res.status(500).json({ error: e2.message });
-    }
+    text = await claude.callAny(claude.MODELS.SONNET, AIDETECTOR_SYSTEM, messages, 16000);
+    model = claude.MODELS.SONNET + ' (fallback)';
+  }
+  await pool.query(
+    'UPDATE jobs SET status = $1, result = $2, meta = meta || $3, updated_at = NOW() WHERE id = $4',
+    ['done', text, JSON.stringify({ model }), jobId]
+  );
+}
+
+router.post('/', authMiddleware, async (req, res) => {
+  const { artefato, superficie, designSystem, publico, acao } = req.body || {};
+  if (!artefato || !superficie || !designSystem) {
+    return res.status(400).json({ error: 'Campos obrigatórios: artefato, superficie, designSystem' });
+  }
+  try {
+    const jobRes = await pool.query(
+      'INSERT INTO jobs (user_id, kind, status, input, meta) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [req.user.id, 'aidetector', 'processing', artefato,
+       JSON.stringify({ superficie, designSystem, publico: publico || '', acao: acao || '' })]
+    );
+    const jobId = jobRes.rows[0].id;
+
+    processAidetectorJob(jobId, { artefato, superficie, designSystem, publico, acao }).catch(e => {
+      console.error('aidetector job error:', e.message);
+      pool.query('UPDATE jobs SET status = $1, error = $2, updated_at = NOW() WHERE id = $3',
+        ['error', e.message, jobId]).catch(() => {});
+    });
+
+    return res.json({ jobId });
+  } catch (e) {
+    console.error('aidetector create fail:', e.message);
+    return res.status(500).json({ error: e.message });
   }
 });
 
