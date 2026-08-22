@@ -174,16 +174,38 @@ async function run(){
     publico:document.getElementById('publico').value.trim(),
     acao:document.getElementById('acao').value.trim() };
   btn.disabled=true; btn.textContent='Auditando…';
-  out.innerHTML='<div class="result"><div class="empty"><div class="spin"></div><div class="empty-t">Rodando auditoria…</div><div class="empty-s">Opus está lendo a peça contra as heurísticas e o design system. Leva alguns segundos.</div></div></div>';
+  out.innerHTML='<div class="result"><div class="empty"><div class="spin"></div><div class="empty-t">Rodando auditoria…</div><div class="empty-s">Opus está lendo a peça contra as heurísticas e o design system. Leva ~40–90s.</div></div></div>';
   try{
     const r=await fetch('/api/aidetector',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify(payload)});
     if(r.status===401){ localStorage.removeItem(TK); show(); return; }
     const d=await r.json();
-    if(!r.ok) throw new Error(d.error||'Falha na auditoria');
-    const html=window.marked?marked.parse(d.text):('<pre>'+d.text.replace(/</g,'&lt;')+'</pre>');
-    out.innerHTML='<div class="meta-bar"><span class="chip">'+payload.superficie+'</span><span class="chip">'+payload.designSystem+'</span><span class="chip">'+(d.model||'')+'</span></div><div class="result">'+html+'</div>';
+    if(!r.ok||!d.jobId) throw new Error(d.error||'Falha ao criar a auditoria');
+    await poll(d.jobId, payload);
   }catch(e){ out.innerHTML='<div class="result"><div class="err">'+e.message+'</div></div>'; }
   finally{ btn.disabled=false; btn.textContent='Auditar'; }
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function poll(jobId, payload){
+  const out=document.getElementById('output');
+  for(let i=0;i<80;i++){ // ~4min de teto (80 x 3s)
+    await sleep(3000);
+    const r=await fetch('/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+tok()}});
+    if(r.status===401){ localStorage.removeItem(TK); show(); return; }
+    const j=await r.json();
+    if(j.status==='done'){
+      const meta=j.meta||{}; const model=meta.model||'';
+      const html=window.marked?marked.parse(j.result||''):('<pre>'+(j.result||'').replace(/</g,'&lt;')+'</pre>');
+      out.innerHTML='<div class="meta-bar"><span class="chip">'+payload.superficie+'</span><span class="chip">'+payload.designSystem+'</span>'+(model?'<span class="chip">'+model+'</span>':'')+'</div><div class="result">'+html+'</div>';
+      return;
+    }
+    if(j.status==='error'){
+      out.innerHTML='<div class="result"><div class="err">'+(j.error||'Erro na auditoria')+'</div></div>';
+      return;
+    }
+  }
+  out.innerHTML='<div class="result"><div class="err">Tempo esgotado aguardando a auditoria. Tente novamente.</div></div>';
 }
 </script>
 </body>
