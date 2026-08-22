@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIDETECTOR · Ever i9</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+:root{
+  --bg:#f7f8fa;--surface:#ffffff;--surface-2:#f0f2f5;
+  --border:#e8eaed;--text:#1a1a1a;--text-2:#4a4a4a;--text-3:#888;--text-4:#b0b0b0;
+  --ink:#1a1a1a;--ink-text:#fff;
+  --green:#2e7d32;--green-bg:#e8f5e9;--amber:#e65100;--amber-bg:#fff3e0;
+  --red:#c62828;--red-bg:#ffebee;
+  --card-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --radius:16px;--radius-sm:10px;--font:'Nunito',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+.header{background:var(--surface);padding:18px 16px 14px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border)}
+.header-row{display:flex;align-items:center;gap:11px;max-width:900px;margin:0 auto}
+.header-icon{width:44px;height:44px;background:var(--ink);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-icon svg{width:22px;height:22px}
+.header-text{flex:1}
+.header-title{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.header-sub{font-size:11px;font-weight:500;color:var(--text-3);margin-top:1px}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:18px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:800;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+textarea,select,input{width:100%;font-family:var(--font);font-size:13.5px;font-weight:500;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;outline:none;transition:border-color .15s}
+textarea:focus,select:focus,input:focus{border-color:#aaa;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+textarea{min-height:180px;resize:vertical;line-height:1.55;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:12.5px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}}
+.hint{font-size:11px;color:var(--text-4);font-weight:500;margin-top:5px;line-height:1.4}
+.btn{width:100%;font-family:var(--font);font-size:14px;font-weight:800;letter-spacing:.02em;color:var(--ink-text);background:var(--ink);border:none;border-radius:var(--radius-sm);padding:14px;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:var(--surface-2);color:var(--text-2)}
+.meta-bar{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:12px}
+.chip{background:var(--surface-2);border-radius:20px;padding:4px 11px;font-size:10.5px;font-weight:800;color:var(--text-2);letter-spacing:.04em}
+.result{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:22px}
+.result h1,.result h2,.result h3{font-weight:900;letter-spacing:-.01em;margin:18px 0 8px;line-height:1.25}
+.result h1{font-size:20px}.result h2{font-size:16px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.result h3{font-size:13.5px;color:var(--text-2)}
+.result h2:first-child,.result h1:first-child{margin-top:0}
+.result p{font-size:13.5px;line-height:1.62;margin:8px 0;color:var(--text-2)}
+.result ul,.result ol{margin:8px 0 8px 20px}
+.result li{font-size:13.5px;line-height:1.6;margin:4px 0;color:var(--text-2)}
+.result code{background:var(--surface-2);padding:1.5px 6px;border-radius:5px;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:12px}
+.result pre{background:#1a1a1a;color:#e0e0e0;padding:14px;border-radius:var(--radius-sm);overflow-x:auto;margin:10px 0;line-height:1.5}
+.result pre code{background:none;color:inherit;padding:0;font-size:12px}
+.result strong{font-weight:800;color:var(--text)}
+.empty{text-align:center;padding:44px 20px;color:var(--text-4)}
+.empty svg{width:40px;height:40px;margin-bottom:12px;opacity:.4}
+.empty-t{font-size:13px;font-weight:700;color:var(--text-3)}
+.empty-s{font-size:11.5px;font-weight:500;margin-top:4px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.5}
+.spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{background:var(--red-bg);color:var(--red);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;font-weight:700;margin-top:10px}
+/* login */
+.login{max-width:360px;margin:60px auto;padding:0 16px}
+.login .card{padding:24px}
+.login h2{font-size:17px;font-weight:900;margin-bottom:4px}
+.login p{font-size:12px;color:var(--text-3);font-weight:500;margin-bottom:18px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">AIDETECTOR</div>
+      <div class="header-sub">Auditoria de credibilidade de entregável técnico · Ever i9</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginView" class="login hidden">
+  <div class="card">
+    <h2>Entrar</h2>
+    <p>A auditoria roda no modelo e exige login.</p>
+    <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="admin@everi9.com" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+    <button class="btn" id="lgBtn" onclick="doLogin()">Entrar</button>
+    <div id="lgErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="wrap hidden">
+  <div class="card">
+    <div class="field">
+      <label>Artefato atual</label>
+      <textarea id="artefato" placeholder="Cole aqui o código (HTML / LWC) ou descreva as telas/seções do documento que quer auditar."></textarea>
+      <div class="hint">É refino do que existe — não gera peça do zero. Quanto mais completo o artefato, mais precisa a auditoria.</div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Superfície</label>
+        <select id="superficie">
+          <option value="HTML INTERNO HEROKU">HTML interno Heroku (portal/dashboard/dossiê)</option>
+          <option value="LWC NO PORTAL EXPERIENCE CLOUD">LWC no portal Experience Cloud</option>
+          <option value="DOCUMENTO GERADO">Documento gerado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Design system aplicável</label>
+        <select id="designSystem">
+          <option value="HEROKUTHEME MONOCROMÁTICO">herokutheme monocromático</option>
+          <option value="HEROKUTHEME ROXO">herokutheme roxo</option>
+          <option value="WORD DARK">Word Dark</option>
+          <option value="MANUAL GÊNIO">Manual Gênio</option>
+          <option value="DOSSIÊ">Dossiê (Outfit / #1a1a2e)</option>
+          <option value="SLDS">SLDS (LWC Experience Cloud)</option>
+          <option value="OHANA EDITION">Ohana Edition (portal i9)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Público</label><input id="publico" placeholder="eu / squad Everymind / stakeholder Algar / parceiro"></div>
+      <div class="field"><label>Ação principal do usuário</label><input id="acao" placeholder="o que a pessoa precisa fazer nessa peça"></div>
+    </div>
+    <button class="btn" id="runBtn" onclick="run()">Auditar</button>
+  </div>
+
+  <div id="output">
+    <div class="result">
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <div class="empty-t">Nenhuma auditoria ainda</div>
+        <div class="empty-s">Cole a peça, escolha superfície e design system, e o AIDETECTOR devolve o que denuncia "cara de IA" + a refatoração — como proposta, sem aplicar nada.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TK='i9_token';
+function tok(){return localStorage.getItem(TK);}
+function show(){ if(tok()){document.getElementById('loginView').classList.add('hidden');document.getElementById('appView').classList.remove('hidden');} else {document.getElementById('appView').classList.add('hidden');document.getElementById('loginView').classList.remove('hidden');} }
+show();
+
+async function doLogin(){
+  const btn=document.getElementById('lgBtn'), err=document.getElementById('lgErr');
+  err.innerHTML=''; btn.disabled=true; btn.textContent='Entrando…';
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:document.getElementById('lgEmail').value.trim(),password:document.getElementById('lgPass').value})});
+    const d=await r.json();
+    if(!r.ok||!d.token) throw new Error(d.error||'Login inválido');
+    localStorage.setItem(TK,d.token); show();
+  }catch(e){ err.innerHTML='<div class="err">'+e.message+'</div>'; }
+  finally{ btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function run(){
+  const artefato=document.getElementById('artefato').value.trim();
+  const out=document.getElementById('output'), btn=document.getElementById('runBtn');
+  if(!artefato){ out.innerHTML='<div class="result"><div class="err">Cole o artefato antes de auditar.</div></div>'; return; }
+  const payload={ artefato,
+    superficie:document.getElementById('superficie').value,
+    designSystem:document.getElementById('designSystem').value,
+    publico:document.getElementById('publico').value.trim(),
+    acao:document.getElementById('acao').value.trim() };
+  btn.disabled=true; btn.textContent='Auditando…';
+  out.innerHTML='<div class="result"><div class="empty"><div class="spin"></div><div class="empty-t">Rodando auditoria…</div><div class="empty-s">Opus está lendo a peça contra as heurísticas e o design system. Leva alguns segundos.</div></div></div>';
+  try{
+    const r=await fetch('/api/aidetector',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok()},body:JSON.stringify(payload)});
+    if(r.status===401){ localStorage.removeItem(TK); show(); return; }
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Falha na auditoria');
+    const html=window.marked?marked.parse(d.text):('<pre>'+d.text.replace(/</g,'&lt;')+'</pre>');
+    out.innerHTML='<div class="meta-bar"><span class="chip">'+payload.superficie+'</span><span class="chip">'+payload.designSystem+'</span><span class="chip">'+(d.model||'')+'</span></div><div class="result">'+html+'</div>';
+  }catch(e){ out.innerHTML='<div class="result"><div class="err">'+e.message+'</div></div>'; }
+  finally{ btn.disabled=false; btn.textContent='Auditar'; }
+}
+</script>
+</body>
+</html>
