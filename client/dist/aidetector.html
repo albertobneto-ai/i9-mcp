@@ -189,11 +189,19 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 async function poll(jobId, payload){
   const out=document.getElementById('output');
+  let softFails=0;
   for(let i=0;i<80;i++){ // ~4min de teto (80 x 3s)
     await sleep(3000);
-    const r=await fetch('/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+tok()}});
-    if(r.status===401){ localStorage.removeItem(TK); show(); return; }
-    const j=await r.json();
+    let j;
+    try{
+      const r=await fetch('/api/jobs/'+jobId,{headers:{'Authorization':'Bearer '+tok()}});
+      if(r.status===401){ localStorage.removeItem(TK); show(); return; }
+      j=await r.json();
+    }catch(e){ // falha isolada (dyno piscando / rede) — ignora e continua pollando
+      if(++softFails>15){ out.innerHTML='<div class="result"><div class="err">Perdi contato com o servidor durante a auditoria. Tente novamente.</div></div>'; return; }
+      continue;
+    }
+    if(!j||typeof j.status==='undefined'){ if(++softFails>15){ out.innerHTML='<div class="result"><div class="err">Resposta inesperada do servidor. Tente novamente.</div></div>'; return; } continue; }
     if(j.status==='done'){
       const meta=j.meta||{}; const model=meta.model||'';
       const html=window.marked?marked.parse(j.result||''):('<pre>'+(j.result||'').replace(/</g,'&lt;')+'</pre>');
