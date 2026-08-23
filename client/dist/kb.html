@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base de Conhecimento — Ever i9</title>
+<style>
+  :root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--border:#2a2a2a;--fg:#f0f0f0;--muted:#8a8a8a;--accent:#5b8def;--ok:#3fb950;--warn:#d29922;--danger:#f85149}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;line-height:1.5}
+  header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:16px;font-weight:600}
+  header .sub{color:var(--muted);font-size:12px;margin-left:10px}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .full{grid-column:1 / -1}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600}
+  input,textarea,button{font-family:inherit;font-size:14px}
+  input[type=text],input[type=password],textarea{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:9px 11px;margin-bottom:9px;resize:vertical}
+  textarea{min-height:120px}
+  button{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 16px;cursor:pointer;font-weight:600}
+  button:hover{filter:brightness(1.08)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--fg)}
+  button.danger{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:4px 9px;font-size:12px}
+  .row{display:flex;gap:8px;align-items:center}
+  .muted{color:var(--muted)}
+  .doc{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+  .doc:last-child{border-bottom:none}
+  .doc .t{font-weight:600}
+  .doc .m{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--muted)}
+  #answer{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;min-height:60px;margin-top:10px}
+  .sources{margin-top:10px;font-size:12px}
+  .src{padding:6px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px}
+  .src .sc{color:var(--ok);font-variant-numeric:tabular-nums}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:11px 16px;border-radius:8px;max-width:340px;opacity:0;transform:translateY(8px);transition:.2s}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{border-left-color:var(--danger)}
+  .toast.ok{border-left-color:var(--ok)}
+  #login{max-width:360px;margin:80px auto}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .empty{color:var(--muted);font-style:italic;padding:8px 0}
+  @media(max-width:720px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Base de Conhecimento <span class="sub">Ever i9 · RAG grounded (Haiku + pgvector)</span></h1></div>
+  <div id="who" class="muted" style="font-size:12px"></div>
+</header>
+
+<!-- LOGIN -->
+<div id="login" class="card" style="display:none">
+  <h2>Entrar</h2>
+  <input type="text" id="email" placeholder="email" value="admin@everi9.com">
+  <input type="password" id="pwd" placeholder="senha" value="">
+  <button id="loginBtn" style="width:100%">Entrar</button>
+  <div id="loginMsg" class="muted" style="margin-top:8px"></div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap" style="display:none">
+
+  <div class="card">
+    <h2>Perguntar à base</h2>
+    <textarea id="q" placeholder="Faça uma pergunta. A resposta virá SÓ do que está na base." style="min-height:70px"></textarea>
+    <div class="row">
+      <button id="askBtn">Perguntar</button>
+      <span class="muted" style="font-size:12px">Trechos usados: <input type="text" id="topk" value="6" style="width:44px;display:inline-block;margin:0;padding:4px 6px"></span>
+    </div>
+    <div id="answer" class="empty">A resposta aparecerá aqui.</div>
+    <div id="sources" class="sources"></div>
+  </div>
+
+  <div class="card">
+    <h2>Adicionar documento</h2>
+    <input type="text" id="title" placeholder="Título do documento">
+    <input type="text" id="source" placeholder="Fonte / origem (opcional)">
+    <textarea id="content" placeholder="Cole aqui o texto (análise, doc, notas). Será quebrado em trechos e indexado."></textarea>
+    <button id="ingestBtn">Indexar na base</button>
+    <div id="ingestMsg" class="muted" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card full">
+    <h2>Documentos na base</h2>
+    <div id="docs"><div class="empty">Carregando…</div></div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = ''; // mesma origem
+let TOKEN = localStorage.getItem('i9_token') || '';
+
+function toast(msg, kind){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (kind||'');
+  setTimeout(()=>{ t.className = 'toast ' + (kind||''); }, 3200);
+}
+function authHeaders(){ return { 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN }; }
+
+async function api(path, opts){
+  const res = await fetch(API+path, opts);
+  if(res.status === 401){ logout(); throw new Error('Sessão expirada — entre de novo'); }
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || ('HTTP '+res.status));
+  return data;
+}
+
+function showApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='grid';
+  document.getElementById('who').textContent = 'conectado';
+  loadDocs();
+}
+function logout(){
+  TOKEN=''; localStorage.removeItem('i9_token');
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='block';
+}
+
+// LOGIN
+document.getElementById('loginBtn').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('pwd').value;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; document.getElementById('loginMsg').textContent = 'Entrando…';
+  try {
+    const r = await fetch(API+'/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if(!r.ok || !d.token) throw new Error(d.error || 'login falhou');
+    TOKEN = d.token; localStorage.setItem('i9_token', TOKEN);
+    document.getElementById('loginMsg').textContent = '';
+    showApp();
+  } catch(e){ document.getElementById('loginMsg').textContent = e.message; }
+  finally { btn.disabled = false; }
+};
+
+// INGEST
+document.getElementById('ingestBtn').onclick = async () => {
+  const title = document.getElementById('title').value.trim();
+  const source = document.getElementById('source').value.trim();
+  const content = document.getElementById('content').value;
+  if(!title || !content.trim()){ toast('Título e conteúdo são obrigatórios','err'); return; }
+  const btn = document.getElementById('ingestBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Indexando…';
+  try {
+    const d = await api('/api/kb/ingest', { method:'POST', headers: authHeaders(), body: JSON.stringify({ title, source, content }) });
+    toast('Indexado: '+d.chunks+' trecho(s)','ok');
+    document.getElementById('title').value=''; document.getElementById('source').value=''; document.getElementById('content').value='';
+    loadDocs();
+  } catch(e){ toast(e.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='Indexar na base'; }
+};
+
+// ASK
+document.getElementById('askBtn').onclick = async () => {
+  const question = document.getElementById('q').value.trim();
+  if(!question){ toast('Escreva uma pergunta','err'); return; }
+  const top_k = parseInt(document.getElementById('topk').value) || 6;
+  const btn = document.getElementById('askBtn');
+  const ans = document.getElementById('answer');
+  const src = document.getElementById('sources');
+  btn.disabled = true; btn.innerHTML='<span class="spin"></span> Consultando…';
+  ans.className=''; ans.textContent='…'; src.innerHTML='';
+  try {
+    const d = await api('/api/kb/ask', { method:'POST', headers: authHeaders(), body: JSON.stringify({ question, top_k }) });
+    ans.textContent = d.answer;
+    if(d.sources && d.sources.length){
+      src.innerHTML = '<div class="muted" style="margin:8px 0 4px">Fontes (por similaridade):</div>' +
+        d.sources.map(s => `<div class="src">[${s.n}] <b>${escapeHtml(s.title)}</b> · trecho ${s.chunk_index} · <span class="sc">${(s.score*100).toFixed(1)}%</span></div>`).join('');
+    }
+  } catch(e){ ans.className='empty'; ans.textContent = e.message; }
+  finally { btn.disabled=false; btn.textContent='Perguntar'; }
+};
+
+// DOCS
+async function loadDocs(){
+  const box = document.getElementById('docs');
+  try {
+    const d = await api('/api/kb/docs', { headers: authHeaders() });
+    if(!d.docs || !d.docs.length){ box.innerHTML = '<div class="empty">Nenhum documento ainda. Adicione um acima.</div>'; return; }
+    box.innerHTML = d.docs.map(doc => `
+      <div class="doc">
+        <div>
+          <div class="t">${escapeHtml(doc.title)}</div>
+          <div class="m">${doc.source ? escapeHtml(doc.source)+' · ' : ''}<span class="pill">${doc.chunks} trecho(s)</span> · ${new Date(doc.created_at).toLocaleString('pt-BR')}</div>
+        </div>
+        <button class="danger" onclick="delDoc(${doc.id}, this)">excluir</button>
+      </div>`).join('');
+  } catch(e){ box.innerHTML = '<div class="empty">'+e.message+'</div>'; }
+}
+async function delDoc(id, btn){
+  if(!confirm('Excluir este documento e todos os seus trechos?')) return;
+  btn.disabled=true;
+  try { await api('/api/kb/docs/'+id, { method:'DELETE', headers: authHeaders() }); toast('Documento excluído','ok'); loadDocs(); }
+  catch(e){ toast(e.message,'err'); btn.disabled=false; }
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// BOOT
+if(TOKEN){ showApp(); } else { document.getElementById('login').style.display='block'; }
+</script>
+</body>
+</html>
