@@ -5,6 +5,14 @@ const router = Router();
 
 const STATUSES = ['radar', 'aplicada', 'triagem', 'entrevista', 'proposta', 'descartada'];
 
+// chave estavel de deduplicacao: as urls curtas do Indeed rotacionam a cada busca
+function slugKey(title, company) {
+  const norm = (t) => (t || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z]/g, '');
+  return norm(company).slice(0, 14) + '-' + norm(title).slice(0, 60);
+}
+
 // ── Init table ──
 router.get('/init', async (req, res) => {
   try {
@@ -66,10 +74,20 @@ router.get('/init', async (req, res) => {
     await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_docs_perfil_tipo ON perfil_docs(perfil_id, tipo)');
 
     // vagas escopadas por perfil
+    await pool.query(`CREATE OR REPLACE FUNCTION unaccent_fallback(t text) RETURNS text AS $$
+      SELECT translate($1,
+        'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+        'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC')
+    $$ LANGUAGE SQL IMMUTABLE`);
     await pool.query(`ALTER TABLE vagas_radar ADD COLUMN IF NOT EXISTS perfil_id INTEGER`);
     await pool.query(`UPDATE vagas_radar SET perfil_id = (SELECT MIN(id) FROM perfis_radar) WHERE perfil_id IS NULL`);
     await pool.query(`DROP INDEX IF EXISTS idx_vagas_url`);
-    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_vagas_perfil_url ON vagas_radar(perfil_id, url)');
+    await pool.query(`DROP INDEX IF EXISTS idx_vagas_perfil_url`);
+    await pool.query(`UPDATE vagas_radar SET external_id =
+      left(regexp_replace(lower(unaccent_fallback(coalesce(company,''))), '[^a-z]', '', 'g'), 14) || '-' ||
+      left(regexp_replace(lower(unaccent_fallback(title)), '[^a-z]', '', 'g'), 60)
+      WHERE external_id IS NULL`);
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_vagas_perfil_extid ON vagas_radar(perfil_id, external_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_perfil ON vagas_radar(perfil_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_status ON vagas_radar(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_fit ON vagas_radar(fit)');
@@ -249,13 +267,13 @@ router.post('/', async (req, res) => {
         (perfil_id, external_id, source, title, company, location, work_model, job_type,
          url, posted_on, fit, fit_reason, tags, status, notes)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-       ON CONFLICT (perfil_id, url) DO UPDATE SET
-         title = EXCLUDED.title, company = EXCLUDED.company,
+       ON CONFLICT (perfil_id, external_id) DO UPDATE SET
+         title = EXCLUDED.title, company = EXCLUDED.company, url = EXCLUDED.url,
          location = EXCLUDED.location, fit = EXCLUDED.fit,
          fit_reason = EXCLUDED.fit_reason, tags = EXCLUDED.tags,
          updated_at = NOW()
        RETURNING *`,
-      [v.perfil_id || 1, v.external_id || null, v.source || 'indeed', v.title, v.company || null,
+      [v.perfil_id || 1, v.external_id || slugKey(v.title, v.company), v.source || 'indeed', v.title, v.company || null,
        v.location || null, v.work_model || null, v.job_type || null,
        v.url || null, v.posted_on || null, v.fit || 'media', v.fit_reason || null,
        v.tags || null, v.status || 'radar', v.notes || null]);
@@ -278,14 +296,14 @@ router.post('/bulk', async (req, res) => {
           (perfil_id, external_id, source, title, company, location, work_model, job_type,
            url, posted_on, fit, fit_reason, tags, status, notes)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         ON CONFLICT (perfil_id, url) DO UPDATE SET
-           title = EXCLUDED.title, company = EXCLUDED.company,
+         ON CONFLICT (perfil_id, external_id) DO UPDATE SET
+           title = EXCLUDED.title, company = EXCLUDED.company, url = EXCLUDED.url,
            location = EXCLUDED.location, work_model = EXCLUDED.work_model,
            job_type = EXCLUDED.job_type, posted_on = EXCLUDED.posted_on,
            fit = EXCLUDED.fit, fit_reason = EXCLUDED.fit_reason,
            tags = EXCLUDED.tags, updated_at = NOW()
          RETURNING (xmax = 0) AS is_new`,
-        [v.perfil_id || perfilId, v.external_id || null, v.source || 'indeed', v.title, v.company || null,
+        [v.perfil_id || perfilId, v.external_id || slugKey(v.title, v.company), v.source || 'indeed', v.title, v.company || null,
          v.location || null, v.work_model || null, v.job_type || null,
          v.url || null, v.posted_on || null, v.fit || 'media', v.fit_reason || null,
          v.tags || null, v.status || 'radar', v.notes || null]);
