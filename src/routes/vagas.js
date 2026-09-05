@@ -28,22 +28,116 @@ router.get('/init', async (req, res) => {
       created_at   TIMESTAMPTZ DEFAULT NOW(),
       updated_at   TIMESTAMPTZ DEFAULT NOW()
     )`);
-    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_vagas_url ON vagas_radar(url)');
+    await pool.query(`CREATE TABLE IF NOT EXISTS perfis_radar (
+      id          SERIAL PRIMARY KEY,
+      nome        VARCHAR(120) NOT NULL,
+      headline    VARCHAR(300),
+      localizacao VARCHAR(160),
+      keywords    TEXT,
+      resumo      TEXT,
+      cor         VARCHAR(20) DEFAULT '#16334d',
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    )`);
+
+    // perfil padrao (Alberto) — id 1
+    const seed = await pool.query('SELECT id FROM perfis_radar LIMIT 1');
+    if (!seed.rows.length) {
+      await pool.query(
+        `INSERT INTO perfis_radar (nome, headline, localizacao, keywords, resumo)
+         VALUES ($1,$2,$3,$4,$5)`,
+        ['Alberto',
+         'Salesforce Solution Architect — Revenue Cloud, Sales Cloud, Data Cloud, Agentforce, Telecom',
+         'Santo Andre, SP — remoto ou Grande SP',
+         'Arquiteto Salesforce, Solution Architect, Tech Lead Salesforce, Revenue Cloud, CPQ, Data Cloud, Agentforce, Vlocity, OmniStudio, MuleSoft, telecom BSS/OSS',
+         '9+ anos em tecnologia de telecom. Arquiteto de solucao de CRM B2B em operadora nacional (16 estados, 900+ consultores). Revenue Cloud (CPQ/Billing/RLM), Sales Cloud, Data Cloud, Agentforce, MuleSoft. Vivencia BSS/OSS em Claro, TIM, Deloitte e Everis.']);
+    }
+
+    // vagas escopadas por perfil
+    await pool.query(`ALTER TABLE vagas_radar ADD COLUMN IF NOT EXISTS perfil_id INTEGER`);
+    await pool.query(`UPDATE vagas_radar SET perfil_id = (SELECT MIN(id) FROM perfis_radar) WHERE perfil_id IS NULL`);
+    await pool.query(`DROP INDEX IF EXISTS idx_vagas_url`);
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_vagas_perfil_url ON vagas_radar(perfil_id, url)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_perfil ON vagas_radar(perfil_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_status ON vagas_radar(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_fit ON vagas_radar(fit)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_updated ON vagas_radar(updated_at DESC)');
-    res.json({ status: 'ok', table: 'vagas_radar' });
+    res.json({ status: 'ok', tables: ['perfis_radar', 'vagas_radar'] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+
+// ══════════ PERFIS ══════════
+
+// GET /api/vagas/perfis — lista perfis com contagem de vagas
+router.get('/perfis', async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT p.*,
+              COUNT(v.id)::int AS total_vagas,
+              COUNT(v.id) FILTER (WHERE v.status = 'aplicada')::int AS total_aplicadas
+       FROM perfis_radar p
+       LEFT JOIN vagas_radar v ON v.perfil_id = p.id
+       GROUP BY p.id ORDER BY p.id`);
+    res.json({ perfis: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/vagas/perfis
+router.post('/perfis', async (req, res) => {
+  try {
+    const { nome, headline, localizacao, keywords, resumo, cor } = req.body || {};
+    if (!nome) return res.status(400).json({ error: 'nome is required' });
+    const r = await pool.query(
+      `INSERT INTO perfis_radar (nome, headline, localizacao, keywords, resumo, cor)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [nome, headline || null, localizacao || null, keywords || null, resumo || null, cor || '#16334d']);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/vagas/perfis/:id
+router.patch('/perfis/:id', async (req, res) => {
+  try {
+    const allowed = ['nome', 'headline', 'localizacao', 'keywords', 'resumo', 'cor'];
+    const fields = [], params = [];
+    let idx = 1;
+    for (const k of allowed) {
+      if (req.body[k] !== undefined) { fields.push(`${k} = $${idx++}`); params.push(req.body[k]); }
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    fields.push('updated_at = NOW()');
+    params.push(req.params.id);
+    const r = await pool.query(
+      `UPDATE perfis_radar SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, params);
+    if (!r.rows.length) return res.status(404).json({ error: 'Perfil not found' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/vagas/perfis/:id — remove perfil e suas vagas
+router.delete('/perfis/:id', async (req, res) => {
+  try {
+    const total = await pool.query('SELECT COUNT(*)::int AS n FROM perfis_radar');
+    if (total.rows[0].n <= 1) return res.status(400).json({ error: 'Nao e possivel remover o unico perfil' });
+    await pool.query('DELETE FROM vagas_radar WHERE perfil_id = $1', [req.params.id]);
+    const r = await pool.query('DELETE FROM perfis_radar WHERE id = $1 RETURNING id', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Perfil not found' });
+    res.json({ deleted: r.rows[0].id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ══════════ VAGAS ══════════
 
 // ── GET /api/vagas — list + stats ──
 router.get('/', async (req, res) => {
   try {
-    const { status, fit, search, limit = 200, offset = 0 } = req.query;
+    const { perfil_id, status, fit, search, limit = 200, offset = 0 } = req.query;
     const conditions = [];
     const params = [];
     let idx = 1;
 
+    if (perfil_id) { conditions.push(`perfil_id = $${idx++}`); params.push(perfil_id); }
     if (status) { conditions.push(`status = $${idx++}`); params.push(status); }
     if (fit) { conditions.push(`fit = $${idx++}`); params.push(fit); }
     if (search) {
@@ -61,7 +155,9 @@ router.get('/', async (req, res) => {
        LIMIT $${idx++} OFFSET $${idx++}`, params);
 
     const stats = await pool.query(
-      `SELECT status, COUNT(*)::int AS n FROM vagas_radar GROUP BY status`);
+      `SELECT status, COUNT(*)::int AS n FROM vagas_radar
+       ${perfil_id ? 'WHERE perfil_id = $1' : ''} GROUP BY status`,
+      perfil_id ? [perfil_id] : []);
     const byStatus = {};
     STATUSES.forEach(s => { byStatus[s] = 0; });
     stats.rows.forEach(r => { byStatus[r.status] = r.n; });
@@ -77,16 +173,16 @@ router.post('/', async (req, res) => {
     if (!v.title) return res.status(400).json({ error: 'title is required' });
     const r = await pool.query(
       `INSERT INTO vagas_radar
-        (external_id, source, title, company, location, work_model, job_type,
+        (perfil_id, external_id, source, title, company, location, work_model, job_type,
          url, posted_on, fit, fit_reason, tags, status, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       ON CONFLICT (url) DO UPDATE SET
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       ON CONFLICT (perfil_id, url) DO UPDATE SET
          title = EXCLUDED.title, company = EXCLUDED.company,
          location = EXCLUDED.location, fit = EXCLUDED.fit,
          fit_reason = EXCLUDED.fit_reason, tags = EXCLUDED.tags,
          updated_at = NOW()
        RETURNING *`,
-      [v.external_id || null, v.source || 'indeed', v.title, v.company || null,
+      [v.perfil_id || 1, v.external_id || null, v.source || 'indeed', v.title, v.company || null,
        v.location || null, v.work_model || null, v.job_type || null,
        v.url || null, v.posted_on || null, v.fit || 'media', v.fit_reason || null,
        v.tags || null, v.status || 'radar', v.notes || null]);
@@ -98,6 +194,7 @@ router.post('/', async (req, res) => {
 router.post('/bulk', async (req, res) => {
   try {
     const list = Array.isArray(req.body) ? req.body : (req.body.vagas || []);
+    const perfilId = req.body.perfil_id || 1;
     if (!list.length) return res.status(400).json({ error: 'empty payload' });
 
     let inserted = 0, updated = 0;
@@ -105,17 +202,17 @@ router.post('/bulk', async (req, res) => {
       if (!v.title) continue;
       const r = await pool.query(
         `INSERT INTO vagas_radar
-          (external_id, source, title, company, location, work_model, job_type,
+          (perfil_id, external_id, source, title, company, location, work_model, job_type,
            url, posted_on, fit, fit_reason, tags, status, notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-         ON CONFLICT (url) DO UPDATE SET
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         ON CONFLICT (perfil_id, url) DO UPDATE SET
            title = EXCLUDED.title, company = EXCLUDED.company,
            location = EXCLUDED.location, work_model = EXCLUDED.work_model,
            job_type = EXCLUDED.job_type, posted_on = EXCLUDED.posted_on,
            fit = EXCLUDED.fit, fit_reason = EXCLUDED.fit_reason,
            tags = EXCLUDED.tags, updated_at = NOW()
          RETURNING (xmax = 0) AS is_new`,
-        [v.external_id || null, v.source || 'indeed', v.title, v.company || null,
+        [v.perfil_id || perfilId, v.external_id || null, v.source || 'indeed', v.title, v.company || null,
          v.location || null, v.work_model || null, v.job_type || null,
          v.url || null, v.posted_on || null, v.fit || 'media', v.fit_reason || null,
          v.tags || null, v.status || 'radar', v.notes || null]);
