@@ -53,6 +53,18 @@ router.get('/init', async (req, res) => {
          '9+ anos em tecnologia de telecom. Arquiteto de solucao de CRM B2B em operadora nacional (16 estados, 900+ consultores). Revenue Cloud (CPQ/Billing/RLM), Sales Cloud, Data Cloud, Agentforce, MuleSoft. Vivencia BSS/OSS em Claro, TIM, Deloitte e Everis.']);
     }
 
+    await pool.query(`CREATE TABLE IF NOT EXISTS perfil_docs (
+      id         SERIAL PRIMARY KEY,
+      perfil_id  INTEGER NOT NULL,
+      tipo       VARCHAR(20) NOT NULL,
+      filename   VARCHAR(255) NOT NULL,
+      mime       VARCHAR(100) NOT NULL DEFAULT 'application/pdf',
+      conteudo   TEXT NOT NULL,
+      tamanho    INTEGER,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_docs_perfil_tipo ON perfil_docs(perfil_id, tipo)');
+
     // vagas escopadas por perfil
     await pool.query(`ALTER TABLE vagas_radar ADD COLUMN IF NOT EXISTS perfil_id INTEGER`);
     await pool.query(`UPDATE vagas_radar SET perfil_id = (SELECT MIN(id) FROM perfis_radar) WHERE perfil_id IS NULL`);
@@ -62,7 +74,7 @@ router.get('/init', async (req, res) => {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_status ON vagas_radar(status)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_fit ON vagas_radar(fit)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_vagas_updated ON vagas_radar(updated_at DESC)');
-    res.json({ status: 'ok', tables: ['perfis_radar', 'vagas_radar'] });
+    res.json({ status: 'ok', tables: ['perfis_radar', 'perfil_docs', 'vagas_radar'] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -74,11 +86,22 @@ router.get('/perfis', async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT p.*,
-              COUNT(v.id)::int AS total_vagas,
-              COUNT(v.id) FILTER (WHERE v.status = 'aplicada')::int AS total_aplicadas
+              COALESCE(v.total_vagas, 0) AS total_vagas,
+              COALESCE(v.total_aplicadas, 0) AS total_aplicadas,
+              COALESCE(d.docs, '[]'::json) AS docs
        FROM perfis_radar p
-       LEFT JOIN vagas_radar v ON v.perfil_id = p.id
-       GROUP BY p.id ORDER BY p.id`);
+       LEFT JOIN (
+         SELECT perfil_id, COUNT(*)::int AS total_vagas,
+                COUNT(*) FILTER (WHERE status = 'aplicada')::int AS total_aplicadas
+         FROM vagas_radar GROUP BY perfil_id
+       ) v ON v.perfil_id = p.id
+       LEFT JOIN (
+         SELECT perfil_id, json_agg(json_build_object(
+           'id', id, 'tipo', tipo, 'filename', filename, 'tamanho', tamanho
+         ) ORDER BY tipo) AS docs
+         FROM perfil_docs GROUP BY perfil_id
+       ) d ON d.perfil_id = p.id
+       ORDER BY p.id`);
     res.json({ perfis: r.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -121,8 +144,58 @@ router.delete('/perfis/:id', async (req, res) => {
     const total = await pool.query('SELECT COUNT(*)::int AS n FROM perfis_radar');
     if (total.rows[0].n <= 1) return res.status(400).json({ error: 'Nao e possivel remover o unico perfil' });
     await pool.query('DELETE FROM vagas_radar WHERE perfil_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM perfil_docs WHERE perfil_id = $1', [req.params.id]);
     const r = await pool.query('DELETE FROM perfis_radar WHERE id = $1 RETURNING id', [req.params.id]);
     if (!r.rows.length) return res.status(404).json({ error: 'Perfil not found' });
+    res.json({ deleted: r.rows[0].id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// ══════════ DOCUMENTOS DO PERFIL ══════════
+
+// POST /api/vagas/perfis/:id/docs — envia curriculo ou carta (base64)
+router.post('/perfis/:id/docs', async (req, res) => {
+  try {
+    const { tipo, filename, mime, content } = req.body || {};
+    if (!tipo || !['cv', 'carta'].includes(tipo)) return res.status(400).json({ error: "tipo deve ser 'cv' ou 'carta'" });
+    if (!filename || !content) return res.status(400).json({ error: 'filename e content sao obrigatorios' });
+
+    const tamanho = Math.round((content.length * 3) / 4);
+    if (tamanho > 8 * 1024 * 1024) return res.status(400).json({ error: 'arquivo acima de 8MB' });
+
+    const r = await pool.query(
+      `INSERT INTO perfil_docs (perfil_id, tipo, filename, mime, conteudo, tamanho)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (perfil_id, tipo) DO UPDATE SET
+         filename = EXCLUDED.filename, mime = EXCLUDED.mime,
+         conteudo = EXCLUDED.conteudo, tamanho = EXCLUDED.tamanho,
+         created_at = NOW()
+       RETURNING id, tipo, filename, tamanho`,
+      [req.params.id, tipo, filename, mime || 'application/pdf', content, tamanho]);
+    res.status(201).json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/vagas/docs/:docId — serve o arquivo
+router.get('/docs/:docId', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM perfil_docs WHERE id = $1', [req.params.docId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Documento nao encontrado' });
+    const d = r.rows[0];
+    const buf = Buffer.from(d.conteudo, 'base64');
+    const disp = req.query.download === '1' ? 'attachment' : 'inline';
+    res.setHeader('Content-Type', d.mime);
+    res.setHeader('Content-Disposition', `${disp}; filename="${d.filename}"`);
+    res.send(buf);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/vagas/docs/:docId
+router.delete('/docs/:docId', async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM perfil_docs WHERE id = $1 RETURNING id', [req.params.docId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Documento nao encontrado' });
     res.json({ deleted: r.rows[0].id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
