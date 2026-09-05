@@ -20,6 +20,7 @@ header .sub{font-size:11px;color:var(--muted)}
 .btn-primary:hover{background:#0f253a;color:#fff}
 .btn-sm{padding:4px 9px;font-size:11px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
+.seclabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:7px}
 .profiles{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
 .prof{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 15px;cursor:pointer;transition:.15s;min-width:150px;flex-shrink:0}
 .prof:hover{border-color:var(--accent)}
@@ -89,6 +90,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 </header>
 
 <div class="wrap">
+  <div class="seclabel">Perfil — toque para trocar</div>
   <div class="profiles" id="profiles"></div>
   <div class="docbar" id="docbar"></div>
   <div class="pipeline" id="pipeline"></div>
@@ -251,7 +253,7 @@ function renderDocs(){
   const el = document.getElementById('docbar');
   if(!p){ el.innerHTML=''; return; }
   const docs = p.docs || [];
-  let h = '<span class="lbl">Documentos</span>';
+  let h = '<span class="lbl">Documentos de '+esc(p.nome)+'</span>';
   ['cv','carta'].forEach(t => {
     const d = docs.find(x => x.tipo === t);
     if(d){
