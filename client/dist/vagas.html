@@ -6,51 +6,63 @@
 <title>Ever i9 — Radar de Vagas</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--border:#2a2a2a;--fg:#f0f0f0;--muted:#8a8a8a;--accent:#5b8def;--ok:#3fb950;--warn:#d29922;--danger:#f85149}
-body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);font-size:14px}
+:root{--bg:#f6f7f9;--panel:#ffffff;--panel2:#f0f2f5;--border:#e2e6ea;--fg:#1d2733;--muted:#6b7684;--accent:#16334d;--accent-soft:#eaf0f6;--ok:#2e8b57;--warn:#c9821b;--low:#9aa5b1;--danger:#c0392b}
+body{font-family:-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif;background:var(--bg);color:var(--fg);font-size:14px;-webkit-font-smoothing:antialiased}
 header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
 header h1{font-size:16px;font-weight:700}
 header .sub{font-size:11px;color:var(--muted)}
 .spacer{flex:1}
 .wrap{max-width:1200px;margin:0 auto;padding:18px 16px 60px}
 .btn{padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:var(--panel2);color:var(--fg);font-size:13px;cursor:pointer;transition:.15s}
-.btn:hover{border-color:var(--accent)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger:hover{border-color:var(--danger);color:var(--danger)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-primary:hover{background:#0f253a;color:#fff}
 .btn-sm{padding:4px 9px;font-size:11px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
+.profiles{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
+.prof{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 15px;cursor:pointer;transition:.15s;min-width:150px;flex-shrink:0}
+.prof:hover{border-color:var(--accent)}
+.prof.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.prof .nm{font-size:13.5px;font-weight:650}
+.prof .hl{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prof .ct{font-size:10.5px;color:var(--muted);margin-top:5px}
+.prof-add{border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;min-width:112px}
 .pipeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
 .pcard{flex:1;min-width:104px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s}
 .pcard:hover{border-color:var(--accent)}
-.pcard.active{border-color:var(--accent);background:rgba(91,141,239,.1)}
-.pcard .n{font-size:21px;font-weight:700}
+.pcard.active{border-color:var(--accent);background:var(--accent-soft)}
+.pcard .n{font-size:20px;font-weight:700;color:var(--accent)}
 .pcard .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
 .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 input,select,textarea{background:var(--panel2);border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(22,51,77,.07)}
 #q{flex:1;min-width:180px}
 .vaga{background:var(--panel);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:13px 15px;margin-bottom:9px}
 .vaga.alta{border-left-color:var(--ok)}
 .vaga.media{border-left-color:var(--warn)}
-.vaga.baixa{border-left-color:var(--muted)}
+.vaga.baixa{border-left-color:var(--low)}
 .vaga h3{font-size:14px;font-weight:600;margin-bottom:3px;line-height:1.35}
 .vaga h3 a{color:var(--fg);text-decoration:none}
-.vaga h3 a:hover{color:var(--accent)}
+.vaga h3 a:hover{color:var(--accent);text-decoration:underline}
 .meta{font-size:11.5px;color:var(--muted);margin-bottom:8px}
-.meta b{color:#bdbdbd;font-weight:600}
+.meta b{color:#41505f;font-weight:600}
 .tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
 .tag{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
-.reason{font-size:12px;color:#c8c8c8;margin-bottom:9px;line-height:1.45;border-left:2px solid var(--border);padding-left:9px}
+.reason{font-size:12.3px;color:#4a5763;margin-bottom:9px;line-height:1.45;border-left:2px solid var(--border);padding-left:9px}
 .row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .note{width:100%;margin-top:8px;min-height:34px;resize:vertical;font-size:12px;display:none}
-.empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:13px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:13px;background:var(--panel);border:1px solid var(--border);border-radius:9px}
+.modal{position:fixed;inset:0;background:rgba(29,39,51,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.on{display:flex}
-.mbox{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto}
+.mbox{background:var(--panel);border-radius:12px;padding:22px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.16)}
+.mbox label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;font-weight:600}
 .mbox h2{font-size:15px;margin-bottom:12px}
 .mbox p{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
 .mbox input,.mbox textarea{width:100%;margin-bottom:10px}
-.mbox textarea{min-height:190px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
-.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);padding:10px 18px;border-radius:7px;font-size:13px;display:none;z-index:60}
+.mbox textarea{min-height:70px;resize:vertical}
+.mbox textarea.mono{min-height:180px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;display:none;z-index:60;box-shadow:0 4px 16px rgba(0,0,0,.18)}
 @media(max-width:640px){.pcard{min-width:92px}header h1{font-size:14px}}
 </style>
 </head>
@@ -59,14 +71,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <header>
   <div>
     <h1>Radar de Vagas</h1>
-    <div class="sub">Ever i9 · pipeline de candidaturas</div>
+    <div class="sub" id="hSub">Ever i9 · pipeline de candidaturas</div>
   </div>
   <div class="spacer"></div>
+  <button class="btn" id="btnEditProf">Editar perfil</button>
   <button class="btn" id="btnImport">Importar</button>
   <button class="btn" id="btnReload">Atualizar</button>
 </header>
 
 <div class="wrap">
+  <div class="profiles" id="profiles"></div>
   <div class="pipeline" id="pipeline"></div>
 
   <div class="filters">
@@ -82,11 +96,35 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
   <div id="list"><div class="empty">Carregando...</div></div>
 </div>
 
+<div class="modal" id="mProf">
+  <div class="mbox">
+    <h2 id="pfTitle">Novo perfil</h2>
+    <p>O resumo e as palavras-chave sao o briefing que orienta a varredura de vagas desse perfil.</p>
+    <label>Nome</label>
+    <input id="pfNome" placeholder="Ex.: Ana — Marketing">
+    <label>Headline / cargo-alvo</label>
+    <input id="pfHeadline" placeholder="Ex.: Analista de Marketing Pleno — CRM e performance">
+    <label>Localizacao e modelo</label>
+    <input id="pfLocal" placeholder="Ex.: Sao Paulo, SP — remoto ou hibrido">
+    <label>Palavras-chave de busca</label>
+    <textarea id="pfKeywords" placeholder="Termos separados por virgula"></textarea>
+    <label>Resumo do curriculo</label>
+    <textarea id="pfResumo" placeholder="Experiencia, stack, senioridade, diferenciais"></textarea>
+    <div class="row">
+      <button class="btn btn-primary" id="btnSaveProf">Salvar</button>
+      <button class="btn" id="btnCloseProf">Cancelar</button>
+      <div class="spacer"></div>
+      <button class="btn btn-sm btn-danger" id="btnDelProf" style="display:none">Excluir perfil</button>
+    </div>
+    <div id="pfMsg" style="font-size:12px;margin-top:9px;color:var(--muted)"></div>
+  </div>
+</div>
+
 <div class="modal" id="mImport">
   <div class="mbox">
     <h2>Importar vagas</h2>
-    <p>Cole um array JSON. Campos: title, company, location, work_model, job_type, url, posted_on (AAAA-MM-DD), fit (alta/media/baixa), fit_reason, tags, source. A url e a chave de deduplicacao — reimportar atualiza em vez de duplicar.</p>
-    <textarea id="impJson" placeholder='[{"title":"Arquiteto Salesforce","company":"Exemplo","url":"https://...","fit":"alta"}]'></textarea>
+    <p>Cole um array JSON. As vagas entram no perfil selecionado. A url e a chave de deduplicacao — reimportar atualiza em vez de duplicar.</p>
+    <textarea id="impJson" class="mono" placeholder='[{"title":"Arquiteto Salesforce","company":"Exemplo","url":"https://...","fit":"alta"}]'></textarea>
     <div class="row">
       <button class="btn btn-primary" id="btnDoImport">Importar</button>
       <button class="btn" id="btnCloseImport">Cancelar</button>
@@ -101,7 +139,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 const API = '';
 const STATUSES = ['radar','aplicada','triagem','entrevista','proposta','descartada'];
 const LABELS = {radar:'Radar',aplicada:'Aplicada',triagem:'Triagem',entrevista:'Entrevista',proposta:'Proposta',descartada:'Descartada'};
-let VAGAS = [], STATS = {}, FILTER_STATUS = '';
+let PERFIS = [], PERFIL_ID = parseInt(localStorage.getItem('radar_perfil')||'0') || null;
+let VAGAS = [], STATS = {}, FILTER_STATUS = '', EDIT_ID = null;
 
 function authHeaders(){ return {'Content-Type':'application/json'}; }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2600); }
@@ -112,6 +151,83 @@ async function api(path, opts={}){
   const d = await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(d.error || ('HTTP '+res.status));
   return d;
+}
+
+function perfilAtual(){ return PERFIS.find(p=>p.id===PERFIL_ID) || PERFIS[0]; }
+
+function renderProfiles(){
+  const el = document.getElementById('profiles');
+  el.innerHTML = PERFIS.map(p =>
+    '<div class="prof'+(p.id===PERFIL_ID?' active':'')+'" data-id="'+p.id+'">'
+    + '<div class="nm">'+esc(p.nome)+'</div>'
+    + '<div class="hl">'+esc(p.headline||'')+'</div>'
+    + '<div class="ct">'+p.total_vagas+' vagas · '+p.total_aplicadas+' aplicadas</div>'
+    + '</div>').join('')
+    + '<div class="prof prof-add" id="profAdd">+ Novo perfil</div>';
+  el.querySelectorAll('.prof[data-id]').forEach(c => c.onclick = () => {
+    PERFIL_ID = parseInt(c.dataset.id);
+    localStorage.setItem('radar_perfil', PERFIL_ID);
+    FILTER_STATUS = '';
+    renderProfiles(); syncHeader(); load();
+  });
+  document.getElementById('profAdd').onclick = () => openProf(null);
+}
+
+function syncHeader(){
+  const p = perfilAtual();
+  document.getElementById('hSub').textContent = p ? (p.nome + (p.localizacao ? ' · '+p.localizacao : '')) : 'Ever i9';
+}
+
+function openProf(id){
+  EDIT_ID = id;
+  const p = id ? PERFIS.find(x=>x.id===id) : null;
+  document.getElementById('pfTitle').textContent = p ? 'Editar perfil' : 'Novo perfil';
+  document.getElementById('pfNome').value = p ? p.nome : '';
+  document.getElementById('pfHeadline').value = (p && p.headline) ? p.headline : '';
+  document.getElementById('pfLocal').value = (p && p.localizacao) ? p.localizacao : '';
+  document.getElementById('pfKeywords').value = (p && p.keywords) ? p.keywords : '';
+  document.getElementById('pfResumo').value = (p && p.resumo) ? p.resumo : '';
+  document.getElementById('pfMsg').textContent = '';
+  document.getElementById('btnDelProf').style.display = (p && PERFIS.length>1) ? 'block' : 'none';
+  document.getElementById('mProf').classList.add('on');
+}
+
+document.getElementById('btnEditProf').onclick = () => { const p = perfilAtual(); if(p) openProf(p.id); };
+document.getElementById('btnCloseProf').onclick = () => document.getElementById('mProf').classList.remove('on');
+
+document.getElementById('btnSaveProf').onclick = async () => {
+  const body = {
+    nome: document.getElementById('pfNome').value.trim(),
+    headline: document.getElementById('pfHeadline').value.trim(),
+    localizacao: document.getElementById('pfLocal').value.trim(),
+    keywords: document.getElementById('pfKeywords').value.trim(),
+    resumo: document.getElementById('pfResumo').value.trim()
+  };
+  if(!body.nome){ document.getElementById('pfMsg').textContent = 'Informe o nome.'; return; }
+  try{
+    if(EDIT_ID){ await api('/api/vagas/perfis/'+EDIT_ID,{method:'PATCH',body:JSON.stringify(body)}); }
+    else {
+      const n = await api('/api/vagas/perfis',{method:'POST',body:JSON.stringify(body)});
+      PERFIL_ID = n.id; localStorage.setItem('radar_perfil', PERFIL_ID);
+    }
+    document.getElementById('mProf').classList.remove('on');
+    toast('Perfil salvo'); await boot();
+  }catch(e){ document.getElementById('pfMsg').textContent = 'Erro: '+e.message; }
+};
+
+document.getElementById('btnDelProf').onclick = async () => {
+  if(!EDIT_ID) return;
+  if(!confirm('Excluir este perfil e todas as vagas dele?')) return;
+  try{
+    await api('/api/vagas/perfis/'+EDIT_ID,{method:'DELETE'});
+    PERFIL_ID = null; localStorage.removeItem('radar_perfil');
+    document.getElementById('mProf').classList.remove('on');
+    toast('Perfil excluido'); await boot();
+  }catch(e){ document.getElementById('pfMsg').textContent = 'Erro: '+e.message; }
+};
+
+async function refreshProfiles(){
+  try{ const d = await api('/api/vagas/perfis'); PERFIS = d.perfis||[]; renderProfiles(); }catch(e){}
 }
 
 function renderPipeline(){
@@ -151,7 +267,7 @@ function renderList(){
   el.querySelectorAll('.vaga').forEach(card => {
     const id = card.dataset.id;
     card.querySelector('.selStatus').onchange = async e => {
-      try{ await api('/api/vagas/'+id,{method:'PATCH',body:JSON.stringify({status:e.target.value})}); toast('Status atualizado'); load(); }
+      try{ await api('/api/vagas/'+id,{method:'PATCH',body:JSON.stringify({status:e.target.value})}); toast('Status atualizado'); load(); refreshProfiles(); }
       catch(err){ toast(err.message); }
     };
     const note = card.querySelector('.note');
@@ -165,14 +281,16 @@ function renderList(){
     };
     card.querySelector('.bDel').onclick = async () => {
       if(!confirm('Remover esta vaga do radar?')) return;
-      try{ await api('/api/vagas/'+id,{method:'DELETE'}); toast('Removida'); load(); }
+      try{ await api('/api/vagas/'+id,{method:'DELETE'}); toast('Removida'); load(); refreshProfiles(); }
       catch(err){ toast(err.message); }
     };
   });
 }
 
 async function load(){
+  if(!PERFIL_ID) return;
   const p = new URLSearchParams();
+  p.set('perfil_id', PERFIL_ID);
   if(FILTER_STATUS) p.set('status', FILTER_STATUS);
   const fit = document.getElementById('fFit').value; if(fit) p.set('fit', fit);
   const q = document.getElementById('q').value.trim(); if(q) p.set('search', q);
@@ -186,7 +304,7 @@ async function load(){
 let deb;
 document.getElementById('q').oninput = () => { clearTimeout(deb); deb = setTimeout(load, 320); };
 document.getElementById('fFit').onchange = load;
-document.getElementById('btnReload').onclick = load;
+document.getElementById('btnReload').onclick = () => { refreshProfiles(); load(); };
 document.getElementById('btnImport').onclick = () => document.getElementById('mImport').classList.add('on');
 document.getElementById('btnCloseImport').onclick = () => document.getElementById('mImport').classList.remove('on');
 
@@ -194,17 +312,25 @@ document.getElementById('btnDoImport').onclick = async () => {
   const msg = document.getElementById('impMsg'); msg.textContent = 'Importando...';
   try{
     const arr = JSON.parse(document.getElementById('impJson').value);
-    const d = await api('/api/vagas/bulk',{method:'POST',body:JSON.stringify(Array.isArray(arr)?arr:[arr])});
+    const list = Array.isArray(arr) ? arr : [arr];
+    const d = await api('/api/vagas/bulk',{method:'POST',body:JSON.stringify({perfil_id:PERFIL_ID, vagas:list})});
     msg.textContent = d.inserted+' novas, '+d.updated+' atualizadas.';
     document.getElementById('impJson').value = '';
-    load();
+    load(); refreshProfiles();
   }catch(e){ msg.textContent = 'Erro: '+e.message; }
 };
 
-(async () => {
+async function boot(){
   try{ await api('/api/vagas/init'); }catch(e){}
-  load();
-})();
+  try{
+    const d = await api('/api/vagas/perfis');
+    PERFIS = d.perfis||[];
+    if(!PERFIS.length){ document.getElementById('list').innerHTML='<div class="empty">Nenhum perfil cadastrado.</div>'; renderProfiles(); return; }
+    if(!PERFIL_ID || !PERFIS.some(p=>p.id===PERFIL_ID)) PERFIL_ID = PERFIS[0].id;
+    renderProfiles(); syncHeader(); load();
+  }catch(e){ document.getElementById('list').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; }
+}
+boot();
 </script>
 </body>
 </html>
