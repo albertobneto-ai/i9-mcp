@@ -82,16 +82,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
   <div id="list"><div class="empty">Carregando...</div></div>
 </div>
 
-<div class="modal" id="mLogin">
-  <div class="mbox">
-    <h2>Entrar no i9</h2>
-    <input id="lEmail" placeholder="e-mail" value="admin@everi9.com">
-    <input id="lPass" type="password" placeholder="senha">
-    <button class="btn btn-primary" id="btnLogin">Entrar</button>
-    <div id="lErr" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
-  </div>
-</div>
-
 <div class="modal" id="mImport">
   <div class="mbox">
     <h2>Importar vagas</h2>
@@ -111,35 +101,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 const API = '';
 const STATUSES = ['radar','aplicada','triagem','entrevista','proposta','descartada'];
 const LABELS = {radar:'Radar',aplicada:'Aplicada',triagem:'Triagem',entrevista:'Entrevista',proposta:'Proposta',descartada:'Descartada'};
-let TOKEN = localStorage.getItem('i9_token') || '';
 let VAGAS = [], STATS = {}, FILTER_STATUS = '';
 
-function authHeaders(){ return {'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}; }
+function authHeaders(){ return {'Content-Type':'application/json'}; }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2600); }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function api(path, opts={}){
   const res = await fetch(API+path, {...opts, headers: authHeaders()});
-  if(res.status===401){ TOKEN=''; localStorage.removeItem('i9_token'); showLogin(); throw new Error('sessao expirada'); }
   const d = await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(d.error || ('HTTP '+res.status));
   return d;
 }
-
-function showLogin(){ document.getElementById('mLogin').classList.add('on'); }
-
-document.getElementById('btnLogin').onclick = async () => {
-  const err = document.getElementById('lErr'); err.textContent='';
-  try{
-    const r = await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email:document.getElementById('lEmail').value, password:document.getElementById('lPass').value})});
-    const d = await r.json();
-    if(!r.ok || !d.token) throw new Error(d.error||'login falhou');
-    TOKEN = d.token; localStorage.setItem('i9_token', TOKEN);
-    document.getElementById('mLogin').classList.remove('on');
-    load();
-  }catch(e){ err.textContent = e.message; }
-};
 
 function renderPipeline(){
   const total = STATUSES.reduce((a,s)=>a+(STATS[s]||0),0);
@@ -199,7 +172,6 @@ function renderList(){
 }
 
 async function load(){
-  if(!TOKEN){ showLogin(); return; }
   const p = new URLSearchParams();
   if(FILTER_STATUS) p.set('status', FILTER_STATUS);
   const fit = document.getElementById('fFit').value; if(fit) p.set('fit', fit);
@@ -230,7 +202,7 @@ document.getElementById('btnDoImport').onclick = async () => {
 };
 
 (async () => {
-  if(TOKEN){ try{ await api('/api/vagas/init'); }catch(e){} }
+  try{ await api('/api/vagas/init'); }catch(e){}
   load();
 })();
 </script>
