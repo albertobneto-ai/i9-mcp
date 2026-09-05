@@ -31,6 +31,7 @@ import specsRoutes from './routes/specs.js';
 import hotfixRoutes, { initHotfixTables } from './routes/hotfix.js';
 import aidetectorRoutes from './routes/aidetector.js';
 import kbRoutes, { initKbTables } from './routes/kb.js';
+import vagasRoutes from './routes/vagas.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -194,6 +195,7 @@ app.use('/api/specs', specsRoutes);  // Spec Registry — catálogo de especific
 app.use('/api/hotfix', hotfixRoutes);  // Hotfix Registry — controle de correções v1/v2 + esteira de orgs
 app.use('/api/aidetector', aidetectorRoutes);  // AIDETECTOR — auditoria de credibilidade (antes do catch-all /api)
 app.use('/api/kb', kbRoutes);  // Base de Conhecimento (RAG grounded) — antes do catch-all /api
+app.use('/api/vagas', vagasRoutes);  // Radar de Vagas — pipeline de candidaturas (antes do catch-all /api)
 app.use('/api', explorerRoutes);
 
 // Job status polling
