@@ -28,6 +28,15 @@ header .sub{font-size:11px;color:var(--muted)}
 .prof .hl{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prof .ct{font-size:10.5px;color:var(--muted);margin-top:5px}
 .prof-add{border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;min-width:112px}
+.docbar{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 15px;margin-bottom:15px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.docbar .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-right:2px}
+.doc{display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12.5px}
+.doc a{color:var(--accent);text-decoration:none;font-weight:600}
+.doc a:hover{text-decoration:underline}
+.doc .sz{color:var(--muted);font-size:10.5px}
+.doc .x{color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.doc .x:hover{color:var(--danger)}
+.doc-missing{color:var(--muted);font-size:12.5px;font-style:italic}
 .pipeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
 .pcard{flex:1;min-width:104px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s}
 .pcard:hover{border-color:var(--accent)}
@@ -81,6 +90,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 
 <div class="wrap">
   <div class="profiles" id="profiles"></div>
+  <div class="docbar" id="docbar"></div>
   <div class="pipeline" id="pipeline"></div>
 
   <div class="filters">
@@ -133,6 +143,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
   </div>
 </div>
 
+<input type="file" id="fileInput" accept="application/pdf,.pdf,.doc,.docx" style="display:none">
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -168,7 +180,7 @@ function renderProfiles(){
     PERFIL_ID = parseInt(c.dataset.id);
     localStorage.setItem('radar_perfil', PERFIL_ID);
     FILTER_STATUS = '';
-    renderProfiles(); syncHeader(); load();
+    renderProfiles(); syncHeader(); renderDocs(); load();
   });
   document.getElementById('profAdd').onclick = () => openProf(null);
 }
@@ -227,7 +239,61 @@ document.getElementById('btnDelProf').onclick = async () => {
 };
 
 async function refreshProfiles(){
-  try{ const d = await api('/api/vagas/perfis'); PERFIS = d.perfis||[]; renderProfiles(); }catch(e){}
+  try{ const d = await api('/api/vagas/perfis'); PERFIS = d.perfis||[]; renderProfiles(); renderDocs(); }catch(e){}
+}
+
+function fmtSize(b){ if(!b) return ''; return b<1024*1024 ? Math.round(b/1024)+' KB' : (b/1048576).toFixed(1)+' MB'; }
+
+const DOC_LABEL = {cv:'Currículo', carta:'Carta'};
+
+function renderDocs(){
+  const p = perfilAtual();
+  const el = document.getElementById('docbar');
+  if(!p){ el.innerHTML=''; return; }
+  const docs = p.docs || [];
+  let h = '<span class="lbl">Documentos</span>';
+  ['cv','carta'].forEach(t => {
+    const d = docs.find(x => x.tipo === t);
+    if(d){
+      h += '<span class="doc"><a href="/api/vagas/docs/'+d.id+'" target="_blank" rel="noopener">'+DOC_LABEL[t]+'</a>'
+        + '<span class="sz">'+fmtSize(d.tamanho)+'</span>'
+        + '<a href="/api/vagas/docs/'+d.id+'?download=1" title="Baixar">&#8595;</a>'
+        + '<span class="x" data-del="'+d.id+'" title="Remover">&times;</span></span>';
+    } else {
+      h += '<span class="doc-missing">'+DOC_LABEL[t]+': nenhum</span>';
+    }
+    h += '<button class="btn btn-sm" data-up="'+t+'">'+(d?'Substituir':'Enviar')+' '+DOC_LABEL[t].toLowerCase()+'</button>';
+  });
+  el.innerHTML = h;
+
+  el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => uploadDoc(b.dataset.up));
+  el.querySelectorAll('[data-del]').forEach(x => x.onclick = async () => {
+    if(!confirm('Remover este documento?')) return;
+    try{ await api('/api/vagas/docs/'+x.dataset.del,{method:'DELETE'}); toast('Documento removido'); await refreshProfiles(); }
+    catch(e){ toast(e.message); }
+  });
+}
+
+function uploadDoc(tipo){
+  const inp = document.getElementById('fileInput');
+  inp.value = '';
+  inp.onchange = async () => {
+    const f = inp.files[0]; if(!f) return;
+    if(f.size > 8*1024*1024){ toast('Arquivo acima de 8MB'); return; }
+    toast('Enviando...');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        const b64 = reader.result.split(',')[1];
+        await api('/api/vagas/perfis/'+PERFIL_ID+'/docs',{method:'POST',body:JSON.stringify({
+          tipo, filename: f.name, mime: f.type || 'application/pdf', content: b64
+        })});
+        toast('Documento salvo'); await refreshProfiles();
+      }catch(e){ toast('Erro: '+e.message); }
+    };
+    reader.readAsDataURL(f);
+  };
+  inp.click();
 }
 
 function renderPipeline(){
@@ -327,7 +393,7 @@ async function boot(){
     PERFIS = d.perfis||[];
     if(!PERFIS.length){ document.getElementById('list').innerHTML='<div class="empty">Nenhum perfil cadastrado.</div>'; renderProfiles(); return; }
     if(!PERFIL_ID || !PERFIS.some(p=>p.id===PERFIL_ID)) PERFIL_ID = PERFIS[0].id;
-    renderProfiles(); syncHeader(); load();
+    renderProfiles(); syncHeader(); renderDocs(); load();
   }catch(e){ document.getElementById('list').innerHTML = '<div class="empty">'+esc(e.message)+'</div>'; }
 }
 boot();
