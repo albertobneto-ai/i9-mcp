@@ -3,165 +3,255 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Agente Funcional — Ever i9</title>
+<title>Agente Funcional</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet" />
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
---brand:#0176D3;--brand-dark:#014486;--electric:#1B96FF;--navy:#032D60;--navy-deep:#001639;
---purple:#9050E9;--teal:#06A59A;--green:#2E844A;--amber:#FE9339;--red:#BA0517;
---bg:#F3F3F3;--surface:#FFFFFF;--surface-2:#F4F6FE;--border:#E5E5E5;
---text:#181818;--text-weak:#444444;--text-mute:#747474;
+--paper:#F4F5F7;--surf:#FFFFFF;--surf2:#FAFAFB;
+--ink:#0D0D0D;--ink2:#4A4A4A;--mut:#767676;--faint:#9B9B9B;
+--line:#E3E4E7;--line2:#C9CBCE;
+--r:4px;
 }
-body{font-family:Inter,-apple-system,'Salesforce Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
-.topbar{background:var(--navy-deep);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px}
-.mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--electric),var(--purple))}
-.brand b{font-size:15px;font-weight:600;display:block}
-.brand span{font-size:11px;opacity:.7}
-.wrap{max-width:1100px;margin:0 auto;padding:20px}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-h2{font-size:18px;font-weight:600;color:var(--navy)}
-button{font-family:inherit;font-size:13px;font-weight:500;padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-weak);cursor:pointer}
-button:hover{background:var(--surface-2)}
-button.p{background:var(--brand);border-color:var(--brand);color:#fff}
-button.p:hover{background:var(--brand-dark)}
-button.ok{background:var(--green);border-color:var(--green);color:#fff}
-button.warn{background:#fff;border-color:var(--amber);color:#8a4b00}
-button:disabled{opacity:.45;cursor:not-allowed}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
-.card.click{cursor:pointer}
-.card.click:hover{border-color:var(--electric)}
-.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px}
-.s-REQUISITO{background:#EEF4FF;color:var(--navy)}
-.s-CASO_DE_USO{background:#ECE1F9;color:#5A2D9E}
-.s-APROVADO{background:#EAF5FE;color:#04487D}
-.s-MAPA{background:#E3F3F2;color:#054E4A}
-.s-CONCLUIDO{background:#E4F5E8;color:#1B5E2F}
-.v-REUSAR{background:#E4F5E8;color:#1B5E2F}
-.v-ESTENDER{background:#FEF0D9;color:#8a4b00}
-.v-CRIAR{background:#EEF4FF;color:var(--navy)}
-.v-SUBSTITUIR{background:#ECE1F9;color:#5A2D9E}
-.v-DESCARTAR{background:#EFEFEF;color:#555}
-.steps{display:flex;gap:6px;margin:16px 0}
-.step{flex:1}
-.step i{display:block;height:4px;border-radius:2px;background:#DDD}
-.step.on i{background:var(--brand)}
-.step.now i{background:var(--electric)}
-.step span{display:block;font-size:11px;color:var(--text-mute);margin-top:6px}
-.step.now span{color:var(--brand);font-weight:600}
-label{display:block;font-size:12px;font-weight:600;color:var(--text-weak);margin:12px 0 5px}
-input[type=text],input[type=email],input[type=password],textarea{width:100%;font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #C9C9C9;border-radius:6px;background:#fff}
-textarea{min-height:130px;resize:vertical}
-input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px #0176D330}
-.mut{color:var(--text-mute);font-size:12px}
-.ov{position:fixed;inset:0;background:#00163999;display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
-.mod{background:#fff;border-radius:12px;padding:22px;max-width:620px;width:100%;max-height:88vh;overflow:auto}
-.mod.viewer{max-width:1180px;height:94vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
-.vhead{display:flex;align-items:center;justify-content:space-between;gap:12px;
-padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);flex-wrap:wrap}
-.vhead h2{font-size:15px}
-#docFrame{flex:1;width:100%;border:0;background:#F2F3F5}
-.btnlink{display:inline-block;font-size:13px;font-weight:500;padding:8px 16px;border-radius:6px;
-border:1px solid var(--border);background:var(--surface);color:var(--text-weak);text-decoration:none}
-.btnlink:hover{background:var(--surface-2)}
-pre.doc{margin:0;border:0;border-radius:0;max-height:none;flex:1;overflow:auto}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);
+font-family:Inter,-apple-system,'Segoe UI',system-ui,sans-serif;
+font-size:15px;line-height:1.55;font-feature-settings:'tnum' 0;
+-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 22px}
+
+/* topo */
+header{border-bottom:1px solid var(--line);background:var(--surf);position:sticky;top:0;z-index:30}
+.hin{max-width:860px;margin:0 auto;padding:15px 22px;display:flex;align-items:center;
+justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand b{font-size:16px;font-weight:600;letter-spacing:-.2px;white-space:nowrap}
+.brand span{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hact{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.who{font-size:12.5px;color:var(--faint)}
+
+/* botoes */
+button,.btn{font:inherit;font-size:13.5px;font-weight:500;padding:7px 15px;
+border-radius:var(--r);border:1px solid var(--line2);background:var(--surf);
+color:var(--ink2);cursor:pointer;transition:border-color .12s,background .12s}
+button:hover,.btn:hover{border-color:var(--ink2);color:var(--ink)}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button.solid{background:var(--ink);border-color:var(--ink);color:var(--surf)}
+button.solid:hover{background:#000;color:var(--surf)}
+button.quiet{border-color:transparent;color:var(--mut)}
+button.quiet:hover{border-color:var(--line2);color:var(--ink)}
+button:disabled{opacity:.4;cursor:not-allowed}
+a.btn{text-decoration:none;display:inline-block}
+
+/* secao */
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+margin:34px 0 4px}
+h1{font-size:20px;font-weight:600;letter-spacing:-.3px}
+.sublead{font-size:13.5px;color:var(--mut);margin-bottom:18px}
+
+/* livro-razao de sessoes */
+.ledger{background:var(--surf);border:1px solid var(--line);border-radius:var(--r)}
+.row{display:block;width:100%;text-align:left;border:0;border-radius:0;background:none;
+padding:16px 18px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--surf2)}
+.row .t{font-size:15px;font-weight:500;color:var(--ink);margin-bottom:5px;line-height:1.4}
+.row .m{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--faint)}
+.row .m .sep{width:3px;height:3px;border-radius:50%;background:var(--line2)}
+
+/* selo de estagio */
+.tag{font-size:11.5px;font-weight:500;padding:2px 9px;border-radius:20px;
+border:1px solid var(--line2);color:var(--ink2);white-space:nowrap}
+.tag.done{background:var(--ink);border-color:var(--ink);color:var(--surf)}
+.tag.wait{background:var(--surf2)}
+
+/* barra de estagio */
+.stage{display:flex;gap:5px;margin:20px 0 0}
+.stage div{flex:1}
+.stage i{display:block;height:2px;background:var(--line)}
+.stage.on i{background:var(--ink)}
+.stage span{display:block;font-size:11.5px;color:var(--faint);margin-top:8px}
+.stage .now span{color:var(--ink);font-weight:500}
+
+/* painel */
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);
+padding:20px 22px;margin-bottom:14px}
+.panel h2{font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:10px}
+.panel p{font-size:14px;color:var(--ink2)}
+.ptitle{font-size:21px;font-weight:600;letter-spacing:-.35px;line-height:1.3}
+.pmeta{font-size:12.5px;color:var(--faint);margin-top:6px}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:12px;
+flex-wrap:wrap;margin-bottom:14px}
+
+/* numerais — o ponto alto */
+.figs{display:flex;flex-wrap:wrap;gap:0;margin:18px 0 6px;
+border-top:1px solid var(--line)}
+.fig{flex:1 1 110px;padding:16px 18px 14px;border-right:1px solid var(--line)}
+.fig:last-child{border-right:none}
+.fig b{display:block;font-size:34px;font-weight:450;letter-spacing:-1.5px;
+line-height:1;font-variant-numeric:tabular-nums}
+.fig span{display:block;font-size:12px;color:var(--mut);margin-top:7px}
+.fig.nil b{color:var(--line2)}
+
+/* acoes */
+.acts{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--mut);margin-top:14px}
+.locked{opacity:.5}
+
+/* formulario */
+label{display:block;font-size:13px;font-weight:500;color:var(--ink2);margin:16px 0 6px}
+input[type=text],input[type=email],input[type=password],textarea{width:100%;font:inherit;
+font-size:14.5px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);
+background:var(--surf);color:var(--ink)}
+textarea{min-height:150px;resize:vertical;line-height:1.55}
+input:focus,textarea:focus{outline:none;border-color:var(--ink)}
+input[type=file]{font-size:13px;color:var(--ink2)}
+.filehint{font-size:12.5px;color:var(--faint);margin-top:4px}
+
+/* sobreposicao */
+.ov{position:fixed;inset:0;background:rgba(13,13,13,.42);display:flex;
+align-items:center;justify-content:center;padding:18px;z-index:60}
+.sheet{background:var(--surf);border-radius:6px;padding:26px;max-width:560px;width:100%;
+max-height:90vh;overflow:auto}
+.sheet h2{font-size:18px;font-weight:600;letter-spacing:-.2px;margin-bottom:5px}
+.sheet .lead{font-size:13.5px;color:var(--mut);margin-bottom:4px}
+.sheet .foot{display:flex;gap:9px;justify-content:flex-end;margin-top:24px}
+
+/* visor */
+.viewer{max-width:1240px;width:100%;height:95vh;padding:0;display:flex;
+flex-direction:column;overflow:hidden;border-radius:6px;background:var(--surf)}
+.vbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+padding:11px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.vbar .vt{font-size:14px;font-weight:500}
+.vbar .va{display:flex;gap:8px}
+iframe{flex:1;width:100%;border:0;background:var(--paper)}
+pre.raw{margin:0;flex:1;overflow:auto;padding:22px;background:var(--surf2);
+font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;
+color:var(--ink2);white-space:pre-wrap}
+
+/* estados */
+.empty{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);
+padding:52px 26px;text-align:center}
+.empty p{font-size:14.5px;color:var(--mut);margin-bottom:16px}
+.msg{border:1px solid var(--line2);border-left:3px solid var(--ink);background:var(--surf);
+border-radius:var(--r);padding:11px 15px;font-size:13.5px;color:var(--ink2);margin:16px 0}
 .hide{display:none}
-pre.doc{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px;max-height:460px;overflow:auto}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
-.stat{background:var(--surface-2);border-radius:8px;padding:12px}
-.stat b{display:block;font-size:22px;font-weight:600;color:var(--navy)}
-.stat span{font-size:11px;color:var(--text-mute)}
-.err{background:#FEF1F1;border:1px solid #F5C6C6;color:#8B1414;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
-.ok{background:#E4F5E8;border:1px solid #B6E0C1;color:#1B5E2F;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
-.empty{text-align:center;padding:44px 16px;color:var(--text-mute)}
-@media(max-width:620px){.wrap{padding:14px}.step span{font-size:10px}}
+.signin{max-width:380px;margin:64px auto}
+@media(max-width:560px){
+ .figs{border-bottom:1px solid var(--line)}
+ .fig{flex:1 1 50%;border-bottom:1px solid var(--line)}
+ .fig:nth-child(2n){border-right:none}
+ .stage span{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand"><div class="mark"></div><div><b>Agente Funcional</b><span>Caso de uso · Mapa de componentes</span></div></div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span class="mut" id="who" style="color:#cfd9e6"></span>
-    <button id="btnNew" class="p hide">Nova sessão</button>
+<header>
+  <div class="hin">
+    <div class="brand"><b>Agente Funcional</b><span>história e especificação</span></div>
+    <div class="hact">
+      <span class="who" id="who"></span>
+      <button class="solid hide" id="btnNew">Nova sessão</button>
+    </div>
   </div>
-</div>
+</header>
 
 <div class="wrap">
   <div id="msg"></div>
 
+  <!-- entrar -->
   <div id="viewLogin" class="hide">
-    <div class="card" style="max-width:400px;margin:40px auto">
-      <h2 style="margin-bottom:4px">Entrar</h2>
-      <p class="mut">Mesma credencial do Ever i9.</p>
-      <label>E-mail</label><input type="email" id="em" value="admin@everi9.com" />
-      <label>Senha</label><input type="password" id="pw" />
-      <button class="p" style="width:100%;margin-top:16px" id="btnLogin">Entrar</button>
+    <div class="signin">
+      <div class="panel">
+        <h2>Entrar</h2>
+        <p style="margin-bottom:4px">Use a mesma credencial do Ever i9.</p>
+        <label for="em">E-mail</label><input type="email" id="em" value="admin@everi9.com" />
+        <label for="pw">Senha</label><input type="password" id="pw" />
+        <button class="solid" style="width:100%;margin-top:20px" id="btnLogin">Entrar</button>
+      </div>
     </div>
   </div>
 
+  <!-- lista -->
   <div id="viewList" class="hide">
-    <div class="row"><h2>Sessões</h2><button id="btnReload">Atualizar</button></div>
+    <div class="head"><h1>Sessões</h1><button class="quiet" id="btnReload">Atualizar</button></div>
+    <p class="sublead">Cada sessão parte de um requisito e produz dois documentos.</p>
     <div id="list"></div>
   </div>
 
+  <!-- detalhe -->
   <div id="viewDetail" class="hide">
-    <div class="row"><button id="btnBack">← Voltar</button><span id="dStage"></span></div>
-    <div class="card">
-      <h2 id="dTitle"></h2>
-      <p class="mut" id="dMeta"></p>
-      <div class="steps" id="dSteps"></div>
+    <div class="head" style="margin-bottom:14px">
+      <button class="quiet" id="btnBack">Voltar às sessões</button>
+      <span id="dTag"></span>
+    </div>
+    <div class="panel">
+      <div class="ptitle" id="dTitle"></div>
+      <div class="pmeta" id="dMeta"></div>
+      <div class="stage" id="dStage"></div>
     </div>
     <div id="dBody"></div>
   </div>
 </div>
 
+<!-- nova sessao -->
 <div id="modNew" class="ov hide">
-  <div class="mod">
+  <div class="sheet">
     <h2>Nova sessão</h2>
-    <p class="mut">O agente lê o requisito e devolve o caso de uso. O mapa só é gerado após sua aprovação.</p>
-    <label>Título</label><input type="text" id="nTitle" placeholder="Parceiro registra lead pelo portal" />
-    <label>Requisito</label><textarea id="nReq" placeholder="Cole o requisito, ou anexe um arquivo abaixo."></textarea>
-    <label>Anexo · opcional · até 8 MB</label><input type="file" id="nFile" />
-    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
-      <button id="nCancel">Cancelar</button><button class="p" id="nSend">Enviar ao agente</button>
+    <p class="lead">O agente lê o requisito e devolve a história funcional. A especificação só é gerada depois que você aprovar.</p>
+    <label for="nTitle">Título</label>
+    <input type="text" id="nTitle" placeholder="Parceiro registra lead pelo portal" />
+    <label for="nReq">Requisito</label>
+    <textarea id="nReq" placeholder="Descreva o que precisa acontecer. Uma frase já basta para começar."></textarea>
+    <label for="nFile">Anexo</label>
+    <input type="file" id="nFile" />
+    <p class="filehint">Opcional, até 8 MB.</p>
+    <div class="foot">
+      <button id="nCancel">Cancelar</button>
+      <button class="solid" id="nSend">Enviar ao agente</button>
     </div>
   </div>
 </div>
 
+<!-- visor -->
 <div id="modDoc" class="ov hide">
-  <div class="mod viewer">
-    <div class="vhead">
-      <h2 id="docTitle"></h2>
-      <div style="display:flex;gap:8px">
-        <button id="docText">Ver texto</button>
-        <a id="docDl" class="btnlink" href="#" target="_blank">Baixar</a>
+  <div class="sheet viewer">
+    <div class="vbar">
+      <span class="vt" id="docTitle"></span>
+      <span class="va">
+        <button id="docText">Ver origem</button>
+        <a id="docDl" class="btn" href="#" target="_blank" rel="noopener">Baixar</a>
         <button id="docClose">Fechar</button>
-      </div>
+      </span>
     </div>
-    <iframe id="docFrame" class="hide"></iframe>
-    <pre class="doc hide" id="docBody"></pre>
+    <iframe id="docFrame" class="hide" title="Documento"></iframe>
+    <pre class="raw hide" id="docBody"></pre>
   </div>
 </div>
 
 <script>
-var API='/api', T=localStorage.getItem('i9t')||'', S=null, ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','CONCLUIDO'];
-var LBL={REQUISITO:'Requisito',CASO_DE_USO:'Caso de uso',APROVADO:'Aprovado',MAPA:'Mapa',CONCLUIDO:'Concluído'};
+var API='/api', T=localStorage.getItem('i9t')||'',S=null,
+    ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','CONCLUIDO'],
+    LBL={REQUISITO:'Requisito',CASO_DE_USO:'História',APROVADO:'Aprovado',MAPA:'Especificação',CONCLUIDO:'Concluída'};
 function $(i){return document.getElementById(i)}
-function show(v){['viewLogin','viewList','viewDetail'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});$('btnNew').classList.toggle('hide',v==='viewLogin')}
-function note(t,k){$('msg').innerHTML=t?'<div class="'+(k||'err')+'">'+t+'</div>':'';if(t)setTimeout(function(){$('msg').innerHTML=''},6000)}
+function show(v){['viewLogin','viewList','viewDetail'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});
+  $('btnNew').classList.toggle('hide',v==='viewLogin')}
+function note(t){$('msg').innerHTML=t?'<div class="msg">'+esc(t)+'</div>':'';
+  if(t)setTimeout(function(){$('msg').innerHTML=''},7000)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function dt(s){return s?new Date(s).toLocaleString('pt-BR'):''}
+function dt(s){if(!s)return'';var d=new Date(s);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function tagFor(st){var c=st==='CONCLUIDO'?'done':(st==='REQUISITO'?'wait':'');return '<span class="tag '+c+'">'+LBL[st]+'</span>'}
 
 async function api(p,o){
   o=o||{};o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{},T?{Authorization:'Bearer '+T}:{});
   var r=await fetch(API+p,o);
-  if(r.status===401){T='';localStorage.removeItem('i9t');show('viewLogin');throw new Error('Sessão expirada');}
+  if(r.status===401){T='';localStorage.removeItem('i9t');show('viewLogin');throw new Error('Sua sessão expirou. Entre novamente.')}
   var d=await r.json().catch(function(){return{}});
-  if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+  if(!r.ok)throw new Error(d.error||('Falhou com HTTP '+r.status));
   return d;
 }
 
@@ -171,16 +261,20 @@ $('btnLogin').onclick=async function(){
     T=d.token;localStorage.setItem('i9t',T);$('who').textContent=$('em').value;load();
   }catch(e){note(e.message)}
 };
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnLogin').click()});
 
 async function load(){
   try{
     var d=await api('/agente');show('viewList');
-    if(!d.items.length){$('list').innerHTML='<div class="empty">Nenhuma sessão ainda. Clique em <b>Nova sessão</b>.</div>';return}
-    $('list').innerHTML=d.items.map(function(s){
-      return '<div class="card click" onclick="openS('+s.id+')"><div class="row" style="margin:0">'+
-        '<div><b style="font-size:15px">'+esc(s.title)+'</b><br><span class="mut">#'+s.id+' · '+dt(s.created_at)+(s.has_file?' · com anexo':'')+'</span></div>'+
-        '<span class="pill s-'+s.stage+'">'+LBL[s.stage]+'</span></div></div>';
-    }).join('');
+    if(!d.items.length){
+      $('list').innerHTML='<div class="empty"><p>Nenhuma sessão ainda.</p>'+
+        '<button class="solid" onclick="document.getElementById(\'btnNew\').click()">Criar a primeira</button></div>';return}
+    $('list').innerHTML='<div class="ledger">'+d.items.map(function(s){
+      return '<button class="row" onclick="openS('+s.id+')">'+
+        '<div class="t">'+esc(s.title)+'</div><div class="m">'+
+        tagFor(s.stage)+'<span class="sep"></span><span>'+dt(s.created_at)+'</span>'+
+        (s.has_file?'<span class="sep"></span><span>com anexo</span>':'')+'</div></button>';
+    }).join('')+'</div>';
   }catch(e){if(!T)show('viewLogin');else note(e.message)}
 }
 $('btnReload').onclick=load;
@@ -190,84 +284,88 @@ window.openS=async function(id){
   try{
     S=await api('/agente/'+id);show('viewDetail');
     $('dTitle').textContent=S.title;
-    $('dMeta').textContent='#'+S.id+' · criada em '+dt(S.created_at)+(S.approved_at?' · aprovada em '+dt(S.approved_at):'');
-    $('dStage').innerHTML='<span class="pill s-'+S.stage+'">'+LBL[S.stage]+'</span>';
+    $('dMeta').textContent='Sessão '+S.id+', criada em '+dt(S.created_at)+(S.approved_at?'. Aprovada em '+dt(S.approved_at)+'.':'.');
+    $('dTag').innerHTML=tagFor(S.stage);
     var cur=ORDER.indexOf(S.stage);
-    $('dSteps').innerHTML=ORDER.slice(0,4).map(function(k,i){
-      return '<div class="step '+(i<cur?'on':'')+' '+(i===cur?'now':'')+'"><i></i><span>'+LBL[k]+'</span></div>';
-    }).join('');
+    $('dStage').innerHTML=ORDER.slice(0,4).map(function(k,i){
+      return '<div class="'+(i<=cur?'on':'')+(i===cur?' now':'')+'"><i></i><span>'+LBL[k]+'</span></div>'}).join('');
     render();
   }catch(e){note(e.message)}
 };
 
+function figs(items){
+  return '<div class="figs">'+items.map(function(f){
+    var nil=(f[0]==null||f[0]===0);
+    return '<div class="fig'+(nil?' nil':'')+'"><b>'+(nil?'—':f[0])+'</b><span>'+f[1]+'</span></div>'}).join('')+'</div>';
+}
+
 function render(){
   var h='';
-  if(S.error)h+='<div class="err">'+esc(S.error)+'</div>';
+  if(S.error)h+='<div class="msg">'+esc(S.error)+'</div>';
 
-  h+='<div class="card"><b>Requisito</b><p class="mut" style="margin-top:6px;white-space:pre-wrap">'+esc(S.requisito||'(somente anexo)')+'</p>';
-  if(S.has_file)h+='<p style="margin-top:10px"><a href="'+API+'/agente/'+S.id+'/file" target="_blank">Baixar '+esc(S.file_name)+'</a></p>';
+  h+='<div class="panel"><h2>Requisito</h2><p style="white-space:pre-wrap">'+esc(S.requisito||'Enviado apenas como anexo.')+'</p>';
+  if(S.has_file)h+='<div class="acts"><a class="btn" href="'+API+'/agente/'+S.id+'/file" target="_blank" rel="noopener">Baixar '+esc(S.file_name)+'</a></div>';
   h+='</div>';
 
   var uc=S.artifacts.filter(function(a){return a.kind==='CASO_DE_USO'})[0];
   var mp=S.artifacts.filter(function(a){return a.kind==='MAPA'})[0];
 
   if(uc){
-    var sm=uc.summary||{};
-    h+='<div class="card"><div class="row" style="margin:0"><b>Caso de uso · v'+uc.version+'</b>'+
-        '<button class="p" onclick="doc('+uc.id+',\'História funcional\')">Abrir documento</button></div>';
-    h+='<div class="grid">'+
-       stat(sm.passos,'Passos no fluxo')+stat(sm.excecoes,'Exceções')+
-       stat(sm.atores,'Atores')+stat(sm.perguntas,'Perguntas em aberto')+'</div>';
-    if(sm.pos_condicoes)h+='<p class="mut"><b>Pós-condições:</b> '+esc(sm.pos_condicoes)+'</p>';
+    var m=uc.summary||{};
+    h+='<div class="panel"><div class="phead"><div><h2 style="margin:0">História funcional</h2>'+
+       '<div class="pmeta">Versão '+uc.version+'</div></div>'+
+       '<button class="solid" onclick="doc('+uc.id+',\'História funcional\')">Abrir documento</button></div>';
+    h+=figs([[m.passos,'Passos no fluxo'],[m.alternativos,'Fluxos alternativos'],
+             [m.excecoes,'Deles, de falha'],[m.atores,'Atores']]);
     if(S.stage==='CASO_DE_USO')
-      h+='<div style="display:flex;gap:8px;margin-top:16px"><button class="ok" onclick="approve()">Aprovar e liberar o mapa</button><button class="warn" onclick="reject()">Pedir ajuste</button></div>';
+      h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e liberar a especificação</button>'+
+         '<button onclick="reject()">Pedir ajuste</button></div>';
     h+='</div>';
   }else{
-    h+='<div class="card"><b>Caso de uso</b><p class="mut" style="margin-top:6px">Aguardando o agente processar o requisito.</p></div>';
+    h+='<div class="panel"><h2>História funcional</h2><p>O agente ainda não processou este requisito.</p></div>';
   }
 
-  if(S.approval_note)h+='<div class="card"><b>Observação da revisão</b><p class="mut" style="margin-top:6px;white-space:pre-wrap">'+esc(S.approval_note)+'</p></div>';
+  if(S.approval_note)
+    h+='<div class="panel"><h2>Ajuste pedido na última revisão</h2><p style="white-space:pre-wrap">'+esc(S.approval_note)+'</p></div>';
 
   if(mp){
-    var ms=mp.summary||{};
-    h+='<div class="card"><div class="row" style="margin:0"><b>Mapa de componentes · v'+mp.version+'</b>'+
-        '<button class="p" onclick="doc('+mp.id+',\'Especificação funcional\')">Abrir documento</button></div>';
-    h+='<div style="margin-top:12px">'+['REUSAR','ESTENDER','CRIAR','SUBSTITUIR','DESCARTAR'].map(function(v){
-        var n=ms[v.toLowerCase()];return n==null?'':'<span class="pill v-'+v+'" style="margin:0 6px 6px 0">'+v.charAt(0)+v.slice(1).toLowerCase()+' · '+n+'</span>';
-      }).join('')+'</div>';
-    if(ms.a_desenvolver!=null)h+='<p class="mut" style="margin-top:10px"><b>'+ms.a_desenvolver+'</b> componentes a desenvolver.</p>';
-    if(mp.has_file)h+='<p style="margin-top:10px"><a href="'+API+'/agente/artifact/'+mp.id+'/file" target="_blank">Baixar '+esc(mp.file_name)+'</a></p>';
+    var s=mp.summary||{};
+    h+='<div class="panel"><div class="phead"><div><h2 style="margin:0">Especificação funcional</h2>'+
+       '<div class="pmeta">Versão '+mp.version+'</div></div>'+
+       '<button class="solid" onclick="doc('+mp.id+',\'Especificação funcional\')">Abrir documento</button></div>';
+    h+=figs([[s.a_desenvolver,'A desenvolver'],[s.criar,'Criar'],
+             [s.estender,'Estender'],[s.reusar,'Reusar']]);
     h+='</div>';
   }else if(S.stage==='APROVADO'){
-    h+='<div class="card"><b>Mapa de componentes</b><p class="mut" style="margin-top:6px">Aprovado. Aguardando o agente validar contra a HOMOL e a documentação oficial.</p></div>';
+    h+='<div class="panel"><h2>Especificação funcional</h2><p>Aprovada. O agente está validando os componentes contra a HOMOL e a documentação oficial.</p></div>';
   }else if(uc){
-    h+='<div class="card" style="opacity:.6"><b>Mapa de componentes</b><p class="mut" style="margin-top:6px">Bloqueado até a aprovação do caso de uso.</p></div>';
+    h+='<div class="panel locked"><h2>Especificação funcional</h2><p>Disponível depois que você aprovar a história funcional.</p></div>';
   }
   $('dBody').innerHTML=h;
 }
-function stat(v,l){return '<div class="stat"><b>'+(v==null?'—':v)+'</b><span>'+l+'</span></div>'}
 
 window.approve=async function(){
-  try{await api('/agente/'+S.id+'/approve',{method:'POST',body:JSON.stringify({note:null})});note('Caso de uso aprovado. O mapa está liberado.','ok');openS(S.id)}catch(e){note(e.message)}
+  try{await api('/agente/'+S.id+'/approve',{method:'POST',body:JSON.stringify({note:null})});
+    note('História funcional aprovada. A especificação está liberada.');openS(S.id)}catch(e){note(e.message)}
 };
 window.reject=async function(){
-  var n=prompt('O que precisa ser ajustado no caso de uso?');if(!n)return;
-  try{await api('/agente/'+S.id+'/reject',{method:'POST',body:JSON.stringify({note:n})});note('Ajuste registrado. Volta para o agente.','ok');openS(S.id)}catch(e){note(e.message)}
+  var n=prompt('O que precisa ser ajustado na história funcional?');if(!n)return;
+  try{await api('/agente/'+S.id+'/reject',{method:'POST',body:JSON.stringify({note:n})});
+    note('Ajuste registrado. A sessão voltou para o agente.');openS(S.id)}catch(e){note(e.message)}
 };
-var CUR=null;
+
 window.doc=async function(aid,t){
   try{
-    var a=await api('/agente/artifact/'+aid);CUR=a;
-    $('docTitle').textContent=t+' · v'+a.version;
-    $('docBody').textContent=a.content||'(sem conteúdo textual)';
+    var a=await api('/agente/artifact/'+aid);
+    $('docTitle').textContent=t+', versão '+a.version;
+    $('docBody').textContent=a.content||'Sem conteúdo em texto.';
     var url=API+'/agente/artifact/'+aid+'/file';
     $('docDl').href=url;
     if(a.file_name&&/\.html?$/i.test(a.file_name)){
       var r=await fetch(url,{headers:{Authorization:'Bearer '+T}});
-      var html=await r.text();
-      $('docFrame').srcdoc=html;
+      $('docFrame').srcdoc=await r.text();
       $('docFrame').classList.remove('hide');$('docBody').classList.add('hide');
-      $('docText').classList.remove('hide');$('docText').textContent='Ver texto';
+      $('docText').classList.remove('hide');$('docText').textContent='Ver origem';
       $('docDl').classList.remove('hide');
     }else{
       $('docFrame').classList.add('hide');$('docBody').classList.remove('hide');
@@ -278,26 +376,34 @@ window.doc=async function(aid,t){
 };
 $('docText').onclick=function(){
   var f=$('docFrame'),b=$('docBody');
-  if(f.classList.contains('hide')){f.classList.remove('hide');b.classList.add('hide');this.textContent='Ver texto'}
+  if(f.classList.contains('hide')){f.classList.remove('hide');b.classList.add('hide');this.textContent='Ver origem'}
   else{f.classList.add('hide');b.classList.remove('hide');this.textContent='Ver documento'}
 };
 $('docClose').onclick=function(){$('modDoc').classList.add('hide');$('docFrame').srcdoc=''};
 
-$('btnNew').onclick=function(){$('nTitle').value='';$('nReq').value='';$('nFile').value='';$('modNew').classList.remove('hide')};
+$('btnNew').onclick=function(){$('nTitle').value='';$('nReq').value='';$('nFile').value='';
+  $('modNew').classList.remove('hide');$('nTitle').focus()};
 $('nCancel').onclick=function(){$('modNew').classList.add('hide')};
 $('nSend').onclick=async function(){
   var t=$('nTitle').value.trim(),r=$('nReq').value.trim(),f=$('nFile').files[0];
-  if(!t){note('Informe o título.');return}
-  if(!r&&!f){note('Cole o requisito ou anexe um arquivo.');return}
+  if(!t){note('Dê um título à sessão.');return}
+  if(!r&&!f){note('Escreva o requisito ou anexe um arquivo.');return}
   var body={title:t,requisito:r||null};
   if(f){
-    if(f.size>8*1024*1024){note('Anexo acima de 8 MB.');return}
+    if(f.size>8*1024*1024){note('O anexo passa de 8 MB.');return}
     body.file_name=f.name;
-    body.file_b64=await new Promise(function(res,rej){var rd=new FileReader();rd.onload=function(){res(rd.result.split(',')[1])};rd.onerror=rej;rd.readAsDataURL(f)});
+    body.file_b64=await new Promise(function(res,rej){var rd=new FileReader();
+      rd.onload=function(){res(rd.result.split(',')[1])};rd.onerror=rej;rd.readAsDataURL(f)});
   }
-  try{$('nSend').disabled=true;await api('/agente',{method:'POST',body:JSON.stringify(body)});$('modNew').classList.add('hide');note('Sessão criada. O agente processa e devolve o caso de uso.','ok');load()}
+  try{$('nSend').disabled=true;await api('/agente',{method:'POST',body:JSON.stringify(body)});
+    $('modNew').classList.add('hide');note('Sessão criada. O agente vai devolver a história funcional.');load()}
   catch(e){note(e.message)}finally{$('nSend').disabled=false}
 };
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  if(!$('modDoc').classList.contains('hide'))$('docClose').click();
+  else if(!$('modNew').classList.contains('hide'))$('nCancel').click();
+});
 
 if(T)load();else show('viewLogin');
 </script>
