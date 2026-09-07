@@ -476,6 +476,7 @@ app.get('/api/debug/ip', async (req, res) => {
 });
 
 initControlTables().catch(e => console.error('[control] init falhou:', e.message));
+initAgenteTables().catch(e => console.error('[agente] init falhou:', e.message));
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
 
