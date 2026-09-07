@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-# build_docs.py — gera HTML monocromatico self-contained para os artefatos do Agente Funcional
-# (historia funcional /uc e especificacao funcional /map).
-#
-# NAO EDITAR a paleta nem a marca sem autorizacao do Alberto.
+# build_docs.py — gera HTML dark monocromatico self-contained para os artefatos do Agente Funcional.
 # Paleta monocromatica clara: fundo branco gelo #F2F3F5, superficies #FAFBFC/#ECECEC,
 # texto #0D0D0D, mute #6B6B6B, borda #D9D9D9. Capa em gradiente escuro. Zero cor.
 
@@ -133,6 +130,13 @@ text-transform:uppercase;display:block;margin-bottom:3px}
 .comp dl{display:grid;grid-template-columns:104px 1fr;gap:5px 14px;font-size:12.5px}
 .comp dt{color:var(--mut);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;padding-top:2px}
 .comp dd{color:var(--tx2)}
+.comp .desc{font-size:13px;color:var(--tx2);margin:0 0 11px;line-height:1.6}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}
+.lk{font-size:11.5px;color:var(--tx);text-decoration:none;border:1px solid var(--bd2);
+padding:3px 10px;background:var(--s1);white-space:nowrap}
+.lk:hover{border-color:var(--tx);background:var(--s2)}
+.lk.doc{border-style:dashed}
+@media print{.lk{border-style:solid;background:none}}
 /* navegacao fixa */
 .navbar{position:sticky;top:0;z-index:20;background:rgba(242,243,245,.94);
 backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);margin:0 -32px 32px;padding:9px 32px;
@@ -275,20 +279,28 @@ def question(qid, text, default):
             f'<div class="qd"><b>Default assumido</b>{default}</div></div>')
 
 
-def comp_card(cid, passo, nome, tipo, org, evid, doc, veredito, just):
+def comp_card(cid, passo, nome, tipo, veredito, descricao, requisito,
+              org_url=None, org_label=None, doc_url=None, doc_label=None):
+    """Cartao de componente da especificacao funcional.
+    descricao: o que o componente e, em uma ou duas frases.
+    requisito: o que precisa acontecer nele para atender o caso de uso.
+    """
     k = veredito.lower()
-    cls = "criar" if k in ("criar",) else ("estender" if k in ("estender","substituir") else "reusar")
-    bcl = "b-solid" if k == "criar" else ("b-mid" if k in ("estender","substituir") else "b-out")
-    rows = ""
-    if org:   rows += f"<dt>Na org</dt><dd>{org}</dd>"
-    if evid:  rows += f"<dt>Evidência</dt><dd>{evid}</dd>"
-    if doc and doc != "—": rows += f"<dt>Doc oficial</dt><dd>{doc}</dd>"
-    rows += f"<dt>Por quê</dt><dd>{just}</dd>"
+    cls = "criar" if k == "criar" else ("estender" if k in ("estender", "substituir") else "reusar")
+    bcl = "b-solid" if k == "criar" else ("b-mid" if k in ("estender", "substituir") else "b-out")
+    links = ""
+    if org_url:
+        links += f'<a class="lk" href="{org_url}" target="_blank" rel="noopener">{org_label or "Abrir na org"}</a>'
+    if doc_url:
+        links += f'<a class="lk doc" href="{doc_url}" target="_blank" rel="noopener">{doc_label or "Documentação oficial"}</a>'
+    lk = f'<div class="links">{links}</div>' if links else ""
     return (f'<div class="comp {cls}"><div class="comp-h">'
             f'<span class="id">{cid}</span><span class="nm">{nome}</span>'
             f'<span class="tp">{tipo}</span>'
             f'<span class="st"><span class="b {bcl}">{veredito}</span></span></div>'
-            f'<dl><dt>Passo</dt><dd>{passo}</dd>{rows}</dl></div>')
+            f'<p class="desc">{descricao}</p>'
+            f'<dl><dt>Passo</dt><dd>{passo}</dd>'
+            f'<dt>Para atender</dt><dd>{requisito}</dd></dl>{lk}</div>')
 
 def group(label, count):
     return (f'<div class="grp"><span class="gl">{label}</span>'
