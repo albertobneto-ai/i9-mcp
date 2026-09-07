@@ -45,7 +45,8 @@ Nunca trave esperando resposta perfeita. Melhor entregar com premissa declarada.
 ## Estrutura obrigatória — exatamente 8 seções
 
 ### 01. Identificação
-Tabela: ID (`UC-<área>-<nnn>`), Nome, Escopo (nuvem/módulo), Nível (objetivo do usuário / subfunção), Autor, Data, Origem do requisito.
+Tabela enxuta: ID (`UC-<área>-<nnn>`), Nome, Escopo (nuvem/módulo), Nível (objetivo do usuário / subfunção), Data.
+Sem linha de versão, sem autor, sem origem do requisito, sem changelog.
 
 ### 02. Atores
 - **Primário** — quem inicia e recebe o valor
@@ -84,10 +85,12 @@ Cada fluxo alternativo diz três coisas, nesta ordem:
 
 Marque os caminhos de falha com a letra `e` (`3e.`, `8e.`) e os de sucesso alternativo com `a`, `b`, `c`. É convenção de leitura, não seção nova.
 
+**Ordem: de acontecimento, nunca por tipo.** `3e` vem antes de `7a`, que vem antes de `10f`. Quem lê segue o fluxo, não a taxonomia — o desvio tem de estar onde nasce.
+
 **Piso: 6 alternativos, dos quais ao menos 4 de falha.** Abaixo disso, justifique no texto.
 
 ### 07. Regras de negócio invocadas
-Tabela: ID (`RN-nnn`), Enunciado, Passo do fluxo onde incide, Origem (documento/pessoa/inferido).
+Tabela: ID (`RN-nnn`), Enunciado, Passo do fluxo onde incide. **Sem coluna de origem ou fonte.**
 Regra de negócio é declarativa e independe de implementação.
 
 ### 08. Objetos e dados tocados
@@ -103,13 +106,11 @@ Formato: `P1. <pergunta> — Default assumido: <resposta>.`
 
 O default é o que o `/map` vai consumir se ninguém responder. Sem default, a pergunta é inútil.
 
-## Marcação de verificação
+## Procedência — no chat, nunca no documento
 
-Toda afirmação factual sobre o requisito recebe marcador, e ele **permanece no documento final**:
+O documento **não** carrega `[VERIFICADO]`, `[INFERIDO]` nem `[NÃO VERIFICADO]`. Nenhum marcador, em nenhuma seção, em nenhuma tabela.
 
-- `[VERIFICADO: <fonte>]` — está escrito no requisito de origem
-- `[INFERIDO: <base>]` — deduzido do requisito
-- `[NÃO VERIFICADO]` — assumido sem base
+A procedência continua obrigatória — muda de lugar. Ao entregar, **na sua mensagem do chat**, diga o que foi lido na org ao vivo e onde, o que foi deduzido e a partir de quê, e o que não foi possível confirmar. Honestidade preservada, artefato limpo.
 
 ## Proibições de conteúdo
 
@@ -119,11 +120,15 @@ Nunca inclua no documento, em nenhuma hipótese:
 - **Critérios de aceite**
 - **Seção de pós-condições** — o estado resultante é descrito nos passos finais do fluxo principal e de cada alternativo
 - **Seção de fluxos de exceção** — as falhas são fluxos alternativos, dentro do contexto do caso de uso
+- **Marcadores de verificação** — nada de `[VERIFICADO]`, `[INFERIDO]`, `[NÃO VERIFICADO]`
+- **Rastro de versão** — nada de "Versão 5", linha "Versão" na identificação, changelog ou histórico de revisões
+- **Menção a ajustes ou à conversa** — nada de "Ajuste v3", "conforme solicitado", "origem: sessão #2". O documento não conta como foi feito
+- **Coluna de origem ou fonte** em qualquer tabela
 - **Nomes de componentes Salesforce** (Flow, Apex, LWC, campo, permission set) — isso é trabalho do `/map`
 
-Tudo o que o caso de uso precisa dizer cabe nas 8 seções. Nada de apêndice para contornar a regra.
+O documento é só o documento. Metadado de processo fica no chat. Nada de apêndice para contornar a regra.
 
-**Consequência que você precisa carregar:** sem critério de aceite e sem pós-condição, a verificabilidade depende inteiramente de como cada passo é escrito. Escreva os passos finais — do fluxo principal e de cada alternativo — de forma observável e conferível na org. "O sistema cria o lead" é fraco; "o sistema cria o lead com o consultor como proprietário e a origem registrada" é conferível.
+**Consequência que você precisa carregar:** sem critério de aceite, sem pós-condição e sem marcador de verificação, a verificabilidade depende inteiramente de como cada passo é escrito. Escreva os passos finais — do fluxo principal e de cada alternativo — de forma observável e conferível na org. "O sistema cria o lead" é fraco; "o sistema cria o lead com o consultor como proprietário e a origem registrada" é conferível.
 
 ## Léxico proibido
 
@@ -131,9 +136,9 @@ geralmente · normalmente · algo como · entre outros · etc. · pode variar ·
 
 Exceção: quando a variabilidade **é** o conteúdo e está caracterizada — "varia por perfil; os 4 afetados são A, B, C, D".
 
-## Passe adversarial antes de entregar
+## Passe adversarial — no chat, fora do documento
 
-Antes de mostrar o caso de uso, encontre 5 falhas no próprio trabalho e corrija ou registre:
+Antes de mostrar o caso de uso, encontre 5 falhas no próprio trabalho e corrija ou registre **na sua mensagem do chat, nunca dentro do artefato**:
 (a) erro factual · (b) omissão · (c) premissa não declarada · (d) caso de borda · (e) alternativa superior descartada.
 
 Falha genérica ("poderia ter mais detalhes") significa que o passe não foi feito.
