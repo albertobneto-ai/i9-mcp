@@ -59,6 +59,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0
 .mut{color:var(--text-mute);font-size:12px}
 .ov{position:fixed;inset:0;background:#00163999;display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 .mod{background:#fff;border-radius:12px;padding:22px;max-width:620px;width:100%;max-height:88vh;overflow:auto}
+.mod.viewer{max-width:1180px;height:94vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:12px;
+padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);flex-wrap:wrap}
+.vhead h2{font-size:15px}
+#docFrame{flex:1;width:100%;border:0;background:#0A0A0A}
+.btnlink{display:inline-block;font-size:13px;font-weight:500;padding:8px 16px;border-radius:6px;
+border:1px solid var(--border);background:var(--surface);color:var(--text-weak);text-decoration:none}
+.btnlink:hover{background:var(--surface-2)}
+pre.doc{margin:0;border:0;border-radius:0;max-height:none;flex:1;overflow:auto}
 .hide{display:none}
 pre.doc{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px;max-height:460px;overflow:auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
@@ -124,9 +133,17 @@ pre.doc{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;f
 </div>
 
 <div id="modDoc" class="ov hide">
-  <div class="mod">
-    <div class="row"><h2 id="docTitle"></h2><button id="docClose">Fechar</button></div>
-    <pre class="doc" id="docBody"></pre>
+  <div class="mod viewer">
+    <div class="vhead">
+      <h2 id="docTitle"></h2>
+      <div style="display:flex;gap:8px">
+        <button id="docText">Ver texto</button>
+        <a id="docDl" class="btnlink" href="#" target="_blank">Baixar</a>
+        <button id="docClose">Fechar</button>
+      </div>
+    </div>
+    <iframe id="docFrame" class="hide"></iframe>
+    <pre class="doc hide" id="docBody"></pre>
   </div>
 </div>
 
@@ -197,7 +214,7 @@ function render(){
   if(uc){
     var sm=uc.summary||{};
     h+='<div class="card"><div class="row" style="margin:0"><b>Caso de uso · v'+uc.version+'</b>'+
-        '<button onclick="doc('+uc.id+',\'Caso de uso\')">Ver documento</button></div>';
+        '<button class="p" onclick="doc('+uc.id+',\'História funcional\')">Abrir documento</button></div>';
     h+='<div class="grid">'+
        stat(sm.passos,'Passos no fluxo')+stat(sm.excecoes,'Exceções')+
        stat(sm.atores,'Atores')+stat(sm.perguntas,'Perguntas em aberto')+'</div>';
@@ -214,7 +231,7 @@ function render(){
   if(mp){
     var ms=mp.summary||{};
     h+='<div class="card"><div class="row" style="margin:0"><b>Mapa de componentes · v'+mp.version+'</b>'+
-        '<button onclick="doc('+mp.id+',\'Mapa de componentes\')">Ver documento</button></div>';
+        '<button class="p" onclick="doc('+mp.id+',\'Especificação funcional\')">Abrir documento</button></div>';
     h+='<div style="margin-top:12px">'+['REUSAR','ESTENDER','CRIAR','SUBSTITUIR','DESCARTAR'].map(function(v){
         var n=ms[v.toLowerCase()];return n==null?'':'<span class="pill v-'+v+'" style="margin:0 6px 6px 0">'+v.charAt(0)+v.slice(1).toLowerCase()+' · '+n+'</span>';
       }).join('')+'</div>';
@@ -237,10 +254,34 @@ window.reject=async function(){
   var n=prompt('O que precisa ser ajustado no caso de uso?');if(!n)return;
   try{await api('/agente/'+S.id+'/reject',{method:'POST',body:JSON.stringify({note:n})});note('Ajuste registrado. Volta para o agente.','ok');openS(S.id)}catch(e){note(e.message)}
 };
+var CUR=null;
 window.doc=async function(aid,t){
-  try{var a=await api('/agente/artifact/'+aid);$('docTitle').textContent=t+' · v'+a.version;$('docBody').textContent=a.content||'(sem conteúdo textual)';$('modDoc').classList.remove('hide')}catch(e){note(e.message)}
+  try{
+    var a=await api('/agente/artifact/'+aid);CUR=a;
+    $('docTitle').textContent=t+' · v'+a.version;
+    $('docBody').textContent=a.content||'(sem conteúdo textual)';
+    var url=API+'/agente/artifact/'+aid+'/file';
+    $('docDl').href=url;
+    if(a.file_name&&/\.html?$/i.test(a.file_name)){
+      var r=await fetch(url,{headers:{Authorization:'Bearer '+T}});
+      var html=await r.text();
+      $('docFrame').srcdoc=html;
+      $('docFrame').classList.remove('hide');$('docBody').classList.add('hide');
+      $('docText').classList.remove('hide');$('docText').textContent='Ver texto';
+      $('docDl').classList.remove('hide');
+    }else{
+      $('docFrame').classList.add('hide');$('docBody').classList.remove('hide');
+      $('docText').classList.add('hide');$('docDl').classList.add('hide');
+    }
+    $('modDoc').classList.remove('hide');
+  }catch(e){note(e.message)}
 };
-$('docClose').onclick=function(){$('modDoc').classList.add('hide')};
+$('docText').onclick=function(){
+  var f=$('docFrame'),b=$('docBody');
+  if(f.classList.contains('hide')){f.classList.remove('hide');b.classList.add('hide');this.textContent='Ver texto'}
+  else{f.classList.add('hide');b.classList.remove('hide');this.textContent='Ver documento'}
+};
+$('docClose').onclick=function(){$('modDoc').classList.add('hide');$('docFrame').srcdoc=''};
 
 $('btnNew').onclick=function(){$('nTitle').value='';$('nReq').value='';$('nFile').value='';$('modNew').classList.remove('hide')};
 $('nCancel').onclick=function(){$('modNew').classList.add('hide')};
