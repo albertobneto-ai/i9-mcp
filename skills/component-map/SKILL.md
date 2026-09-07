@@ -157,7 +157,7 @@ Uma linha por componente:
 
 Cada cartão do mapa entrega quatro coisas. Nenhuma é opcional:
 
-1. **O que o componente é** — uma ou duas frases descrevendo função e estado atual, com o dado real da org quando houver (tamanho, propriedades declaradas, valores ativos, alvos de exposição).
+1. **O que o componente é** — uma ou duas frases sobre função e estado atual. Cite apenas o que caracteriza aquele componente: propriedades declaradas, alvos de exposição, tipo de ação, limite de configuração. **Não cite volume de dados da org** — nada de "1.000 registros", "213 contas", "79 campos". Contagem de registro não descreve componente.
 2. **O que precisa acontecer nele** — a mudança concreta que faz o componente atender ao passo do caso de uso. Para veredito `Reusar`, escreva "Nada" e acrescente a ressalva técnica que o time precisa saber.
 3. **Endereço na org** — URL direta para inspecionar na HOMOL. Monte a partir do Id lido pela Tooling API:
    - registro de objeto custom → `{instance}/lightning/r/{ObjectApiName}/{Id}/view`
@@ -177,6 +177,8 @@ O texto é de um arquiteto para o time que vai construir. Isso significa:
 - **O motivo antes da instrução.** "O método deve nascer dentro de LeadCreateController para herdar o acesso já concedido, evitando uma nova entrada de SetupEntityAccess."
 - **Nome próprio de plataforma quando ele é o assunto** — SetupEntityAccess, FLS, record type, Custom Metadata, base object. Sem glossário.
 - **Sem entusiasmo, sem hedge.** Nada de "é importante notar", "vale ressaltar", "pode ser interessante". Se é relevante, afirme.
+- **Uma ideia por frase.** Frase longa com três orações encadeadas por travessão e vírgula é o que torna o texto confuso. Quebre. Ponto final é barato.
+- **Comece pelo verbo na coluna de conduta.** "Introduzir a propriedade como opcional", não "Seria recomendável que a propriedade fosse introduzida".
 - **Sem enumerar benefício.** O documento decide, não vende.
 
 ## Etapa 5b — O que o caso de uso não carrega
@@ -202,7 +204,7 @@ Se `build_docs.py` não estiver no ambiente, baixe do repo `albertobneto-ai/i9-m
 
 **Resumo por veredito** — contagem de cada um, e total de componentes a desenvolver (CRIAR + ESTENDER + SUBSTITUIR).
 
-**Impactos colaterais — piso 5.** O que mais na org é tocado. Confirme dependência real via:
+**Pontos de atenção — piso 5.** Nunca chame de "impactos colaterais". Cada ponto tem duas partes obrigatórias: **o que pode ser afetado** e **como lidar** — a conduta concreta, não o alerta genérico. Ponto sem conduta é ruído. Confirme dependência real via:
 ```bash
 tq "SELECT MetadataComponentName,RefMetadataComponentName FROM MetadataComponentDependency WHERE RefMetadataComponentName='<nome>'"
 ```
