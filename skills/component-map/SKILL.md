@@ -153,6 +153,14 @@ Uma linha por componente:
 
 **Regra dura:** linha sem evidência de org **e** sem âncora documental **não entra na tabela**. Vai para Perguntas em Aberto. Componente sem prova é chute com formatação bonita.
 
+## Etapa 5b — O que o caso de uso não carrega
+
+O caso de uso termina nos fluxos alternativos. Tudo abaixo é responsabilidade deste documento e **não pode ser omitido** só porque o caso de uso não trouxe:
+
+**Regras de negócio invocadas** — tabela com ID (`RN-nnn`), enunciado e passo do fluxo onde incide. Derive-as do caso de uso e do que você leu na org. Sem coluna de origem.
+
+**Objetos e dados tocados** — entidade, operação, passo, e a evidência de org (contagem real, API name).
+
 ## Etapa 6 — Seções de fechamento
 
 **Resumo por veredito** — contagem de cada um, e total de componentes a desenvolver (CRIAR + ESTENDER + SUBSTITUIR).
