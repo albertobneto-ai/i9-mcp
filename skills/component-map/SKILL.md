@@ -153,6 +153,32 @@ Uma linha por componente:
 
 **Regra dura:** linha sem evidência de org **e** sem âncora documental **não entra na tabela**. Vai para Perguntas em Aberto. Componente sem prova é chute com formatação bonita.
 
+## Etapa 5a — Conteúdo obrigatório de cada componente
+
+Cada cartão do mapa entrega quatro coisas. Nenhuma é opcional:
+
+1. **O que o componente é** — uma ou duas frases descrevendo função e estado atual, com o dado real da org quando houver (tamanho, propriedades declaradas, valores ativos, alvos de exposição).
+2. **O que precisa acontecer nele** — a mudança concreta que faz o componente atender ao passo do caso de uso. Para veredito `Reusar`, escreva "Nada" e acrescente a ressalva técnica que o time precisa saber.
+3. **Endereço na org** — URL direta para inspecionar na HOMOL. Monte a partir do Id lido pela Tooling API:
+   - registro de objeto custom → `{instance}/lightning/r/{ObjectApiName}/{Id}/view`
+   - ApexClass → `{instance}/lightning/setup/ApexClasses/page?address=%2F{Id}`
+   - LWC e Aura → `{instance}/lightning/setup/LightningComponentBundles/page?address=%2F{Id}`
+   - PermissionSet → `{instance}/lightning/setup/PermSets/page?address=%2F{Id}`
+   - campos e regras → `{instance}/lightning/setup/ObjectManager/{Objeto}/FieldsAndRelationships/view` ou `/ValidationRules/view`
+4. **Documentação oficial** — URL verificada com `sfdoc.py --json` antes de citar. Se a página não devolver conteúdo, procure outra ou deixe sem link. **Nunca cite URL que você não abriu.**
+
+Componente a criar não tem endereço de org — aponte para onde ele será criado (Object Manager, nó de Setup).
+
+## Registro — voz de arquiteto de soluções
+
+O texto é de um arquiteto para o time que vai construir. Isso significa:
+
+- **Afirmação técnica com consequência.** "Campo fórmula não se beneficia de índice customizado — em volume de produção a consulta merece medição" diz mais que "atenção ao desempenho".
+- **O motivo antes da instrução.** "O método deve nascer dentro de LeadCreateController para herdar o acesso já concedido, evitando uma nova entrada de SetupEntityAccess."
+- **Nome próprio de plataforma quando ele é o assunto** — SetupEntityAccess, FLS, record type, Custom Metadata, base object. Sem glossário.
+- **Sem entusiasmo, sem hedge.** Nada de "é importante notar", "vale ressaltar", "pode ser interessante". Se é relevante, afirme.
+- **Sem enumerar benefício.** O documento decide, não vende.
+
 ## Etapa 5b — O que o caso de uso não carrega
 
 O caso de uso termina nos fluxos alternativos. Tudo abaixo é responsabilidade deste documento e **não pode ser omitido** só porque o caso de uso não trouxe:
