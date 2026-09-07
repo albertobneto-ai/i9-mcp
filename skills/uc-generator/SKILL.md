@@ -94,9 +94,9 @@ Tabela: ID (`RN-nnn`), Enunciado, Passo do fluxo onde incide. **Sem coluna de or
 Regra de negócio é declarativa e independe de implementação.
 
 ### 08. Objetos e dados tocados
-Tabela: Entidade de negócio, Operação (leitura/criação/alteração/exclusão), Passo do fluxo, Observação.
+Tabela: Entidade de negócio, Operação (leitura/criação/alteração/exclusão), Passo do fluxo.
 
-Use nomes de negócio quando o requisito usa nomes de negócio. Se o requisito nomeia objeto Salesforce (Lead, Opportunity), mantenha — mas não invente API names.
+**Nível de entidade apenas.** Nada de coluna com nome de campo, tipo, formato ou contagem. Use nomes de negócio; se o requisito nomeia objeto Salesforce (Lead, Conta), mantenha o nome, mas nunca acrescente API name nem sufixo técnico.
 
 ## Seção final obrigatória: Perguntas em Aberto
 
@@ -124,9 +124,29 @@ Nunca inclua no documento, em nenhuma hipótese:
 - **Rastro de versão** — nada de "Versão 5", linha "Versão" na identificação, changelog ou histórico de revisões
 - **Menção a ajustes ou à conversa** — nada de "Ajuste v3", "conforme solicitado", "origem: sessão #2". O documento não conta como foi feito
 - **Coluna de origem ou fonte** em qualquer tabela
-- **Nomes de componentes Salesforce** (Flow, Apex, LWC, campo, permission set) — isso é trabalho do `/map`
+- **Qualquer detalhe de implementação** — nome de campo ou API name, tabela de de-para, valores de picklist, tipo de dado, contagem de registros da org, Id de componente, nome de objeto técnico, nome de Flow, Apex, LWC ou permission set
 
 O documento é só o documento. Metadado de processo fica no chat. Nada de apêndice para contornar a regra.
+
+## O caso de uso é jornada, não especificação
+
+Esta é a divisão de trabalho entre os dois artefatos, e ela não se negocia:
+
+| | Caso de uso (`/uc`) | Mapa de componentes (`/map`) |
+|---|---|---|
+| Responde | **o quê** — a jornada | **o como** — a implementação |
+| Linguagem | negócio | técnica |
+| Campos | nunca nomeia | mapeia campo a campo |
+| Picklists | nunca lista valores | lista e trata divergência |
+| Org | nunca cita contagem nem Id | cita evidência com Id |
+
+Quando o fluxo depende de dados que já existem, o passo diz apenas **que** eles são recuperados — nunca quais, nem de onde, nem em que formato:
+
+- Certo: "O sistema apresenta o formulário preenchido com as informações já existentes do prospect."
+- Certo: "O consultor completa as informações que o prospect não fornece e confirma."
+- Errado: "O sistema preenche `Company` a partir de `RAZAO_SOCIAL__c` e `PorteEmpresa__c` a partir de `PORTE__c` via de-para."
+
+Se durante o `/uc` você descobrir um detalhe técnico relevante — divergência de nomenclatura, campo obrigatório sem origem, limite da plataforma — **não o coloque no caso de uso**. Ele vai para o `/map` e você o menciona no chat ao entregar. O caso de uso não engorda por causa disso.
 
 **Consequência que você precisa carregar:** sem critério de aceite, sem pós-condição e sem marcador de verificação, a verificabilidade depende inteiramente de como cada passo é escrito. Escreva os passos finais — do fluxo principal e de cada alternativo — de forma observável e conferível na org. "O sistema cria o lead" é fraco; "o sistema cria o lead com o consultor como proprietário e a origem registrada" é conferível.
 
