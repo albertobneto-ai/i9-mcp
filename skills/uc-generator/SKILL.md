@@ -89,6 +89,17 @@ Marque os caminhos de falha com a letra `e` (`3e.`, `8e.`) e os de sucesso alter
 
 **Piso: 6 alternativos, dos quais ao menos 4 de falha.** Abaixo disso, justifique no texto.
 
+## Identidade visual do documento
+
+O HTML deste artefato é gerado pela skill `doc-builder`, nunca com CSS escrito à mão.
+
+- Fundo **branco gelo** `#F2F3F5`, monocromático, zero cor
+- Capa em gradiente escuro `#0D0D0D → #4A4A4A`
+- Kicker `ALGAR · CRM B2B`, rodapé `ALGAR — <título>`
+- **Proibido** citar "Ever i9", "Everymind" ou "Algar Telecom" no documento
+
+Se `build_docs.py` não estiver no ambiente, baixe do repo `albertobneto-ai/i9-mcp`, caminho `skills/doc-builder/scripts/build_docs.py`, antes de gerar.
+
 ## Proibições de conteúdo
 
 Nunca inclua no documento, em nenhuma hipótese:
