@@ -50,9 +50,10 @@ Tabela: ID (`UC-<área>-<nnn>`), Nome, Escopo (nuvem/módulo), Nível (objetivo 
 ### 02. Atores
 - **Primário** — quem inicia e recebe o valor
 - **Secundários** — quem participa mas não inicia (sistemas externos, aprovadores)
-- **Stakeholders e interesses** — quem se importa com o resultado e por quê
 
 Um ator é um papel, não uma pessoa. "Consultor de vendas", não "João".
+
+**PROIBIDO: seção de stakeholders.** Não escreva "Stakeholders", "Stakeholders e interesses", "Partes interessadas" nem equivalente — nem aqui, nem em nenhuma outra seção. Só atores. Regra permanente do Alberto, vale para todo artefato.
 
 ### 03. Pré-condições
 Estado do mundo que precisa ser verdadeiro **antes** do fluxo começar. Verificável. Uma por linha.
@@ -114,6 +115,10 @@ Toda afirmação factual sobre o requisito recebe marcador, e ele **permanece no
 - `[VERIFICADO: <fonte>]` — está escrito no requisito de origem
 - `[INFERIDO: <base>]` — deduzido do requisito
 - `[NÃO VERIFICADO]` — assumido sem base
+
+## Proibições de conteúdo
+
+Nunca inclua no documento: stakeholders, partes interessadas, critérios de aceite, nomes de componentes Salesforce (Flow, Apex, LWC, campo, permission set).
 
 ## Léxico proibido
 
