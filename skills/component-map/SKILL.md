@@ -122,6 +122,19 @@ Nunca cite blog, fórum, Stack Exchange ou memória de treino como fonte.
 
 A âncora documental precisa sustentar que **aquele tipo de componente resolve aquele problema** — limite, comportamento, restrição. Link genérico de página inicial não vale.
 
+## Etapa 4b — Mapeamento de dados (obrigatório quando o fluxo herda dados)
+
+O mapa é a **especificação funcional**: é aqui que mora o "como" que o caso de uso não carrega.
+
+Sempre que o caso de uso disser que o sistema recupera ou herda informações já existentes, o mapa precisa entregar:
+
+1. **Tabela de-para campo a campo** — origem, destino, transformação (direta ou de-para)
+2. **Divergência de nomenclatura** — quando o valor da origem não existe na picklist de destino, mostre os dois lados. Campo que não traduz chega vazio ao destino, sem erro, e ninguém percebe
+3. **Campos obrigatórios sem origem** — o que o destino exige e a origem não fornece, e quem passa a fornecer
+4. **Validation rules que incidem na criação** — porque elas definem o que é obrigatório de fato
+
+Sem essa seção, o mapa devolve ao desenvolvedor a pergunta que deveria ter respondido.
+
 ## Etapa 5 — Tabela do mapa
 
 Uma linha por componente:
