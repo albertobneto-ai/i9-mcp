@@ -1,6 +1,6 @@
 ---
 name: uc-generator
-description: "Gerador de Caso de Uso Salesforce (formato UML), sem critérios de aceite. Use SEMPRE que o usuário digitar '/uc' — trigger PRIMÁRIO, ativa imediatamente. Também ativa com: 'gerar caso de uso', 'caso de uso', 'use case', 'UC salesforce', 'transformar requisito em caso de uso', 'caso de uso para mapa de componentes', ou quando o usuário enviar um requisito de negócio Salesforce pedindo estruturação em fluxo de ator. Produz um Caso de Uso de 8 seções (identificação, atores, pré-condições, gatilho, fluxo principal, fluxos alternativos, regras de negócio, objetos e dados) que alimenta diretamente a skill component-map via '/map'. NÃO gera critérios de aceite, NÃO gera pós-condições, NÃO gera seção de exceções e NÃO gera stakeholders — falhas entram como fluxos alternativos e o estado resultante fica nos passos finais, tudo dentro do contexto do caso de uso. NÃO use para História Funcional com critérios de aceite (use sf-functional-story-generator) nem para spec técnica de 18 seções (use sf-spec-generator) — as três coexistem e servem a fluxos diferentes."
+description: "Gerador de Caso de Uso Salesforce (formato UML), sem critérios de aceite. Use SEMPRE que o usuário digitar '/uc' — trigger PRIMÁRIO, ativa imediatamente. Também ativa com: 'gerar caso de uso', 'caso de uso', 'use case', 'UC salesforce', 'transformar requisito em caso de uso', 'caso de uso para mapa de componentes', ou quando o usuário enviar um requisito de negócio Salesforce pedindo estruturação em fluxo de ator. Produz um Caso de Uso de 6 seções (identificação, atores, pré-condições, gatilho, fluxo principal, fluxos alternativos) que alimenta diretamente a skill component-map via '/map'. NÃO gera critérios de aceite, NÃO gera pós-condições, NÃO gera seção de exceções e NÃO gera stakeholders — falhas entram como fluxos alternativos e o estado resultante fica nos passos finais, tudo dentro do contexto do caso de uso. NÃO use para História Funcional com critérios de aceite (use sf-functional-story-generator) nem para spec técnica de 18 seções (use sf-spec-generator) — as três coexistem e servem a fluxos diferentes."
 ---
 
 # Gerador de Caso de Uso — Salesforce
@@ -18,7 +18,7 @@ Três geradores convivem no projeto e não se substituem:
 | Skill | Produz | Tem critério de aceite? |
 |---|---|---|
 | `sf-functional-story-generator` (`/hf`) | História Funcional, 14 seções | Sim |
-| **`uc-generator` (`/uc`)** | **Caso de Uso, 8 seções** | **Não — proibido** |
+| **`uc-generator` (`/uc`)** | **Caso de Uso, 6 seções** | **Não — proibido** |
 | `sf-spec-generator` (`/spec`) | Spec técnica, 18 seções | — |
 
 Se o usuário pedir critério de aceite dentro de um `/uc`, explique em uma linha que este formato não os tem por desenho e que o estado resultante está descrito nos passos finais dos fluxos. Ofereça `/hf` se ele quiser o formato com critérios.
@@ -42,7 +42,7 @@ Se veio vago (uma frase), faça **no máximo 3 perguntas** via `ask_user_input_v
 
 Nunca trave esperando resposta perfeita. Melhor entregar com premissa declarada.
 
-## Estrutura obrigatória — exatamente 8 seções
+## Estrutura obrigatória — exatamente 6 seções
 
 ### 01. Identificação
 Tabela enxuta: ID (`UC-<área>-<nnn>`), Nome, Escopo (nuvem/módulo), Nível (objetivo do usuário / subfunção), Data.
@@ -89,29 +89,6 @@ Marque os caminhos de falha com a letra `e` (`3e.`, `8e.`) e os de sucesso alter
 
 **Piso: 6 alternativos, dos quais ao menos 4 de falha.** Abaixo disso, justifique no texto.
 
-### 07. Regras de negócio invocadas
-Tabela: ID (`RN-nnn`), Enunciado, Passo do fluxo onde incide. **Sem coluna de origem ou fonte.**
-Regra de negócio é declarativa e independe de implementação.
-
-### 08. Objetos e dados tocados
-Tabela: Entidade de negócio, Operação (leitura/criação/alteração/exclusão), Passo do fluxo.
-
-**Nível de entidade apenas.** Nada de coluna com nome de campo, tipo, formato ou contagem. Use nomes de negócio; se o requisito nomeia objeto Salesforce (Lead, Conta), mantenha o nome, mas nunca acrescente API name nem sufixo técnico.
-
-## Seção final obrigatória: Perguntas em Aberto
-
-**Piso: 5 perguntas, cada uma com um default declarado.**
-
-Formato: `P1. <pergunta> — Default assumido: <resposta>.`
-
-O default é o que o `/map` vai consumir se ninguém responder. Sem default, a pergunta é inútil.
-
-## Procedência — no chat, nunca no documento
-
-O documento **não** carrega `[VERIFICADO]`, `[INFERIDO]` nem `[NÃO VERIFICADO]`. Nenhum marcador, em nenhuma seção, em nenhuma tabela.
-
-A procedência continua obrigatória — muda de lugar. Ao entregar, **na sua mensagem do chat**, diga o que foi lido na org ao vivo e onde, o que foi deduzido e a partir de quê, e o que não foi possível confirmar. Honestidade preservada, artefato limpo.
-
 ## Proibições de conteúdo
 
 Nunca inclua no documento, em nenhuma hipótese:
@@ -125,6 +102,12 @@ Nunca inclua no documento, em nenhuma hipótese:
 - **Menção a ajustes ou à conversa** — nada de "Ajuste v3", "conforme solicitado", "origem: sessão #2". O documento não conta como foi feito
 - **Coluna de origem ou fonte** em qualquer tabela
 - **Qualquer detalhe de implementação** — nome de campo ou API name, tabela de de-para, valores de picklist, tipo de dado, contagem de registros da org, Id de componente, nome de objeto técnico, nome de Flow, Apex, LWC ou permission set
+- **Regras de negócio** — vão para o `/map`
+- **Objetos e dados tocados** — vão para o `/map`
+- **Perguntas em aberto** — vão para o `/map`
+- **Fronteira, riscos e impactos colaterais** — vão para o `/map`
+
+O documento termina na seção 06. Não existe seção 07, nem apêndice, nem "considerações finais".
 
 O documento é só o documento. Metadado de processo fica no chat. Nada de apêndice para contornar a regra.
 
@@ -136,8 +119,12 @@ Esta é a divisão de trabalho entre os dois artefatos, e ela não se negocia:
 |---|---|---|
 | Responde | **o quê** — a jornada | **o como** — a implementação |
 | Linguagem | negócio | técnica |
+| Seções | 6, termina nos fluxos alternativos | resumo, diagramas, mapa, mapeamento de dados, impactos, riscos, perguntas, fronteira |
 | Campos | nunca nomeia | mapeia campo a campo |
 | Picklists | nunca lista valores | lista e trata divergência |
+| Regras de negócio | não tem | tabela própria |
+| Perguntas em aberto | não tem | tabela própria, cada uma com default |
+| Fronteira | não tem | seção própria |
 | Org | nunca cita contagem nem Id | cita evidência com Id |
 
 Quando o fluxo depende de dados que já existem, o passo diz apenas **que** eles são recuperados — nunca quais, nem de onde, nem em que formato:
