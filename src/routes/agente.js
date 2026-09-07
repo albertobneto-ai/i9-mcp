@@ -158,7 +158,12 @@ router.post('/:id/artifact', authMiddleware, async (req, res) => {
       [req.params.id, kind, v.rows[0].v, content || null,
        JSON.stringify(summary || {}), file_name || null, file_b64 || null]);
 
-    const nextStage = kind === 'CASO_DE_USO' ? 'CASO_DE_USO' : 'CONCLUIDO';
+    // Estágio nunca anda para trás: regravar o caso de uso numa sessão já aprovada
+    // registra a nova versão sem exigir nova aprovação.
+    const ORDER = ['REQUISITO', 'CASO_DE_USO', 'APROVADO', 'MAPA', 'CONCLUIDO'];
+    const proposed = kind === 'CASO_DE_USO' ? 'CASO_DE_USO' : 'CONCLUIDO';
+    const current = s.rows[0].stage;
+    const nextStage = ORDER.indexOf(proposed) > ORDER.indexOf(current) ? proposed : current;
     await pool.query('UPDATE af_sessions SET stage=$1, updated_at=now() WHERE id=$2',
       [nextStage, req.params.id]);
 
