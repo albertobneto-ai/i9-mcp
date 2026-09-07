@@ -161,6 +161,17 @@ O caso de uso termina nos fluxos alternativos. Tudo abaixo é responsabilidade d
 
 **Objetos e dados tocados** — entidade, operação, passo, e a evidência de org (contagem real, API name).
 
+## Identidade visual do documento
+
+O HTML deste artefato é gerado pela skill `doc-builder`, nunca com CSS escrito à mão.
+
+- Fundo **branco gelo** `#F2F3F5`, monocromático, zero cor
+- Capa em gradiente escuro `#0D0D0D → #4A4A4A`
+- Kicker `ALGAR · CRM B2B`, rodapé `ALGAR — <título>`
+- **Proibido** citar "Ever i9", "Everymind" ou "Algar Telecom" no documento
+
+Se `build_docs.py` não estiver no ambiente, baixe do repo `albertobneto-ai/i9-mcp`, caminho `skills/doc-builder/scripts/build_docs.py`, antes de gerar.
+
 ## Etapa 6 — Seções de fechamento
 
 **Resumo por veredito** — contagem de cada um, e total de componentes a desenvolver (CRIAR + ESTENDER + SUBSTITUIR).
@@ -175,7 +186,7 @@ Atenção especial a componentes compartilhados com o Sales Cloud interno — o 
 
 **Perguntas em aberto — piso 5**, cada uma com default declarado.
 
-**Fronteira** — fora de escopo e por quê; suposições que invalidam o mapa se falsas; o que exige validação humana; `[NÃO VERIFICADO]` remanescentes.
+**Fronteira** — fora de escopo e por quê; suposições que invalidam o mapa se falsas; o que requer validação do componente; `[NÃO VERIFICADO]` remanescentes.
 
 ## Marcação de verificação (permanece no documento)
 
