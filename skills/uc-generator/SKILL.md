@@ -33,7 +33,7 @@ Só gere `.docx` se ele escolher — via skill `formatacao-word-every`. Se o ped
 
 ## Captura da necessidade
 
-Se o requisito já veio completo (documento, card, texto longo), **não faça perguntas** — produza e registre as ambiguidades na seção de Perguntas em Aberto.
+Se o requisito já veio completo (documento, card, texto longo), **não faça perguntas** — produza e leve as ambiguidades para o `/map`, onde vive a seção de perguntas em aberto.
 
 Se veio vago (uma frase), faça **no máximo 3 perguntas** via `ask_user_input_v0`, com opções tapáveis:
 1. Quem é o ator primário
