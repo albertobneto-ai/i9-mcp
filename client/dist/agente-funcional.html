@@ -1,2075 +1,264 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agentforce Spec Builder — Protótipo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-/* Agentforce Spec Builder — Visual system inspired by SLDS + Agentforce */
-:root {
-  /* Brand — SLDS tokens */
-  --brand-accessible: #0176d3;
-  --brand-primary: #1b96ff;
-  --brand-primary-active: #0176d3;
-  --brand-bg: #eef4ff;
-  --brand-light: #f4f6fe;
-  --cloud-blue-60: #0d9dda;
-  --cloud-blue-70: #1ab9ff;
-  --cloud-blue-90: #cfe9fe;
-  --cloud-blue-95: #eaf5fe;
-  --navy: #032d60;
-  --navy-deep: #001639;
-  --blue-30: #014486;
-  --blue-40: #0b5cab;
-
-  /* Agentforce expressive accents */
-  --purple-50: #9050e9;
-  --purple-90: #ece1f9;
-  --violet-50: #ba01ff;
-  --teal-60: #06a59a;
-  --teal-95: #def9f3;
-  --indigo-50: #5867e8;
-
-  /* Neutrals — SLDS */
-  --neutral-10: #181818;
-  --neutral-30: #444444;
-  --neutral-50: #747474;
-  --neutral-80: #c9c9c9;
-  --neutral-90: #e5e5e5;
-  --neutral-95: #f3f3f3;
-  --white: #ffffff;
-
-  /* Feedback */
-  --success: #2e844a;
-  --success-bg: #ebf7e6;
-  --warning: #dd7a01;
-  --warning-bg: #fbf3e0;
-  --error: #ea001e;
-
-  /* Surfaces */
-  --surface: #f3f3f3;
-  --surface-card: #ffffff;
-  --border: #e5e5e5;
-  --shadow-card: 0 2px 2px 0 rgba(0, 0, 0, 0.10);
-  --shadow-elevated: 0 4px 16px rgba(1, 68, 134, 0.12);
-  --shadow-agent: 0 8px 32px rgba(144, 80, 233, 0.15);
-
-  /* Type — Salesforce Sans fallback stack (proprietary; Inter/system) */
-  --font-ui: "Salesforce Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: "ITC Avant Garde Gothic", "Century Gothic", "Futura", "Inter", sans-serif;
-  --font-mono: Consolas, Menlo, Monaco, Courier, monospace;
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 999px;
-
-  --nav-width: 260px;
-  --header-h: 56px;
-  --agent-w: 340px;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { font-size: 16px; scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font-ui);
-  color: var(--neutral-10);
-  background: var(--surface);
-  line-height: 1.5;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
-a { color: var(--blue-40); text-decoration: none; }
-a:hover { color: var(--blue-30); text-decoration: underline; }
-
-/* ——— App shell ——— */
-.app {
-  display: grid;
-  grid-template-columns: var(--nav-width) 1fr;
-  grid-template-rows: var(--header-h) 1fr;
-  min-height: 100vh;
-}
-
-.topbar {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.25rem;
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  z-index: 20;
-  box-shadow: var(--shadow-card);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--purple-50) 55%, var(--violet-50) 100%);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0 0 3px var(--cloud-blue-95);
-  position: relative;
-}
-
-.brand-mark::after {
-  content: "";
-  width: 14px;
-  height: 14px;
-  border: 2.5px solid white;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 3s linear infinite;
-}
-
-.brand-text { display: flex; flex-direction: column; line-height: 1.2; }
-.brand-text strong {
-  font-size: 0.9375rem;
-  color: var(--navy);
-  letter-spacing: -0.01em;
-}
-.brand-text span {
-  font-size: 0.6875rem;
-  color: var(--neutral-50);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.topbar-meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8125rem;
-  color: var(--neutral-30);
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-pill);
-  background: var(--teal-95);
-  color: var(--teal-60);
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-
-.pill-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--teal-60);
-  animation: pulse 1.6s ease-in-out infinite;
-}
-
-.avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(145deg, var(--navy), var(--brand-accessible));
-  color: white; display: grid; place-items: center;
-  font-size: 0.75rem; font-weight: 700;
-}
-
-/* ——— Side nav / screen map ——— */
-.sidenav {
-  background: var(--navy-deep);
-  color: white;
-  padding: 1.25rem 0.875rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  overflow-y: auto;
-}
-
-.sidenav-label {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.45);
-  padding: 0.5rem 0.75rem 0.75rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  color: rgba(255,255,255,0.78);
-  text-align: left;
-  width: 100%;
-  transition: background 0.15s, color 0.15s;
-}
-
-.nav-item:hover { background: rgba(27, 150, 255, 0.15); color: white; }
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(27,150,255,0.28), rgba(144,80,233,0.18));
-  color: white;
-  box-shadow: inset 3px 0 0 var(--brand-primary);
-}
-
-.nav-item.done .nav-num {
-  background: var(--success);
-  border-color: var(--success);
-  color: white;
-}
-
-.nav-num {
-  flex-shrink: 0;
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.35);
-  display: grid; place-items: center;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  margin-top: 1px;
-}
-
-.nav-item.active .nav-num {
-  background: var(--brand-primary);
-  border-color: var(--brand-primary);
-}
-
-.nav-copy { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
-.nav-copy strong { font-size: 0.8125rem; font-weight: 600; }
-.nav-copy span { font-size: 0.6875rem; color: rgba(255,255,255,0.45); line-height: 1.3; }
-
-.sidenav-foot {
-  margin-top: auto;
-  padding: 1rem 0.75rem 0.5rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.6875rem;
-  color: rgba(255,255,255,0.4);
-  line-height: 1.4;
-}
-
-/* ——— Main ——— */
-.main {
-  display: grid;
-  grid-template-columns: 1fr var(--agent-w);
-  min-height: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(27,150,255,0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(144,80,233,0.07), transparent),
-    var(--surface);
-}
-
-.content {
-  overflow-y: auto;
-  padding: 1.75rem 2rem 3rem;
-  min-width: 0;
-}
-
-.screen { display: none; animation: fadeIn 0.28s ease; }
-.screen.active { display: block; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
-}
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-/* ——— Stepper (top of content) ——— */
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 1.75rem;
-  padding: 0.875rem 1rem;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  overflow-x: auto;
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  color: var(--neutral-50);
-  font-weight: 500;
-  padding: 0.25rem 0.35rem;
-}
-
-.step-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--neutral-80);
-}
-
-.step.active { color: var(--brand-accessible); font-weight: 700; }
-.step.active .step-dot { background: var(--brand-primary); box-shadow: 0 0 0 3px var(--cloud-blue-90); }
-.step.done { color: var(--success); }
-.step.done .step-dot { background: var(--success); }
-
-.step-line {
-  width: 28px; height: 2px;
-  background: var(--neutral-90);
-  flex-shrink: 0;
-  margin: 0 0.15rem;
-}
-.step.done + .step-line, .step-line.filled { background: var(--cloud-blue-60); }
-
-/* ——— Typography blocks ——— */
-.page-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--purple-50);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 0.5rem;
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--navy);
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  margin-bottom: 0.5rem;
-}
-
-.page-desc {
-  font-size: 0.9375rem;
-  color: var(--neutral-30);
-  max-width: 42rem;
-  margin-bottom: 1.75rem;
-}
-
-/* ——— Cards ——— */
-.card {
-  background: var(--surface-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: 1.25rem 1.5rem;
-}
-
-.card + .card { margin-top: 1rem; }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
-
-.card-header h3 {
-  font-size: 1rem;
-  color: var(--navy);
-  font-weight: 700;
-}
-
-.card-badge {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-pill);
-  background: var(--brand-bg);
-  color: var(--brand-accessible);
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-/* ——— Buttons ——— */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.125rem;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-}
-
-.btn:active { transform: scale(0.98); }
-
-.btn-primary {
-  background: var(--brand-accessible);
-  color: white;
-  box-shadow: 0 1px 2px rgba(1, 118, 211, 0.3);
-}
-.btn-primary:hover { background: var(--blue-30); }
-
-.btn-secondary {
-  background: var(--white);
-  color: var(--brand-accessible);
-  border: 1px solid var(--brand-accessible);
-}
-.btn-secondary:hover { background: var(--brand-bg); }
-
-.btn-ghost {
-  color: var(--neutral-30);
-  border: 1px solid var(--border);
-  background: var(--white);
-}
-.btn-ghost:hover { background: var(--neutral-95); }
-
-.btn-agent {
-  background: linear-gradient(135deg, var(--purple-50), var(--indigo-50));
-  color: white;
-  box-shadow: 0 2px 8px rgba(144, 80, 233, 0.35);
-}
-.btn-agent:hover { filter: brightness(1.05); }
-
-.btn-lg { padding: 0.875rem 1.5rem; font-size: 0.9375rem; }
-
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: 1.5rem;
-}
-
-/* ——— Home ——— */
-.hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-xl);
-  padding: 2.5rem 2rem;
-  background:
-    linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 45%, #0a3d7a 100%);
-  color: white;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-elevated);
-}
-
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: -40% -20% auto auto;
-  width: 420px; height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(27,150,255,0.35), transparent 65%);
-  pointer-events: none;
-}
-
-.hero::after {
-  content: "";
-  position: absolute;
-  bottom: -80px; left: 20%;
-  width: 280px; height: 280px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(144,80,233,0.3), transparent 70%);
-  pointer-events: none;
-}
-
-.hero-inner { position: relative; z-index: 1; max-width: 36rem; }
-
-.hero h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  margin: 0.5rem 0 0.75rem;
-  line-height: 1.2;
-}
-
-.hero p {
-  color: rgba(255,255,255,0.78);
-  font-size: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.chip {
-  font-size: 0.75rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-pill);
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: white;
-}
-
-.feature-card {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.feature-icon {
-  width: 40px; height: 40px;
-  border-radius: var(--radius-md);
-  display: grid; place-items: center;
-  flex-shrink: 0;
-  font-size: 1.125rem;
-}
-
-.fi-blue { background: var(--cloud-blue-95); }
-.fi-purple { background: var(--purple-90); }
-.fi-teal { background: var(--teal-95); }
-
-.feature-card h4 {
-  font-size: 0.875rem;
-  color: var(--navy);
-  margin-bottom: 0.25rem;
-}
-.feature-card p { font-size: 0.8125rem; color: var(--neutral-30); }
-
-/* ——— Upload ——— */
-.upload-zone {
-  border: 2px dashed var(--cloud-blue-60);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, var(--cloud-blue-95), var(--white));
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  transition: border-color 0.15s, background 0.15s;
-  cursor: pointer;
-}
-
-.upload-zone:hover, .upload-zone.dragover {
-  border-color: var(--brand-accessible);
-  background: var(--brand-bg);
-}
-
-.upload-zone.has-file {
-  border-style: solid;
-  border-color: var(--success);
-  background: var(--success-bg);
-}
-
-.upload-icon {
-  width: 56px; height: 56px;
-  margin: 0 auto 1rem;
-  border-radius: 50%;
-  background: white;
-  border: 1px solid var(--cloud-blue-90);
-  display: grid; place-items: center;
-  font-size: 1.5rem;
-  box-shadow: var(--shadow-card);
-  animation: float 3s ease-in-out infinite;
-}
-
-.upload-zone h3 { color: var(--navy); font-size: 1.0625rem; margin-bottom: 0.35rem; }
-.upload-zone p { color: var(--neutral-30); font-size: 0.875rem; }
-
-.file-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding: 0.875rem 1rem;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  text-align: left;
-}
-
-.file-icon {
-  width: 36px; height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--brand-accessible);
-  color: white;
-  display: grid; place-items: center;
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
-
-.file-meta { flex: 1; min-width: 0; }
-.file-meta strong { display: block; font-size: 0.875rem; color: var(--neutral-10); }
-.file-meta span { font-size: 0.75rem; color: var(--neutral-50); }
-
-.form-label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--neutral-30);
-  margin-bottom: 0.375rem;
-}
-
-.form-input, .form-textarea, .form-select {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--neutral-80);
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: 0.875rem;
-  color: var(--neutral-10);
-  background: white;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.form-input:focus, .form-textarea:focus, .form-select:focus {
-  outline: none;
-  border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px rgba(27, 150, 255, 0.25);
-}
-
-.form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
-
-.form-group { margin-bottom: 1rem; }
-
-.req-preview {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--neutral-95);
-  border-radius: var(--radius-md);
-  border-left: 3px solid var(--brand-accessible);
-  font-size: 0.8125rem;
-  color: var(--neutral-30);
-  line-height: 1.55;
-}
-
-.req-preview strong { color: var(--navy); }
-
-/* ——— Processing ——— */
-.process-stages {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.stage {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 1rem;
-  align-items: center;
-  padding: 1rem 1.15rem;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.stage.active {
-  border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px rgba(27, 150, 255, 0.15);
-}
-
-.stage.done {
-  border-color: #91db8b;
-  background: linear-gradient(90deg, var(--success-bg), white 40%);
-}
-
-.stage-icon {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--neutral-95);
-  font-size: 1.125rem;
-}
-
-.stage.active .stage-icon {
-  background: linear-gradient(135deg, var(--brand-primary), var(--purple-50));
-  color: white;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-.stage.done .stage-icon { background: var(--success); color: white; }
-
-.stage-body h4 { font-size: 0.9375rem; color: var(--navy); margin-bottom: 0.15rem; }
-.stage-body p { font-size: 0.8125rem; color: var(--neutral-50); }
-
-.stage-status {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--neutral-50);
-}
-
-.stage.active .stage-status { color: var(--brand-accessible); }
-.stage.done .stage-status { color: var(--success); }
-
-.progress-bar {
-  height: 6px;
-  background: var(--neutral-90);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  margin: 1.5rem 0 0.5rem;
-}
-
-.progress-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand-accessible), var(--cloud-blue-70), var(--purple-50));
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
-  transition: width 0.4s ease;
-}
-
-.doc-hits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-}
-
-.doc-hit {
-  font-size: 0.75rem;
-  padding: 0.4rem 0.7rem;
-  border-radius: var(--radius-md);
-  background: white;
-  border: 1px solid var(--border);
-  color: var(--blue-40);
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.3s, transform 0.3s;
-}
-
-.doc-hit.show { opacity: 1; transform: none; }
-
-/* ——— Story / Spec content ——— */
-.meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.tag {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-pill);
-  background: var(--purple-90);
-  color: var(--purple-50);
-}
-
-.tag.blue { background: var(--cloud-blue-95); color: var(--blue-40); }
-.tag.teal { background: var(--teal-95); color: var(--teal-60); }
-.tag.neutral { background: var(--neutral-95); color: var(--neutral-30); }
-
-.story-block {
-  margin-bottom: 1.25rem;
-}
-
-.story-block h4 {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--neutral-50);
-  margin-bottom: 0.4rem;
-}
-
-.story-block p, .story-block li {
-  font-size: 0.875rem;
-  color: var(--neutral-10);
-  line-height: 1.55;
-}
-
-.story-block ul, .story-block ol {
-  padding-left: 1.25rem;
-}
-
-.story-block li { margin-bottom: 0.35rem; }
-
-.ac-item {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  margin-bottom: 0.5rem;
-  background: white;
-  font-size: 0.8125rem;
-}
-
-.ac-check {
-  width: 18px; height: 18px;
-  border-radius: 4px;
-  border: 2px solid var(--success);
-  background: var(--success-bg);
-  color: var(--success);
-  display: grid; place-items: center;
-  font-size: 0.625rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.spec-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-
-.spec-table th {
-  text-align: left;
-  padding: 0.625rem 0.75rem;
-  background: var(--navy-deep);
-  color: white;
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-
-.spec-table th:first-child { border-radius: var(--radius-md) 0 0 0; }
-.spec-table th:last-child { border-radius: 0 var(--radius-md) 0 0; }
-
-.spec-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-  color: var(--neutral-10);
-}
-
-.spec-table tr:nth-child(even) td { background: var(--brand-light); }
-
-.spec-section {
-  margin-bottom: 1.5rem;
-}
-
-.spec-section h3 {
-  font-size: 1rem;
-  color: var(--navy);
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--cloud-blue-90);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.spec-num {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--brand-accessible);
-  color: white;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  display: grid; place-items: center;
-}
-
-.code-block {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  background: var(--navy-deep);
-  color: #cfe9fe;
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  overflow-x: auto;
-  line-height: 1.6;
-}
-
-/* ——— Overview / Export ——— */
-.stat-card {
-  text-align: center;
-  padding: 1.25rem 1rem;
-}
-
-.stat-card .stat-val {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--navy);
-  letter-spacing: -0.02em;
-}
-
-.stat-card .stat-label {
-  font-size: 0.75rem;
-  color: var(--neutral-50);
-  margin-top: 0.25rem;
-}
-
-.timeline {
-  position: relative;
-  padding-left: 1.5rem;
-}
-
-.timeline::before {
-  content: "";
-  position: absolute;
-  left: 5px; top: 4px; bottom: 4px;
-  width: 2px;
-  background: linear-gradient(var(--brand-primary), var(--purple-50));
-}
-
-.tl-item {
-  position: relative;
-  padding-bottom: 1.25rem;
-}
-
-.tl-item::before {
-  content: "";
-  position: absolute;
-  left: -1.5rem;
-  top: 0.35rem;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: var(--brand-primary);
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px var(--brand-primary);
-}
-
-.tl-item h4 { font-size: 0.875rem; color: var(--navy); }
-.tl-item p { font-size: 0.8125rem; color: var(--neutral-50); }
-
-.export-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.export-opt {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem 1rem;
-  text-align: center;
-  background: white;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-
-.export-opt:hover {
-  border-color: var(--brand-primary);
-  box-shadow: var(--shadow-elevated);
-}
-
-.export-opt .eo-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-.export-opt strong { display: block; font-size: 0.875rem; color: var(--navy); margin-bottom: 0.25rem; }
-.export-opt span { font-size: 0.75rem; color: var(--neutral-50); }
-
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  background: var(--navy-deep);
-  color: white;
-  padding: 0.875rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  box-shadow: var(--shadow-elevated);
-  z-index: 100;
-  display: none;
-  align-items: center;
-  gap: 0.75rem;
-  max-width: 360px;
-}
-
-.toast.show { display: flex; animation: fadeIn 0.25s ease; }
-
-/* ——— Agent panel ——— */
-.agent-panel {
-  background: var(--white);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.agent-head {
-  padding: 1rem 1.125rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: linear-gradient(180deg, var(--purple-90), white);
-}
-
-.agent-avatar {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary), var(--purple-50));
-  display: grid; place-items: center;
-  color: white;
-  font-size: 1rem;
-  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--purple-90);
-  position: relative;
-}
-
-.agent-avatar .online {
-  position: absolute;
-  bottom: 0; right: 0;
-  width: 10px; height: 10px;
-  background: var(--success);
-  border: 2px solid white;
-  border-radius: 50%;
-}
-
-.agent-head-text strong { display: block; font-size: 0.875rem; color: var(--navy); }
-.agent-head-text span { font-size: 0.6875rem; color: var(--purple-50); font-weight: 600; }
-
-.agent-msgs {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  background:
-    radial-gradient(ellipse at top right, rgba(144,80,233,0.04), transparent 50%),
-    var(--neutral-95);
-}
-
-.msg {
-  max-width: 95%;
-  padding: 0.75rem 0.875rem;
-  border-radius: var(--radius-lg);
-  font-size: 0.8125rem;
-  line-height: 1.45;
-}
-
-.msg.agent {
-  background: white;
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
-  color: var(--neutral-10);
-  align-self: flex-start;
-  box-shadow: var(--shadow-card);
-}
-
-.msg.user {
-  background: var(--brand-accessible);
-  color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 4px;
-}
-
-.msg .msg-label {
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
-  opacity: 0.7;
-}
-
-.typing {
-  display: inline-flex;
-  gap: 4px;
-  padding: 0.25rem 0;
-}
-
-.typing span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--purple-50);
-  animation: pulse 1s ease-in-out infinite;
-}
-.typing span:nth-child(2) { animation-delay: 0.15s; }
-.typing span:nth-child(3) { animation-delay: 0.3s; }
-
-.agent-composer {
-  padding: 0.875rem;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 0.5rem;
-  background: white;
-}
-
-.agent-composer input {
-  flex: 1;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--neutral-80);
-  border-radius: var(--radius-pill);
-  font-size: 0.8125rem;
-  font-family: inherit;
-}
-
-.agent-composer input:focus {
-  outline: none;
-  border-color: var(--purple-50);
-  box-shadow: 0 0 0 3px rgba(144, 80, 233, 0.2);
-}
-
-.agent-send {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--purple-50), var(--indigo-50));
-  color: white;
-  display: grid; place-items: center;
-  font-size: 0.875rem;
-  flex-shrink: 0;
-}
-
-/* ——— Responsive ——— */
-@media (max-width: 1100px) {
-  .main { grid-template-columns: 1fr; }
-  .agent-panel {
-    position: fixed;
-    right: 1rem; bottom: 1rem;
-    width: 320px; height: 420px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-agent);
-    z-index: 50;
-    display: none;
-  }
-  .agent-panel.open { display: flex; }
-  .agent-fab {
-    display: grid !important;
-  }
-  .grid-3, .export-options { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; }
-  .sidenav {
-    display: none;
-  }
-  .grid-2, .grid-3, .export-options { grid-template-columns: 1fr; }
-}
-
-.agent-fab {
-  display: none;
-  position: fixed;
-  right: 1.25rem; bottom: 1.25rem;
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary), var(--purple-50));
-  color: white;
-  font-size: 1.375rem;
-  box-shadow: var(--shadow-agent);
-  z-index: 40;
-  place-items: center;
-}
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agente Funcional — Ever i9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--brand:#0176D3;--brand-dark:#014486;--electric:#1B96FF;--navy:#032D60;--navy-deep:#001639;
+--purple:#9050E9;--teal:#06A59A;--green:#2E844A;--amber:#FE9339;--red:#BA0517;
+--bg:#F3F3F3;--surface:#FFFFFF;--surface-2:#F4F6FE;--border:#E5E5E5;
+--text:#181818;--text-weak:#444444;--text-mute:#747474;
+}
+body{font-family:Inter,-apple-system,'Salesforce Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.topbar{background:var(--navy-deep);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--electric),var(--purple))}
+.brand b{font-size:15px;font-weight:600;display:block}
+.brand span{font-size:11px;opacity:.7}
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h2{font-size:18px;font-weight:600;color:var(--navy)}
+button{font-family:inherit;font-size:13px;font-weight:500;padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-weak);cursor:pointer}
+button:hover{background:var(--surface-2)}
+button.p{background:var(--brand);border-color:var(--brand);color:#fff}
+button.p:hover{background:var(--brand-dark)}
+button.ok{background:var(--green);border-color:var(--green);color:#fff}
+button.warn{background:#fff;border-color:var(--amber);color:#8a4b00}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.card.click{cursor:pointer}
+.card.click:hover{border-color:var(--electric)}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px}
+.s-REQUISITO{background:#EEF4FF;color:var(--navy)}
+.s-CASO_DE_USO{background:#ECE1F9;color:#5A2D9E}
+.s-APROVADO{background:#EAF5FE;color:#04487D}
+.s-MAPA{background:#E3F3F2;color:#054E4A}
+.s-CONCLUIDO{background:#E4F5E8;color:#1B5E2F}
+.v-REUSAR{background:#E4F5E8;color:#1B5E2F}
+.v-ESTENDER{background:#FEF0D9;color:#8a4b00}
+.v-CRIAR{background:#EEF4FF;color:var(--navy)}
+.v-SUBSTITUIR{background:#ECE1F9;color:#5A2D9E}
+.v-DESCARTAR{background:#EFEFEF;color:#555}
+.steps{display:flex;gap:6px;margin:16px 0}
+.step{flex:1}
+.step i{display:block;height:4px;border-radius:2px;background:#DDD}
+.step.on i{background:var(--brand)}
+.step.now i{background:var(--electric)}
+.step span{display:block;font-size:11px;color:var(--text-mute);margin-top:6px}
+.step.now span{color:var(--brand);font-weight:600}
+label{display:block;font-size:12px;font-weight:600;color:var(--text-weak);margin:12px 0 5px}
+input[type=text],input[type=email],input[type=password],textarea{width:100%;font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #C9C9C9;border-radius:6px;background:#fff}
+textarea{min-height:130px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px #0176D330}
+.mut{color:var(--text-mute);font-size:12px}
+.ov{position:fixed;inset:0;background:#00163999;display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.mod{background:#fff;border-radius:12px;padding:22px;max-width:620px;width:100%;max-height:88vh;overflow:auto}
+.hide{display:none}
+pre.doc{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px;max-height:460px;overflow:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--surface-2);border-radius:8px;padding:12px}
+.stat b{display:block;font-size:22px;font-weight:600;color:var(--navy)}
+.stat span{font-size:11px;color:var(--text-mute)}
+.err{background:#FEF1F1;border:1px solid #F5C6C6;color:#8B1414;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.ok{background:#E4F5E8;border:1px solid #B6E0C1;color:#1B5E2F;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.empty{text-align:center;padding:44px 16px;color:var(--text-mute)}
+@media(max-width:620px){.wrap{padding:14px}.step span{font-size:10px}}
 </style>
 </head>
 <body>
-  <div class="app">
-    <!-- Top bar -->
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true"></div>
-        <div class="brand-text">
-          <strong>Agentforce Spec Builder</strong>
-          <span>Salesforce · Agentic</span>
-        </div>
-      </div>
-      <div class="topbar-meta">
-        <span class="pill"><span class="pill-dot"></span> Agente online</span>
-        <span>Projeto: Aprovação de Oportunidades</span>
-        <div class="avatar" title="Alberto Bottaro">AB</div>
-      </div>
-    </header>
 
-    <!-- Screen map / side nav -->
-    <nav class="sidenav" aria-label="Mapa de telas">
-      <div class="sidenav-label">Fluxo do agente</div>
-      <button class="nav-item active" data-nav="home" type="button">
-        <span class="nav-num">1</span>
-        <span class="nav-copy">
-          <strong>Entrada do agente</strong>
-          <span>Home · boas-vindas</span>
-        </span>
-      </button>
-      <button class="nav-item" data-nav="upload" type="button">
-        <span class="nav-num">2</span>
-        <span class="nav-copy">
-          <strong>Upload do requisito</strong>
-          <span>Documento ou texto</span>
-        </span>
-      </button>
-      <button class="nav-item" data-nav="process" type="button">
-        <span class="nav-num">3</span>
-        <span class="nav-copy">
-          <strong>Processamento</strong>
-          <span>Ler · pesquisar · gerar</span>
-        </span>
-      </button>
-      <button class="nav-item" data-nav="story" type="button">
-        <span class="nav-num">4</span>
-        <span class="nav-copy">
-          <strong>História / use case</strong>
-          <span>User story gerada</span>
-        </span>
-      </button>
-      <button class="nav-item" data-nav="spec" type="button">
-        <span class="nav-num">5</span>
-        <span class="nav-copy">
-          <strong>Especificação técnica</strong>
-          <span>Funcional + Salesforce</span>
-        </span>
-      </button>
-      <button class="nav-item" data-nav="overview" type="button">
-        <span class="nav-num">6</span>
-        <span class="nav-copy">
-          <strong>Visão geral / exportar</strong>
-          <span>Pacote do projeto</span>
-        </span>
-      </button>
-      <div class="sidenav-foot">
-        Mapa de telas · protótipo visual<br />
-        Referência: Agentforce / SLDS
-      </div>
-    </nav>
+<div class="topbar">
+  <div class="brand"><div class="mark"></div><div><b>Agente Funcional</b><span>Caso de uso · Mapa de componentes</span></div></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="mut" id="who" style="color:#cfd9e6"></span>
+    <button id="btnNew" class="p hide">Nova sessão</button>
+  </div>
+</div>
 
-    <div class="main">
-      <main class="content">
-        <!-- Shared stepper -->
-        <div class="stepper" id="stepper" aria-label="Etapas do fluxo">
-          <div class="step active" data-step="home"><span class="step-dot"></span> Entrada</div>
-          <div class="step-line"></div>
-          <div class="step" data-step="upload"><span class="step-dot"></span> Upload</div>
-          <div class="step-line"></div>
-          <div class="step" data-step="process"><span class="step-dot"></span> Processar</div>
-          <div class="step-line"></div>
-          <div class="step" data-step="story"><span class="step-dot"></span> História</div>
-          <div class="step-line"></div>
-          <div class="step" data-step="spec"><span class="step-dot"></span> Spec</div>
-          <div class="step-line"></div>
-          <div class="step" data-step="overview"><span class="step-dot"></span> Exportar</div>
-        </div>
+<div class="wrap">
+  <div id="msg"></div>
 
-        <!-- 1. HOME -->
-        <section class="screen active" id="screen-home" data-screen="home">
-          <div class="hero">
-            <div class="hero-inner">
-              <div class="page-kicker" style="color:#cfe9fe">✦ Agentforce</div>
-              <h1>Do requisito à especificação Salesforce — com um agente.</h1>
-              <p>
-                Envie um requisito de negócio. O agente lê o documento, pesquisa a documentação Salesforce,
-                cria a user story e gera a especificação funcional técnica pronta para o time.
-              </p>
-              <div class="hero-chips">
-                <span class="chip">Ler requisito</span>
-                <span class="chip">Pesquisar docs SF</span>
-                <span class="chip">Gerar user story</span>
-                <span class="chip">Spec técnica</span>
-              </div>
-              <button class="btn btn-primary btn-lg" type="button" data-go="upload">
-                Começar com um requisito →
-              </button>
-            </div>
-          </div>
-
-          <div class="grid-3">
-            <div class="card feature-card">
-              <div class="feature-icon fi-blue">📄</div>
-              <div>
-                <h4>Entende o requisito</h4>
-                <p>Extrai objetivos, atores, regras e restrições do texto ou arquivo enviado.</p>
-              </div>
-            </div>
-            <div class="card feature-card">
-              <div class="feature-icon fi-purple">🔍</div>
-              <div>
-                <h4>Pesquisa Salesforce</h4>
-                <p>Consulta documentação Agentforce, Flow, Apex e objetos padrão relevantes.</p>
-              </div>
-            </div>
-            <div class="card feature-card">
-              <div class="feature-icon fi-teal">🛠</div>
-              <div>
-                <h4>Entrega pronta</h4>
-                <p>User story + especificação funcional técnica alinhada à plataforma.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:1rem">
-            <div class="card-header">
-              <h3>Exemplo rápido</h3>
-              <span class="card-badge">Amostra</span>
-            </div>
-            <p style="font-size:0.875rem;color:var(--neutral-30);margin-bottom:1rem">
-              Use o requisito de demonstração: <strong style="color:var(--navy)">Processo de aprovação de oportunidades acima de R$ 100 mil</strong>.
-            </p>
-            <button class="btn btn-agent" type="button" id="btn-demo">
-              Carregar requisito de exemplo
-            </button>
-          </div>
-        </section>
-
-        <!-- 2. UPLOAD -->
-        <section class="screen" id="screen-upload" data-screen="upload">
-          <div class="page-kicker">✦ Etapa 2</div>
-          <h2 class="page-title">Upload do requisito</h2>
-          <p class="page-desc">
-            Envie um arquivo (PDF, DOCX, TXT) ou cole o texto do requisito. O agente usará este conteúdo
-            como fonte principal para a história e a especificação.
-          </p>
-
-          <div class="card">
-            <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Área de upload">
-              <div class="upload-icon">☁</div>
-              <h3>Arraste o requisito aqui</h3>
-              <p>ou clique para selecionar · PDF, DOCX, TXT · até 10 MB</p>
-              <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" hidden />
-            </div>
-            <div class="file-row" id="file-row" hidden>
-              <div class="file-icon">PDF</div>
-              <div class="file-meta">
-                <strong id="file-name">REQ-2026-014_Aprovacao_Oportunidades.pdf</strong>
-                <span id="file-size">248 KB · carregado agora</span>
-              </div>
-              <button class="btn btn-ghost" type="button" id="btn-remove-file" style="padding:0.4rem 0.75rem">Remover</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>Ou cole o texto do requisito</h3>
-              <span class="card-badge">Opcional</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="req-title">Título do requisito</label>
-              <input class="form-input" id="req-title" type="text"
-                value="Aprovação de oportunidades acima de R$ 100.000" />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="req-cloud">Nuvem Salesforce</label>
-              <select class="form-select" id="req-cloud">
-                <option>Sales Cloud</option>
-                <option>Service Cloud</option>
-                <option>Experience Cloud</option>
-                <option>Revenue Cloud</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="req-body">Descrição</label>
-              <textarea class="form-textarea" id="req-body">Como gerente de vendas, preciso que oportunidades com valor previsto acima de R$ 100.000 passem por aprovação do Diretor Comercial antes de avançar para a fase "Proposta", para garantir compliance e controle de desconto.
-
-Regras:
-- Gatilho: Amount &gt; 100000 e Stage = Proposta
-- Aprovador: usuário com papel Diretor Comercial (ou backup VP Vendas)
-- Se rejeitado: Stage volta para Qualificação e notifica o Owner
-- SLA de resposta: 24 horas úteis
-- Auditoria: registrar aprovador, data/hora e comentários no histórico da Opportunity</textarea>
-            </div>
-            <div class="req-preview">
-              <strong>Prévia interpretada:</strong>
-              Objeto Opportunity · Flow de aprovação · notificação · auditoria de campo · Sales Cloud.
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn btn-ghost" type="button" data-go="home">← Voltar</button>
-            <button class="btn btn-primary" type="button" data-go="process" id="btn-start-process">
-              Enviar para o agente →
-            </button>
-          </div>
-        </section>
-
-        <!-- 3. PROCESS -->
-        <section class="screen" id="screen-process" data-screen="process">
-          <div class="page-kicker">✦ Etapa 3</div>
-          <h2 class="page-title">Processamento do agente</h2>
-          <p class="page-desc">
-            Acompanhe as etapas: leitura do requisito, pesquisa na documentação Salesforce e geração
-            da história e da especificação.
-          </p>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>Pipeline Agentforce</h3>
-              <span class="card-badge" id="process-badge">Em andamento</span>
-            </div>
-            <div class="process-stages">
-              <div class="stage" id="stage-read" data-stage="0">
-                <div class="stage-icon">📖</div>
-                <div class="stage-body">
-                  <h4>Lendo o requisito</h4>
-                  <p>Extraindo atores, regras de negócio, critérios e restrições…</p>
-                </div>
-                <span class="stage-status">Aguardando</span>
-              </div>
-              <div class="stage" id="stage-research" data-stage="1">
-                <div class="stage-icon">🔎</div>
-                <div class="stage-body">
-                  <h4>Pesquisando documentação Salesforce</h4>
-                  <p>Approval Processes, Flow, Opportunity, Platform Events…</p>
-                </div>
-                <span class="stage-status">Aguardando</span>
-              </div>
-              <div class="stage" id="stage-generate" data-stage="2">
-                <div class="stage-icon">✨</div>
-                <div class="stage-body">
-                  <h4>Gerando história e especificação</h4>
-                  <p>Montando user story, critérios de aceite e spec funcional técnica…</p>
-                </div>
-                <span class="stage-status">Aguardando</span>
-              </div>
-            </div>
-            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <p style="font-size:0.75rem;color:var(--neutral-50)" id="progress-label">0% · iniciando</p>
-
-            <div class="doc-hits" id="doc-hits">
-              <span class="doc-hit">Help: Approval Processes</span>
-              <span class="doc-hit">Trailhead: Build Approval Processes</span>
-              <span class="doc-hit">Flow Builder · Record-Triggered</span>
-              <span class="doc-hit">Object Reference: Opportunity</span>
-              <span class="doc-hit">Agentforce Actions · Notify</span>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn btn-ghost" type="button" data-go="upload">← Voltar</button>
-            <button class="btn btn-primary" type="button" data-go="story" id="btn-to-story" disabled>
-              Ver história gerada →
-            </button>
-          </div>
-        </section>
-
-        <!-- 4. STORY -->
-        <section class="screen" id="screen-story" data-screen="story">
-          <div class="page-kicker">✦ Etapa 4 · gerado pelo agente</div>
-          <h2 class="page-title">História de usuário / use case</h2>
-          <p class="page-desc">
-            User story e critérios de aceite derivados do requisito e da pesquisa Salesforce.
-            Revise e ajuste antes de gerar a especificação técnica.
-          </p>
-
-          <div class="meta-row">
-            <span class="tag">US-014</span>
-            <span class="tag blue">Sales Cloud</span>
-            <span class="tag teal">Alta prioridade</span>
-            <span class="tag neutral">Opportunity</span>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>User story</h3>
-              <span class="card-badge">v1 · Agentforce</span>
-            </div>
-            <div class="story-block">
-              <h4>Como…</h4>
-              <p><strong>gerente de vendas (Opportunity Owner)</strong></p>
-            </div>
-            <div class="story-block">
-              <h4>Quero…</h4>
-              <p>que oportunidades com valor previsto acima de <strong>R$ 100.000</strong> sejam submetidas automaticamente a um processo de aprovação do Diretor Comercial antes de entrar na fase <em>Proposta</em></p>
-            </div>
-            <div class="story-block">
-              <h4>Para que…</h4>
-              <p>descontos e compromissos de alto valor tenham governança, rastreabilidade e conformidade com a política comercial.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>Critérios de aceite</h3>
-              <span class="card-badge">5 itens</span>
-            </div>
-            <div class="ac-item"><span class="ac-check">✓</span><span>Quando Amount &gt; 100000 e o Stage muda para Proposta, um Approval Process (ou Flow de aprovação) é iniciado automaticamente.</span></div>
-            <div class="ac-item"><span class="ac-check">✓</span><span>O aprovador padrão é o usuário com Role “Diretor Comercial”; se ausente, escalona para “VP Vendas” em 24h úteis.</span></div>
-            <div class="ac-item"><span class="ac-check">✓</span><span>Em caso de rejeição, Stage retorna para Qualificação e o Owner recebe notificação in-app + e-mail com o comentário do aprovador.</span></div>
-            <div class="ac-item"><span class="ac-check">✓</span><span>Aprovação, rejeição, aprovador, data/hora e comentários ficam no histórico relacionado da Opportunity (e campos de auditoria).</span></div>
-            <div class="ac-item"><span class="ac-check">✓</span><span>Oportunidades ≤ R$ 100.000 não disparam o processo e avançam normalmente.</span></div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-header"><h3>Use case · fluxo feliz</h3></div>
-              <div class="story-block">
-                <ol>
-                  <li>Owner atualiza Amount para R$ 150.000 e Stage para Proposta.</li>
-                  <li>Sistema inicia aprovação e bloqueia avanço até decisão.</li>
-                  <li>Diretor Comercial aprova com comentário.</li>
-                  <li>Stage permanece em Proposta; histórico é atualizado.</li>
-                  <li>Owner é notificado do sucesso.</li>
-                </ol>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header"><h3>Atores &amp; objetos</h3></div>
-              <div class="story-block">
-                <ul>
-                  <li><strong>Atores:</strong> Sales Rep, Diretor Comercial, VP Vendas</li>
-                  <li><strong>Objeto principal:</strong> Opportunity</li>
-                  <li><strong>Relacionados:</strong> User, ProcessInstance, Task/Notification</li>
-                  <li><strong>Canais:</strong> Lightning Experience, e-mail</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn btn-ghost" type="button" data-go="process">← Voltar</button>
-            <button class="btn btn-secondary" type="button" id="btn-refine-story">Pedir ajuste ao agente</button>
-            <button class="btn btn-primary" type="button" data-go="spec">Gerar especificação técnica →</button>
-          </div>
-        </section>
-
-        <!-- 5. SPEC -->
-        <section class="screen" id="screen-spec" data-screen="spec">
-          <div class="page-kicker">✦ Etapa 5 · especificação</div>
-          <h2 class="page-title">Especificação funcional técnica</h2>
-          <p class="page-desc">
-            Spec baseada no requisito + user story, referenciando capacidades Salesforce
-            (Approval Process / Flow, objetos, segurança e notificações).
-          </p>
-
-          <div class="card spec-section">
-            <h3><span class="spec-num">1</span> Visão geral da solução</h3>
-            <p style="font-size:0.875rem;color:var(--neutral-30);margin-bottom:1rem">
-              Implementar governança de oportunidades de alto valor via <strong>Approval Process</strong>
-              (ou Flow orquestrado) no objeto Opportunity, com notificações, SLA de escalonamento e
-              trilha de auditoria — alinhado a Sales Cloud e padrões Agentforce de ação/notificação.
-            </p>
-            <table class="spec-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Decisão</th>
-                  <th>Notas</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Abordagem</td>
-                  <td>Approval Process nativo + Flow de suporte</td>
-                  <td>Preferir declarative; Apex só se regras complexas</td>
-                </tr>
-                <tr>
-                  <td>Objeto</td>
-                  <td>Opportunity</td>
-                  <td>Campos Amount, StageName, custom audit</td>
-                </tr>
-                <tr>
-                  <td>Entrada</td>
-                  <td>Stage → Proposta e Amount &gt; 100000</td>
-                  <td>Entry criteria no Approval Process</td>
-                </tr>
-                <tr>
-                  <td>Aprovadores</td>
-                  <td>Role Diretor Comercial → VP Vendas</td>
-                  <td>Escalonamento 24h úteis</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="card spec-section">
-            <h3><span class="spec-num">2</span> Modelo de dados</h3>
-            <table class="spec-table">
-              <thead>
-                <tr>
-                  <th>API Name</th>
-                  <th>Tipo</th>
-                  <th>Uso</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Amount</td>
-                  <td>Currency (std)</td>
-                  <td>Critério de entrada (&gt; 100000)</td>
-                </tr>
-                <tr>
-                  <td>StageName</td>
-                  <td>Picklist (std)</td>
-                  <td>Gatilho Proposta / rollback Qualificação</td>
-                </tr>
-                <tr>
-                  <td>Approval_Status__c</td>
-                  <td>Picklist</td>
-                  <td>Pendente / Aprovado / Rejeitado</td>
-                </tr>
-                <tr>
-                  <td>Last_Approver__c</td>
-                  <td>Lookup(User)</td>
-                  <td>Auditoria do último aprovador</td>
-                </tr>
-                <tr>
-                  <td>Approval_Comments__c</td>
-                  <td>Long Text</td>
-                  <td>Último comentário de decisão</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="grid-2">
-            <div class="card spec-section">
-              <h3><span class="spec-num">3</span> Automação</h3>
-              <div class="story-block">
-                <ul>
-                  <li><strong>Approval Process:</strong> “Opp_High_Value_Approval”</li>
-                  <li><strong>Entry:</strong> Amount &gt; 100000 AND StageName = Proposta</li>
-                  <li><strong>Step 1:</strong> Role Diretor Comercial</li>
-                  <li><strong>Escalation:</strong> VP Vendas após 24h úteis</li>
-                  <li><strong>Final Rejection:</strong> StageName = Qualificação</li>
-                  <li><strong>Flow (after):</strong> atualiza campos de auditoria + Custom Notification</li>
-                </ul>
-              </div>
-            </div>
-            <div class="card spec-section">
-              <h3><span class="spec-num">4</span> Segurança &amp; UX</h3>
-              <div class="story-block">
-                <ul>
-                  <li>FLS nos campos __c para perfis Sales / Leadership</li>
-                  <li>Lightning Record Page: path + componente de status de aprovação</li>
-                  <li>Notificação in-app (Custom Notification Type)</li>
-                  <li>E-mail alert nos steps de approve/reject</li>
-                  <li>Testes: ≥ 75% cobertura se houver Apex</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="card spec-section">
-            <h3><span class="spec-num">5</span> Pseudocódigo de decisão</h3>
-            <pre class="code-block">IF Opportunity.Amount &gt; 100000
-   AND ISCHANGED(StageName)
-   AND StageName = "Proposta"
-THEN
-   SUBMIT Approval Process "Opp_High_Value_Approval"
-   SET Approval_Status__c = "Pendente"
-ON Approve:
-   SET Approval_Status__c = "Aprovado"
-   SET Last_Approver__c, Approval_Comments__c
-   NOTIFY Owner (sucesso)
-ON Reject:
-   SET StageName = "Qualificação"
-   SET Approval_Status__c = "Rejeitado"
-   NOTIFY Owner (comentário do aprovador)</pre>
-          </div>
-
-          <div class="actions">
-            <button class="btn btn-ghost" type="button" data-go="story">← Voltar</button>
-            <button class="btn btn-primary" type="button" data-go="overview">Ir para visão geral →</button>
-          </div>
-        </section>
-
-        <!-- 6. OVERVIEW -->
-        <section class="screen" id="screen-overview" data-screen="overview">
-          <div class="page-kicker">✦ Etapa 6</div>
-          <h2 class="page-title">Visão geral do projeto / exportar</h2>
-          <p class="page-desc">
-            Pacote consolidado do trabalho do agente. Exporte para compartilhar com product, BA e engenharia.
-          </p>
-
-          <div class="grid-3" style="margin-bottom:1rem">
-            <div class="card stat-card">
-              <div class="stat-val">1</div>
-              <div class="stat-label">Requisito processado</div>
-            </div>
-            <div class="card stat-card">
-              <div class="stat-val">5</div>
-              <div class="stat-label">Fontes Salesforce citadas</div>
-            </div>
-            <div class="card stat-card">
-              <div class="stat-val">5</div>
-              <div class="stat-label">Critérios de aceite</div>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-header">
-                <h3>Linha do tempo</h3>
-                <span class="card-badge">Sessão</span>
-              </div>
-              <div class="timeline">
-                <div class="tl-item">
-                  <h4>Requisito recebido</h4>
-                  <p>REQ-2026-014 · Aprovação de oportunidades</p>
-                </div>
-                <div class="tl-item">
-                  <h4>Documentação pesquisada</h4>
-                  <p>Approval Processes, Flow, Opportunity, Agentforce Notify</p>
-                </div>
-                <div class="tl-item">
-                  <h4>User story US-014 gerada</h4>
-                  <p>5 critérios de aceite · 2 fluxos (feliz / rejeição)</p>
-                </div>
-                <div class="tl-item">
-                  <h4>Especificação funcional técnica</h4>
-                  <p>Dados · automação · segurança · pseudocódigo</p>
-                </div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <h3>Exportar pacote</h3>
-                <span class="card-badge">Demo</span>
-              </div>
-              <div class="export-options">
-                <button class="export-opt" type="button" data-export="pdf">
-                  <div class="eo-icon">📑</div>
-                  <strong>PDF</strong>
-                  <span>Spec completa</span>
-                </button>
-                <button class="export-opt" type="button" data-export="md">
-                  <div class="eo-icon">📝</div>
-                  <strong>Markdown</strong>
-                  <span>Para Confluence</span>
-                </button>
-                <button class="export-opt" type="button" data-export="jira">
-                  <div class="eo-icon">🎯</div>
-                  <strong>Jira</strong>
-                  <span>Story + AC</span>
-                </button>
-              </div>
-              <div class="actions" style="margin-top:1.25rem">
-                <button class="btn btn-agent btn-lg" type="button" id="btn-export-all">
-                  Exportar pacote completo
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-top:1rem">
-            <div class="card-header">
-              <h3>Resumo executivo</h3>
-            </div>
-            <p style="font-size:0.875rem;color:var(--neutral-30);line-height:1.55">
-              O agente transformou o requisito de <strong style="color:var(--navy)">aprovação de oportunidades &gt; R$ 100 mil</strong>
-              em uma user story priorizada e uma especificação declarativa Salesforce (Approval Process + Flow),
-              com modelo de dados, segurança, notificações e critérios de teste — pronta para refinamento com o time.
-            </p>
-            <div class="actions">
-              <button class="btn btn-ghost" type="button" data-go="spec">← Voltar à spec</button>
-              <button class="btn btn-secondary" type="button" data-go="home">Nova sessão</button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <!-- Agent chat panel -->
-      <aside class="agent-panel" id="agent-panel" aria-label="Painel do agente">
-        <div class="agent-head">
-          <div class="agent-avatar">✦<span class="online"></span></div>
-          <div class="agent-head-text">
-            <strong>Agente Spec</strong>
-            <span>Agentforce · Salesforce</span>
-          </div>
-        </div>
-        <div class="agent-msgs" id="agent-msgs">
-          <div class="msg agent">
-            <div class="msg-label">Agente</div>
-            Olá, Alberto. Sou o agente de especificação. Envie um requisito Salesforce e eu cuido da pesquisa, da user story e da spec técnica.
-          </div>
-        </div>
-        <div class="agent-composer">
-          <input type="text" id="agent-input" placeholder="Pergunte ao agente…" aria-label="Mensagem ao agente" />
-          <button class="agent-send" type="button" id="agent-send" aria-label="Enviar">➤</button>
-        </div>
-      </aside>
+  <div id="viewLogin" class="hide">
+    <div class="card" style="max-width:400px;margin:40px auto">
+      <h2 style="margin-bottom:4px">Entrar</h2>
+      <p class="mut">Mesma credencial do Ever i9.</p>
+      <label>E-mail</label><input type="email" id="em" value="admin@everi9.com" />
+      <label>Senha</label><input type="password" id="pw" />
+      <button class="p" style="width:100%;margin-top:16px" id="btnLogin">Entrar</button>
     </div>
   </div>
 
-  <button class="agent-fab" type="button" id="agent-fab" aria-label="Abrir painel do agente">✦</button>
-  <div class="toast" id="toast" role="status"></div>
+  <div id="viewList" class="hide">
+    <div class="row"><h2>Sessões</h2><button id="btnReload">Atualizar</button></div>
+    <div id="list"></div>
+  </div>
 
-  <script>
-/* Agentforce Spec Builder — interactive prototype */
-(function () {
-  const SCREENS = ["home", "upload", "process", "story", "spec", "overview"];
-  let current = "home";
-  let processRan = false;
-  let processTimer = null;
+  <div id="viewDetail" class="hide">
+    <div class="row"><button id="btnBack">← Voltar</button><span id="dStage"></span></div>
+    <div class="card">
+      <h2 id="dTitle"></h2>
+      <p class="mut" id="dMeta"></p>
+      <div class="steps" id="dSteps"></div>
+    </div>
+    <div id="dBody"></div>
+  </div>
+</div>
 
-  const agentReplies = {
-    home: "Pronto quando você estiver. Clique em Começar ou carregue o requisito de exemplo.",
-    upload: "Pode colar o texto ou anexar um PDF. Quanto mais claro o requisito, melhor a spec.",
-    process: "Estou lendo o requisito, consultando a documentação Salesforce e montando os artefatos…",
-    story: "Revise a user story e os critérios de aceite. Posso ajustar o tom ou o escopo se quiser.",
-    spec: "A especificação usa Approval Process + Flow declarativo. Quer que eu detalhe testes ou FLS?",
-    overview: "Pacote pronto para exportar em PDF, Markdown ou Jira. O que prefere?",
-    default: "Posso ajudar com o requisito, a história ou a especificação técnica Salesforce."
-  };
+<div id="modNew" class="ov hide">
+  <div class="mod">
+    <h2>Nova sessão</h2>
+    <p class="mut">O agente lê o requisito e devolve o caso de uso. O mapa só é gerado após sua aprovação.</p>
+    <label>Título</label><input type="text" id="nTitle" placeholder="Parceiro registra lead pelo portal" />
+    <label>Requisito</label><textarea id="nReq" placeholder="Cole o requisito, ou anexe um arquivo abaixo."></textarea>
+    <label>Anexo · opcional · até 8 MB</label><input type="file" id="nFile" />
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button id="nCancel">Cancelar</button><button class="p" id="nSend">Enviar ao agente</button>
+    </div>
+  </div>
+</div>
 
-  function $(sel, root) {
-    return (root || document).querySelector(sel);
-  }
-  function $all(sel, root) {
-    return Array.from((root || document).querySelectorAll(sel));
-  }
+<div id="modDoc" class="ov hide">
+  <div class="mod">
+    <div class="row"><h2 id="docTitle"></h2><button id="docClose">Fechar</button></div>
+    <pre class="doc" id="docBody"></pre>
+  </div>
+</div>
 
-  function goTo(name, opts) {
-    if (!SCREENS.includes(name)) return;
-    current = name;
+<script>
+var API='/api', T=localStorage.getItem('i9t')||'', S=null, ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','CONCLUIDO'];
+var LBL={REQUISITO:'Requisito',CASO_DE_USO:'Caso de uso',APROVADO:'Aprovado',MAPA:'Mapa',CONCLUIDO:'Concluído'};
+function $(i){return document.getElementById(i)}
+function show(v){['viewLogin','viewList','viewDetail'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});$('btnNew').classList.toggle('hide',v==='viewLogin')}
+function note(t,k){$('msg').innerHTML=t?'<div class="'+(k||'err')+'">'+t+'</div>':'';if(t)setTimeout(function(){$('msg').innerHTML=''},6000)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function dt(s){return s?new Date(s).toLocaleString('pt-BR'):''}
 
-    $all(".screen").forEach((el) => {
-      el.classList.toggle("active", el.dataset.screen === name);
-    });
+async function api(p,o){
+  o=o||{};o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{},T?{Authorization:'Bearer '+T}:{});
+  var r=await fetch(API+p,o);
+  if(r.status===401){T='';localStorage.removeItem('i9t');show('viewLogin');throw new Error('Sessão expirada');}
+  var d=await r.json().catch(function(){return{}});
+  if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+  return d;
+}
 
-    $all(".nav-item").forEach((el) => {
-      const id = el.dataset.nav;
-      el.classList.toggle("active", id === name);
-      const idx = SCREENS.indexOf(id);
-      const cur = SCREENS.indexOf(name);
-      el.classList.toggle("done", idx < cur);
-    });
+$('btnLogin').onclick=async function(){
+  try{
+    var d=await api('/auth/login',{method:'POST',body:JSON.stringify({email:$('em').value,password:$('pw').value})});
+    T=d.token;localStorage.setItem('i9t',T);$('who').textContent=$('em').value;load();
+  }catch(e){note(e.message)}
+};
 
-    $all(".step").forEach((el) => {
-      const id = el.dataset.step;
-      const idx = SCREENS.indexOf(id);
-      const cur = SCREENS.indexOf(name);
-      el.classList.toggle("active", id === name);
-      el.classList.toggle("done", idx < cur);
-    });
+async function load(){
+  try{
+    var d=await api('/agente');show('viewList');
+    if(!d.items.length){$('list').innerHTML='<div class="empty">Nenhuma sessão ainda. Clique em <b>Nova sessão</b>.</div>';return}
+    $('list').innerHTML=d.items.map(function(s){
+      return '<div class="card click" onclick="openS('+s.id+')"><div class="row" style="margin:0">'+
+        '<div><b style="font-size:15px">'+esc(s.title)+'</b><br><span class="mut">#'+s.id+' · '+dt(s.created_at)+(s.has_file?' · com anexo':'')+'</span></div>'+
+        '<span class="pill s-'+s.stage+'">'+LBL[s.stage]+'</span></div></div>';
+    }).join('');
+  }catch(e){if(!T)show('viewLogin');else note(e.message)}
+}
+$('btnReload').onclick=load;
+$('btnBack').onclick=load;
 
-    $all(".step-line").forEach((line, i) => {
-      line.classList.toggle("filled", i < SCREENS.indexOf(name));
-    });
+window.openS=async function(id){
+  try{
+    S=await api('/agente/'+id);show('viewDetail');
+    $('dTitle').textContent=S.title;
+    $('dMeta').textContent='#'+S.id+' · criada em '+dt(S.created_at)+(S.approved_at?' · aprovada em '+dt(S.approved_at):'');
+    $('dStage').innerHTML='<span class="pill s-'+S.stage+'">'+LBL[S.stage]+'</span>';
+    var cur=ORDER.indexOf(S.stage);
+    $('dSteps').innerHTML=ORDER.slice(0,4).map(function(k,i){
+      return '<div class="step '+(i<cur?'on':'')+' '+(i===cur?'now':'')+'"><i></i><span>'+LBL[k]+'</span></div>';
+    }).join('');
+    render();
+  }catch(e){note(e.message)}
+};
 
-    pushAgentMessage(agentReplies[name] || agentReplies.default, "agent");
+function render(){
+  var h='';
+  if(S.error)h+='<div class="err">'+esc(S.error)+'</div>';
 
-    if (name === "process" && !opts?.skipProcess) {
-      startProcess();
-    }
+  h+='<div class="card"><b>Requisito</b><p class="mut" style="margin-top:6px;white-space:pre-wrap">'+esc(S.requisito||'(somente anexo)')+'</p>';
+  if(S.has_file)h+='<p style="margin-top:10px"><a href="'+API+'/agente/'+S.id+'/file" target="_blank">Baixar '+esc(S.file_name)+'</a></p>';
+  h+='</div>';
 
-    $(".content").scrollTop = 0;
-  }
+  var uc=S.artifacts.filter(function(a){return a.kind==='CASO_DE_USO'})[0];
+  var mp=S.artifacts.filter(function(a){return a.kind==='MAPA'})[0];
 
-  function pushAgentMessage(text, who) {
-    const box = $("#agent-msgs");
-    if (!box) return;
-    const div = document.createElement("div");
-    div.className = "msg " + (who === "user" ? "user" : "agent");
-    div.innerHTML =
-      '<div class="msg-label">' +
-      (who === "user" ? "Você" : "Agente") +
-      "</div>" +
-      escapeHtml(text);
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  function showToast(msg) {
-    const t = $("#toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => t.classList.remove("show"), 2800);
-  }
-
-  /* ——— Process animation ——— */
-  function resetProcess() {
-    processRan = false;
-    clearInterval(processTimer);
-    ["stage-read", "stage-research", "stage-generate"].forEach((id) => {
-      const el = $("#" + id);
-      el.classList.remove("active", "done");
-      el.querySelector(".stage-status").textContent = "Aguardando";
-    });
-    $("#progress-fill").style.width = "0%";
-    $(".progress-bar").setAttribute("aria-valuenow", "0");
-    $("#progress-label").textContent = "0% · iniciando";
-    $("#process-badge").textContent = "Em andamento";
-    $("#btn-to-story").disabled = true;
-    $all(".doc-hit").forEach((h) => h.classList.remove("show"));
-  }
-
-  function startProcess() {
-    resetProcess();
-    const stages = [
-      { id: "stage-read", label: "Lendo requisito…", end: 32 },
-      { id: "stage-research", label: "Pesquisando docs Salesforce…", end: 68 },
-      { id: "stage-generate", label: "Gerando artefatos…", end: 100 }
-    ];
-    let pct = 0;
-    let stageIdx = 0;
-
-    function activate(i) {
-      stages.forEach((s, j) => {
-        const el = $("#" + s.id);
-        el.classList.remove("active");
-        if (j < i) {
-          el.classList.add("done");
-          el.querySelector(".stage-status").textContent = "Concluído";
-        } else if (j === i) {
-          el.classList.add("active");
-          el.querySelector(".stage-status").textContent = "Em progresso";
-        }
-      });
-      if (i === 1) {
-        $all(".doc-hit").forEach((h, k) => {
-          setTimeout(() => h.classList.add("show"), k * 180);
-        });
-        pushAgentMessage(
-          "Encontrei referências úteis: Approval Processes, Flow Builder e Opportunity Object Reference.",
-          "agent"
-        );
-      }
-    }
-
-    activate(0);
-    processTimer = setInterval(() => {
-      pct += 2;
-      if (pct > 100) pct = 100;
-      $("#progress-fill").style.width = pct + "%";
-      $(".progress-bar").setAttribute("aria-valuenow", String(pct));
-
-      if (stageIdx < stages.length && pct >= (stageIdx === 0 ? 0 : stages[stageIdx - 1].end)) {
-        if (pct >= stages[stageIdx].end && stageIdx < stages.length - 1) {
-          stageIdx++;
-          activate(stageIdx);
-        }
-      }
-
-      $("#progress-label").textContent =
-        pct + "% · " + (stages[stageIdx] ? stages[stageIdx].label : "Concluído");
-
-      if (pct >= 100) {
-        clearInterval(processTimer);
-        stages.forEach((s) => {
-          const el = $("#" + s.id);
-          el.classList.remove("active");
-          el.classList.add("done");
-          el.querySelector(".stage-status").textContent = "Concluído";
-        });
-        $("#process-badge").textContent = "Concluído";
-        $("#progress-label").textContent = "100% · artefatos prontos";
-        $("#btn-to-story").disabled = false;
-        processRan = true;
-        pushAgentMessage(
-          "Pronto! User story US-014 e especificação técnica disponíveis. Quer revisar a história?",
-          "agent"
-        );
-      }
-    }, 90);
+  if(uc){
+    var sm=uc.summary||{};
+    h+='<div class="card"><div class="row" style="margin:0"><b>Caso de uso · v'+uc.version+'</b>'+
+        '<button onclick="doc('+uc.id+',\'Caso de uso\')">Ver documento</button></div>';
+    h+='<div class="grid">'+
+       stat(sm.passos,'Passos no fluxo')+stat(sm.excecoes,'Exceções')+
+       stat(sm.atores,'Atores')+stat(sm.perguntas,'Perguntas em aberto')+'</div>';
+    if(sm.pos_condicoes)h+='<p class="mut"><b>Pós-condições:</b> '+esc(sm.pos_condicoes)+'</p>';
+    if(S.stage==='CASO_DE_USO')
+      h+='<div style="display:flex;gap:8px;margin-top:16px"><button class="ok" onclick="approve()">Aprovar e liberar o mapa</button><button class="warn" onclick="reject()">Pedir ajuste</button></div>';
+    h+='</div>';
+  }else{
+    h+='<div class="card"><b>Caso de uso</b><p class="mut" style="margin-top:6px">Aguardando o agente processar o requisito.</p></div>';
   }
 
-  /* ——— Upload demo ——— */
-  function loadDemoFile() {
-    const zone = $("#upload-zone");
-    const row = $("#file-row");
-    zone.classList.add("has-file");
-    row.hidden = false;
-    $("#file-name").textContent = "REQ-2026-014_Aprovacao_Oportunidades.pdf";
-    $("#file-size").textContent = "248 KB · exemplo carregado";
-    showToast("Requisito de exemplo carregado");
-    pushAgentMessage(
-      "Recebi o PDF de exemplo sobre aprovação de oportunidades. Pode enviar para eu processar.",
-      "agent"
-    );
+  if(S.approval_note)h+='<div class="card"><b>Observação da revisão</b><p class="mut" style="margin-top:6px;white-space:pre-wrap">'+esc(S.approval_note)+'</p></div>';
+
+  if(mp){
+    var ms=mp.summary||{};
+    h+='<div class="card"><div class="row" style="margin:0"><b>Mapa de componentes · v'+mp.version+'</b>'+
+        '<button onclick="doc('+mp.id+',\'Mapa de componentes\')">Ver documento</button></div>';
+    h+='<div style="margin-top:12px">'+['REUSAR','ESTENDER','CRIAR','SUBSTITUIR','DESCARTAR'].map(function(v){
+        var n=ms[v.toLowerCase()];return n==null?'':'<span class="pill v-'+v+'" style="margin:0 6px 6px 0">'+v.charAt(0)+v.slice(1).toLowerCase()+' · '+n+'</span>';
+      }).join('')+'</div>';
+    if(ms.a_desenvolver!=null)h+='<p class="mut" style="margin-top:10px"><b>'+ms.a_desenvolver+'</b> componentes a desenvolver.</p>';
+    if(mp.has_file)h+='<p style="margin-top:10px"><a href="'+API+'/agente/artifact/'+mp.id+'/file" target="_blank">Baixar '+esc(mp.file_name)+'</a></p>';
+    h+='</div>';
+  }else if(S.stage==='APROVADO'){
+    h+='<div class="card"><b>Mapa de componentes</b><p class="mut" style="margin-top:6px">Aprovado. Aguardando o agente validar contra a HOMOL e a documentação oficial.</p></div>';
+  }else if(uc){
+    h+='<div class="card" style="opacity:.6"><b>Mapa de componentes</b><p class="mut" style="margin-top:6px">Bloqueado até a aprovação do caso de uso.</p></div>';
   }
+  $('dBody').innerHTML=h;
+}
+function stat(v,l){return '<div class="stat"><b>'+(v==null?'—':v)+'</b><span>'+l+'</span></div>'}
 
-  /* ——— Wire events ——— */
-  $all("[data-nav]").forEach((btn) => {
-    btn.addEventListener("click", () => goTo(btn.dataset.nav));
-  });
+window.approve=async function(){
+  try{await api('/agente/'+S.id+'/approve',{method:'POST',body:JSON.stringify({note:null})});note('Caso de uso aprovado. O mapa está liberado.','ok');openS(S.id)}catch(e){note(e.message)}
+};
+window.reject=async function(){
+  var n=prompt('O que precisa ser ajustado no caso de uso?');if(!n)return;
+  try{await api('/agente/'+S.id+'/reject',{method:'POST',body:JSON.stringify({note:n})});note('Ajuste registrado. Volta para o agente.','ok');openS(S.id)}catch(e){note(e.message)}
+};
+window.doc=async function(aid,t){
+  try{var a=await api('/agente/artifact/'+aid);$('docTitle').textContent=t+' · v'+a.version;$('docBody').textContent=a.content||'(sem conteúdo textual)';$('modDoc').classList.remove('hide')}catch(e){note(e.message)}
+};
+$('docClose').onclick=function(){$('modDoc').classList.add('hide')};
 
-  $all("[data-go]").forEach((btn) => {
-    btn.addEventListener("click", () => goTo(btn.dataset.go));
-  });
-
-  $("#btn-demo")?.addEventListener("click", () => {
-    loadDemoFile();
-    goTo("upload", { skipProcess: true });
-  });
-
-  $("#btn-start-process")?.addEventListener("click", () => {
-    /* data-go handles navigation; process starts in goTo */
-  });
-
-  const zone = $("#upload-zone");
-  const fileInput = $("#file-input");
-  zone?.addEventListener("click", () => fileInput.click());
-  zone?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      fileInput.click();
-    }
-  });
-  zone?.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    zone.classList.add("dragover");
-  });
-  zone?.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-  zone?.addEventListener("drop", (e) => {
-    e.preventDefault();
-    zone.classList.remove("dragover");
-    loadDemoFile();
-  });
-  fileInput?.addEventListener("change", () => {
-    if (fileInput.files?.length) loadDemoFile();
-  });
-  $("#btn-remove-file")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    zone.classList.remove("has-file");
-    $("#file-row").hidden = true;
-    fileInput.value = "";
-  });
-
-  $("#btn-refine-story")?.addEventListener("click", () => {
-    pushAgentMessage("Pode reforçar o critério de SLA e o papel de backup, por favor.", "user");
-    setTimeout(() => {
-      pushAgentMessage(
-        "Atualizei mentalmente: escalonamento em 24h úteis para VP Vendas e comentário obrigatório na rejeição. A spec já reflete isso.",
-        "agent"
-      );
-      showToast("Ajuste solicitado ao agente");
-    }, 600);
-  });
-
-  $all("[data-export]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const type = btn.dataset.export.toUpperCase();
-      showToast("Exportação " + type + " simulada — protótipo");
-      pushAgentMessage("Exportei o pacote em " + type + " (simulação neste protótipo).", "agent");
-    });
-  });
-  $("#btn-export-all")?.addEventListener("click", () => {
-    showToast("Pacote completo preparado (PDF + MD + Jira)");
-    pushAgentMessage("Pacote completo gerado. Em produção, baixaria ZIP com os três formatos.", "agent");
-  });
-
-  function sendComposer() {
-    const input = $("#agent-input");
-    const val = (input.value || "").trim();
-    if (!val) return;
-    pushAgentMessage(val, "user");
-    input.value = "";
-    setTimeout(() => {
-      pushAgentMessage(agentReplies[current] || agentReplies.default, "agent");
-    }, 500);
+$('btnNew').onclick=function(){$('nTitle').value='';$('nReq').value='';$('nFile').value='';$('modNew').classList.remove('hide')};
+$('nCancel').onclick=function(){$('modNew').classList.add('hide')};
+$('nSend').onclick=async function(){
+  var t=$('nTitle').value.trim(),r=$('nReq').value.trim(),f=$('nFile').files[0];
+  if(!t){note('Informe o título.');return}
+  if(!r&&!f){note('Cole o requisito ou anexe um arquivo.');return}
+  var body={title:t,requisito:r||null};
+  if(f){
+    if(f.size>8*1024*1024){note('Anexo acima de 8 MB.');return}
+    body.file_name=f.name;
+    body.file_b64=await new Promise(function(res,rej){var rd=new FileReader();rd.onload=function(){res(rd.result.split(',')[1])};rd.onerror=rej;rd.readAsDataURL(f)});
   }
-  $("#agent-send")?.addEventListener("click", sendComposer);
-  $("#agent-input")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendComposer();
-  });
+  try{$('nSend').disabled=true;await api('/agente',{method:'POST',body:JSON.stringify(body)});$('modNew').classList.add('hide');note('Sessão criada. O agente processa e devolve o caso de uso.','ok');load()}
+  catch(e){note(e.message)}finally{$('nSend').disabled=false}
+};
 
-  $("#agent-fab")?.addEventListener("click", () => {
-    $("#agent-panel").classList.toggle("open");
-  });
-
-  /* Boot */
-  goTo("home", { skipProcess: true });
-})();
-
+if(T)load();else show('viewLogin');
 </script>
 </body>
 </html>
