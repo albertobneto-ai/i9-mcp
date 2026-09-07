@@ -1,6 +1,6 @@
 ---
 name: uc-generator
-description: "Gerador de Caso de Uso Salesforce (formato UML), sem critérios de aceite. Use SEMPRE que o usuário digitar '/uc' — trigger PRIMÁRIO, ativa imediatamente. Também ativa com: 'gerar caso de uso', 'caso de uso', 'use case', 'UC salesforce', 'transformar requisito em caso de uso', 'caso de uso para mapa de componentes', ou quando o usuário enviar um requisito de negócio Salesforce pedindo estruturação em fluxo de ator. Produz um Caso de Uso de 10 seções (atores, pré-condições, gatilho, fluxo principal, alternativos, exceções, pós-condições, regras, dados) que alimenta diretamente a skill component-map via '/map'. NÃO gera critérios de aceite — as pós-condições carregam a verificabilidade. NÃO use para História Funcional com critérios de aceite (use sf-functional-story-generator) nem para spec técnica de 18 seções (use sf-spec-generator) — as três coexistem e servem a fluxos diferentes."
+description: "Gerador de Caso de Uso Salesforce (formato UML), sem critérios de aceite. Use SEMPRE que o usuário digitar '/uc' — trigger PRIMÁRIO, ativa imediatamente. Também ativa com: 'gerar caso de uso', 'caso de uso', 'use case', 'UC salesforce', 'transformar requisito em caso de uso', 'caso de uso para mapa de componentes', ou quando o usuário enviar um requisito de negócio Salesforce pedindo estruturação em fluxo de ator. Produz um Caso de Uso de 8 seções (identificação, atores, pré-condições, gatilho, fluxo principal, fluxos alternativos, regras de negócio, objetos e dados) que alimenta diretamente a skill component-map via '/map'. NÃO gera critérios de aceite, NÃO gera pós-condições, NÃO gera seção de exceções e NÃO gera stakeholders — falhas entram como fluxos alternativos e o estado resultante fica nos passos finais, tudo dentro do contexto do caso de uso. NÃO use para História Funcional com critérios de aceite (use sf-functional-story-generator) nem para spec técnica de 18 seções (use sf-spec-generator) — as três coexistem e servem a fluxos diferentes."
 ---
 
 # Gerador de Caso de Uso — Salesforce
@@ -18,10 +18,10 @@ Três geradores convivem no projeto e não se substituem:
 | Skill | Produz | Tem critério de aceite? |
 |---|---|---|
 | `sf-functional-story-generator` (`/hf`) | História Funcional, 14 seções | Sim |
-| **`uc-generator` (`/uc`)** | **Caso de Uso, 10 seções** | **Não — proibido** |
+| **`uc-generator` (`/uc`)** | **Caso de Uso, 8 seções** | **Não — proibido** |
 | `sf-spec-generator` (`/spec`) | Spec técnica, 18 seções | — |
 
-Se o usuário pedir critério de aceite dentro de um `/uc`, explique em uma linha que este formato não os tem por desenho e que as pós-condições cumprem esse papel. Ofereça `/hf` se ele quiser o formato com critérios.
+Se o usuário pedir critério de aceite dentro de um `/uc`, explique em uma linha que este formato não os tem por desenho e que o estado resultante está descrito nos passos finais dos fluxos. Ofereça `/hf` se ele quiser o formato com critérios.
 
 ## Regra de saída (obrigatória, antes de produzir)
 
@@ -42,7 +42,7 @@ Se veio vago (uma frase), faça **no máximo 3 perguntas** via `ask_user_input_v
 
 Nunca trave esperando resposta perfeita. Melhor entregar com premissa declarada.
 
-## Estrutura obrigatória — exatamente 10 seções
+## Estrutura obrigatória — exatamente 8 seções
 
 ### 01. Identificação
 Tabela: ID (`UC-<área>-<nnn>`), Nome, Escopo (nuvem/módulo), Nível (objetivo do usuário / subfunção), Autor, Data, Origem do requisito.
@@ -74,28 +74,23 @@ Regras:
 - Entre 5 e 15 passos. Mais que isso, o caso de uso está grande demais — quebre.
 
 ### 06. Fluxos alternativos
-Caminhos válidos que também levam ao sucesso. Numeração ancorada no passo de origem: `5a.`, `5b.`
-Cada um diz onde retorna ao fluxo principal, ou que termina em sucesso alternativo.
 
-### 07. Fluxos de exceção
-Caminhos de falha. Mesma numeração ancorada: `3e.`
-Cada exceção declara o que o sistema faz e qual o estado final.
+Toda variação do fluxo principal entra aqui — tanto os caminhos que ainda levam ao objetivo quanto os que falham. **Não existe seção separada de exceções.** Numeração ancorada no passo de origem: `5a.`, `5b.`, `7e.`
 
-**Piso: 6 exceções.** Abaixo disso, justifique no texto por que o caso de uso tem menos.
+Cada fluxo alternativo diz três coisas, nesta ordem:
+1. o que dispara o desvio
+2. o que o sistema faz
+3. **onde termina** — retorna ao passo N do fluxo principal, ou encerra, e nesse caso o que passou a ser verdade
 
-### 08. Pós-condições
-**Esta seção substitui os critérios de aceite. É a parte verificável do documento.**
+Marque os caminhos de falha com a letra `e` (`3e.`, `8e.`) e os de sucesso alternativo com `a`, `b`, `c`. É convenção de leitura, não seção nova.
 
-- **Sucesso** — o que passa a ser verdade quando o fluxo principal termina. Cada item observável e checável.
-- **Falha** — o que é garantido mesmo quando o fluxo falha (integridade, ausência de registro parcial, log).
+**Piso: 6 alternativos, dos quais ao menos 4 de falha.** Abaixo disso, justifique no texto.
 
-Escreva cada pós-condição como uma afirmação que alguém pode ir conferir na org. Se não dá para conferir, não é pós-condição — é desejo.
-
-### 09. Regras de negócio invocadas
+### 07. Regras de negócio invocadas
 Tabela: ID (`RN-nnn`), Enunciado, Passo do fluxo onde incide, Origem (documento/pessoa/inferido).
 Regra de negócio é declarativa e independe de implementação.
 
-### 10. Objetos e dados tocados
+### 08. Objetos e dados tocados
 Tabela: Entidade de negócio, Operação (leitura/criação/alteração/exclusão), Passo do fluxo, Observação.
 
 Use nomes de negócio quando o requisito usa nomes de negócio. Se o requisito nomeia objeto Salesforce (Lead, Opportunity), mantenha — mas não invente API names.
@@ -118,7 +113,17 @@ Toda afirmação factual sobre o requisito recebe marcador, e ele **permanece no
 
 ## Proibições de conteúdo
 
-Nunca inclua no documento: stakeholders, partes interessadas, critérios de aceite, nomes de componentes Salesforce (Flow, Apex, LWC, campo, permission set).
+Nunca inclua no documento, em nenhuma hipótese:
+
+- **Stakeholders** ou partes interessadas — só atores
+- **Critérios de aceite**
+- **Seção de pós-condições** — o estado resultante é descrito nos passos finais do fluxo principal e de cada alternativo
+- **Seção de fluxos de exceção** — as falhas são fluxos alternativos, dentro do contexto do caso de uso
+- **Nomes de componentes Salesforce** (Flow, Apex, LWC, campo, permission set) — isso é trabalho do `/map`
+
+Tudo o que o caso de uso precisa dizer cabe nas 8 seções. Nada de apêndice para contornar a regra.
+
+**Consequência que você precisa carregar:** sem critério de aceite e sem pós-condição, a verificabilidade depende inteiramente de como cada passo é escrito. Escreva os passos finais — do fluxo principal e de cada alternativo — de forma observável e conferível na org. "O sistema cria o lead" é fraco; "o sistema cria o lead com o consultor como proprietário e a origem registrada" é conferível.
 
 ## Léxico proibido
 
