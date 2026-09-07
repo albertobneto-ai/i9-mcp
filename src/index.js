@@ -32,6 +32,7 @@ import hotfixRoutes, { initHotfixTables } from './routes/hotfix.js';
 import aidetectorRoutes from './routes/aidetector.js';
 import kbRoutes, { initKbTables } from './routes/kb.js';
 import vagasRoutes from './routes/vagas.js';
+import agenteRoutes, { initAgenteTables } from './routes/agente.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -159,6 +160,7 @@ app.get('/api/init-db', async (req, res) => {
     // Hotfix Registry
     await initHotfixTables();
     await initKbTables();
+    await initAgenteTables();
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
       const hash = await bcrypt.hash('admin2026', 10);
@@ -196,6 +198,7 @@ app.use('/api/hotfix', hotfixRoutes);  // Hotfix Registry — controle de corre�
 app.use('/api/aidetector', aidetectorRoutes);  // AIDETECTOR — auditoria de credibilidade (antes do catch-all /api)
 app.use('/api/kb', kbRoutes);  // Base de Conhecimento (RAG grounded) — antes do catch-all /api
 app.use('/api/vagas', vagasRoutes);  // Radar de Vagas — pipeline de candidaturas (antes do catch-all /api)
+app.use('/api/agente', agenteRoutes);  // Agente Funcional — UC + mapa de componentes (antes do catch-all /api)
 app.use('/api', explorerRoutes);
 
 // Job status polling
