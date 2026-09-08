@@ -255,6 +255,20 @@ O texto é de um arquiteto para o time que vai construir. Isso significa:
 - **Comece pelo verbo na coluna de conduta.** "Introduzir a propriedade como opcional", não "Seria recomendável que a propriedade fosse introduzida".
 - **Sem enumerar benefício.** O documento decide, não vende.
 
+## Diagramas obrigatórios
+
+Dois, sempre, pelos helpers do `doc-builder`. Cada um com legenda.
+
+### 1. Modelo de dados
+
+Os objetos que o caso de uso toca, com a chave que os relaciona e o sentido da operação. Marque quem é lido, quem é gravado e o que nunca é alterado. Linha tracejada para leitura por chave textual, sem relacionamento declarado. Helpers: `box()`, `arrow()`, `svg()`, `fig()`.
+
+### 2. Pilha de componentes
+
+A cadeia de execução em camadas, de cima para baixo no sentido em que roda. Coluna da esquerda: o que já existe e será reusado ou estendido. Coluna da direita: o que nasce novo. Use `strong=True` em `box()` para marcar o que precisa ser criado, e explique essa convenção na legenda. Helpers: `box()`, `arrow()`, `svg()`, `fig()`.
+
+Ambos vão na seção de objetos e dados tocados, antes das tabelas.
+
 ## Etapa 5b — O que o caso de uso não carrega
 
 O caso de uso termina nos fluxos alternativos. Tudo abaixo é responsabilidade deste documento e **não pode ser omitido** só porque o caso de uso não trouxe:
