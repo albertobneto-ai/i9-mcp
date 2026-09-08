@@ -42,7 +42,7 @@ O artefato seguinte trata as afirmações do anterior como fato estabelecido e c
 
 Afirmar que algo **existe** é barato: há um Id, uma consulta que retornou, uma evidência. Afirmar que algo **não existe** é caro e é onde este fluxo erra.
 
-Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**, todas registradas no artefato:
+Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**:
 
 | Eixo | Pergunta | Exemplo real |
 |---|---|---|
@@ -52,6 +52,8 @@ Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivale
 
 As três vazias ⇒ ausência provada, veredito `CRIAR`.
 Qualquer uma com retorno ⇒ o veredito é `ESTENDER`, e o componente encontrado entra no artefato.
+
+As três buscas são obrigatórias, mas **não entram no documento** — são rastro de processo, e documento não carrega rastro de processo. Ao entregar o artefato, relate no chat quais consultas foram feitas em cada eixo e o que voltou vazio. O documento diz o veredito; o chat diz como se chegou nele.
 
 **O eixo Capacidade é o que costuma faltar.** Precedente registrado: a verificação de duplicidade por CNPJ foi marcada como `CRIAR` porque nenhuma classe da org citava prospect, Explorer, Neoway ou DC. A busca por capacidade — *quem consulta CNPJ contra o CRM* — teria devolvido `LeadCnpjLookupController.buscarAccountPorCnpj` na primeira tentativa. Busca por assunto não fecha veredito de ausência.
 
@@ -129,25 +131,21 @@ Se cabe em OOTB, não proponha Flow. Se cabe em Flow, não proponha Apex.
 
 ## Etapa 3 — Eixo ORG (a HOMOL tem isso?)
 
-**Filtro obrigatório: `NamespacePrefix = null`.** 78% dos componentes da HOMOL são de pacote gerenciado e não interessam ao desenvolvimento.
+**Filtro obrigatório: `NamespacePrefix = null`.** A larga maioria dos componentes da HOMOL vem de pacote gerenciado e não interessa ao desenvolvimento — sem o filtro, a busca afoga o que importa.
 
-Volumetria própria medida em 07/09/2026 (para calibrar expectativa, reconfirme se muito tempo passou):
+A proporção entre componentes próprios e de pacote varia muito por tipo, e saber disso calibra a expectativa antes de consultar:
 
-| Tipo | Próprios | Total na org |
-|---|---|---|
-| CustomField | 8.572 | 38.817 |
-| Layout | 379 | 1.072 |
-| ApexClass | 178 | 5.985 |
-| PermissionSet | 178 | 663 |
-| QuickActionDefinition | 142 | 183 |
-| ValidationRule (ativas) | 138 | 150 |
-| RecordType | 106 | 106 |
-| Flow (ativos) | 57 | 198 |
-| CustomObject | 26 | 536 |
-| FlexiPage | 26 | 60 |
-| LightningComponentBundle | 25 | 1.325 |
-| ApexTrigger | 12 | 232 |
-| AuraDefinitionBundle | 10 | 140 |
+| Tipo | Próprios sobre o total na org |
+|---|---|
+| RecordType | praticamente todos |
+| QuickActionDefinition, ValidationRule ativa | grande maioria |
+| FlexiPage, PermissionSet, Layout | perto da metade ou pouco menos |
+| Flow ativo | cerca de um terço |
+| CustomField | cerca de um quinto |
+| ApexClass, AuraDefinitionBundle | poucos |
+| ApexTrigger, CustomObject, LightningComponentBundle | uma fração pequena |
+
+Ordens de grandeza: `CustomField` é o único tipo na casa dos milhares de componentes próprios; `Layout` na casa das centenas; `ApexClass`, `PermissionSet`, `QuickActionDefinition`, `ValidationRule`, `RecordType` e `Flow` entre dezenas e poucas centenas; `CustomObject`, `FlexiPage`, `LightningComponentBundle`, `ApexTrigger` e `AuraDefinitionBundle` em dezenas. Conte na hora — o número real muda.
 
 Consultas por tipo:
 
@@ -165,7 +163,7 @@ tq "SELECT Id,Name,SobjectType,IsActive FROM RecordType"
 tq "SELECT Id,Name,Label FROM PermissionSet WHERE NamespacePrefix=null"
 ```
 
-**Busca por nome não prova ausência.** Quando o `LIKE` não retorna, o componente pode existir com outro nome. Aplique os três eixos do gate de prova de ausência — nome, capacidade e consumidor — antes de qualquer veredito `CRIAR`, e registre as três consultas no documento. Consulta de capacidade é feita por verbo, não por assunto: liste as classes do domínio e leia as assinaturas, em vez de filtrar por termo do requisito.
+**Busca por nome não prova ausência.** Quando o `LIKE` não retorna, o componente pode existir com outro nome. Aplique os três eixos do gate de prova de ausência — nome, capacidade e consumidor — antes de qualquer veredito `CRIAR`, e relate as três consultas no chat ao entregar. Consulta de capacidade é feita por verbo, não por assunto: liste as classes do domínio e leia as assinaturas, em vez de filtrar por termo do requisito.
 
 Corpo de classe, fórmula de VR ou metadata de Flow: busque **sob demanda**, só para os candidatos que entraram no mapa. Nunca varra corpos em massa.
 
@@ -277,14 +275,11 @@ Atenção especial a componentes compartilhados com o Sales Cloud interno — o 
 
 **Perguntas em aberto — piso 5**, cada uma com default declarado.
 
-**Fronteira** — fora de escopo e por quê; suposições que invalidam o mapa se falsas; o que requer validação do componente; `[NÃO VERIFICADO]` remanescentes.
+**Fronteira** — fora de escopo e por quê; suposições que invalidam o mapa se falsas; o que requer validação do componente; o que não foi possível confirmar, descrito em prosa.
 
-## Marcação de verificação (permanece no documento)
+## Procedência não se marca no documento
 
-- `[VERIFICADO: Tooling API HOMOL, <data>]` — consultado ao vivo
-- `[VERIFICADO: <URL da doc>]` — âncora documental
-- `[INFERIDO: <base>]` — deduzido
-- `[NÃO VERIFICADO]` — não foi possível confirmar agora
+Nada de `[VERIFICADO]`, `[INFERIDO]` ou `[NÃO VERIFICADO]` no texto. O documento afirma; a origem de cada afirmação — lida na org ao vivo, ancorada na doc oficial ou deduzida — é relatada **no chat** ao entregar. O que não pôde ser confirmado aparece na Fronteira como frase, não como etiqueta.
 
 ## Casos de borda que o mapa precisa considerar
 
