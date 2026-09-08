@@ -248,10 +248,11 @@ border-radius:var(--r);padding:11px 15px;font-size:13.5px;color:var(--ink2);marg
 
 <script>
 var API='/api', T=localStorage.getItem('i9t')||'',S=null,
-    ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','APROVADO_MAPA','CONCLUIDO','APROVADO_ARQUITETURA'],
+    ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','APROVADO_MAPA','CONCLUIDO','APROVADO_ARQUITETURA','DESENVOLVIMENTO','APROVADO_DESENVOLVIMENTO'],
     LBL={REQUISITO:'Requisito',CASO_DE_USO:'História',APROVADO:'Aprovado',MAPA:'Especificação',
-         APROVADO_MAPA:'Aprovada',CONCLUIDO:'Arquitetura',APROVADO_ARQUITETURA:'Concluída'},
-    STEPS=[['REQUISITO','Requisito'],['CASO_DE_USO','História'],['MAPA','Especificação'],['CONCLUIDO','Arquitetura']];
+         APROVADO_MAPA:'Aprovada',CONCLUIDO:'Arquitetura',APROVADO_ARQUITETURA:'Aprovado',
+         DESENVOLVIMENTO:'Desenvolvimento',APROVADO_DESENVOLVIMENTO:'Concluída'},
+    STEPS=[['REQUISITO','Requisito'],['CASO_DE_USO','História'],['MAPA','Especificação'],['CONCLUIDO','Arquitetura'],['DESENVOLVIMENTO','Desenvolvimento']];
 function $(i){return document.getElementById(i)}
 function show(v){['viewLogin','viewList','viewDetail'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});
   $('btnNew').classList.toggle('hide',v==='viewLogin')}
@@ -259,7 +260,7 @@ function note(t){$('msg').innerHTML=t?'<div class="msg">'+esc(t)+'</div>':'';
   if(t)setTimeout(function(){$('msg').innerHTML=''},7000)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function dt(s){if(!s)return'';var d=new Date(s);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
-function tagFor(st){var c=st==='APROVADO_ARQUITETURA'?'done':(st==='REQUISITO'?'wait':'');return '<span class="tag '+c+'">'+LBL[st]+'</span>'}
+function tagFor(st){var c=st==='APROVADO_DESENVOLVIMENTO'?'done':(st==='REQUISITO'?'wait':'');return '<span class="tag '+c+'">'+LBL[st]+'</span>'}
 
 async function api(p,o){
   o=o||{};o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{},T?{Authorization:'Bearer '+T}:{});
@@ -308,7 +309,7 @@ window.openS=async function(id){
     var cur=ORDER.indexOf(S.stage);
     $('dStage').innerHTML=STEPS.map(function(s,i){
       var idx=ORDER.indexOf(s[0]);
-      return '<div class="'+(idx<=cur?'on':'')+((idx===cur||(i===3&&S.stage==='APROVADO_ARQUITETURA'))?' now':'')+
+      return '<div class="'+(idx<=cur?'on':'')+((idx===cur||(i===4&&S.stage==='APROVADO_DESENVOLVIMENTO'))?' now':'')+
              '"><i></i><span>'+s[1]+'</span></div>'}).join('');
     render();
     poll(active(S), function(){ openS(id) });
@@ -395,7 +396,7 @@ function render(){
     h+=figs([[d2.adrs||d2.decisoes,'Decisões'],[d2.riscos,'Riscos'],
              [d2.integracoes,'Integrações'],[d2.limites_avaliados||d2.limites,'Limites avaliados']]);
     if(S.stage==='CONCLUIDO')
-      h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e encerrar</button>'+
+      h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e liberar o desenvolvimento</button>'+
          '<button onclick="reject()">Pedir alteração</button></div>';
     else
       h+='<div class="acts"><button onclick="reject()">Pedir alteração</button></div>';
@@ -404,6 +405,26 @@ function render(){
     h+='<div class="panel"><h2>Desenho de arquitetura</h2><p>Especificação aprovada. O agente está montando o desenho com base no Well-Architected e no manual do projeto.</p></div>';
   }else if(mp){
     h+='<div class="panel locked"><h2>Desenho de arquitetura</h2><p>Disponível depois que você aprovar a especificação funcional.</p></div>';
+  }
+
+  var dv=S.artifacts.filter(function(a){return a.kind==='DESENVOLVIMENTO'})[0];
+  if(dv){
+    var d3=dv.summary||{};
+    h+='<div class="panel"><div class="phead"><div><h2 style="margin:0">Plano de desenvolvimento</h2>'+
+       '<div class="pmeta">Versão '+dv.version+'</div></div>'+
+       '<button class="solid" onclick="doc('+dv.id+',\'Plano de desenvolvimento\')">Abrir documento</button></div>';
+    h+=figs([[d3.componentes,'Componentes'],[d3.ondas,'Ondas'],
+             [d3.criar,'Criar'],[d3.estender,'Estender']]);
+    if(S.stage==='DESENVOLVIMENTO')
+      h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e encerrar</button>'+
+         '<button onclick="reject()">Pedir alteração</button></div>';
+    else
+      h+='<div class="acts"><button onclick="reject()">Pedir alteração</button></div>';
+    h+='</div>';
+  }else if(S.stage==='APROVADO_ARQUITETURA'){
+    h+='<div class="panel"><h2>Plano de desenvolvimento</h2><p>Arquitetura aprovada. O agente está montando a ordem de construção e o bloco de cada componente.</p></div>';
+  }else if(ar){
+    h+='<div class="panel locked"><h2>Plano de desenvolvimento</h2><p>Disponível depois que você aprovar o desenho de arquitetura.</p></div>';
   }
   $('dBody').innerHTML=h;
 }
