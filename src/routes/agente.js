@@ -23,6 +23,9 @@ export async function initAgenteTables() {
     approved_at timestamptz,
     approval_note text,
     error text,
+    progress int NOT NULL DEFAULT 0,
+    progress_label varchar(200),
+    progress_at timestamptz,
     meta jsonb DEFAULT '{}'::jsonb,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
@@ -40,10 +43,15 @@ export async function initAgenteTables() {
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS idx_af_artifacts_session ON af_artifacts(session_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_af_sessions_stage ON af_sessions(stage)');
+  // colunas de progresso — sessoes criadas antes desta versao
+  await pool.query("ALTER TABLE af_sessions ADD COLUMN IF NOT EXISTS progress int NOT NULL DEFAULT 0");
+  await pool.query('ALTER TABLE af_sessions ADD COLUMN IF NOT EXISTS progress_label varchar(200)');
+  await pool.query('ALTER TABLE af_sessions ADD COLUMN IF NOT EXISTS progress_at timestamptz');
 }
 
 const COLS = `id, user_id, user_name, title, requisito, stage, approved_at, approval_note,
   error, meta, created_at, updated_at, file_name,
+  progress, progress_label, progress_at,
   (file_b64 IS NOT NULL) AS has_file`;
 
 async function loadArtifacts(sessionId) {
@@ -164,10 +172,26 @@ router.post('/:id/artifact', authMiddleware, async (req, res) => {
     const proposed = kind === 'CASO_DE_USO' ? 'CASO_DE_USO' : 'CONCLUIDO';
     const current = s.rows[0].stage;
     const nextStage = ORDER.indexOf(proposed) > ORDER.indexOf(current) ? proposed : current;
-    await pool.query('UPDATE af_sessions SET stage=$1, updated_at=now() WHERE id=$2',
-      [nextStage, req.params.id]);
+    // artefato gravado encerra o andamento
+    await pool.query(
+      `UPDATE af_sessions SET stage=$1, progress=0, progress_label=NULL, progress_at=NULL,
+       updated_at=now() WHERE id=$2`, [nextStage, req.params.id]);
 
     res.status(201).json({ ok: true, artifact: a.rows[0], stage: nextStage });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── POST /:id/progress — o agente reporta andamento ──
+router.post('/:id/progress', authMiddleware, async (req, res) => {
+  try {
+    const { percent, label } = req.body || {};
+    const p = Math.max(0, Math.min(100, parseInt(percent, 10) || 0));
+    const r = await pool.query(
+      `UPDATE af_sessions SET progress=$1, progress_label=$2, progress_at=now(), updated_at=now()
+       WHERE id=$3 RETURNING id, progress, progress_label, progress_at`,
+      [p, (label || '').slice(0, 200) || null, req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Sessão não encontrada' });
+    res.json({ ok: true, ...r.rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -181,7 +205,8 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
       return res.status(409).json({ error: 'Só é possível aprovar com caso de uso gerado', stage: s.rows[0].stage });
 
     const r = await pool.query(
-      `UPDATE af_sessions SET stage='APROVADO', approved_at=now(), approval_note=$1, updated_at=now()
+      `UPDATE af_sessions SET stage='APROVADO', approved_at=now(), approval_note=$1,
+       progress=0, progress_label=NULL, progress_at=NULL, updated_at=now()
        WHERE id=$2 RETURNING ${COLS}`, [note || null, req.params.id]);
     res.json({ ok: true, session: r.rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
