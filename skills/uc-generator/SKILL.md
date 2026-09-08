@@ -43,7 +43,7 @@ O artefato seguinte trata as afirmações do anterior como fato estabelecido e c
 
 Afirmar que algo **existe** é barato: há um Id, uma consulta que retornou, uma evidência. Afirmar que algo **não existe** é caro e é onde este fluxo erra.
 
-Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**, todas registradas no artefato:
+Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**:
 
 | Eixo | Pergunta | Exemplo real |
 |---|---|---|
@@ -53,6 +53,8 @@ Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivale
 
 As três vazias ⇒ ausência provada, veredito `CRIAR`.
 Qualquer uma com retorno ⇒ o veredito é `ESTENDER`, e o componente encontrado entra no artefato.
+
+As três buscas são obrigatórias, mas **não entram no documento** — são rastro de processo, e documento não carrega rastro de processo. Ao entregar o artefato, relate no chat quais consultas foram feitas em cada eixo e o que voltou vazio. O documento diz o veredito; o chat diz como se chegou nele.
 
 **O eixo Capacidade é o que costuma faltar.** Precedente registrado: a verificação de duplicidade por CNPJ foi marcada como `CRIAR` porque nenhuma classe da org citava prospect, Explorer, Neoway ou DC. A busca por capacidade — *quem consulta CNPJ contra o CRM* — teria devolvido `LeadCnpjLookupController.buscarAccountPorCnpj` na primeira tentativa. Busca por assunto não fecha veredito de ausência.
 
