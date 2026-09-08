@@ -3,6 +3,7 @@ import { getOutboundIP } from './services/sf-multi.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import pool from './config/db.js';
 import authRoutes from './routes/auth.js';
 import orgRoutes from './routes/orgs.js';
@@ -163,7 +164,10 @@ app.get('/api/init-db', async (req, res) => {
     await initAgenteTables();
     const check = await pool.query("SELECT id FROM users WHERE email = 'admin@everi9.com'");
     if (check.rows.length === 0) {
-      const hash = await bcrypt.hash('admin2026', 10);
+      // Senha do seed vem do ambiente. Sem ADMIN_SEED_PASSWORD, gera aleatoria e loga uma unica vez.
+      const seedPwd = process.env.ADMIN_SEED_PASSWORD || crypto.randomBytes(12).toString('base64url');
+      if (!process.env.ADMIN_SEED_PASSWORD) console.warn('[seed] senha inicial do admin gerada:', seedPwd);
+      const hash = await bcrypt.hash(seedPwd, 10);
       await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
         ['Alberto Bottaro', 'admin@everi9.com', hash, 'admin']);
     }
@@ -422,7 +426,14 @@ const PORT = process.env.PORT || 3000;
 app.get('/api/debug/soap-test', async (req, res) => {
   const https = await import('https');
   const start = Date.now();
-  const soapBody = '<?xml version="1.0" encoding="utf-8" ?><env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"><env:Body><n1:login xmlns:n1="urn:partner.soap.sforce.com"><n1:username>alberto.bottaro@aircompany.ai.arqevery</n1:username><n1:password>Nicework@0001bpQwYa7Yk0LdA6VVtkvEI5WBJ</n1:password></n1:login></env:Body></env:Envelope>';
+  // Credencial de diagnostico vem do ambiente. Nada fica gravado no repositorio.
+  const dbgUser = process.env.SF_DEBUG_USER;
+  const dbgPass = process.env.SF_DEBUG_PASSWORD; // senha + security token concatenados
+  if (!dbgUser || !dbgPass) {
+    return res.json({ error: 'Defina SF_DEBUG_USER e SF_DEBUG_PASSWORD no ambiente para usar este diagnostico.' });
+  }
+  const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const soapBody = '<?xml version="1.0" encoding="utf-8" ?><env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"><env:Body><n1:login xmlns:n1="urn:partner.soap.sforce.com"><n1:username>' + esc(dbgUser) + '</n1:username><n1:password>' + esc(dbgPass) + '</n1:password></n1:login></env:Body></env:Envelope>';
   try {
     const result = await new Promise((resolve, reject) => {
       const r = https.default.request({
@@ -448,6 +459,9 @@ app.get('/api/debug/soap-test', async (req, res) => {
 app.get('/api/debug/sf-test', async (req, res) => {
   const https = await import('https');
   const start = Date.now();
+  if (!process.env.SF_DEBUG_USER || !process.env.SF_DEBUG_PASSWORD) {
+    return res.json({ error: 'Defina SF_DEBUG_USER e SF_DEBUG_PASSWORD no ambiente para usar este diagnostico.' });
+  }
   try {
     const result = await new Promise((resolve, reject) => {
       const r = https.default.request({
@@ -463,7 +477,10 @@ app.get('/api/debug/sf-test', async (req, res) => {
       });
       r.on('error', e => reject(e));
       r.on('timeout', () => { r.destroy(); reject(new Error('timeout 15s')); });
-      r.write('grant_type=password&client_id=SalesforceDevelopmentExperience&client_secret=1384510088588713504&username=alberto.bottaro%40aircompany.ai.arqevery&password=Nicework%400001bpQwYa7Yk0LdA6VVtkvEI5WBJ');
+      r.write('grant_type=password&client_id=SalesforceDevelopmentExperience&client_secret=' +
+              encodeURIComponent(process.env.SF_DEBUG_CLIENT_SECRET || '') +
+              '&username=' + encodeURIComponent(process.env.SF_DEBUG_USER || '') +
+              '&password=' + encodeURIComponent(process.env.SF_DEBUG_PASSWORD || ''));
       r.end();
     });
     res.json(result);
