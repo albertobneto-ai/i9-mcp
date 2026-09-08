@@ -84,6 +84,14 @@ Números **estruturais** continuam: quantidade de valores numa picklist, número
 
 A volumetria medida vai **no chat**, ao entregar, onde ela é útil e onde envelhecer não faz mal.
 
+### 6. Nomenclatura de ambiente no documento
+
+No documento, o ambiente de homologação chama-se **Ambiente de Verificação — Homologação**. É esse o valor do metadado `Ambiente` na capa.
+
+No corpo do texto, use "ambiente de verificação": *"consultas ao ambiente de verificação"*, *"medir o tempo real no ambiente de verificação"*. Em tabela de promoção entre ambientes, escreva **Verificação → Produção**.
+
+A sigla `HOMOL` é nome interno de org e de credencial — vale no chat, nos comandos e nos nomes de variável (`SF_HOMOL_USER`), nunca no texto do documento entregue.
+
 ## Fundamento
 
 Duas fontes, nesta ordem:
