@@ -59,6 +59,26 @@ Proibido em qualquer dos três documentos: mencionar o que outro artefato disse,
 
 Cada documento se sustenta sozinho, no presente, como se fosse a primeira e única versão. A procedência e o histórico vivem no chat.
 
+
+### 5. Volumetria de registros não entra no documento
+
+Contagem de registros é orgânica: muda toda semana, e um número datado no documento vira mentira sem aviso. **Proibido no artefato:** "1.000 prospects", "32.751 leads", "262 contas", "504 registros com o valor ME", "28% da base", qualquer total, percentual ou distribuição medida em tabela de dados.
+
+Isso não impede usar volume no raciocínio — a volumetria continua sendo lida na org e continua determinando a decisão. O que muda é como ela aparece:
+
+| Em vez de | Escreva |
+|---|---|
+| "varre os 32.751 leads" | "varre a tabela inteira de Lead" |
+| "281 registros com DEMAIS, 28% da base" | "o valor DEMAIS é o segundo mais frequente e não tem correspondente" |
+| "1.000 prospects carregados" | "a base de prospects carregada" |
+| "213 contas com CNPJ preenchido" | "as contas com CNPJ preenchido" |
+
+Vale o mesmo para limite de configuração que é dado e não metadata — RowLimit de camada, por exemplo, é configuração e pode ficar; contagem de linhas, não.
+
+Números **estruturais** continuam: quantidade de valores numa picklist, número de validation rules ativas, número de flows e triggers no objeto, tamanho de classe, timeout de callout, teto de governor limit. Esses descrevem a solução, não o estoque de dados.
+
+A volumetria medida vai **no chat**, ao entregar, onde ela é útil e onde envelhecer não faz mal.
+
 ## Fundamento
 
 Duas fontes, nesta ordem:
