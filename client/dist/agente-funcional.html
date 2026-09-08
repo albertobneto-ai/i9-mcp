@@ -248,10 +248,10 @@ border-radius:var(--r);padding:11px 15px;font-size:13.5px;color:var(--ink2);marg
 
 <script>
 var API='/api', T=localStorage.getItem('i9t')||'',S=null,
-    ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','APROVADO_MAPA','ARQUITETURA','CONCLUIDO'],
+    ORDER=['REQUISITO','CASO_DE_USO','APROVADO','MAPA','APROVADO_MAPA','CONCLUIDO','APROVADO_ARQUITETURA'],
     LBL={REQUISITO:'Requisito',CASO_DE_USO:'História',APROVADO:'Aprovado',MAPA:'Especificação',
-         APROVADO_MAPA:'Aprovada',ARQUITETURA:'Arquitetura',CONCLUIDO:'Concluída'},
-    STEPS=[['REQUISITO','Requisito'],['CASO_DE_USO','História'],['MAPA','Especificação'],['ARQUITETURA','Arquitetura']];
+         APROVADO_MAPA:'Aprovada',CONCLUIDO:'Arquitetura',APROVADO_ARQUITETURA:'Concluída'},
+    STEPS=[['REQUISITO','Requisito'],['CASO_DE_USO','História'],['MAPA','Especificação'],['CONCLUIDO','Arquitetura']];
 function $(i){return document.getElementById(i)}
 function show(v){['viewLogin','viewList','viewDetail'].forEach(function(x){$(x).classList.toggle('hide',x!==v)});
   $('btnNew').classList.toggle('hide',v==='viewLogin')}
@@ -259,7 +259,7 @@ function note(t){$('msg').innerHTML=t?'<div class="msg">'+esc(t)+'</div>':'';
   if(t)setTimeout(function(){$('msg').innerHTML=''},7000)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function dt(s){if(!s)return'';var d=new Date(s);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
-function tagFor(st){var c=st==='CONCLUIDO'?'done':(st==='REQUISITO'?'wait':'');return '<span class="tag '+c+'">'+LBL[st]+'</span>'}
+function tagFor(st){var c=st==='APROVADO_ARQUITETURA'?'done':(st==='REQUISITO'?'wait':'');return '<span class="tag '+c+'">'+LBL[st]+'</span>'}
 
 async function api(p,o){
   o=o||{};o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{},T?{Authorization:'Bearer '+T}:{});
@@ -308,7 +308,7 @@ window.openS=async function(id){
     var cur=ORDER.indexOf(S.stage);
     $('dStage').innerHTML=STEPS.map(function(s,i){
       var idx=ORDER.indexOf(s[0]);
-      return '<div class="'+(idx<=cur?'on':'')+((idx===cur||(i===3&&S.stage==='CONCLUIDO'))?' now':'')+
+      return '<div class="'+(idx<=cur?'on':'')+((idx===cur||(i===3&&S.stage==='APROVADO_ARQUITETURA'))?' now':'')+
              '"><i></i><span>'+s[1]+'</span></div>'}).join('');
     render();
     poll(active(S), function(){ openS(id) });
@@ -356,7 +356,9 @@ function render(){
              [m.excecoes,'Deles, de falha'],[m.atores,'Atores']]);
     if(S.stage==='CASO_DE_USO')
       h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e liberar a especificação</button>'+
-         '<button onclick="reject()">Pedir ajuste</button></div>';
+         '<button onclick="reject()">Pedir alteração</button></div>';
+    else
+      h+='<div class="acts"><button onclick="reject()">Pedir alteração</button></div>';
     h+='</div>';
   }else{
     h+='<div class="panel"><h2>História funcional</h2><p>O agente ainda não processou este requisito.</p></div>';
@@ -374,7 +376,9 @@ function render(){
              [s.estender,'Estender'],[s.reusar,'Reusar']]);
     if(S.stage==='MAPA')
       h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e liberar a arquitetura</button>'+
-         '<button onclick="reject()">Pedir ajuste</button></div>';
+         '<button onclick="reject()">Pedir alteração</button></div>';
+    else
+      h+='<div class="acts"><button onclick="reject()">Pedir alteração</button></div>';
     h+='</div>';
   }else if(S.stage==='APROVADO'){
     h+='<div class="panel"><h2>Especificação funcional</h2><p>Aprovada. O agente está validando os componentes contra a HOMOL e a documentação oficial.</p></div>';
@@ -388,8 +392,13 @@ function render(){
     h+='<div class="panel"><div class="phead"><div><h2 style="margin:0">Desenho de arquitetura</h2>'+
        '<div class="pmeta">Versão '+ar.version+'</div></div>'+
        '<button class="solid" onclick="doc('+ar.id+',\'Desenho de arquitetura\')">Abrir documento</button></div>';
-    h+=figs([[d2.decisoes,'Decisões'],[d2.riscos,'Riscos'],
-             [d2.integracoes,'Integrações'],[d2.limites,'Limites avaliados']]);
+    h+=figs([[d2.adrs||d2.decisoes,'Decisões'],[d2.riscos,'Riscos'],
+             [d2.integracoes,'Integrações'],[d2.limites_avaliados||d2.limites,'Limites avaliados']]);
+    if(S.stage==='CONCLUIDO')
+      h+='<div class="acts"><button class="solid" onclick="approve()">Aprovar e encerrar</button>'+
+         '<button onclick="reject()">Pedir alteração</button></div>';
+    else
+      h+='<div class="acts"><button onclick="reject()">Pedir alteração</button></div>';
     h+='</div>';
   }else if(S.stage==='APROVADO_MAPA'){
     h+='<div class="panel"><h2>Desenho de arquitetura</h2><p>Especificação aprovada. O agente está montando o desenho com base no Well-Architected e no manual do projeto.</p></div>';
