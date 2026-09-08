@@ -30,6 +30,49 @@ Antes de produzir arquivo, pergunte: chat, `.txt` simples, ou Word formatado. S�
 
 ---
 
+## Contrato entre etapas (vale para as três skills do fluxo)
+
+O fluxo é `/uc` → `/map` → `/arq`. Cada artefato **herda** o anterior; nenhum **audita** o anterior.
+
+### 1. Herança sem reauditoria
+
+O artefato seguinte trata as afirmações do anterior como fato estabelecido e constrói sobre elas. Não reconfere, não revalida, não confirma. Se ele precisou verificar de novo para ter confiança, o artefato anterior não fechou direito — e o problema é lá, não aqui.
+
+### 2. Prova de ausência — o gate mais importante
+
+Afirmar que algo **existe** é barato: há um Id, uma consulta que retornou, uma evidência. Afirmar que algo **não existe** é caro e é onde este fluxo erra.
+
+Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**, todas registradas no artefato:
+
+| Eixo | Pergunta | Exemplo real |
+|---|---|---|
+| **Nome** | Existe componente cujo nome carrega o termo do requisito? | `Name LIKE '%Prospect%'`, `'%Explorer%'`, `'%Mapa%'` |
+| **Capacidade** | Existe componente que já **faz o verbo**, com outro nome? | quem consulta CNPJ · quem grava origem · quem traduz valor de picklist |
+| **Consumidor** | Quem chamaria isso já chama alguma coisa parecida? | métodos que o LWC do fluxo já invoca; `MetadataComponentDependency` |
+
+As três vazias ⇒ ausência provada, veredito `CRIAR`.
+Qualquer uma com retorno ⇒ o veredito é `ESTENDER`, e o componente encontrado entra no artefato.
+
+**O eixo Capacidade é o que costuma faltar.** Precedente registrado: a verificação de duplicidade por CNPJ foi marcada como `CRIAR` porque nenhuma classe da org citava prospect, Explorer, Neoway ou DC. A busca por capacidade — *quem consulta CNPJ contra o CRM* — teria devolvido `LeadCnpjLookupController.buscarAccountPorCnpj` na primeira tentativa. Busca por assunto não fecha veredito de ausência.
+
+### 3. Divergência devolve, não corrige
+
+Se ao produzir a etapa N você descobrir que a etapa N‑1 afirmou algo que a org contradiz:
+
+1. **Pare.** Não escreva o artefato N sobre a premissa corrigida.
+2. Relate a divergência **no chat**, com a evidência que a revelou.
+3. Devolva a sessão para a etapa N‑1 pelo endpoint de devolução do Agente Funcional.
+4. Regrave o artefato N‑1 corrigido.
+5. Só então produza N, sobre a versão corrigida — sem citar que houve correção.
+
+Corrigir a etapa anterior *dentro* da seguinte deixa os dois documentos incoerentes entre si e transfere para o leitor o trabalho de descobrir qual vale.
+
+### 4. Um artefato não fala do outro
+
+Proibido em qualquer dos três documentos: mencionar o que outro artefato disse, comparar versões, registrar que algo mudou, justificar decisão pela correção de um engano anterior. Nada de "a especificação classificou como X, mas", "diferente da versão anterior", "corrigindo o mapa".
+
+Cada documento se sustenta sozinho, no presente, como se fosse a primeira e única versão. A procedência e o histórico vivem no chat.
+
 ## Etapa 1 — Sessão HOMOL
 
 A sessão expira em **minutos**. Login e consulta precisam estar na **mesma chamada bash**, sempre. Nunca reutilize sessão de uma chamada anterior sem testar.
@@ -102,7 +145,7 @@ tq "SELECT Id,Name,SobjectType,IsActive FROM RecordType"
 tq "SELECT Id,Name,Label FROM PermissionSet WHERE NamespacePrefix=null"
 ```
 
-**Busca por nome falha quando você não sabe o nome.** Quando a consulta por `LIKE` não retorna, amplie: busque por objeto, por tipo, ou liste tudo daquele tipo (são poucos, exceto CustomField). Só declare "não existe" depois de ter procurado por objeto **e** por termo.
+**Busca por nome não prova ausência.** Quando o `LIKE` não retorna, o componente pode existir com outro nome. Aplique os três eixos do gate de prova de ausência — nome, capacidade e consumidor — antes de qualquer veredito `CRIAR`, e registre as três consultas no documento. Consulta de capacidade é feita por verbo, não por assunto: liste as classes do domínio e leia as assinaturas, em vez de filtrar por termo do requisito.
 
 Corpo de classe, fórmula de VR ou metadata de Flow: busque **sob demanda**, só para os candidatos que entraram no mapa. Nunca varra corpos em massa.
 
