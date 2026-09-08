@@ -25,8 +25,25 @@ import requests, json, base64
 from datetime import datetime
 
 # ═══ CONFIG ═══
-HOMOL = {"user": "alberto.bottaro@aircompany.ai.algar.hml", "pwd": "Nicework@00019VdH0vY55hCKD76lvLfk84vM0", "url": "https://test.salesforce.com"}
-PROD  = {"user": "alberto.bottaro@aircompany.algar.prod", "pwd": "Nicework@2026IDj5W6E5Ca6lr9nU1nr2lNTB7", "url": "https://login.salesforce.com"}
+import os
+
+def _org(prefix, url):
+    """Credencial vem do ambiente, nunca do arquivo.
+    Exporte antes de rodar, por exemplo:
+      export SF_HOMOL_USER=...   SF_HOMOL_PWD=...   # senha + security token concatenados
+      export SF_PROD_USER=...    SF_PROD_PWD=...
+    """
+    user = os.environ.get(f"{prefix}_USER")
+    pwd  = os.environ.get(f"{prefix}_PWD")
+    if not user or not pwd:
+        raise SystemExit(
+            f"Credencial ausente: defina {prefix}_USER e {prefix}_PWD no ambiente. "
+            "Nenhuma credencial fica gravada neste repositorio."
+        )
+    return {"user": user, "pwd": pwd, "url": url}
+
+HOMOL = _org("SF_HOMOL", "https://test.salesforce.com")
+PROD  = _org("SF_PROD",  "https://login.salesforce.com")
 
 QUERIES = {
     "CustomObject": "SELECT Id, DeveloperName FROM CustomObject WHERE ManageableState='unmanaged' ORDER BY DeveloperName",
