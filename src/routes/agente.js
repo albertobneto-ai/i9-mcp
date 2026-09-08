@@ -174,8 +174,8 @@ router.get('/artifact/:aid/file', authMiddleware, async (req, res) => {
 router.post('/:id/artifact', authMiddleware, async (req, res) => {
   try {
     const { kind, content, summary, file_name, file_b64 } = req.body || {};
-    if (!['CASO_DE_USO', 'MAPA', 'ARQUITETURA'].includes(kind))
-      return res.status(400).json({ error: 'kind deve ser CASO_DE_USO, MAPA ou ARQUITETURA' });
+    if (!['CASO_DE_USO', 'MAPA', 'ARQUITETURA', 'DESENVOLVIMENTO'].includes(kind))
+      return res.status(400).json({ error: 'kind deve ser CASO_DE_USO, MAPA, ARQUITETURA ou DESENVOLVIMENTO' });
     if (!content && !file_b64) return res.status(400).json({ error: 'Envie content ou file_b64' });
     if (file_b64 && file_b64.length > MAX_B64) return res.status(413).json({ error: 'Arquivo acima de 8 MB' });
 
@@ -185,8 +185,10 @@ router.post('/:id/artifact', authMiddleware, async (req, res) => {
     const st = s.rows[0].stage;
     if (kind === 'MAPA' && !['APROVADO', 'MAPA', 'APROVADO_MAPA', 'ARQUITETURA', 'CONCLUIDO'].includes(st))
       return res.status(409).json({ error: 'A especificação exige história funcional aprovada', stage: st });
-    if (kind === 'ARQUITETURA' && !['APROVADO_MAPA', 'CONCLUIDO', 'APROVADO_ARQUITETURA'].includes(st))
+    if (kind === 'ARQUITETURA' && !['APROVADO_MAPA', 'CONCLUIDO', 'APROVADO_ARQUITETURA', 'DESENVOLVIMENTO', 'APROVADO_DESENVOLVIMENTO'].includes(st))
       return res.status(409).json({ error: 'O desenho de arquitetura exige especificação funcional aprovada', stage: st });
+    if (kind === 'DESENVOLVIMENTO' && !['APROVADO_ARQUITETURA', 'DESENVOLVIMENTO', 'APROVADO_DESENVOLVIMENTO'].includes(st))
+      return res.status(409).json({ error: 'O plano de desenvolvimento exige desenho de arquitetura aprovado', stage: st });
 
     const v = await pool.query(
       'SELECT COALESCE(MAX(version),0)+1 AS v FROM af_artifacts WHERE session_id=$1 AND kind=$2',
@@ -202,7 +204,8 @@ router.post('/:id/artifact', authMiddleware, async (req, res) => {
     // registra a nova versão sem exigir nova aprovação.
     const ORDER = AF_STAGES;
     const proposed = kind === 'CASO_DE_USO' ? 'CASO_DE_USO'
-                   : kind === 'MAPA' ? 'MAPA' : 'CONCLUIDO';
+                   : kind === 'MAPA' ? 'MAPA'
+                   : kind === 'ARQUITETURA' ? 'CONCLUIDO' : 'DESENVOLVIMENTO';
     const current = s.rows[0].stage;
     const nextStage = ORDER.indexOf(proposed) > ORDER.indexOf(current) ? proposed : current;
     // artefato gravado encerra o andamento
@@ -276,8 +279,8 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
 router.post('/:id/devolver', authMiddleware, async (req, res) => {
   try {
     const { kind, motivo, evidencia } = req.body || {};
-    if (!['CASO_DE_USO', 'MAPA', 'ARQUITETURA'].includes(kind))
-      return res.status(400).json({ error: 'kind deve ser CASO_DE_USO, MAPA ou ARQUITETURA' });
+    if (!['CASO_DE_USO', 'MAPA', 'ARQUITETURA', 'DESENVOLVIMENTO'].includes(kind))
+      return res.status(400).json({ error: 'kind deve ser CASO_DE_USO, MAPA, ARQUITETURA ou DESENVOLVIMENTO' });
     if (!motivo || !motivo.trim())
       return res.status(400).json({ error: 'motivo é obrigatório: qual afirmação a org contradiz' });
     if (!evidencia || !evidencia.trim())
