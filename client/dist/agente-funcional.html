@@ -95,6 +95,19 @@ line-height:1;font-variant-numeric:tabular-nums}
 .fig span{display:block;font-size:12px;color:var(--mut);margin-top:7px}
 .fig.nil b{color:var(--line2)}
 
+/* progresso */
+.prog{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);
+padding:18px 22px;margin-bottom:14px}
+.prog .ph{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px}
+.prog .pl{font-size:14px;color:var(--ink);font-weight:500}
+.prog .pp{font-size:22px;font-weight:450;font-variant-numeric:tabular-nums;letter-spacing:-.6px}
+.prog .bar{height:3px;background:var(--line);overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--ink);
+transition:width .45s cubic-bezier(.4,0,.2,1)}
+.prog .pf{font-size:12.5px;color:var(--faint);margin-top:9px}
+.rowprog{height:2px;background:var(--line);margin-top:8px;overflow:hidden}
+.rowprog i{display:block;height:100%;background:var(--ink2);transition:width .45s}
+
 /* acoes */
 .acts{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
 .hint{font-size:13px;color:var(--mut);margin-top:14px}
@@ -269,16 +282,20 @@ async function load(){
     if(!d.items.length){
       $('list').innerHTML='<div class="empty"><p>Nenhuma sessão ainda.</p>'+
         '<button class="solid" onclick="document.getElementById(\'btnNew\').click()">Criar a primeira</button></div>';return}
+    poll(d.items.some(active), load);
     $('list').innerHTML='<div class="ledger">'+d.items.map(function(s){
+      var busy=active(s);
       return '<button class="row" onclick="openS('+s.id+')">'+
         '<div class="t">'+esc(s.title)+'</div><div class="m">'+
-        tagFor(s.stage)+'<span class="sep"></span><span>'+dt(s.created_at)+'</span>'+
-        (s.has_file?'<span class="sep"></span><span>com anexo</span>':'')+'</div></button>';
+        (busy?'<span class="tag">Em processamento</span>':tagFor(s.stage))+
+        '<span class="sep"></span><span>'+(busy?esc(s.progress_label||'')+' '+s.progress+'%':dt(s.created_at))+'</span>'+
+        (!busy&&s.has_file?'<span class="sep"></span><span>com anexo</span>':'')+'</div>'+
+        (busy?'<div class="rowprog"><i style="width:'+s.progress+'%"></i></div>':'')+'</button>';
     }).join('')+'</div>';
   }catch(e){if(!T)show('viewLogin');else note(e.message)}
 }
 $('btnReload').onclick=load;
-$('btnBack').onclick=load;
+$('btnBack').onclick=function(){poll(false);load()};
 
 window.openS=async function(id){
   try{
@@ -290,8 +307,17 @@ window.openS=async function(id){
     $('dStage').innerHTML=ORDER.slice(0,4).map(function(k,i){
       return '<div class="'+(i<=cur?'on':'')+(i===cur?' now':'')+'"><i></i><span>'+LBL[k]+'</span></div>'}).join('');
     render();
+    poll(active(S), function(){ openS(id) });
   }catch(e){note(e.message)}
 };
+
+// uma sessao esta em processamento quando o agente reportou andamento ha menos de 4 minutos
+function active(s){
+  if(!s.progress_at||!s.progress)return false;
+  return (Date.now()-new Date(s.progress_at).getTime())<4*60*1000 && s.progress<100;
+}
+var POLL=null;
+function poll(on,fn){ if(POLL){clearInterval(POLL);POLL=null} if(on)POLL=setInterval(fn,3000) }
 
 function figs(items){
   return '<div class="figs">'+items.map(function(f){
@@ -302,6 +328,13 @@ function figs(items){
 function render(){
   var h='';
   if(S.error)h+='<div class="msg">'+esc(S.error)+'</div>';
+
+  if(active(S)){
+    h+='<div class="prog"><div class="ph"><span class="pl">'+esc(S.progress_label||'Processando')+'</span>'+
+       '<span class="pp">'+S.progress+'%</span></div>'+
+       '<div class="bar"><i style="width:'+S.progress+'%"></i></div>'+
+       '<div class="pf">O agente está trabalhando nesta sessão. A tela atualiza sozinha.</div></div>';
+  }
 
   h+='<div class="panel"><h2>Requisito</h2><p style="white-space:pre-wrap">'+esc(S.requisito||'Enviado apenas como anexo.')+'</p>';
   if(S.has_file)h+='<div class="acts"><a class="btn" href="'+API+'/agente/'+S.id+'/file" target="_blank" rel="noopener">Baixar '+esc(S.file_name)+'</a></div>';
