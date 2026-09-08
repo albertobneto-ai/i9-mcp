@@ -13,8 +13,16 @@
 
 set -euo pipefail
 
-USER_HML="alberto.bottaro@aircompany.ai.algar.hml"
-PASS_HML="Nicework@00019VdH0vY55hCKD76lvLfk84vM0"
+# Credencial NUNCA fica neste arquivo. Vem do ambiente:
+#   export SF_HOMOL_USER="<usuario>"
+#   export SF_HOMOL_PWD="<senha><security token>"   # concatenados, sem espaco
+USER_HML="${SF_HOMOL_USER:-}"
+PASS_HML="${SF_HOMOL_PWD:-}"
+if [ -z "$USER_HML" ] || [ -z "$PASS_HML" ]; then
+  echo "Credencial ausente: defina SF_HOMOL_USER e SF_HOMOL_PWD no ambiente." >&2
+  echo "Nenhuma credencial fica gravada neste repositorio." >&2
+  exit 1
+fi
 
 login() {
   cat > /tmp/login_homol.xml << XMLEOF
