@@ -1,6 +1,6 @@
 ---
 name: arch-design
-description: "Gerador de Desenho de Arquitetura Salesforce, terceira etapa do Agente Funcional, produzido depois da especificação funcional aprovada. Use SEMPRE que o usuário digitar '/arq' — trigger PRIMÁRIO. Também ativa com: 'desenho de arquitetura', 'documento de arquitetura', 'solution architecture', 'arquitetura da solução', 'ADR salesforce', ou quando uma sessão do Agente Funcional estiver em APROVADO_MAPA. Produz documento fundamentado no Well-Architected Framework (Trusted, Easy, Adaptable) e no manual do projeto, com diagramas de contexto e componentes, modelagem de dados, mapeamento de integrações, análise de governor limits, desempenho e volumetria, modelo de segurança e sharing, ADRs numeradas, estratégia de ambientes e riscos arquiteturais. NÃO use para história funcional (uc-generator) nem para mapa de componentes (component-map)."
+description: "Gerador de Desenho de Arquitetura Salesforce, terceira etapa do Agente Funcional, produzido depois da especificação funcional aprovada. Use SEMPRE que o usuário digitar '/arq' — trigger PRIMÁRIO. Também ativa com: 'desenho de arquitetura', 'documento de arquitetura', 'solution architecture', 'arquitetura da solução', 'ADR salesforce', ou quando uma sessão do Agente Funcional estiver em APROVADO_MAPA (o artefato leva a sessão a CONCLUIDO, e o terceiro portão a APROVADO_ARQUITETURA). Produz documento fundamentado no Well-Architected Framework (Trusted, Easy, Adaptable) e no manual do projeto, com diagramas de contexto e componentes, modelagem de dados, mapeamento de integrações, análise de governor limits, desempenho e volumetria, modelo de segurança e sharing, ADRs numeradas, estratégia de ambientes e riscos arquiteturais. NÃO use para história funcional (uc-generator) nem para mapa de componentes (component-map)."
 ---
 
 # Desenho de Arquitetura — Salesforce
@@ -8,8 +8,11 @@ description: "Gerador de Desenho de Arquitetura Salesforce, terceira etapa do Ag
 ## Posição no fluxo
 
 ```
-requisito → história funcional → especificação funcional → DESENHO DE ARQUITETURA
-             (/uc, jornada)        (/map, o como)            (/arq, por quê e a que custo)
+requisito → história funcional →→ especificação funcional →→ DESENHO DE ARQUITETURA →→ encerrada
+             (/uc, jornada)   ↑      (/map, o como)     ↑       (/arq, por quê e a que custo)  ↑
+                           portão 1                  portão 2                              portão 3
+
+estágios: REQUISITO · CASO_DE_USO · APROVADO · MAPA · APROVADO_MAPA · CONCLUIDO · APROVADO_ARQUITETURA
 ```
 
 A história diz **o que** acontece. A especificação diz **quais componentes**. O desenho de arquitetura diz **por que assim**, **a que custo** e **o que quebra em escala**.
@@ -28,7 +31,7 @@ O artefato seguinte trata as afirmações do anterior como fato estabelecido e c
 
 Afirmar que algo **existe** é barato: há um Id, uma consulta que retornou, uma evidência. Afirmar que algo **não existe** é caro e é onde este fluxo erra.
 
-Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**, todas registradas no artefato:
+Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivalente`, são obrigatórias **três buscas independentes**:
 
 | Eixo | Pergunta | Exemplo real |
 |---|---|---|
@@ -38,6 +41,8 @@ Antes de escrever `CRIAR`, `não existe`, `nenhum`, `zero` ou `não há equivale
 
 As três vazias ⇒ ausência provada, veredito `CRIAR`.
 Qualquer uma com retorno ⇒ o veredito é `ESTENDER`, e o componente encontrado entra no artefato.
+
+As três buscas são obrigatórias, mas **não entram no documento** — são rastro de processo, e documento não carrega rastro de processo. Ao entregar o artefato, relate no chat quais consultas foram feitas em cada eixo e o que voltou vazio. O documento diz o veredito; o chat diz como se chegou nele.
 
 **O eixo Capacidade é o que costuma faltar.** Precedente registrado: a verificação de duplicidade por CNPJ foi marcada como `CRIAR` porque nenhuma classe da org citava prospect, Explorer, Neoway ou DC. A busca por capacidade — *quem consulta CNPJ contra o CRM* — teria devolvido `LeadCnpjLookupController.buscarAccountPorCnpj` na primeira tentativa. Busca por assunto não fecha veredito de ausência.
 
