@@ -218,6 +218,53 @@ def arrow(x1, y1, x2, y2, label="", dashed=False, white=False):
         s += f'<text x="{mx}" y="{my+3}" text-anchor="middle" fill="#6B6B6B" font-size="9.5" font-family="Inter,Arial">{label}</text>'
     return s
 
+def lanes(x, y, w, names, row_h=110):
+    """Raias horizontais rotuladas. Devolve (markup, faixa) onde faixa[i] e o
+    centro vertical da raia i — use para posicionar step() e arrow()."""
+    lane_label_w = 118
+    out = ""
+    faixa = []
+    for i, n in enumerate(names):
+        ty = y + i * row_h
+        out += (f'<rect x="{x}" y="{ty}" width="{lane_label_w}" height="{row_h}" '
+                f'fill="#F2F3F5" stroke="#A8A8A8" stroke-width="1.2"/>')
+        out += (f'<rect x="{x+lane_label_w}" y="{ty}" width="{w-lane_label_w}" height="{row_h}" '
+                f'fill="#FFFFFF" stroke="#A8A8A8" stroke-width="1.2"/>')
+        out += (f'<text x="{x+lane_label_w/2}" y="{ty+row_h/2+4}" text-anchor="middle" '
+                f'fill="#0D0D0D" font-size="11" font-family="Inter,Arial" font-weight="600">{n}</text>')
+        faixa.append(ty + row_h / 2)
+    return out, faixa
+
+
+def step(cx, cy, label, w=132, h=44, kind="acao"):
+    """Passo dentro de uma raia. kind: 'acao' (retangulo), 'decisao' (losango),
+    'inicio' (arredondado) ou 'fim' (arredondado com traco grosso)."""
+    half_w, half_h = w / 2, h / 2
+    if kind == "decisao":
+        pts = f"{cx},{cy-half_h} {cx+half_w},{cy} {cx},{cy+half_h} {cx-half_w},{cy}"
+        s = f'<polygon points="{pts}" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/>'
+    elif kind in ("inicio", "fim"):
+        sw = "2" if kind == "fim" else "1.2"
+        s = (f'<rect x="{cx-half_w}" y="{cy-half_h}" width="{w}" height="{h}" rx="{half_h}" '
+             f'fill="#ECECEC" stroke="#0D0D0D" stroke-width="{sw}"/>')
+    else:
+        s = (f'<rect x="{cx-half_w}" y="{cy-half_h}" width="{w}" height="{h}" '
+             f'fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/>')
+    palavras, linhas, atual = label.split(), [], ""
+    for p in palavras:
+        if len(atual + " " + p) > 20 and atual:
+            linhas.append(atual); atual = p
+        else:
+            atual = (atual + " " + p).strip()
+    if atual:
+        linhas.append(atual)
+    inicio = cy - (len(linhas) - 1) * 6
+    for i, t in enumerate(linhas):
+        s += (f'<text x="{cx}" y="{inicio+i*13+4}" text-anchor="middle" fill="#0D0D0D" '
+              f'font-size="10.5" font-family="Inter,Arial">{t}</text>')
+    return s
+
+
 def svg(w, h, body):
     return (f'<svg viewBox="0 0 {w} {h}" xmlns="http://www.w3.org/2000/svg" '
             f'preserveAspectRatio="xMidYMid meet">{SVG_DEFS}{body}</svg>')
