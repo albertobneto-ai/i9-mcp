@@ -239,3 +239,23 @@ Falha genérica ("poderia ter mais detalhes") significa que o passe não foi fei
 Ao terminar, ofereça em uma linha:
 
 > Pronto para o mapa de componentes? `/map` valida cada passo contra a HOMOL e a documentação oficial.
+
+## Diagramas obrigatórios
+
+Dois, sempre, gerados pelos helpers do `doc-builder` — nunca SVG escrito à mão, nunca imagem externa. Cada um com legenda; diagrama sem legenda não entra.
+
+### 1. Atores e casos de uso
+
+Depois da seção **Atores**. Bonecos UML à esquerda e à direita, elipses no meio com os casos de uso que este documento cobre, linhas ligando ator a caso. Helpers: `actor()`, `ucase()`, `arrow()`, `svg()`, `fig()`.
+
+Mostre o ator primário, os atores de apoio e os sistemas externos que participam. Um sistema externo é ator quando responde a alguma coisa no fluxo.
+
+### 2. Fluxograma em raias
+
+Depois do **Fluxo principal**. Uma raia por ator, mais uma para o sistema e uma para cada sistema externo envolvido. Os passos numerados do fluxo principal viram caixas na raia de quem executa; a passagem de um ator para outro é a seta que cruza a raia. Helpers: `lanes()`, `step()`, `arrow()`, `svg()`, `fig()`.
+
+`lanes()` devolve `(markup, faixa)`, onde `faixa[i]` é o centro vertical da raia `i` — use esse valor como `cy` em `step()` e como `y` em `arrow()`.
+
+`step()` aceita `kind`: `inicio` para o gatilho, `acao` para passo comum, `decisao` para bifurcação, `fim` para o passo terminal. Toda bifurcação que corresponde a um fluxo alternativo entra como `decisao`, com a seta do desvio rotulada pelo identificador do alternativo — `7a`, `9b`.
+
+O fluxograma representa o fluxo principal e os pontos onde os alternativos se destacam. Não desenhe cada alternativo até o fim: o texto já faz isso.
