@@ -7,7 +7,7 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-export const AF_STAGES = ['REQUISITO', 'CASO_DE_USO', 'APROVADO', 'MAPA', 'CONCLUIDO'];
+export const AF_STAGES = ['REQUISITO', 'CASO_DE_USO', 'APROVADO', 'MAPA', 'APROVADO_MAPA', 'ARQUITETURA', 'CONCLUIDO'];
 const MAX_B64 = 8 * 1024 * 1024 * 1.4;
 
 export async function initAgenteTables() {
@@ -77,7 +77,7 @@ router.get('/queue', authMiddleware, async (_req, res) => {
   try {
     const r = await pool.query(
       `SELECT ${COLS} FROM af_sessions
-       WHERE stage IN ('REQUISITO','APROVADO') ORDER BY created_at ASC`);
+       WHERE stage IN ('REQUISITO','APROVADO','APROVADO_MAPA') ORDER BY created_at ASC`);
     res.json({ items: r.rows, count: r.rowCount });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -145,16 +145,19 @@ router.get('/artifact/:aid/file', authMiddleware, async (req, res) => {
 router.post('/:id/artifact', authMiddleware, async (req, res) => {
   try {
     const { kind, content, summary, file_name, file_b64 } = req.body || {};
-    if (!['CASO_DE_USO', 'MAPA'].includes(kind))
-      return res.status(400).json({ error: "kind deve ser CASO_DE_USO ou MAPA" });
+    if (!['CASO_DE_USO', 'MAPA', 'ARQUITETURA'].includes(kind))
+      return res.status(400).json({ error: 'kind deve ser CASO_DE_USO, MAPA ou ARQUITETURA' });
     if (!content && !file_b64) return res.status(400).json({ error: 'Envie content ou file_b64' });
     if (file_b64 && file_b64.length > MAX_B64) return res.status(413).json({ error: 'Arquivo acima de 8 MB' });
 
     const s = await pool.query('SELECT stage FROM af_sessions WHERE id = $1', [req.params.id]);
     if (!s.rows.length) return res.status(404).json({ error: 'Sessão não encontrada' });
 
-    if (kind === 'MAPA' && !['APROVADO', 'MAPA', 'CONCLUIDO'].includes(s.rows[0].stage))
-      return res.status(409).json({ error: 'Mapa exige caso de uso aprovado', stage: s.rows[0].stage });
+    const st = s.rows[0].stage;
+    if (kind === 'MAPA' && !['APROVADO', 'MAPA', 'APROVADO_MAPA', 'ARQUITETURA', 'CONCLUIDO'].includes(st))
+      return res.status(409).json({ error: 'A especificação exige história funcional aprovada', stage: st });
+    if (kind === 'ARQUITETURA' && !['APROVADO_MAPA', 'ARQUITETURA', 'CONCLUIDO'].includes(st))
+      return res.status(409).json({ error: 'O desenho de arquitetura exige especificação funcional aprovada', stage: st });
 
     const v = await pool.query(
       'SELECT COALESCE(MAX(version),0)+1 AS v FROM af_artifacts WHERE session_id=$1 AND kind=$2',
@@ -168,8 +171,9 @@ router.post('/:id/artifact', authMiddleware, async (req, res) => {
 
     // Estágio nunca anda para trás: regravar o caso de uso numa sessão já aprovada
     // registra a nova versão sem exigir nova aprovação.
-    const ORDER = ['REQUISITO', 'CASO_DE_USO', 'APROVADO', 'MAPA', 'CONCLUIDO'];
-    const proposed = kind === 'CASO_DE_USO' ? 'CASO_DE_USO' : 'CONCLUIDO';
+    const ORDER = AF_STAGES;
+    const proposed = kind === 'CASO_DE_USO' ? 'CASO_DE_USO'
+                   : kind === 'MAPA' ? 'MAPA' : 'CONCLUIDO';
     const current = s.rows[0].stage;
     const nextStage = ORDER.indexOf(proposed) > ORDER.indexOf(current) ? proposed : current;
     // artefato gravado encerra o andamento
@@ -201,13 +205,14 @@ router.post('/:id/approve', authMiddleware, async (req, res) => {
     const { note } = req.body || {};
     const s = await pool.query('SELECT stage FROM af_sessions WHERE id=$1', [req.params.id]);
     if (!s.rows.length) return res.status(404).json({ error: 'Sessão não encontrada' });
-    if (s.rows[0].stage !== 'CASO_DE_USO')
-      return res.status(409).json({ error: 'Só é possível aprovar com caso de uso gerado', stage: s.rows[0].stage });
+    const next = { CASO_DE_USO: 'APROVADO', MAPA: 'APROVADO_MAPA' }[s.rows[0].stage];
+    if (!next) return res.status(409).json({
+      error: 'Só é possível aprovar com história funcional ou especificação gerada', stage: s.rows[0].stage });
 
     const r = await pool.query(
-      `UPDATE af_sessions SET stage='APROVADO', approved_at=now(), approval_note=$1,
+      `UPDATE af_sessions SET stage=$1, approved_at=now(), approval_note=$2,
        progress=0, progress_label=NULL, progress_at=NULL, updated_at=now()
-       WHERE id=$2 RETURNING ${COLS}`, [note || null, req.params.id]);
+       WHERE id=$3 RETURNING ${COLS}`, [next, note || null, req.params.id]);
     res.json({ ok: true, session: r.rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -217,9 +222,14 @@ router.post('/:id/reject', authMiddleware, async (req, res) => {
   try {
     const { note } = req.body || {};
     if (!note || !note.trim()) return res.status(400).json({ error: 'note é obrigatório ao pedir ajuste' });
+    const s = await pool.query('SELECT stage FROM af_sessions WHERE id=$1', [req.params.id]);
+    if (!s.rows.length) return res.status(404).json({ error: 'Sessão não encontrada' });
+    // ajuste na especificacao volta para o portao dela; nos demais casos volta ao requisito
+    const back = ['MAPA', 'APROVADO_MAPA', 'ARQUITETURA', 'CONCLUIDO'].includes(s.rows[0].stage)
+      ? 'APROVADO' : 'REQUISITO';
     const r = await pool.query(
-      `UPDATE af_sessions SET stage='REQUISITO', approval_note=$1, updated_at=now()
-       WHERE id=$2 RETURNING ${COLS}`, [note.trim(), req.params.id]);
+      `UPDATE af_sessions SET stage=$1, approval_note=$2, updated_at=now()
+       WHERE id=$3 RETURNING ${COLS}`, [back, note.trim(), req.params.id]);
     if (!r.rows.length) return res.status(404).json({ error: 'Sessão não encontrada' });
     res.json({ ok: true, session: r.rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
