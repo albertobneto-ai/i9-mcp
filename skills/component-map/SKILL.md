@@ -99,13 +99,18 @@ A volumetria medida vai **no chat**, ao entregar, onde ela é útil e onde envel
 
 A sessão expira em **minutos**. Login e consulta precisam estar na **mesma chamada bash**, sempre. Nunca reutilize sessão de uma chamada anterior sem testar.
 
+A credencial **nunca** aparece neste arquivo. Ela vem do ambiente — `SF_HOMOL_USER` e `SF_HOMOL_PWD`, esta última com senha e security token concatenados — ou do contexto privado do projeto. Se nenhuma das duas fontes tiver a credencial, pare e peça; não tente adivinhar nem procurar em arquivo do repositório.
+
 ```bash
-cat > /tmp/login_homol.xml << 'XMLEOF'
+: "${SF_HOMOL_USER:?defina SF_HOMOL_USER no ambiente}"
+: "${SF_HOMOL_PWD:?defina SF_HOMOL_PWD no ambiente (senha + security token)}"
+
+cat > /tmp/login_homol.xml << XMLEOF
 <?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:partner.soap.sforce.com">
   <soapenv:Body><urn:login>
-      <urn:username>alberto.bottaro@aircompany.ai.algar.hml</urn:username>
-      <urn:password>Nicework@00019VdH0vY55hCKD76lvLfk84vM0</urn:password>
+      <urn:username>${SF_HOMOL_USER}</urn:username>
+      <urn:password>${SF_HOMOL_PWD}</urn:password>
   </urn:login></soapenv:Body>
 </soapenv:Envelope>
 XMLEOF
