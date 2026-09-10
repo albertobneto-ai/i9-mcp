@@ -233,6 +233,7 @@ document.getElementById('uCol').onclick=function(){a(false);document.querySelect
 window.addEventListener('beforeprint',function(){a(true)});
 
 // ================= comentários persistentes =================
+var all=function(sel){return Array.prototype.slice.call(document.querySelectorAll(sel));};
 var API='https://i9-mcp-da48589780b2.herokuapp.com';
 var LSK='ucvpn-comentarios';
 function lsGet(){try{return JSON.parse(localStorage.getItem(LSK)||'{}')}catch(e){return{}}}
