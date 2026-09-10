@@ -214,6 +214,7 @@ text-transform:uppercase;color:var(--mut)}
 @media print{.ubar,.cbar,.cbtn{display:none}.utree details{page-break-inside:avoid}.cbox:empty{display:none}}
 .cbtn{background:#FAFBFC;color:#0D0D0D;border:1px dashed #6B6B6B;border-radius:6px;padding:2px 10px;font-size:10.5px;cursor:pointer;margin:4px 0}
 .cbtn.on{background:#0D0D0D;color:#FAFBFC;border-style:solid}
+.cbtn.insum{margin-left:8px;font-size:10px;padding:1px 8px;vertical-align:1px}
 .cbox{display:none;border:1px dashed #6B6B6B;border-radius:6px;background:#FFFFFF;min-height:40px;padding:8px 10px;font-size:12px;color:#0D0D0D;margin:4px 0 8px}
 .cbox.show{display:block}
 .cbox:focus{outline:2px solid #0D0D0D}
@@ -251,10 +252,25 @@ function mkBox(key,label,mount,inline){
  if(inline){mount.appendChild(b);}else{mount.insertBefore(box,mount.firstChild);mount.insertBefore(b,box);}
  return box;
 }
-// nós da modelagem
+// nós da modelagem — botão visível no próprio título
 all('[data-ckey]').forEach(function(d){
- var body=d.querySelector(':scope > .ubody');if(!body)return;
- mkBox(d.dataset.ckey,d.dataset.clabel||d.dataset.ckey,body,false);
+ var body=d.querySelector(':scope > .ubody');
+ var sum=d.querySelector(':scope > summary');
+ if(!body||!sum)return;
+ var key=d.dataset.ckey,label=d.dataset.clabel||key;
+ var b=document.createElement('button');b.type='button';b.className='cbtn insum';b.textContent='＋ comentário';
+ sum.appendChild(b);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ body.insertBefore(box,body.firstChild);
+ var saved=lsGet()[key];
+ if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='✎ comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  d.open=true;box.classList.add('show');box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'✎ comentário':'＋ comentário';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
 });
 // linhas do fluxo único (seção 04)
 var s4=document.getElementById('s4');
