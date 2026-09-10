@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POC — Configurador VPN Node</title>
+<style>
+:root{--ink:#0d0d0d;--ink2:#4a4a4a;--mid:#6b6b6b;--line:#d9d9d9;--bg:#f2f3f5;--card:#fafbfc;--soft:#ececec;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 'Segoe UI',Roboto,Arial,sans-serif}
+header{background:linear-gradient(135deg,#0d0d0d,#4a4a4a);color:#fff;padding:22px 32px}
+header .kicker{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#cfcfcf}
+header h1{margin:6px 0 4px;font-size:21px;font-weight:600}
+header .sub{color:#d9d9d9;font-size:13px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:22px;padding:22px 32px 80px;align-items:start}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:18px;overflow:hidden}
+.card.blocked{opacity:.45;pointer-events:none}
+.card h2{margin:0;padding:12px 18px;background:#1c1c1c;color:#fff;font-size:13.5px;letter-spacing:.5px;display:flex;align-items:center;gap:10px}
+.card h2 .num{background:#fff;color:#0d0d0d;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.card .body{padding:16px 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 16px}
+.field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.field label .req{color:#0d0d0d;font-weight:800}
+.field select,.field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;font:inherit;font-size:13px}
+.field select:disabled,.field input:disabled{background:var(--soft);color:var(--mid)}
+.field .note{font-size:11px;color:var(--mid);margin-top:3px}
+.field .auto{display:inline-block;font-size:10px;background:var(--soft);border-radius:4px;padding:1px 6px;color:var(--ink2);margin-left:6px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none}
+.toggle input{width:auto}
+.err{color:#7a1f1f;font-size:11.5px;margin-top:3px;font-weight:600}
+.badge{display:inline-block;font-size:10px;letter-spacing:.5px;border-radius:4px;padding:2px 7px;font-weight:700;text-transform:uppercase}
+.badge.aberto{background:#e6e0c8;color:#5c4d00;border:1px solid #cabf8f}
+.badge.custom{background:#0d0d0d;color:#fff}
+.badge.auto2{background:var(--soft);color:var(--ink2)}
+.equip-line{display:grid;grid-template-columns:1.2fr 1fr .6fr;gap:10px;align-items:end;border-bottom:1px dashed var(--line);padding:8px 0}
+.equip-line:last-child{border-bottom:0}
+/* painel motor */
+.panel{position:sticky;top:16px}
+.panel .card h2{background:#0d0d0d}
+.verdict{padding:16px 18px;text-align:center}
+.verdict .v{font-size:20px;font-weight:800;letter-spacing:1.5px;padding:10px;border-radius:8px}
+.verdict .v.fmt{background:#e2e8e2;color:#1d3a1d;border:2px solid #6d8a6d}
+.verdict .v.cst{background:#0d0d0d;color:#fff}
+.verdict .v.inv{background:#efe0e0;color:#7a1f1f;border:2px solid #b98a8a}
+.rulelog{max-height:52vh;overflow:auto;padding:0 18px 14px}
+.rule{border-left:3px solid var(--ink2);background:#f4f5f7;border-radius:0 6px 6px 0;padding:7px 10px;margin:8px 0;font-size:12px}
+.rule .ref{font-size:10px;color:var(--mid);font-weight:700;letter-spacing:.4px}
+.rule.warn{border-left-color:#5c4d00;background:#f5f2e4}
+.rule.block{border-left-color:#7a1f1f;background:#f5e9e9}
+.price{padding:0 18px 16px;font-size:12px}
+.price ul{margin:6px 0 0;padding-left:18px}
+.price li{margin:2px 0}
+footer{background:#0d0d0d;color:#bdbdbd;font-size:11px;padding:14px 32px;display:flex;justify-content:space-between}
+.pill{display:inline-block;background:var(--soft);border-radius:12px;padding:2px 10px;font-size:11px;color:var(--ink2);margin:2px}
+h3.sub{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2);border-bottom:1px solid var(--line);padding-bottom:4px;margin:18px 0 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">ALGAR · CRM B2B</div>
+  <h1>POC — Configurador VPN Node</h1>
+  <div class="sub">Motor de regras derivado da planilha HIERARQUIA_VPN_NODE.xlsx · viabilidade e base de endereços simuladas · cada regra cita a linha de origem (S1/S2 = sheet · L = linha)</div>
+</header>
+
+<div class="layout">
+  <div id="form"></div>
+  <aside class="panel">
+    <div class="card">
+      <h2>Motor de Regras</h2>
+      <div class="verdict" id="verdict"></div>
+      <div class="rulelog" id="rulelog"></div>
+    </div>
+    <div class="card">
+      <h2>Impacto de Preço (M = SIM)</h2>
+      <div class="price" id="price"></div>
+    </div>
+  </aside>
+</div>
+
+<footer><span>ALGAR · CRM B2B — POC Configurador VPN Node</span><span>Confidencial — Uso Interno</span></footer>
+
+<script>
+'use strict';
+/* ============ DADOS SIMULADOS ============ */
+var VELOCIDADES = (function(){
+  var m=[10,20,30,50,100,200,300,400,500,700,900], g=[1,1.2,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,15,20,25,30,40,50,60,70,80,90,100];
+  var out=[]; m.forEach(function(v){out.push({label:v+' Mbps',mbps:v});});
+  g.forEach(function(v){out.push({label:(v+' Gbps').replace('.',','),mbps:v*1000});});
+  return out;
+})();
+var ENDERECOS=[
+ {id:'e1',nome:'Av. Afonso Pena, 1000 — Uberlândia/MG',viab:{tec:'Metro',abord:'Pronta',metragem:120,anel:false,xgspon:false,subterranea:false}},
+ {id:'e2',nome:'Rua XV de Novembro, 250 — Franca/SP',viab:{tec:'GPON',abord:'Construir',metragem:1800,anel:false,xgspon:false,subterranea:false}},
+ {id:'e3',nome:'Equinix SP4 — São Paulo/SP',dc:true,viab:{tec:'Metro',abord:'Pronta',metragem:80,anel:false,xgspon:false,subterranea:false}},
+ {id:'e4',nome:'Cond. Empresarial Horizonte — Uberaba/MG',cond:true,viab:{tec:'Metro',abord:'Construir',metragem:350,anel:false,xgspon:false,subterranea:false}},
+ {id:'e5',nome:'Distrito Industrial ARQ5 — Patos de Minas/MG',arq5:true,viab:{tec:'GPON',abord:'Pronta',metragem:0,anel:false,xgspon:false,subterranea:false}},
+ {id:'e6',nome:'Fazenda Santa Rita — Monte Alegre/MG',viab:{tec:'Rádio',abord:'Construir',metragem:850,anel:false,xgspon:false,subterranea:false}},
+ {id:'e7',nome:'DC + Condomínio TechPark — Campinas/SP',dc:true,cond:true,viab:{tec:'Metro',abord:'Pronta',metragem:60,anel:true,xgspon:false,subterranea:false}},
+ {id:'e8',nome:'Av. Paulista, 900 — São Paulo/SP',viab:{tec:'XGSPON',abord:'Pronta',metragem:300,anel:true,xgspon:true,subterranea:false}},
+ {id:'e9',nome:'Centro Histórico (rede subterrânea) — Ouro Preto/MG',viab:{tec:'Metro',abord:'Construir',metragem:220,anel:false,xgspon:false,subterranea:true}}
+];
+var NETWORKS=[{id:'NW-1001',prot:'BGP',nodes:4},{id:'NW-1002',prot:'RIP',nodes:2}];
+var PERFIS=['Consultor de Vendas Direto','Consultor de Vendas Canal Parceiro','Backoffice de Vendas Canal Parceiro','Atendente de Vendas Canal Centralizado','Backoffice de Vendas Canal Centralizado','SDR','Pré-Vendas','Consultor Corporativo','Administração de Vendas Centralizada','Outro Perfil'];
+var PERFIS_DATABASE=PERFIS.slice(0,6);
+
+/* ============ ESTADO ============ */
+var S={
+ perfil:'Consultor de Vendas Direto', tipoCliente:'PJ', segmento:'Corporativo', internacional:false,
+ nwModo:'existente', nwId:'NW-1001', nwProt:'RIP', nwQtdNodes:2,
+ endereco:'', velocidade:'',
+ gjForn:'', gjInterface:'', gjNome:'',
+ modInst:'Físico', modeloDisp:'', velConexao:'', provCloud:'',
+ lastMile:false, lmParceiro:'', lmProp:'Algar', lmGlm:'', lmVig:'', lmCapex:'', lmOpex:'',
+ modEquip:'Locação',
+ svaUp:false, upVel:'', upDias:'',
+ mir:false, mirPlano:'', mirTipo:'',
+ fidel:'36', tipoReaj:'Data de assinatura do contrato', indice:'IPCA', reajAntes12:false, multa:30, aviso:30,
+ moedaValor:''
+};
+function end(){ return ENDERECOS.find(function(e){return e.id===S.endereco;})||null; }
+function velMbps(label){ var v=VELOCIDADES.find(function(x){return x.label===label;}); return v?v.mbps:0; }
+
+/* ============ MOTOR DE REGRAS ============ */
+function evaluate(){
+ var rules=[], price=[], errors=[], custom=[], verdict='FORMATADO';
+ function r(txt,ref,cls){rules.push({txt:txt,ref:ref,cls:cls||''});}
+ function cst(motivo,ref){custom.push(motivo+' ('+ref+')');}
+
+ // Elegibilidade
+ if(S.tipoCliente==='PF'){ r('Produto não pode ser vendido para Pessoa Física — venda bloqueada.','S2·L2','block'); return {verdict:'INVIÁVEL',rules:rules,price:price,errors:['Cliente PF']}; }
+ if(S.segmento==='Governo' && PERFIS.indexOf(S.perfil)>=0 && S.perfil!=='Consultor Corporativo' && S.perfil!=='Administração de Vendas Centralizada'){
+   r('Governo só pode ser vendido por Consultor Corporativo ou Adm. de Vendas Centralizada — perfil atual não autorizado.','S2·L3','block');
+ }
+ // Network
+ if(S.nwModo==='nova'){
+   r('Criação de Network nova: Protocolo de Roteamento obrigatório (default RIP) e novo ID gerado ao concluir.','S1·L3-L4');
+   if(Number(S.nwQtdNodes)<2){ errors.push('Network nova exige ≥ 2 Nodes'); r('Network nova com menos de 2 Nodes — bloqueado.','S1·L3 / S2·L11','block'); }
+ } else {
+   r('Network existente selecionada ('+S.nwId+'): Protocolo de Roteamento herdado, campo oculto.','S1·L4');
+ }
+ var e=end();
+ if(!e){ r('Selecione o endereço de instalação — obrigatório e individual por node.','S2·L7','warn'); return {verdict:'—',rules:rules,price:price,errors:errors}; }
+
+ // Viabilidade (auto)
+ var v=e.viab;
+ r('Viabilidade retornou: Tecnologia '+v.tec+', Abordagem '+v.abord+(v.metragem?', Metragem '+v.metragem+' m':'')+(v.anel?', entrega em anel':'')+'. Campos auto, read-only em esteira formatada.','S1·L5-L8');
+ if(v.abord==='Construir' && !(v.metragem>0)) { errors.push('Metragem deve ser > 0 para abordagem Construir'); r('Metragem obrigatória e > 0 quando Construir.','S1·L8','block'); }
+
+ // Endereço pré-cadastrado
+ if(e.dc){ r('Endereço pré-cadastrado como Data Center → Golden Jumper exibido e obrigatório.','S1·L9 / S2·L12','warn');
+   if(!S.gjForn) errors.push('Golden Jumper (Algar/Cliente) obrigatório para endereço DC');
+   if(S.gjForn==='Algar'){ r('GJ = Algar → Tecnologia e Nome do Golden Jumper elegíveis e obrigatórios.','S1·L9');
+     if(!S.gjInterface||!S.gjNome) errors.push('Interface e Nome do jumper obrigatórios (GJ = Algar)');
+   }
+   if(S.gjForn==='Cliente'){ r('GJ = Cliente → campos do jumper ocultos.','S1·L9'); }
+   cst('Endereço Golden Jumper','S2·L13'); }
+ if(e.cond){ r('Flag Condomínio marcado automaticamente pelo cadastro do endereço — imutável na venda; gera custos extras.','S1·L18','warn'); price.push('Condomínio (S1·L18)'); cst('Condomínio empresarial','S2·L13'); }
+ if(e.arq5){ cst('Localidade ARQ5','S2·L13'); }
+ if(v.subterranea){ cst('Rede subterrânea sem prédio abordado','S2·L13'); }
+ if(v.tec==='Rádio'){ cst('Acesso Rádio','S2·L13'); r('Tecnologia Rádio → equipamento Rádio obrigatório.','S1·L19'); }
+ if(S.internacional){ cst('Cliente internacional (invoice em moeda)','S2·L13'); r('Cliente internacional: Tipo Moeda = Dólar (default) e Valor Moeda obrigatório.','S1·L33-L34');
+   if(!S.moedaValor) errors.push('Valor Moeda obrigatório para cliente internacional'); price.push('Tipo/Valor Moeda (S1·L33-L34)'); }
+ if(S.segmento==='Governo'||S.segmento==='Operadoras-Atacado'){ cst('Segmento '+S.segmento,'S2·L13'); }
+
+ // Virtual/Fabric
+ if(S.modInst==='Virtual/Fabric'){
+   r('Modalidade Virtual/Fabric → Modelo de Disponibilização, Velocidade de Conexão e Provedor Cloud obrigatórios.','S1·L13-L16','warn');
+   if(!S.modeloDisp||!S.velConexao||!S.provCloud) errors.push('Bloco Virtual/Fabric incompleto (L14-L16)');
+ }
+
+ // Last Mile
+ if(S.lastMile){
+   cst('Acesso Terceiro — Last Mile','S1·L21 / S2·L13');
+   r('Last Mile: 6 campos obrigatórios (parceiro, proprietário, nº GLM, vigência, CAPEX instalação, OPEX mensal).','S1·L22-L27','warn');
+   ['lmParceiro','lmGlm','lmVig','lmCapex','lmOpex'].forEach(function(k){ if(!S[k]) errors.push('Last Mile: campo '+k.replace('lm','')+' obrigatório'); });
+   price.push('Acesso Terceiro + valores LM (S1·L21-L27)');
+ }
+
+ // Velocidade + classificação formatado/customizado (matriz S2·L13)
+ var mb=velMbps(S.velocidade);
+ if(!mb){ r('Selecione a Velocidade do node.','S1·L2','warn'); }
+ else {
+   price.push('Velocidade '+S.velocidade+' (S1·L2)');
+   var fmtOk=false, motivo='';
+   if(mb<=500){
+     if(v.tec==='Metro'&&v.metragem<=400){fmtOk=true;motivo='≤500Mb, Metro ≤400m';}
+     if(v.tec==='GPON'&&v.abord==='Pronta'){fmtOk=true;motivo='≤500Mb, GPON pronta';}
+     if(v.tec==='GPON'&&v.abord==='Construir'&&v.metragem<=2200){fmtOk=true;motivo='≤500Mb, GPON construir ≤2200m';}
+   }
+   if(mb>500&&mb<=1000&&v.tec==='XGSPON'&&v.metragem<=400){fmtOk=true;motivo='500Mb–1Gb, XGSPON ≤400m da CTO';}
+   if(mb>=500&&mb<=900&&v.tec==='Metro'&&v.metragem<=400&&v.anel){fmtOk=true;motivo='500–900Mb, Metro ≤400m com viab. lógica em anel';}
+   if(mb>500&&mb<=900&&v.tec==='Metro'&&v.tec==='XGSPON'){/*n/a*/}
+   if(mb>500&&mb<=900&&v.xgspon&&v.tec==='Metro'){ r('Faixas XGSPON (500Mb–1Gb) e Metro (500–900Mb) se sobrepõem para esta velocidade — precedência não definida.','S2·L13 · PONTO EM ABERTO','warn'); }
+   if(fmtOk){ r('Critério de formatação atendido: '+motivo+'.','S2·L13'); }
+   else if(custom.length===0){ cst('Fora dos critérios de formatação ('+v.tec+', '+v.metragem+' m, '+S.velocidade+')','S2·L13'); }
+ }
+
+ // Equipamentos auto (S1·L19-L20 + S2·L19)
+ var eq=[];
+ if(v.tec==='GPON'||v.tec==='XGSPON'){eq=['Roteador','ONT'];}
+ else if(v.tec==='Metro'){eq=['Roteador','Switch']; if(v.anel) eq.push('Chave Ótica');}
+ else if(v.tec==='Rádio'){eq=['Roteador','Rádio'];}
+ r('Equipamentos auto-preenchidos ('+eq.join(' + ')+'), Qtde=1, modalidade default '+S.modEquip+'. Roteador com cardinalidade máx. 1.','S1·L19-L20 / S2·L19');
+ if(S.modEquip!=='Comodato') price.push('Modalidade equipamento '+S.modEquip+' (S1·L20)'); else r('Comodato: equipamento não é cobrado.','S1·L20');
+
+ // SVA Upgrade Temporário
+ if(S.svaUp){
+   if(S.lastMile){ r('SVA Upgrade Temporário não pode ser contratado com Last Mile — bloqueado.','S1·L28 r.8','block'); errors.push('Upgrade Temporário × Last Mile'); }
+   var tv=velMbps(S.upVel);
+   if(!tv||!S.upDias){ errors.push('Upgrade Temporário: velocidade temporária e dias obrigatórios'); }
+   else {
+     if(tv<=mb){ errors.push('Velocidade temporária deve ser MAIOR que a do node'); r('Velocidade temporária ≤ velocidade do node — inválido.','S1·L28 r.2','block'); }
+     var lim=null,fx='';
+     if(mb<100){lim=100;fx='5.1 (inicial <100Mb → até 100Mb)';}
+     else if(mb<=1000){lim=(v.tec==='GPON')?500:1000;fx='5.2 (100Mb–1Gb → até '+(lim===500?'500Mb por ser GPON':'1Gb')+')';}
+     else {lim=9999;fx='5.3 (>1Gb → upgrade <10Gb, esteira customizada)'; cst('Upgrade Temporário sobre velocidade >1Gb','S1·L28 r.5.3');}
+     if(mb===100){ r('Velocidade inicial exatamente 100Mb: enquadramento 5.1×5.2 ambíguo — assumida faixa 5.2.','S1·L28 · PONTO EM ABERTO','warn'); }
+     if(tv>lim){ errors.push('Velocidade temporária excede o limite da faixa '+fx); r('Upgrade acima do limite da faixa '+fx+'.','S1·L28 r.5','block'); }
+     else r('Upgrade dentro da faixa '+fx+'. Preço = delta sobre a velocidade padrão; sem pro-rata em cancelamento.','S1·L28 r.3/r.6');
+     var d=Number(S.upDias);
+     if(d<10||d>60){ errors.push('Dias do upgrade: entre 10 e 60'); r('Quantidade de dias fora do intervalo 10–60.','S1·L29','block'); }
+     else r('Vigência '+d+' dias; data-fim = ativação + dias; reversão automática ao término (modo operante em aberto).','S1·L29 · PONTO EM ABERTO');
+     r('Velocidade do node fica TRAVADA enquanto o SVA estiver ativo.','S1·L2');
+     price.push('SVA Upgrade Temporário — delta (S1·L28)');
+   }
+ }
+ // SVA MIR
+ if(S.mir){
+   if(S.lastMile && S.lmProp==='Parceiro'){ r('MIR vedado: Last Mile com equipamento de parceiro.','S1·L30','block'); errors.push('MIR × Last Mile com equipamento parceiro'); }
+   if(!S.mirPlano||!S.mirTipo) errors.push('MIR: plano e tipo de monitoramento obrigatórios');
+   if(S.mirTipo==='PROBE'){ r('Monitoramento PROBE → alta complexidade (equipamento específico, não estocável).','S1·L31 / S2·L28','warn'); cst('MIR via PROBE','S2·L28'); }
+   r('MIR: só ativa após o circuito de dados; cancelamento do circuito cancela o MIR em cascata.','S2·L25-L26');
+   price.push('SVA MIR '+(S.mirPlano||'')+' (S1·L30)');
+ }
+ // Contrato
+ if(S.fidel==='0' && S.segmento!=='Governo' && S.segmento!=='Operadoras-Atacado'){ errors.push('Fidelização 0 só para Governo/Atacado'); r('Sem fidelidade restrito a Governo e Atacado.','S1·L35','block'); }
+ if(S.tipoReaj==='Data base' && PERFIS_DATABASE.indexOf(S.perfil)<0){ errors.push('Perfil sem permissão para Data Base'); r('Tipo de reajuste Data Base restrito a 6 perfis — perfil atual não autorizado.','S1·L36','block'); }
+ if(S.tipoReaj==='Sem reajuste'){ if(S.segmento!=='Governo'){errors.push('Sem reajuste só para Governo');} r('"Sem reajuste" citado na regra mas ausente do domínio da planilha.','S1·L36 · PONTO EM ABERTO','warn'); }
+ if(S.reajAntes12 && PERFIS_DATABASE.indexOf(S.perfil)<0){ errors.push('Perfil sem permissão para reajustar antes de 12 meses'); r('Reajustar antes de 12 meses: SIM restrito aos mesmos 6 perfis.','S1·L40','block'); }
+ if(S.segmento==='Governo'){ r('Percentual de multa não se aplica ao segmento Governo.','S1·L42'); }
+ else if(Number(S.multa)!==30){ r('Multa fora do padrão 30% → alçada de aprovação.','S1·L42','warn'); }
+ price.push('Índice '+S.indice+' (S1·L39)'); price.push('Multa '+S.multa+'% (S1·L42)'); price.push('Aviso prévio '+S.aviso+'d (S1·L46)');
+
+ if(custom.length){ verdict='CUSTOMIZADO'; custom.forEach(function(c){ r('Gatilho de esteira customizada: '+c+'.','veredicto'); }); }
+ if(errors.length) verdict=(verdict==='CUSTOMIZADO')?'CUSTOMIZADO*':verdict+'*';
+ return {verdict:verdict,rules:rules,price:price,errors:errors};
+}
+
+/* ============ RENDER ============ */
+function h(html){var d=document.createElement('div');d.innerHTML=html;return d.firstElementChild;}
+function sel(name,opts,val,extra){return '<select data-k="'+name+'" '+(extra||'')+'>'+opts.map(function(o){var v=(typeof o==='string')?o:o.v,l=(typeof o==='string')?o:o.l;return '<option value="'+v+'"'+(String(val)===String(v)?' selected':'')+'>'+l+'</option>';}).join('')+'</select>';}
+function render(){
+ var e=end(), R=evaluate();
+ var f=document.getElementById('form'); f.innerHTML='';
+
+ f.appendChild(h('<div class="card"><h2><span class="num">1</span>Contexto da Venda</h2><div class="body"><div class="grid">'
+  +'<div class="field"><label>Perfil do usuário</label>'+sel('perfil',PERFIS,S.perfil)+'<div class="note">Controla Data Base, reajuste <12m (S1·L36/L40) e canal Governo (S2·L3)</div></div>'
+  +'<div class="field"><label>Tipo de cliente</label>'+sel('tipoCliente',['PJ','PF'],S.tipoCliente)+'<div class="note">PF bloqueia a venda (S2·L2)</div></div>'
+  +'<div class="field"><label>Segmento</label>'+sel('segmento',['Corporativo','Governo','Operadoras-Atacado','Varejo B2B'],S.segmento)+'</div>'
+  +'<div class="field"><label>Cliente internacional?</label><label class="toggle"><input type="checkbox" data-k="internacional" '+(S.internacional?'checked':'')+'> Sim — invoice em moeda (S2·L13)</label></div>'
+  +'</div></div></div>'));
+
+ f.appendChild(h('<div class="card"><h2><span class="num">2</span>VPN Network <span class="badge auto2">S1·L3-L4</span></h2><div class="body"><div class="grid">'
+  +'<div class="field"><label>Modo</label>'+sel('nwModo',[{v:'existente',l:'Selecionar Network existente'},{v:'nova',l:'Criar nova Network'}],S.nwModo)+'</div>'
+  +(S.nwModo==='existente'
+    ?'<div class="field"><label>Network ativa (CNPJ raiz)</label>'+sel('nwId',NETWORKS.map(function(n){return {v:n.id,l:n.id+' · '+n.prot+' · '+n.nodes+' nodes'};}),S.nwId)+'<div class="note">Protocolo herdado <span class="auto">AUTO</span></div></div>'
+    :'<div class="field"><label>Protocolo de Roteamento <span class="req">*</span></label>'+sel('nwProt',['RIP','STATIC','BGP','eBGP'],S.nwProt)+'<div class="note">Default RIP (S1·L4)</div></div>'
+     +'<div class="field"><label>Qtde de Nodes desta venda <span class="req">*</span></label><input type="number" min="1" data-k="nwQtdNodes" value="'+S.nwQtdNodes+'"><div class="note">Mínimo 2 (S2·L11)</div></div>')
+  +'</div></div></div>'));
+
+ var viabHtml='';
+ if(e){var v=e.viab;
+  viabHtml='<h3 class="sub">Retorno da Análise de Viabilidade <span class="badge auto2">AUTO · S1·L5-L8</span></h3><div class="grid">'
+   +'<div class="field"><label>Tecnologia</label><input value="'+v.tec+'" disabled></div>'
+   +'<div class="field"><label>Interface</label><input value="Elétrica (padrão formatada)" disabled></div>'
+   +'<div class="field"><label>Abordagem</label><input value="'+v.abord+'" disabled></div>'
+   +'<div class="field"><label>Metragem</label><input value="'+v.metragem+' m" disabled></div>'
+   +'</div>'
+   +((e.dc)?'<h3 class="sub">Golden Jumper <span class="badge aberto">endereço = Data Center</span></h3><div class="grid">'
+     +'<div class="field"><label>Golden Jumper <span class="req">*</span></label>'+sel('gjForn',[{v:'',l:'—'},'Algar','Cliente'],S.gjForn)+'</div>'
+     +(S.gjForn==='Algar'?'<div class="field"><label>Interface do jumper <span class="req">*</span></label>'+sel('gjInterface',[{v:'',l:'—'},'Elétrico','Óptico'],S.gjInterface)+'</div>'
+       +'<div class="field"><label>Nome do jumper <span class="req">*</span></label><input data-k="gjNome" value="'+S.gjNome+'" placeholder="Ex: Cross Servidor BD"></div>':'')
+     +'</div>':'');
+ }
+ f.appendChild(h('<div class="card"><h2><span class="num">3</span>Acesso do Node</h2><div class="body"><div class="grid">'
+  +'<div class="field"><label>Endereço de instalação <span class="req">*</span></label>'+sel('endereco',[{v:'',l:'— selecionar —'}].concat(ENDERECOS.map(function(x){return {v:x.id,l:x.nome+(x.dc?' · [DC]':'')+(x.cond?' · [COND]':'')+(x.arq5?' · [ARQ5]':'')};})),S.endereco)+'<div class="note">Base pré-cadastrada define DC/Condomínio (S2·L12)</div></div>'
+  +'<div class="field"><label>Velocidade <span class="req">*</span>'+(S.svaUp?' <span class="badge aberto">travada — SVA ativo</span>':'')+'</label>'+sel('velocidade',[{v:'',l:'— selecionar —'}].concat(VELOCIDADES.map(function(x){return x.label;})),S.velocidade,S.svaUp?'disabled':'')+'</div>'
+  +'<div class="field"><label>Modalidade de Instalação</label>'+sel('modInst',['Físico','Virtual/Fabric'],S.modInst)+'</div>'
+  +(S.modInst==='Virtual/Fabric'
+    ?'<div class="field"><label>Modelo de Disponibilização <span class="req">*</span></label>'+sel('modeloDisp',[{v:'',l:'—'},'Dedicado','Hospedado'],S.modeloDisp)+'</div>'
+     +'<div class="field"><label>Velocidade de Conexão <span class="req">*</span></label><input data-k="velConexao" value="'+S.velConexao+'" placeholder="Ex: 1 GBPS"></div>'
+     +'<div class="field"><label>Provedor e Serviço Cloud <span class="req">*</span></label>'+sel('provCloud',[{v:'',l:'—'},'AWS - Direct Connect','Azure - ExpressRoute','Oracle Cloud (OCI) - Fast Connect','Google Cloud (GCP) - Cloud Interconnect','IBM - Cloud Direct Link'],S.provCloud)+'</div>':'')
+  +'</div>'+viabHtml+'</div></div>'));
+
+ var eqList=[];
+ if(e){var t=e.viab.tec;
+  if(t==='GPON'||t==='XGSPON')eqList=['Roteador','ONT']; else if(t==='Metro'){eqList=['Roteador','Switch']; if(e.viab.anel)eqList.push('Chave Ótica');} else if(t==='Rádio')eqList=['Roteador','Rádio'];}
+ f.appendChild(h('<div class="card'+(e?'':' blocked')+'"><h2><span class="num">4</span>Equipamento de Acesso <span class="badge auto2">AUTO · S1·L19-L20</span></h2><div class="body">'
+  +(eqList.length?eqList.map(function(q){return '<div class="equip-line"><div class="field"><label>Equipamento</label><input value="'+q+'" disabled></div><div class="field"><label>Modalidade</label>'+sel('modEquip',['Locação','Comodato','Do Cliente'],S.modEquip)+'</div><div class="field"><label>Qtde</label><input value="1" disabled></div></div>';}).join(''):'<div class="note">Selecione o endereço para auto-preencher.</div>')
+  +'<div class="note" style="margin-top:8px">Default Locação em esteira formatada; legado usa Metro→Comodato / GPON→Venda <span class="badge aberto">divergência S1·L20 × S2·L20</span></div>'
+  +'</div></div>'));
+
+ f.appendChild(h('<div class="card'+(e?'':' blocked')+'"><h2><span class="num">5</span>Last Mile (Acesso Terceiro) <span class="badge custom">sempre customizado</span></h2><div class="body">'
+  +'<label class="toggle"><input type="checkbox" data-k="lastMile" '+(S.lastMile?'checked':'')+'> Contratar acesso via parceiro Last Mile (S1·L21)</label>'
+  +(S.lastMile?'<div class="grid" style="margin-top:12px">'
+    +'<div class="field"><label>Parceiro LastMile <span class="req">*</span></label><input data-k="lmParceiro" value="'+S.lmParceiro+'"></div>'
+    +'<div class="field"><label>Proprietário do Roteador <span class="req">*</span></label>'+sel('lmProp',['Algar','Parceiro'],S.lmProp)+'</div>'
+    +'<div class="field"><label>Nº Viabilidade GLM <span class="req">*</span></label><input type="number" data-k="lmGlm" value="'+S.lmGlm+'"></div>'
+    +'<div class="field"><label>Vigência LM <span class="req">*</span></label>'+sel('lmVig',[{v:'',l:'—'},'12 meses','24 meses'],S.lmVig)+'</div>'
+    +'<div class="field"><label>Instalação s/ imp. (CAPEX) <span class="req">*</span></label><input type="number" data-k="lmCapex" value="'+S.lmCapex+'" placeholder="R$"></div>'
+    +'<div class="field"><label>Mensal s/ imp. (OPEX) <span class="req">*</span></label><input type="number" data-k="lmOpex" value="'+S.lmOpex+'" placeholder="R$"></div>'
+    +'</div>':'')
+  +'</div></div>'));
+
+ f.appendChild(h('<div class="card'+(e?'':' blocked')+'"><h2><span class="num">6</span>SVAs</h2><div class="body">'
+  +'<label class="toggle"><input type="checkbox" data-k="svaUp" '+(S.svaUp?'checked':'')+(S.lastMile?' disabled':'')+'> Upgrade Temporário (S1·L28-L29)'+(S.lastMile?' — <b>indisponível com Last Mile</b>':'')+'</label>'
+  +(S.svaUp?'<div class="grid" style="margin:10px 0 16px">'
+    +'<div class="field"><label>Velocidade Temporária <span class="req">*</span></label>'+sel('upVel',[{v:'',l:'—'}].concat(VELOCIDADES.filter(function(x){return x.mbps<=100000;}).map(function(x){return x.label;})),S.upVel)+'</div>'
+    +'<div class="field"><label>Dias corridos (10–60) <span class="req">*</span></label><input type="number" min="10" max="60" data-k="upDias" value="'+S.upDias+'"></div>'
+    +'</div>':'')
+  +'<label class="toggle"><input type="checkbox" data-k="mir" '+(S.mir?'checked':'')+'> Monitoramento Inteligente de Rede — MIR (S1·L30-L31, família TIC)</label>'
+  +(S.mir?'<div class="grid" style="margin-top:10px">'
+    +'<div class="field"><label>Plano <span class="req">*</span></label>'+sel('mirPlano',[{v:'',l:'—'},'MIR - SMART','MIR - PRO'],S.mirPlano)+'</div>'
+    +'<div class="field"><label>Tipo de Monitoramento <span class="req">*</span></label>'+sel('mirTipo',[{v:'',l:'—'},'ICMP/SNMP','PROBE'],S.mirTipo)+'</div>'
+    +'</div>':'')
+  +'</div></div>'));
+
+ f.appendChild(h('<div class="card'+(e?'':' blocked')+'"><h2><span class="num">7</span>Regras de Contrato <span class="badge auto2">S1·L35-L46</span></h2><div class="body"><div class="grid">'
+  +'<div class="field"><label>Período Fidelização</label>'+sel('fidel',['0','12','24','36','48','60'],S.fidel)+'<div class="note">0 só Governo/Atacado (L35)</div></div>'
+  +'<div class="field"><label>Tipo de Reajuste</label>'+sel('tipoReaj',['Data Ativação','Data de assinatura do contrato','Data base','Sem reajuste'],S.tipoReaj)+'<div class="note">Data base: 6 perfis (L36)</div></div>'
+  +'<div class="field"><label>Índice de Reajuste</label>'+sel('indice',['IPCA','IGP-M','IGP-DI','IST'],S.indice)+'</div>'
+  +'<div class="field"><label>Reajustar antes de 12m?</label><label class="toggle"><input type="checkbox" data-k="reajAntes12" '+(S.reajAntes12?'checked':'')+'> Sim (L40)</label></div>'
+  +'<div class="field"><label>Percentual da Multa (%)</label><input type="number" data-k="multa" value="'+S.multa+'" '+(S.segmento==='Governo'?'disabled':'')+'><div class="note">'+(S.segmento==='Governo'?'N/A para Governo (L42)':'≠30% → alçada (L42)')+'</div></div>'
+  +'<div class="field"><label>Aviso Prévio (dias)</label><input type="number" data-k="aviso" value="'+S.aviso+'"></div>'
+  +(S.internacional?'<div class="field"><label>Tipo Moeda</label><input value="Dólar" disabled></div><div class="field"><label>Valor Moeda (cotação) <span class="req">*</span></label><input type="number" step="0.01" data-k="moedaValor" value="'+S.moedaValor+'"></div>':'')
+  +'</div><div class="note" style="margin-top:10px">Datas de início/término e próximo reajuste: campos de Sistema, calculados (L41, L43-L44).</div></div></div>'));
+
+ // painel
+ var vd=document.getElementById('verdict');
+ var cls=R.verdict.indexOf('CUSTOM')===0?'cst':(R.verdict==='INVIÁVEL'?'inv':(R.verdict==='—'?'':'fmt'));
+ vd.innerHTML='<div class="v '+cls+'">'+R.verdict+'</div>'
+  +(R.errors&&R.errors.length?'<div class="err" style="margin-top:8px">'+R.errors.length+' pendência(s) de preenchimento/validação:<br>'+R.errors.map(function(x){return '• '+x;}).join('<br>')+'</div>':'<div class="note" style="margin-top:6px;color:var(--mid)">'+(R.verdict==='—'?'Preencha a jornada para o veredicto.':'Sem pendências de validação.')+'</div>');
+ document.getElementById('rulelog').innerHTML=R.rules.map(function(x){return '<div class="rule '+x.cls+'"><span class="ref">'+x.ref+'</span><br>'+x.txt+'</div>';}).join('')||'<div class="note">Nenhuma regra disparada ainda.</div>';
+ document.getElementById('price').innerHTML=R.price.length?'<ul>'+R.price.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>':'<span class="note">Nenhum atributo com impacto de preço preenchido.</span>';
+
+ // bind
+ f.querySelectorAll('[data-k]').forEach(function(elm){
+  var k=elm.dataset.k, evt=(elm.tagName==='SELECT'||elm.type==='checkbox')?'change':'input';
+  elm.addEventListener(evt,function(){
+   S[k]=(elm.type==='checkbox')?elm.checked:elm.value;
+   if(k==='endereco'){S.gjForn='';S.gjInterface='';S.gjNome='';}
+   if(k==='lastMile'&&S.lastMile){S.svaUp=false;}
+   render();
+   var again=document.querySelector('[data-k="'+k+'"]'); if(again&&evt==='input'){again.focus();var val=again.value;again.setSelectionRange&&again.setSelectionRange(val.length,val.length);}
+  });
+ });
+}
+render();
+</script>
+</body>
+</html>
