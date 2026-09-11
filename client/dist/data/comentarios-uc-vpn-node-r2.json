@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T17:52:53.424Z",
+  "quando": "2026-09-11T17:54:24.946Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -9,6 +9,10 @@
     "s1-l28": {
       "item": "Velocidade Temporária",
       "comentario": "retirar SVA_"
+    },
+    "s1-l31": {
+      "item": "Tipo de Monitoramento",
+      "comentario": "Alta complexidade = Projeto customizado"
     }
   }
 }
