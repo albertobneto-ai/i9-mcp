@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Casos de uso de produto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F2F3F5;--s1:#FAFBFC;--s2:#ECECEC;--s3:#D9D9D9;
+--tx:#0D0D0D;--tx2:#3A3A3A;--mut:#6B6B6B;--bd:#D9D9D9;--bd2:#A8A8A8;
+}
+body{background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;
+font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px 80px}
+
+/* capa */
+.cover{background:linear-gradient(135deg,#0D0D0D 0%,#4A4A4A 100%);color:#FAFBFC;
+padding:64px 32px 56px;margin-bottom:48px}
+.cover-in{max-width:1080px;margin:0 auto}
+.kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#B8B8B8;margin-bottom:18px}
+h1{font-size:34px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin-bottom:12px}
+.sub{font-size:16px;color:#D4D4D4;font-weight:400;margin-bottom:28px;max-width:640px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+background:rgba(250,251,252,.2);border:1px solid rgba(250,251,252,.2);margin-top:8px}
+.meta div{background:rgba(250,251,252,.08);padding:12px 14px}
+.meta dt{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:#B8B8B8;margin-bottom:5px}
+.meta dd{font-size:13px;color:#FAFBFC}
+
+/* sumario */
+.toc{background:var(--s1);border:1px solid var(--bd);padding:22px 26px;margin-bottom:48px}
+.toc h2{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut);
+margin-bottom:14px;font-weight:500}
+.toc ol{list-style:none;columns:2;column-gap:36px}
+.toc li{margin-bottom:7px;font-size:13px;break-inside:avoid}
+.toc a{color:var(--tx2);text-decoration:none;border-bottom:1px solid transparent}
+.toc a:hover{color:var(--tx);border-bottom-color:var(--bd2)}
+.toc .n{color:var(--mut);font-variant-numeric:tabular-nums;margin-right:9px}
+
+/* secoes */
+section{margin-bottom:52px}
+.sh{display:flex;align-items:center;gap:14px;padding-bottom:12px;
+border-bottom:1px solid var(--bd2);margin-bottom:24px}
+.sh .num{flex:0 0 34px;height:34px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;font-size:13px;
+font-variant-numeric:tabular-nums;color:var(--tx2)}
+.sh h2{font-size:19px;font-weight:600;letter-spacing:-.2px}
+h3{font-size:14px;font-weight:600;color:var(--tx);margin:26px 0 10px;
+letter-spacing:.3px;text-transform:uppercase;font-size:11px;letter-spacing:2px;color:var(--mut)}
+p{margin-bottom:12px;color:var(--tx2)}
+strong{color:var(--tx);font-weight:600}
+code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;
+background:var(--s2);border:1px solid var(--bd);padding:1px 6px;color:var(--tx)}
+
+/* listas de passos */
+ol.steps{list-style:none;counter-reset:s;margin:4px 0 8px}
+ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 44px;
+border-bottom:1px solid var(--bd);color:var(--tx2)}
+ol.steps li:last-child{border-bottom:none}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;
+width:26px;height:26px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;
+font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* fluxo alternativo */
+.alt{border-left:2px solid var(--bd2);background:var(--s1);padding:12px 16px;margin-bottom:10px}
+.alt.fail{border-left-color:#6B6B6B;background:#ECECEC}
+.alt .tag{display:inline-block;font-family:'SF Mono',Menlo,monospace;font-size:11px;
+color:var(--tx);background:var(--s3);border:1px solid var(--bd2);padding:1px 7px;margin-right:9px}
+.alt .ttl{font-weight:600;color:var(--tx);font-size:13.5px}
+.alt p{margin:7px 0 0;font-size:13px}
+
+/* tabelas */
+table{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:12.5px}
+thead th{background:#0D0D0D;color:#FAFBFC;text-align:left;padding:10px 12px;
+font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;
+border-bottom:1px solid var(--bd2)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--bd);color:var(--tx2);vertical-align:top}
+tbody tr:nth-child(even) td{background:#ECECEC}
+tbody tr:hover td{background:var(--s2)}
+td.mono,th.mono{font-family:'SF Mono',Menlo,monospace;font-size:11.5px}
+
+/* badges monocromaticos: peso e borda diferenciam, nunca cor */
+.b{display:inline-block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+padding:2px 9px;border:1px solid var(--bd2);white-space:nowrap;font-weight:600}
+.b-solid{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
+.b-mid{background:var(--s3);color:var(--tx)}
+.b-out{background:transparent;color:var(--mut);border-style:dashed}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+background:var(--bd);border:1px solid var(--bd);margin:8px 0 20px}
+.kpi{background:#FAFBFC;padding:16px 14px}
+.kpi .l{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.kpi.hi{background:#E2E2E2}
+
+/* callout */
+.call{border:1px solid var(--bd);border-left-width:3px;background:var(--s1);
+padding:14px 18px;margin:16px 0}
+.call .cl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.call p{margin:0;font-size:13px}
+.call.strong{border-left-color:var(--tx)}
+.call.mid{border-left-color:var(--bd2)}
+
+/* diagrama */
+figure{margin:22px 0;background:var(--s1);border:1px solid var(--bd);padding:24px 20px 16px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:11px;color:var(--mut);text-align:center;margin-top:14px;
+padding-top:12px;border-top:1px solid var(--bd)}
+
+/* perguntas */
+.q{border:1px solid var(--bd);background:var(--s1);padding:14px 18px;margin-bottom:10px}
+.q .qi{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);margin-bottom:5px}
+.q .qt{color:var(--tx);font-weight:600;font-size:13.5px;margin-bottom:7px}
+.q .qd{font-size:12.5px;color:var(--tx2)}
+.q .qd b{color:var(--mut);font-weight:600;font-size:9.5px;letter-spacing:1.4px;
+text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* cartao de componente — substitui tabela larga */
+.comps{display:grid;gap:10px;margin:14px 0}
+.comp{border:1px solid var(--bd);background:var(--s1);padding:14px 16px}
+.comp.criar{border-left:3px solid var(--tx)}
+.comp.estender{border-left:3px solid var(--bd2)}
+.comp.reusar{border-left:3px solid #C4C4C4}
+.comp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.comp-h .id{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);min-width:22px}
+.comp-h .nm{font-size:14px;font-weight:600;color:var(--tx)}
+.comp-h .tp{font-size:11px;color:var(--mut);border:1px solid var(--bd);padding:1px 7px}
+.comp-h .st{margin-left:auto}
+.comp dl{display:grid;grid-template-columns:104px 1fr;gap:5px 14px;font-size:12.5px}
+.comp dt{color:var(--mut);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;padding-top:2px}
+.comp dd{color:var(--tx2)}
+.comp .desc{font-size:13px;color:var(--tx2);margin:0 0 11px;line-height:1.6}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}
+.lk{font-size:11.5px;color:var(--tx);text-decoration:none;border:1px solid var(--bd2);
+padding:3px 10px;background:var(--s1);white-space:nowrap}
+.lk:hover{border-color:var(--tx);background:var(--s2)}
+.lk.doc{border-style:dashed}
+@media print{.lk{border-style:solid;background:none}}
+/* navegacao fixa */
+.navbar{position:sticky;top:0;z-index:20;background:rgba(242,243,245,.94);
+backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);margin:0 -32px 32px;padding:9px 32px;
+display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.navbar a{flex:0 0 auto;font-size:11px;color:var(--mut);text-decoration:none;
+padding:5px 11px;border:1px solid transparent;white-space:nowrap}
+.navbar a:hover{color:var(--tx);border-color:var(--bd2)}
+.navbar a .n{font-variant-numeric:tabular-nums;margin-right:6px;opacity:.65}
+section{scroll-margin-top:56px}
+@media print{.navbar{display:none}}
+
+.grp{display:flex;align-items:center;gap:12px;margin:26px 0 12px}
+.grp .gl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.grp .gc{font-size:11px;color:var(--tx);border:1px solid var(--bd2);padding:1px 8px}
+.grp .gr{flex:1;height:1px;background:var(--bd)}
+@media(max-width:700px){.comp dl{grid-template-columns:1fr}.comp dt{padding-top:8px}}
+
+footer{border-top:1px solid var(--bd2);margin-top:60px;padding-top:20px;
+display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:1.6px;
+text-transform:uppercase;color:var(--mut)}
+
+@page{size:A4;margin:16mm 14mm}
+@media print{
+ body{background:#fff}
+ .cover{page-break-after:always}
+ section,figure,table,.alt,.q{page-break-inside:avoid}
+ .toc{page-break-after:always}
+}
+</style><style>
+.hbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 6px}
+.hlabel{font-size:13px;font-weight:600;color:var(--tx);margin-right:2px}
+#q{flex:1 1 280px;min-width:0;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--bd2);
+background:#FFFFFF;color:var(--tx);border-radius:6px}
+#refresh{font:inherit;font-size:13px;padding:9px 14px;border:1px solid var(--bd2);background:var(--s1);
+color:var(--tx);border-radius:6px;cursor:pointer}
+#refresh:hover{background:var(--s2)}
+#q:focus-visible,#refresh:focus-visible,.btn:focus-visible,.pt:focus-visible,.rod a:focus-visible{outline:2px solid var(--tx);outline-offset:2px}
+.hnote{font-size:12px;color:var(--mut);margin:0 0 30px}
+.fam{margin:0 0 36px}
+.famh{display:flex;align-items:baseline;gap:10px;font-size:17px;font-weight:600;color:var(--tx);
+padding-bottom:8px;border-bottom:1px solid var(--bd2)}
+.famn{font-size:12px;font-weight:400;color:var(--mut)}
+.prod{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.7fr) minmax(0,1.2fr) auto;gap:22px;
+align-items:center;padding:18px 6px;border-bottom:1px solid var(--bd)}
+.prod:hover{background:var(--s1)}
+.pt{font-size:19px;font-weight:600;color:var(--tx);text-decoration:none;letter-spacing:-.2px;line-height:1.3}
+.pt:hover{text-decoration:underline;text-underline-offset:3px}
+.pid{margin-top:4px;font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.pid span+span{margin-left:14px}
+.st{display:inline-block;font-size:12px;font-weight:600;padding:3px 11px;border-radius:12px;
+border:1px solid var(--bd2);color:var(--tx2);background:var(--s2);line-height:1.5}
+.st-on{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
+.st-off{background:transparent;border-style:dashed;color:var(--mut)}
+.st-err{background:#FFFFFF;border-color:var(--tx);color:var(--tx)}
+.st-load{background:transparent;color:var(--mut);border-color:var(--bd)}
+.rod{margin-top:6px;font-size:12.5px;color:var(--tx2);line-height:1.5}
+.rod a{color:var(--tx)}
+.pnum{display:flex;gap:18px;font-size:12px;color:var(--mut)}
+.pnum b{display:block;font-size:18px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;line-height:1.25}
+.btn{display:inline-block;font-size:13px;font-weight:600;padding:9px 16px;background:var(--tx);color:#FAFBFC;
+text-decoration:none;border-radius:6px;white-space:nowrap}
+.btn:hover{background:#3A3A3A}
+.hmsg{font-size:14px;color:var(--tx2);padding:18px 0}
+@media (max-width:760px){.prod{grid-template-columns:1fr;gap:10px}.wrap{padding:0 18px 60px}}
+@media print{.hbar,.hnote{display:none}.prod{page-break-inside:avoid}}
+</style></head><body>
+<div class="cover"><div class="cover-in">
+<div class="kicker">ALGAR · CRM B2B</div>
+<h1>Casos de uso de produto</h1>
+<p class="sub">Escolha o produto para abrir o caso de uso e registrar comentários de revisão.</p>
+<dl class="meta"><div><dt>Produtos</dt><dd id="mProdutos">—</dd></div><div><dt>Com comentários salvos</dt><dd id="mComent">—</dd></div><div><dt>Dúvidas nos documentos</dt><dd id="mDuv">—</dd></div></dl>
+</div></div>
+<div class="wrap">
+<div class="hbar"><label class="hlabel" for="q">Buscar produto</label>
+<input id="q" type="search" placeholder="Nome do produto, família ou ID" autocomplete="off">
+<button id="refresh" type="button">Atualizar status</button></div>
+<p class="hnote">Um comentário salvo pode levar até cinco minutos para aparecer no status.</p>
+<div id="lista" aria-live="polite"><p class="hmsg">Carregando produtos…</p></div>
+<footer><span>ALGAR — Casos de uso de produto</span><span>Confidencial — Uso Interno</span></footer>
+</div>
+<script>
+(function(){
+var BASE=/^https?:$/.test(location.protocol)?'':'https://i9-mcp-da48589780b2.herokuapp.com/';
+var RAW='https://raw.githubusercontent.com/albertobneto-ai/i9-mcp/main/';
+var GH='https://github.com/albertobneto-ai/i9-mcp/blob/main/';
+var lista=document.getElementById('lista'), campo=document.getElementById('q');
+var itens=[];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function plural(n,s,p){return n+' '+(n===1?s:p);}
+
+function lerPagina(p){
+ return fetch(BASE+p.pagina,{cache:'no-store'}).then(function(r){
+  if(!r.ok)throw new Error('HTTP '+r.status);return r.text();
+ }).then(function(t){
+  var d=new DOMParser().parseFromString(t,'text/html');
+  var sub=d.querySelector('.cover .sub');
+  if(!sub||sub.textContent.indexOf('Caso de Uso')<0)throw new Error('página não publicada');
+  var info={id:(sub.textContent.split('—')[1]||'').trim(),data:'',kpi:{},duvidas:d.querySelectorAll('.uc-chip.cd').length};
+  Array.prototype.forEach.call(d.querySelectorAll('.cover .meta div'),function(m){
+   var dt=m.querySelector('dt'),dd=m.querySelector('dd');
+   if(dt&&dd&&/data/i.test(dt.textContent))info.data=dd.textContent.trim();});
+  Array.prototype.forEach.call(d.querySelectorAll('.kpi'),function(k){
+   var l=k.querySelector('.l'),v=k.querySelector('.v');if(l&&v)info.kpi[l.textContent.trim()]=v.textContent.trim();});
+  var m=t.match(/path:'(client\/dist\/data\/comentarios-[^']+?-r(\d+)\.json)'/);
+  if(m){info.comentarios=m[1];info.rodada=parseInt(m[2],10);}
+  return info;
+ });
+}
+
+function linha(it){
+ var p=it.p,f=it.info,href=BASE+p.pagina;
+ var h='<article class="prod" id="p-'+it.i+'" data-busca="'+esc(norm(p.produto+' '+p.familia+' '+(f?f.id:'')))+'">';
+ h+='<div>'+(f?'<a class="pt" href="'+esc(href)+'">'+esc(p.produto)+'</a>':'<span class="pt">'+esc(p.produto)+'</span>')+'<div class="pid">';
+ h+=f?'<span>'+esc(f.id)+'</span><span>'+esc(f.data)+'</span>':'<span>'+esc(p.pagina)+'</span>';
+ h+='</div></div><div id="st-'+it.i+'">';
+ if(it.erro)h+='<span class="st st-err">Página indisponível</span><div class="rod">Não foi possível ler a página publicada ('+esc(it.erro)+'). Confira o nome no registro de produtos.</div>';
+ else if(!f.comentarios)h+='<span class="st st-off">Sem ciclo de comentários</span>';
+ else h+='<span class="st st-load">Verificando comentários…</span>';
+ h+='</div><div class="pnum">';
+ if(f){
+  h+='<div><b>'+esc(f.kpi['Atributos no catálogo']||'—')+'</b>atributos</div>';
+  h+='<div><b>'+f.duvidas+'</b>dúvidas</div>';
+  h+='<div><b>'+esc(f.kpi['Passos do fluxo único']||'—')+'</b>passos</div>';
+ }
+ h+='</div><div>'+(f?'<a class="btn" href="'+esc(href)+'">Abrir caso de uso</a>':'')+'</div></article>';
+ return h;
+}
+
+function montar(){
+ var fams={};
+ itens.forEach(function(it){(fams[it.p.familia]=fams[it.p.familia]||[]).push(it);});
+ var h='';
+ Object.keys(fams).sort(function(a,b){return a.localeCompare(b,'pt-BR');}).forEach(function(nome){
+  var arr=fams[nome].sort(function(a,b){return a.p.produto.localeCompare(b.p.produto,'pt-BR');});
+  h+='<section class="fam"><h2 class="famh">'+esc(nome)+' <span class="famn">'+plural(arr.length,'produto','produtos')+'</span></h2>';
+  arr.forEach(function(it){h+=linha(it);});
+  h+='</section>';
+ });
+ lista.innerHTML=h+'<p class="hmsg" id="vazio" hidden></p>';
+}
+
+function filtrar(){
+ var q=norm(campo.value.trim()),vis=0;
+ Array.prototype.forEach.call(lista.querySelectorAll('.fam'),function(s){
+  var n=0;
+  Array.prototype.forEach.call(s.querySelectorAll('.prod'),function(a){
+   var ok=!q||a.getAttribute('data-busca').indexOf(q)>=0;a.hidden=!ok;if(ok)n++;});
+  s.hidden=!n;vis+=n;
+ });
+ var v=document.getElementById('vazio');
+ if(v){v.hidden=!!vis;v.textContent=vis?'':'Nenhum produto corresponde a “'+campo.value.trim()+'”. Limpe a busca para ver todos.';}
+}
+
+function resumo(){
+ document.getElementById('mProdutos').textContent=itens.length;
+ var pend=itens.filter(function(it){return it.salvos===undefined&&it.info&&it.info.comentarios;}).length;
+ document.getElementById('mComent').textContent=pend?'Verificando…':itens.filter(function(it){return it.salvos>0;}).length;
+ document.getElementById('mDuv').textContent=itens.reduce(function(s,it){return s+(it.info?it.info.duvidas:0);},0);
+}
+
+function checar(it){
+ var el=document.getElementById('st-'+it.i);
+ if(!el||!it.info||!it.info.comentarios)return;
+ var path=it.info.comentarios,n=it.info.rodada,atend=n>1?' '+plural(n-1,'rodada atendida','rodadas atendidas')+'.':'';
+ it.salvos=undefined;resumo();
+ el.innerHTML='<span class="st st-load">Verificando comentários…</span>';
+ fetch(RAW+path+'?t='+Date.now(),{cache:'no-store'}).then(function(r){
+  if(r.status===404){it.salvos=0;
+   el.innerHTML='<span class="st st-off">Nenhum comentário salvo</span><div class="rod">Rodada '+n+' aberta para revisão.'+atend+'</div>';return;}
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json().then(function(j){
+   var c=Object.keys(j.comentarios||{}).length;it.salvos=c;
+   var q=j.quando?new Date(j.quando):null;
+   var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+   el.innerHTML='<span class="st '+(c?'st-on':'st-off')+'">'+(c?plural(c,'comentário salvo','comentários salvos'):'Nenhum comentário salvo')+
+    '</span><div class="rod">Rodada '+n+qt+'.'+atend+' <a href="'+GH+path+'" target="_blank" rel="noopener">Ver arquivo</a></div>';
+  });
+ }).catch(function(e){it.salvos=null;
+  el.innerHTML='<span class="st st-err">Status indisponível</span><div class="rod">Não foi possível ler os comentários ('+esc(e.message)+'). Use Atualizar status.</div>';
+ }).then(resumo);
+}
+
+campo.addEventListener('input',filtrar);
+document.getElementById('refresh').addEventListener('click',function(){itens.forEach(checar);});
+
+fetch(BASE+'data/uc-produtos.json?t='+Date.now(),{cache:'no-store'}).then(function(r){
+ if(!r.ok)throw new Error('HTTP '+r.status);return r.text();
+}).then(function(t){
+ var reg;try{reg=JSON.parse(t);}catch(e){throw new Error('registro de produtos inválido');}
+ itens=(reg.produtos||[]).map(function(p,i){return{p:p,i:i};});
+ if(!itens.length)throw new Error('registro sem produtos');
+ return Promise.all(itens.map(function(it){
+  return lerPagina(it.p).then(function(info){it.info=info;},function(e){it.erro=e.message;});
+ }));
+}).then(function(){montar();filtrar();resumo();itens.forEach(checar);})
+.catch(function(e){
+ lista.innerHTML='<p class="hmsg">Não foi possível carregar a lista de produtos ('+esc(e.message)+'). Recarregue a página.</p>';
+});
+})();
+</script></body></html>
