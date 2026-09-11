@@ -24,6 +24,7 @@ import specContextRoutes from './routes/spec-context.js';
 import pipelineRoutes from './routes/pipeline.js';
 import revenueCloudRoutes from './routes/revenue-cloud.js';
 import explorerRoutes from './routes/explorer.js';
+import githubRoutes from './routes/github.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
 import agentFarmRoutes from './routes/agent-farm.js';
@@ -203,6 +204,7 @@ app.use('/api/aidetector', aidetectorRoutes);  // AIDETECTOR — auditoria de cr
 app.use('/api/kb', kbRoutes);  // Base de Conhecimento (RAG grounded) — antes do catch-all /api
 app.use('/api/vagas', vagasRoutes);  // Radar de Vagas — pipeline de candidaturas (antes do catch-all /api)
 app.use('/api/agente', agenteRoutes);  // Agente Funcional — UC + mapa de componentes (antes do catch-all /api)
+app.use('/api/github', authMiddleware, githubRoutes);  // proxy GitHub — comentários de revisão
 app.use('/api', explorerRoutes);
 
 // Job status polling
