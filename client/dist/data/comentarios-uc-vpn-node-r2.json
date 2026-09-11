@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:15:21.569Z",
+  "quando": "2026-09-11T18:22:11.793Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -33,6 +33,10 @@
     "s2-l5": {
       "item": "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou ",
       "comentario": "resposta dúvida = Por localidade"
+    },
+    "s1-l2": {
+      "item": "Velocidade",
+      "comentario": "Após produto raiz--- ter localidade e endereço de instalação"
     }
   }
 }
