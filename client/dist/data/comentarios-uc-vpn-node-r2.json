@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:10:19.240Z",
+  "quando": "2026-09-11T18:15:21.569Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -29,6 +29,10 @@
     "s2-l4": {
       "item": "O Produto não pode ser vendido em rede neutra.",
       "comentario": "remover esta regra"
+    },
+    "s2-l5": {
+      "item": "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou ",
+      "comentario": "resposta dúvida = Por localidade"
     }
   }
 }
