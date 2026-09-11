@@ -1,0 +1,14 @@
+{
+ "produtos": [
+  {
+   "produto": "VPN Node",
+   "familia": "Conectividade",
+   "pagina": "uc-vpn-node.html"
+  },
+  {
+   "produto": "Locação de Equipamentos",
+   "familia": "TIC",
+   "pagina": "uc-locacao-equipamentos.html"
+  }
+ ]
+}
