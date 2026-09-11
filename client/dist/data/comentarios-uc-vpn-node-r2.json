@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:05:24.377Z",
+  "quando": "2026-09-11T18:08:05.691Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -17,6 +17,14 @@
     "fam-tic": {
       "item": "Família TIC",
       "comentario": "Revisar família . Pendente Leandro"
+    },
+    "s2-l2": {
+      "item": "O Produto não pode ser vendido para clientes Pessoa Física.",
+      "comentario": "remover"
+    },
+    "s2-l3": {
+      "item": "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Admini",
+      "comentario": "so pode ser atendido pelos perfis selecionados"
     }
   }
 }
