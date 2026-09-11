@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:35:44.477Z",
+  "quando": "2026-09-11T18:36:46.025Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -53,6 +53,10 @@
     "s2-l11": {
       "item": "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.",
       "comentario": "remover - a parte de cancelamento não é tratada."
+    },
+    "s2-l12": {
+      "item": "É necessário identificar se o endereço de instalação é de um local, com necessidade de G",
+      "comentario": "remover"
     }
   }
 }
