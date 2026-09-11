@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T17:58:26.254Z",
+  "quando": "2026-09-11T18:01:42.030Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -13,6 +13,10 @@
     "s1-l31": {
       "item": "Tipo de Monitoramento",
       "comentario": "Alta complexidade = Projeto customizadoObrigatório se plano de monitoramento for true"
+    },
+    "fam-tic": {
+      "item": "Família TIC",
+      "comentario": "Revisar família . Pendente Leandro"
     }
   }
 }
