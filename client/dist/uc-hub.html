@@ -229,14 +229,16 @@ var itens=[];
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function plural(n,s,p){return n+' '+(n===1?s:p);}
+function semUC(){var e=new Error('sem caso de uso');e.ausente=true;return e;}
 
 function lerPagina(p){
  return fetch(BASE+p.pagina,{cache:'no-store'}).then(function(r){
+  if(r.status===404)throw semUC();
   if(!r.ok)throw new Error('HTTP '+r.status);return r.text();
  }).then(function(t){
   var d=new DOMParser().parseFromString(t,'text/html');
   var sub=d.querySelector('.cover .sub');
-  if(!sub||sub.textContent.indexOf('Caso de Uso')<0)throw new Error('página não publicada');
+  if(!sub||sub.textContent.indexOf('Caso de Uso')<0)throw semUC();
   var info={id:(sub.textContent.split('—')[1]||'').trim(),data:'',kpi:{},duvidas:d.querySelectorAll('.uc-chip.cd').length};
   Array.prototype.forEach.call(d.querySelectorAll('.cover .meta div'),function(m){
    var dt=m.querySelector('dt'),dd=m.querySelector('dd');
@@ -252,23 +254,22 @@ function lerPagina(p){
 function linha(it){
  var p=it.p,f=it.info,href=BASE+p.pagina;
  var h='<article class="prod" id="p-'+it.i+'" data-busca="'+esc(norm(p.produto+' '+p.familia+' '+(f?f.id:'')))+'">';
- h+='<div>'+(f?'<a class="pt" href="'+esc(href)+'">'+esc(p.produto)+'</a>':'<span class="pt">'+esc(p.produto)+'</span>')+'<div class="pid">';
- h+=f?'<span>'+esc(f.id)+'</span><span>'+esc(f.data)+'</span>':'<span>'+esc(p.pagina)+'</span>';
+ h+='<div><a class="pt" href="'+esc(href)+'">'+esc(p.produto)+'</a><div class="pid">';
+ h+='<span>'+esc(f.id)+'</span><span>'+esc(f.data)+'</span>';
  h+='</div></div><div id="st-'+it.i+'">';
- if(it.erro)h+='<span class="st st-err">Página indisponível</span><div class="rod">Não foi possível ler a página publicada ('+esc(it.erro)+'). Confira o nome no registro de produtos.</div>';
- else if(!f.comentarios)h+='<span class="st st-off">Sem ciclo de comentários</span>';
+ if(!f.comentarios)h+='<span class="st st-off">Sem ciclo de comentários</span>';
  else h+='<span class="st st-load">Verificando comentários…</span>';
  h+='</div><div class="pnum">';
- if(f){
-  h+='<div><b>'+esc(f.kpi['Atributos no catálogo']||'—')+'</b>atributos</div>';
-  h+='<div><b>'+f.duvidas+'</b>dúvidas</div>';
-  h+='<div><b>'+esc(f.kpi['Passos do fluxo único']||'—')+'</b>passos</div>';
- }
- h+='</div><div>'+(f?'<a class="btn" href="'+esc(href)+'">Abrir caso de uso</a>':'')+'</div></article>';
+ h+='<div><b>'+esc(f.kpi['Atributos no catálogo']||'—')+'</b>atributos</div>';
+ h+='<div><b>'+f.duvidas+'</b>dúvidas</div>';
+ h+='<div><b>'+esc(f.kpi['Passos do fluxo único']||'—')+'</b>passos</div>';
+ h+='</div><div><a class="btn" href="'+esc(href)+'">Abrir caso de uso</a></div></article>';
  return h;
 }
 
-function montar(){
+function montar(falhas){
+ var aviso=falhas?'<p class="hmsg">'+plural(falhas,'produto não pôde ser verificado agora','produtos não puderam ser verificados agora')+'. Recarregue a página.</p>':'';
+ if(!itens.length){lista.innerHTML='<p class="hmsg">Nenhum produto tem caso de uso publicado.</p>'+aviso;return;}
  var fams={};
  itens.forEach(function(it){(fams[it.p.familia]=fams[it.p.familia]||[]).push(it);});
  var h='';
@@ -278,7 +279,7 @@ function montar(){
   arr.forEach(function(it){h+=linha(it);});
   h+='</section>';
  });
- lista.innerHTML=h+'<p class="hmsg" id="vazio" hidden></p>';
+ lista.innerHTML=h+'<p class="hmsg" id="vazio" hidden></p>'+aviso;
 }
 
 function filtrar(){
@@ -332,9 +333,13 @@ fetch(BASE+'data/uc-produtos.json?t='+Date.now(),{cache:'no-store'}).then(functi
  itens=(reg.produtos||[]).map(function(p,i){return{p:p,i:i};});
  if(!itens.length)throw new Error('registro sem produtos');
  return Promise.all(itens.map(function(it){
-  return lerPagina(it.p).then(function(info){it.info=info;},function(e){it.erro=e.message;});
+  return lerPagina(it.p).then(function(info){it.info=info;},function(e){it.erro=e.message;it.ausente=!!e.ausente;});
  }));
-}).then(function(){montar();filtrar();resumo();itens.forEach(checar);})
+}).then(function(){
+ var falhas=itens.filter(function(it){return it.erro&&!it.ausente;}).length;
+ itens=itens.filter(function(it){return !!it.info;});
+ montar(falhas);filtrar();resumo();itens.forEach(checar);
+})
 .catch(function(e){
  lista.innerHTML='<p class="hmsg">Não foi possível carregar a lista de produtos ('+esc(e.message)+'). Recarregue a página.</p>';
 });
