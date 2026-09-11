@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:05:47.692Z",
+  "quando": "2026-09-11T19:06:01.476Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -80,6 +80,10 @@
     },
     "s2-l20": {
       "item": "Modalidade do equipamento travada por tecnologia",
+      "comentario": "remover"
+    },
+    "s2-l21": {
+      "item": "Alta Complexidade por velocidade/tecnologia",
       "comentario": "remover"
     }
   }
