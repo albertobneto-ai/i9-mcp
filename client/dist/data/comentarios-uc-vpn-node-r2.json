@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:44:59.428Z",
+  "quando": "2026-09-11T18:45:50.151Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -60,7 +60,7 @@
     },
     "s2-l13": {
       "item": "Produto Formatado quando (levando em consideração as respostas retornadas pela viabilida",
-      "comentario": "- Velocidade de 500Mb até 1Gb: alterar para 501"
+      "comentario": "- Velocidade de 500Mb até 1Gb: aguardando retorno"
     }
   }
 }
