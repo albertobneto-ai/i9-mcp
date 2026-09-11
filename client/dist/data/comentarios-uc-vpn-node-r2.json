@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:08:36.171Z",
+  "quando": "2026-09-11T19:08:47.808Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -89,6 +89,10 @@
     "s2-l24": {
       "item": "Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART > MIR PRO e vice-versa",
       "comentario": "remover"
+    },
+    "s2-l25": {
+      "item": "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser",
+      "comentario": "Remover"
     }
   }
 }
