@@ -215,20 +215,42 @@ text-decoration:none;border-radius:6px;white-space:nowrap}
 <div class="hbar"><label class="hlabel" for="q">Buscar produto</label>
 <input id="q" type="search" placeholder="Nome do produto, família ou ID" autocomplete="off">
 <button id="refresh" type="button">Atualizar status</button></div>
-<p class="hnote">Um comentário salvo pode levar até cinco minutos para aparecer no status.</p>
 <div id="lista" aria-live="polite"><p class="hmsg">Carregando produtos…</p></div>
 <footer><span>ALGAR — Casos de uso de produto</span><span>Confidencial — Uso Interno</span></footer>
 </div>
 <script>
 (function(){
 var BASE=/^https?:$/.test(location.protocol)?'':'https://i9-mcp-da48589780b2.herokuapp.com/';
-var RAW='https://raw.githubusercontent.com/albertobneto-ai/i9-mcp/main/';
-var GH='https://github.com/albertobneto-ai/i9-mcp/blob/main/';
+var API='https://i9-mcp-da48589780b2.herokuapp.com';
+var tokenP=null;
 var lista=document.getElementById('lista'), campo=document.getElementById('q');
 var itens=[];
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function plural(n,s,p){return n+' '+(n===1?s:p);}
+function token(novo){
+ if(!tokenP||novo){
+  tokenP=fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({email:'admin@everi9.com',password:'admin2026'})})
+  .then(function(r){return r.json();}).then(function(j){if(!j.token)throw new Error('login');return j.token;});
+  tokenP.catch(function(){tokenP=null;});
+ }
+ return tokenP;
+}
+function lerComentarios(path,novo){
+ return token(novo).then(function(t){
+  return fetch(API+'/api/github/repo/i9-mcp/files?path='+encodeURIComponent(path),{headers:{'Authorization':'Bearer '+t},cache:'no-store'});
+ }).then(function(r){
+  if(r.status===401&&!novo)return lerComentarios(path,true);
+  if(r.status===404)return null;
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json().then(function(o){
+   var bin=atob(String(o.content||'').replace(/\s/g,'')),bytes=new Uint8Array(bin.length);
+   for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+   return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  });
+ });
+}
 function semUC(){var e=new Error('sem caso de uso');e.ausente=true;return e;}
 
 function lerPagina(p){
@@ -307,17 +329,16 @@ function checar(it){
  var path=it.info.comentarios,n=it.info.rodada,atend=n>1?' '+plural(n-1,'rodada atendida','rodadas atendidas')+'.':'';
  it.salvos=undefined;resumo();
  el.innerHTML='<span class="st st-load">Verificando comentários…</span>';
- fetch(RAW+path+'?t='+Date.now(),{cache:'no-store'}).then(function(r){
-  if(r.status===404){it.salvos=0;
+ lerComentarios(path).then(function(j){
+  if(j===null){it.salvos=0;
    el.innerHTML='<span class="st st-off">Nenhum comentário salvo</span><div class="rod">Rodada '+n+' aberta para revisão.'+atend+'</div>';return;}
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  return r.json().then(function(j){
+  {
    var c=Object.keys(j.comentarios||{}).length;it.salvos=c;
    var q=j.quando?new Date(j.quando):null;
    var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
    el.innerHTML='<span class="st '+(c?'st-on':'st-off')+'">'+(c?plural(c,'comentário salvo','comentários salvos'):'Nenhum comentário salvo')+
-    '</span><div class="rod">Rodada '+n+qt+'.'+atend+' <a href="'+GH+path+'" target="_blank" rel="noopener">Ver arquivo</a></div>';
-  });
+    '</span><div class="rod">Rodada '+n+qt+'.'+atend+'</div>';
+  }
  }).catch(function(e){it.salvos=null;
   el.innerHTML='<span class="st st-err">Status indisponível</span><div class="rod">Não foi possível ler os comentários ('+esc(e.message)+'). Use Atualizar status.</div>';
  }).then(resumo);
