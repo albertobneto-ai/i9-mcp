@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:04:44.857Z",
+  "quando": "2026-09-11T19:05:01.047Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -69,6 +69,10 @@
     "s2-l15": {
       "item": "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação",
       "comentario": "depende da definição de como vai ser estruturado o item A e transferencia de titularidade e cancelamento em aberto.não pode ter dois pedidos de alterações no mesmo asset."
+    },
+    "s2-l18": {
+      "item": "SS de Retenção/TT/Cancelamento em aberto",
+      "comentario": "remover"
     }
   }
 }
