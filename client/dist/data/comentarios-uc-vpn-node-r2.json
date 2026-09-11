@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:22:11.793Z",
+  "quando": "2026-09-11T18:24:12.714Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -37,6 +37,10 @@
     "s1-l2": {
       "item": "Velocidade",
       "comentario": "Após produto raiz--- ter localidade e endereço de instalação"
+    },
+    "s2-l7": {
+      "item": "Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.",
+      "comentario": "endereço de instalaçao esta no node somente"
     }
   }
 }
