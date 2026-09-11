@@ -1,10 +1,10 @@
 {
-  "quando": "2026-09-11T17:54:24.946Z",
+  "quando": "2026-09-11T17:58:26.254Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
       "item": "Plano",
-      "comentario": "Considerar somente Last Milenome = Monitoramento inteligente de rede"
+      "comentario": "Considerar somente Last Milenome = Monitoramento inteligente de redeobrigatório monitoramento = true"
     },
     "s1-l28": {
       "item": "Velocidade Temporária",
@@ -12,7 +12,7 @@
     },
     "s1-l31": {
       "item": "Tipo de Monitoramento",
-      "comentario": "Alta complexidade = Projeto customizado"
+      "comentario": "Alta complexidade = Projeto customizadoObrigatório se plano de monitoramento for true"
     }
   }
 }
