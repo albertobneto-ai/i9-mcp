@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:05:01.047Z",
+  "quando": "2026-09-11T19:05:10.404Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -72,6 +72,10 @@
     },
     "s2-l18": {
       "item": "SS de Retenção/TT/Cancelamento em aberto",
+      "comentario": "remover"
+    },
+    "s2-l19": {
+      "item": "Auto-quantificação de equipamento por Tecnologia",
       "comentario": "remover"
     }
   }
