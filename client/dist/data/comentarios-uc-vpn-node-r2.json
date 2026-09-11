@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:47:11.928Z",
+  "quando": "2026-09-11T19:01:18.707Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -65,6 +65,10 @@
     "s2-l14": {
       "item": "SLA de implantação: ",
       "comentario": "Remover por enquanto."
+    },
+    "s2-l15": {
+      "item": "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação",
+      "comentario": "em análise do valores do tipo de bloqueio"
     }
   }
 }
