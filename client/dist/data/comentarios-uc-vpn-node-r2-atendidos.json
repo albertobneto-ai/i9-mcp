@@ -1,0 +1,178 @@
+{
+ "rodada": 2,
+ "quando": "2026-09-11T19:42:09.203Z",
+ "documento": "uc-vpn-node.html",
+ "status": "ATENDIDA",
+ "aplicada_em": "11/09/2026 — Revisão 2 (deploy)",
+ "regra": "comentário prevalece sobre a planilha; item comentado sai do regime de dúvida",
+ "comentarios": {
+  "Plano": {
+   "ckey": "s1-l30",
+   "item": "Plano",
+   "comentario": "Considerar somente Last MileNome = Monitoramento inteligente de redeObrigatório monitoramento = trueAtentar a classificação de SVAs.",
+   "decisao": "Grupo renomeado para Monitoramento inteligente de rede; plano obrigatório quando o serviço é contratado; bloqueio restrito ao acesso de terceiro Last Mile; classificação entre os serviços adicionais registrada como pendência."
+  },
+  "Velocidade Temporária": {
+   "ckey": "s1-l28",
+   "item": "Velocidade Temporária",
+   "comentario": "retirar SVA_",
+   "decisao": "Prefixo SVA_ retirado dos nomes de grupo e do texto das regras."
+  },
+  "Tipo de Monitoramento": {
+   "ckey": "s1-l31",
+   "item": "Tipo de Monitoramento",
+   "comentario": "Alta complexidade = Projeto customizadoObrigatório se plano de monitoramento for true",
+   "decisao": "PROBE passa a direcionar a configuração para projeto customizável; obrigatoriedade condicionada ao plano de monitoramento."
+  },
+  "Família TIC": {
+   "ckey": "fam-tic",
+   "item": "Família TIC",
+   "comentario": "Revisar família . Pendente Leandro",
+   "decisao": "Dúvida convertida em pendência registrada em revisão, sob o time Algar."
+  },
+  "O Produto não pode ser vendido para clientes Pessoa Física.": {
+   "ckey": "s2-l2",
+   "item": "O Produto não pode ser vendido para clientes Pessoa Física.",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Admini": {
+   "ckey": "s2-l3",
+   "item": "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Admini",
+   "comentario": "so pode ser atendido pelos perfis selecionadosnão elegível para outros perfis.",
+   "decisao": "Reescrita: venda ao segmento Governo restrita aos usuários com a permissão específica; nenhum outro usuário é elegível."
+  },
+  "O Produto não pode ser vendido em rede neutra.": {
+   "ckey": "s2-l4",
+   "item": "O Produto não pode ser vendido em rede neutra.",
+   "comentario": "remover esta regra",
+   "decisao": "Regra removida; desvio de rede neutra retirado do fluxo e da regra de validação da abordagem."
+  },
+  "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou": {
+   "ckey": "s2-l5",
+   "item": "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou",
+   "comentario": "resposta dúvida = Por localidade",
+   "decisao": "Fechada: elegibilidade parametrizada por localidade. Permanece pendência sobre operar por inclusão ou exclusão."
+  },
+  "Velocidade": {
+   "ckey": "s1-l2",
+   "item": "Velocidade",
+   "comentario": "Após produto raiz--- ter localidade e endereço de instalação",
+   "decisao": "Regra de preenchimento acrescentada: a velocidade é selecionada após localidade e endereço de instalação no produto raiz; reflete no passo 1 do fluxo."
+  },
+  "Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.": {
+   "ckey": "s2-l7",
+   "item": "Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.",
+   "comentario": "endereço de instalaçao esta no node somente",
+   "decisao": "Reescrita: o endereço de instalação pertence exclusivamente ao ponto de serviço; reflete no passo 1 do fluxo."
+  },
+  "Não é permitido realizar a alteração do endereço internacional.": {
+   "ckey": "s2-l8",
+   "item": "Não é permitido realizar a alteração do endereço internacional.",
+   "comentario": "aguardando retorno",
+   "decisao": "Pendência registrada em revisão: confirmação aguarda retorno do negócio."
+  },
+  "Não é permitido realizar a alteração do endereço nacional para um internacional.": {
+   "ckey": "s2-l9",
+   "item": "Não é permitido realizar a alteração do endereço nacional para um internacional.",
+   "comentario": "resposta a duvida - aguardando retorno.",
+   "decisao": "Dúvida convertida em pendência registrada em revisão: caminho inverso aguarda retorno do negócio."
+  },
+  "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.": {
+   "ckey": "s2-l11",
+   "item": "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.",
+   "comentario": "remover - a parte de cancelamento não é tratada.",
+   "decisao": "Dúvida de cancelamento removida; a regra de mínimo de dois pontos permanece."
+  },
+  "É necessário identificar se o endereço de instalação é de um local, com necessidade de G": {
+   "ckey": "s2-l12",
+   "item": "É necessário identificar se o endereço de instalação é de um local, com necessidade de G",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Produto Formatado quando (levando em consideração as respostas retornadas pela viabilida": {
+   "ckey": "s2-l13",
+   "item": "Produto Formatado quando (levando em consideração as respostas retornadas pela viabilida",
+   "comentario": "- Velocidade de 500Mb até 1Gb: aguardando retorno",
+   "decisao": "Dúvida reduzida a pendência sobre a faixa de 500 Mb a 1 Gb, aguardando retorno do negócio."
+  },
+  "SLA de implantação:": {
+   "ckey": "s2-l14",
+   "item": "SLA de implantação:",
+   "comentario": "Remover por enquanto.",
+   "decisao": "Regra removida."
+  },
+  "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação": {
+   "ckey": "s2-l15",
+   "item": "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação",
+   "comentario": "depende da definição de como vai ser estruturado o item A e transferencia de titularidade e cancelamento em aberto.não pode ter dois pedidos de alterações no mesmo asset.",
+   "decisao": "Reescrita: bloqueio ativo impede alteração e um mesmo ativo não admite dois pedidos simultâneos; titularidade e cancelamento ficam como pendência."
+  },
+  "SS de Retenção/TT/Cancelamento em aberto": {
+   "ckey": "s2-l18",
+   "item": "SS de Retenção/TT/Cancelamento em aberto",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Auto-quantificação de equipamento por Tecnologia": {
+   "ckey": "s2-l19",
+   "item": "Auto-quantificação de equipamento por Tecnologia",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Modalidade do equipamento travada por tecnologia": {
+   "ckey": "s2-l20",
+   "item": "Modalidade do equipamento travada por tecnologia",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Alta Complexidade por velocidade/tecnologia": {
+   "ckey": "s2-l21",
+   "item": "Alta Complexidade por velocidade/tecnologia",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART > MIR PRO e vice-versa": {
+   "ckey": "s2-l24",
+   "item": "Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART > MIR PRO e vice-versa",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser": {
+   "ckey": "s2-l25",
+   "item": "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser",
+   "comentario": "Remover",
+   "decisao": "Regra removida."
+  },
+  "Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o cir": {
+   "ckey": "s2-l26",
+   "item": "Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o cir",
+   "comentario": "remover.",
+   "decisao": "Regra removida."
+  },
+  "Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO": {
+   "ckey": "s2-l27",
+   "item": "Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta": {
+   "ckey": "s2-l28",
+   "item": "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta",
+   "comentario": "mudar para o grupo regras para projetos customizaveis",
+   "decisao": "Movida para o novo grupo Regras para projetos customizáveis, reescrita em prosa."
+  },
+  "Automação e integrações SVA: Existem hoje muitas regras de automação e integração com si": {
+   "ckey": "s2-l29",
+   "item": "Automação e integrações SVA: Existem hoje muitas regras de automação e integração com si",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  },
+  "Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix par": {
+   "ckey": "s2-l30",
+   "item": "Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix par",
+   "comentario": "remover",
+   "decisao": "Regra removida."
+  }
+ }
+}
