@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:13:42.554Z",
+  "quando": "2026-09-11T19:15:07.252Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -101,6 +101,10 @@
     "s2-l27": {
       "item": "Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO",
       "comentario": "remover"
+    },
+    "s2-l28": {
+      "item": "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta",
+      "comentario": "mudar para o grupo regras para projetos customizaveis"
     }
   }
 }
