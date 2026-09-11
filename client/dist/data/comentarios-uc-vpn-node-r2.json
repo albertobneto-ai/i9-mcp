@@ -1,10 +1,14 @@
 {
-  "quando": "2026-09-11T17:51:08.452Z",
+  "quando": "2026-09-11T17:52:53.424Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
       "item": "Plano",
-      "comentario": "Considerar somente Last Mile"
+      "comentario": "Considerar somente Last Milenome = Monitoramento inteligente de rede"
+    },
+    "s1-l28": {
+      "item": "Velocidade Temporária",
+      "comentario": "retirar SVA_"
     }
   }
 }
