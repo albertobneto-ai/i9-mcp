@@ -1,0 +1,205 @@
+{
+ "rodada": 1,
+ "quando": "10/09/2026 18:37",
+ "documento": "uc-vpn-node.html",
+ "status": "ATENDIDA",
+ "aplicada_em": "11/09/2026 — Revisão 1 (deploy)",
+ "regra": "comentário prevalece sobre a planilha; item comentado sai do regime de dúvida",
+ "comentarios": {
+  "Velocidade": {
+   "item": "Velocidade",
+   "comentario": "analise se é upgrade e downgrade.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Tecnologia": {
+   "item": "Tecnologia",
+   "comentario": "não solicita para o autor a tecnologia. é preenchido automaticamente após analise de viabilidade. Caso manual pode ser editado após o retorno da viabilidade. Se entrar em um fluxo de processo customizável o processo também vai ser manual.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Interface": {
+   "item": "Interface",
+   "comentario": "Obrigatório se Golden jumper = sim",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Abordagem": {
+   "item": "Abordagem",
+   "comentario": "retirar frase : O produto não pode ser entregue em rede neutra. se for rede neutra =  inviável.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Metragem": {
+   "item": "Metragem",
+   "comentario": "caso automático e a abordagem for construir tem que retornar a metragem",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "VPN Network": {
+   "item": "VPN Network",
+   "comentario": "VPN node = qual asset da rede pertence? atenção a particularidade da configuração SFResposta da dúvida - existe uma etapa de preenchimento da cotação. com analise dos nodes e network. avaliar a melhor forma para validar.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Protocolo de Roteamento": {
+   "item": "Protocolo de Roteamento",
+   "comentario": "esse atributo ele é do VPN Network",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Golden Jumper": {
+   "item": "Golden Jumper",
+   "comentario": "se elegível traz os atributos. Trocar o nome do grupo para golden jumper. elegibilidade = tem data center regra 5 - O tributo é obrigatório se for elegível.itens 3 e 4 - nome do Golden Jumper = o nome data center tecnologia golden jumper =  Interface do jumper",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Nome Local/Data Center": {
+   "item": "Nome Local/Data Center",
+   "comentario": "Nome do data center . Obrigatório se Golden jumper = sim",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Nome do jumper": {
+   "item": "Nome do jumper",
+   "comentario": "Obrigatório se Golden jumper = sim",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Modalidade de Instalação": {
+   "item": "Modalidade de Instalação",
+   "comentario": "É obrigatorio de acordo com a condicional dos atributos abaixo. adiconal o botão condicional",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Velocidade de Conexão": {
+   "item": "Velocidade de Conexão",
+   "comentario": "de acordo com a complexidade da implementação primeira opção, ser todas as velocidade em MBPS. avaliar outras opções com time técnico.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Provedor e Serviço Cloud": {
+   "item": "Provedor e Serviço Cloud",
+   "comentario": "resolvido com o mesmo comentario citado anteriormente",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Alterar Fornecedor Golden Jumper": {
+   "item": "Alterar Fornecedor Golden Jumper",
+   "comentario": "subir para o grupo golden jumper.Leandro vai verificar com o time Algar.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Condomínio": {
+   "item": "Condomínio",
+   "comentario": "Pendencia de como verificar se é um condominio? Leandro vai verificar com o time Algar",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Acesso Terceiro": {
+   "item": "Acesso Terceiro",
+   "comentario": "regra condicional exclusiva para VPN.Mudar nome para Acesso Terceiro Last Mile",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Parceiro LastMile": {
+   "item": "Parceiro LastMile",
+   "comentario": "Obrigatório quando Acesso terceiro last mile for true resposta dúvida - não tem padrão para esse processo. é texto livre mesmo",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Proprietário do Roteador": {
+   "item": "Proprietário do Roteador",
+   "comentario": "Obrigatório quando Acesso terceiro last mile for truevalor default = Algar",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Número Viabilidade GLM": {
+   "item": "Número Viabilidade GLM",
+   "comentario": "Obrigatório quando Acesso terceiro last mile for true",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Vigência LastMile": {
+   "item": "Vigência LastMile",
+   "comentario": "retirar: O time responsável pela contratação com o parceiro pode ajustar a vigência no momento da contratação, caso divirja da informada.Obrigatório quando Acesso terceiro last mile for true",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Valor Instalação LastMile s/ Impostos": {
+   "item": "Valor Instalação LastMile s/ Impostos",
+   "comentario": "desconsiderar O time responsável pela contratação com o parceiro pode ajustar o valor de instalação no momento da contratação, caso divirja do informado.campo tipo moeda/ BRL R$",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Valor Mensal LastMile s/ Impostos": {
+   "item": "Valor Mensal LastMile s/ Impostos",
+   "comentario": "desconsiderar O time responsável pela contratação com o parceiro pode ajustar o valor de instalação no momento da contratação, caso divirja do informado.campo tipo moeda/ BRL R$",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Tipo de Equipamento": {
+   "item": "Tipo de Equipamento",
+   "comentario": "Necessidade -  ter uma lista de equipamentos com checkbox e conforme a seleção inputar a quantidade ( sempre maior que zero) e modalidade de cada equipamentosomente depois de viabilidade - sempre vai ser de 1:11) Se GPON => Roteador e ONT ---- se não passar em um fluxo de projeto customizável e a tecnologia da viabilidade for GPON, setar 1 equipamento do tipo roteador como comodato e 1 equipamento do tipo ONT como comodato2) Se Metro => Roteador e Switch ---- se não passar em um fluxo de projeto customizável e a tecnologia da viabilidade for Metro, setar 1 equipamento do tipo roteador como comodato e 1 equipamento do tipo Switch como comodato.3) Se no retorno da viabilidade for com entrega em anel -> incluir Chave ótica (Em rede metro)---- se não passar em um fluxo de projeto customizável e a tecnologia da viabilidade for Metro e a entrega for em anel, setar 1 equipamento chave ótica como comodato.3) Se atributo tecnologia do acesso for Rádio, deverá ser obrigatório equipamento Rádio ----- setar um equipamento Rádio como comodato.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Modalidade Equipamento": {
+   "item": "Modalidade Equipamento",
+   "comentario": "Valor default = LocaçãoCardinalidade= 1 para cada equipamentopara quantidade Para projetos customizados o campo é editável pelo pré-vendas",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Velocidade Temporária": {
+   "item": "Velocidade Temporária",
+   "comentario": "necessidade de criar um componente para todos os SVAs.remover item 3, 6 E a de 100mbps onde se enquadra? (Leandro)Passar  a tabela que contemple todas a variáveis!! (Leandro)avaliar o item 7 como será o comportamento no SFresposta duvida- mostrar somente opções elegiveis.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Quantidade de Dias (corridos)": {
+   "item": "Quantidade de Dias (corridos)",
+   "comentario": "Resposta duvida - Leandro vai buscar a informação.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Referência do Cliente": {
+   "item": "Referência do Cliente",
+   "comentario": "retirar item 3 Visibilidade totalpara os segmentos sempre será obrigatório",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Tipo Moeda": {
+   "item": "Tipo Moeda",
+   "comentario": "somente dolar - ser um picklist com o valor dolar",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Valor Moeda": {
+   "item": "Valor Moeda",
+   "comentario": "refere se a conversão --- o ator que faz o calculo da conversão.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Produto a Serviço": {
+   "item": "Produto a Serviço",
+   "comentario": "Pendente",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Período Fidelização": {
+   "item": "Período Fidelização",
+   "comentario": "trocar o nome Regras de contrato para Informações contratuais retirar: SVA deverá seguir a regra do produto principal; sem fidelidade = valor 0 não foi necessário sanar a duvidatoda informação contratual deve aparecer antes da assinatura do contrato e no final da cotação",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Tipo de Reajuste": {
+   "item": "Tipo de Reajuste",
+   "comentario": "regra de perfis com permissão da função modulo perfis e permissionamentoadicionar valor : Sem reajuste",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Data Base": {
+   "item": "Data Base",
+   "comentario": "desconsiderar = Automaticamente com a data de assinatura do contrato",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Data de Assinatura do Contrato": {
+   "item": "Data de Assinatura do Contrato",
+   "comentario": "Resposta a duvida - é ancora para o tipo de rejuste",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Reajustar Antes de 12 Meses": {
+   "item": "Reajustar Antes de 12 Meses",
+   "comentario": "relacionado com o perfis e permissões",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Data do Próximo Reajuste": {
+   "item": "Data do Próximo Reajuste",
+   "comentario": "calculo é de acordo com a opção de tipo de reajuste + periodo de fidelização. (Data + opção de meses)se o resultado da data calculada for inferior a 12 meses e a opção reajustar antes de 12 meses = não, deve somar 12 meses a mais ( para as opções de reajuste po data de assinatura e data base)",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Percentual da Multa": {
+   "item": "Percentual da Multa",
+   "comentario": "retirar: Valores fora do padrão, seguir alçada de aprovaçãoalter o valor para 30%Não é elegivel para segmento Governopicklist devido a elegibilidade de outros produtos",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Recálculo Período do Contrato": {
+   "item": "Recálculo Período do Contrato",
+   "comentario": "analisar cada regra de acordo com os valores ou seja --- cada valor da picklist tem um calculo a ser feito.",
+   "decisao": "aplicado na Revisão 1"
+  },
+  "Quantidade de Dias Aviso Previo": {
+   "item": "Quantidade de Dias Aviso Previo",
+   "comentario": "valor 30 dias retirar: SVA deverá seguir regra do produto principal",
+   "decisao": "aplicado na Revisão 1"
+  }
+ }
+}
