@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:25:25.769Z",
+  "quando": "2026-09-11T18:35:36.016Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -45,6 +45,14 @@
     "s2-l8": {
       "item": "Não é permitido realizar a alteração do endereço internacional.",
       "comentario": "aguardando retorno"
+    },
+    "s2-l9": {
+      "item": "Não é permitido realizar a alteração do endereço nacional para um internacional.",
+      "comentario": "resposta a duvida - aguardando retorno."
+    },
+    "s2-l11": {
+      "item": "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.",
+      "comentario": "a parte de cancelamento não é tratada."
     }
   }
 }
