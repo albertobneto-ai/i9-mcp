@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:15:07.252Z",
+  "quando": "2026-09-11T19:15:46.901Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -105,6 +105,10 @@
     "s2-l28": {
       "item": "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta",
       "comentario": "mudar para o grupo regras para projetos customizaveis"
+    },
+    "s2-l29": {
+      "item": "Automação e integrações SVA: Existem hoje muitas regras de automação e integração com si",
+      "comentario": "remover"
     }
   }
 }
