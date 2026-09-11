@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T18:08:05.691Z",
+  "quando": "2026-09-11T18:10:13.586Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -24,7 +24,11 @@
     },
     "s2-l3": {
       "item": "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Admini",
-      "comentario": "so pode ser atendido pelos perfis selecionados"
+      "comentario": "so pode ser atendido pelos perfis selecionadosnão elegível para outros perfis."
+    },
+    "s2-l4": {
+      "item": "O Produto não pode ser vendido em rede neutra.",
+      "comentario": "remover regra"
     }
   }
 }
