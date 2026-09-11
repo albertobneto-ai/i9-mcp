@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-11T19:08:47.808Z",
+  "quando": "2026-09-11T19:13:18.717Z",
   "documento": "UC-VPN-001",
   "comentarios": {
     "s1-l30": {
@@ -93,6 +93,10 @@
     "s2-l25": {
       "item": "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser",
       "comentario": "Remover"
+    },
+    "s2-l26": {
+      "item": "Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o cir",
+      "comentario": "remover."
     }
   }
 }
