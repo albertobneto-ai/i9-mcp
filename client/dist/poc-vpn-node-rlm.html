@@ -14,6 +14,8 @@ button,select,input,textarea{font:inherit;color:inherit}
 a{color:var(--brand);text-decoration:none}
 #poc{background:#16325c;color:#cfe0f5;font-size:11px;padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #poc b{color:#9fc3ee;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
+#poc #p-sessao{color:#fff;font-family:ui-monospace,monospace;font-size:10.5px;background:#0b2b56;border-radius:3px;padding:2px 7px}
+#poc #p-sync{color:#8fb4e8;font-size:10px;min-width:74px}
 #poc .sim{color:#9fc3ee;margin-left:6px;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px}
 #poc button:disabled{border-color:#3f5b8a;color:#8aa5cc}
 #poc select{background:#fff;color:#181818;border:0;border-radius:3px;padding:2px 4px;font-size:11px;max-width:150px}
@@ -567,7 +569,12 @@ body.agp-open #guia-abrir{right:416px}
   <button id="s-assin" onclick="simularAssinatura()">assinatura do contrato</button>
   <button id="s-ativar" onclick="simAtivar()">ativação do pedido</button>
   <button id="s-submit" onclick="simSubmeter()">submissão do pedido</button>
-  <button onclick="reset()">Reiniciar</button></div>
+  <button onclick="reset()">Reiniciar</button>
+  <span class="sim">Sessão:</span>
+  <span id="p-sessao" title="Código desta sessão">—</span>
+  <button id="s-salvar" onclick="sessaoSalvar(true)">salvar</button>
+  <button id="s-abrir" onclick="sessaoAbrirDialogo()">retomar</button>
+  <span id="p-sync"></span></div>
 
 <div id="lx">
   <div class="g1"><button class="launcher" title="App Launcher" onclick="toast('App Launcher: Sales, Service, Revenue Cloud…')"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></button><img class="sflogo" src="img/salesforce-logo.png" alt="Salesforce" onerror="this.style.display='none'">
@@ -2636,8 +2643,95 @@ function resetViab(){ if(cfgProduct){ cfgProduct.autoSig=null; ['Tecnologia','In
 $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target.value); render(); };
 function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
 function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
+/* ===================== persistência da sessão (Postgres via /api/poc) =====================
+   Guarda o que a sessão tem de próprio: registros criados, configuração das linhas, pedido,
+   plano de orquestração, assets e a conversa do agente. Catálogo e regras não vão junto:
+   eles vêm do próprio arquivo e mudam com o deploy. */
+const POC_API = '/api/poc/sessoes';
+const POC_PROTO = /lightning/i.test(location.pathname) || document.getElementById('lx') ? 'lightning' : 'mobile';
+let sessaoCodigo = null, sessaoTimer = null, sessaoUltimo = null;
+
+function sessaoEstado(){
+  return {
+    v: 2, proto: POC_PROTO, quando: new Date().toISOString(),
+    ctx: { conta: CTX.conta.id, usuario: CTX.usuario.id, localidade: CTX.localidade.id, endId: CTX.endId },
+    S, lines, lineSeq,
+    ag: { thread: AG.thread.slice(-60), chips: [], step: AG.step, pid: AG.pid, equipOk: AG.equipOk, svaOk: AG.svaOk,
+          reajOk: AG.reajOk, indOk: AG.indOk, cfg: AG.cfg ? { a: AG.cfg.a, c: AG.cfg.c, toque: AG.cfg.toque, autoSig: AG.cfg.autoSig, pid: AG.pid } : null }
+  };
+}
+function sessaoAplicar(e){
+  if(!e || !e.S) throw new Error('sessão sem estado');
+  const c = CTX_DATA.contas.find(x=>x.id===e.ctx.conta); if(c) CTX.conta=c;
+  const u = CTX_DATA.usuarios.find(x=>x.id===e.ctx.usuario); if(u) CTX.usuario=u;
+  if(e.ctx.localidade) setLoc(e.ctx.localidade);
+  if(e.ctx.endId) setEnd(e.ctx.endId, true);
+  S = Object.assign(novo(), e.S);
+  lines.length = 0; (e.lines||[]).forEach(l=>lines.push(l)); lineSeq = e.lineSeq || lines.length;
+  cfgProduct = null;
+  Object.assign(AG, { thread:(e.ag&&e.ag.thread)||[], chips:[], step:(e.ag&&e.ag.step)||null, pid:(e.ag&&e.ag.pid)||null,
+    pending:false, busy:false, equipOk:!!(e.ag&&e.ag.equipOk), svaOk:!!(e.ag&&e.ag.svaOk),
+    reajOk:!!(e.ag&&e.ag.reajOk), indOk:!!(e.ag&&e.ag.indOk), dateAsk:null, resolve:null, cfg:null, conflito:null });
+  if(e.ag && e.ag.cfg && e.ag.cfg.pid){
+    const cfg = novoCfg(findProd(e.ag.cfg.pid));
+    cfg.a = e.ag.cfg.a; cfg.c = e.ag.cfg.c; cfg.toque = e.ag.cfg.toque || {}; cfg.autoSig = e.ag.cfg.autoSig || null;
+    AG.cfg = cfg; avaliar(cfg);
+  }
+  if(S.order && S.order.plan && S.order.plan.status!=='Completed') setTimeout(planoTick, 600);
+  render();
+}
+function sessaoSync(txt, erro){ const el=$('#p-sync'); if(el){ el.textContent=txt||''; el.style.color=erro?'#ffb4a8':'#8fb4e8'; } }
+function sessaoCodigoNovo(){
+  const base = (CTX.conta.nome||'sessao').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,14);
+  return base + '-' + Math.random().toString(36).slice(2,7);
+}
+async function sessaoSalvar(manual){
+  if(!sessaoCodigo) sessaoCodigo = sessaoCodigoNovo();
+  const estado = sessaoEstado(); const texto = JSON.stringify(estado);
+  if(!manual && texto === sessaoUltimo) return;
+  sessaoSync('salvando…');
+  try{
+    const r = await fetch(`${POC_API}/${encodeURIComponent(sessaoCodigo)}`, { method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ proto:POC_PROTO, rotulo:(S.quote?S.quote.name:oppName()).slice(0,110), estado }) });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    sessaoUltimo = texto;
+    const el=$('#p-sessao'); if(el) el.textContent = sessaoCodigo;
+    history.replaceState(null,'', location.pathname + '?s=' + encodeURIComponent(sessaoCodigo));
+    sessaoSync('salvo ' + new Date().toLocaleTimeString('pt-BR').slice(0,5));
+    if(manual) toast('Sessão salva: '+sessaoCodigo);
+  }catch(e){ sessaoSync('falhou', true); if(manual) toast('Não consegui salvar: '+e.message,'warn'); }
+}
+function sessaoAuto(){ if(S.semPersistencia) return; clearTimeout(sessaoTimer); sessaoTimer=setTimeout(()=>sessaoSalvar(false), 1500); }
+async function sessaoCarregar(codigo){
+  sessaoSync('abrindo…');
+  try{
+    const r = await fetch(`${POC_API}/${encodeURIComponent(codigo)}`);
+    if(r.status===404) throw new Error('sessão não encontrada');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    sessaoAplicar(d.estado); sessaoCodigo = d.codigo; sessaoUltimo = JSON.stringify(sessaoEstado());
+    const el=$('#p-sessao'); if(el) el.textContent = sessaoCodigo;
+    sessaoSync('aberta'); toast('Sessão '+d.codigo+' retomada.');
+  }catch(e){ sessaoSync('falhou', true); toast('Não consegui abrir: '+e.message,'warn'); }
+}
+async function sessaoAbrirDialogo(){
+  let lista = [];
+  try{ const r = await fetch(POC_API); if(r.ok) lista = await r.json(); }catch(e){}
+  const cod = prompt('Código da sessão para retomar:' + (lista.length ? '\n\nRecentes:\n' + lista.slice(0,8).map(x=>`${x.codigo} — ${x.rotulo||''} (${new Date(x.atualizado_em).toLocaleString('pt-BR')})`).join('\n') : ''), sessaoCodigo||'');
+  if(cod) sessaoCarregar(cod.trim());
+}
 function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false,dateAsk:null,resolve:null,reajOk:false,indOk:false}); if(AG.open) agRender(); render(); }
 S=novo(); render();
+/* salva automaticamente o que mudou, e retoma a sessão quando a URL traz ?s= */
+(function(){
+  const par = new URLSearchParams(location.search);
+  if(/selftest=1/.test(location.search)){ S.semPersistencia = true; return; }
+  const _render = render;
+  render = function(){ _render(); sessaoAuto(); };
+  const s = par.get('s');
+  if(s) sessaoCarregar(s.trim()); else { const el=$('#p-sessao'); if(el) el.textContent='(não salva)'; }
+})();
 
 /* ===================== camada de apresentação Lightning ===================== */
 const LXTABS = [['Home','home'],['Accounts','accounts'],['Opportunities','opp'],['Quotes','quote'],['Orders','order'],['Contracts','contract'],['Assets','accounts']];
