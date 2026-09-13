@@ -1657,23 +1657,67 @@ function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
     return { l:(on?'✓ ':'')+t+(on?` — ${arr[i].Quantidade||1}× ${arr[i].ModalidadeEquipamento||'pendente'}`:''),
       f:()=>{ if(on){ agSay(`${t}: o que deseja?`, [{l:'Alterar quantidade',f:()=>agEquipQtd(t)},{l:'Alterar modalidade',f:()=>agEquipMod(t)},{l:'Remover',f:()=>{ const j=arr.findIndex(x=>x.TipoEquipamento===t); if(j>=0) arr.splice(j,1); AG.cfg.autoSig='manual'; agSay('Equipamentos: '+agEquipResumo()+'.', agEquipChips()); }},{l:'Voltar',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]); return; }
         const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual'; agEquipQtd(t); } }; })
-  .concat([{l:'Concluir',f:()=>{ const a2=AG.cfg.c.equip||[];
-    if(!a2.length){ agSay('O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.',agEquipChips()); return; }
-    const semMod=a2.find(x=>!x.ModalidadeEquipamento); if(semMod){ agEquipMod(semMod.TipoEquipamento); return; }
-    const falta=F.equipamentosFaltando(AG.cfg.a.Tecnologia, CTX.endereco.anel, a2);
-    if(falta.length){ agSay(`A tecnologia ${AG.cfg.a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''} exige ${falta.join(' e ')}. Incluo agora?`,
-      falta.map(t=>({l:'Incluir '+t,f:()=>{ const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; a2.push(o); AG.cfg.autoSig='manual'; agEquipMod(t); },pri:true}))
-      .concat([{l:'Ver os equipamentos',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]), 'Regra de dimensionamento por tecnologia (UC-VPN-001)'); return; }
-    AG.equipOk=true; agNextCfg(); },pri:true}]); }
+  .concat([{l:'Concluir',f:agEquipConcluir,pri:true}]); }
+/* o Concluir confere as regras e diz exatamente o que falta, com o caminho para resolver */
+function agEquipIncluir(t, depois){
+  const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
+  if(arr.some(x=>x.TipoEquipamento===t)) { if(depois) depois(); return; }
+  const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual';
+  if(depois) depois(); else agEquipMod(t);
+}
+function agEquipConcluir(){
+  const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
+  const tec=AG.cfg.a.Tecnologia, anel=CTX.endereco.anel;
+  const exigidos=F.equipamentosPorTecnologia(tec, anel).map(x=>x.TipoEquipamento);
+  const falta=F.equipamentosFaltando(tec, anel, arr);
+  const src='Regras do UC-VPN-001: dimensionamento por tecnologia, mínimo de 1 equipamento, cardinalidade do Roteador e modalidade por item';
+
+  /* 1 · a tecnologia tem exigência e algo falta */
+  if(falta.length){
+    const jaTem = arr.length ? ` Já incluído: ${agEquipResumo()}.` : '';
+    agSay(`Ainda não dá para concluir. A tecnologia ${tec}${anel?' com entrega em anel':''} exige ${exigidos.join(', ')}; falta ${falta.join(' e ')}.${jaTem}`,
+      [{l:`Incluir ${falta.join(' e ')}`,f:()=>{ falta.forEach(t=>agEquipIncluir(t, ()=>{})); agEquipFila(); },pri:true}]
+      .concat(falta.length>1 ? falta.map(t=>({l:'Incluir só o '+t,f:()=>agEquipIncluir(t)})) : [])
+      .concat([{l:'Ver o que já está incluído',f:()=>agSay(arr.length?`Equipamentos: ${agEquipResumo()}.`:'Nenhum equipamento incluído ainda.',agEquipChips())}]), src);
+    return;
+  }
+  /* 2 · sem exigência por tecnologia, mas o grupo pede pelo menos um */
+  if(!arr.length){
+    agSay(`Ainda não dá para concluir: o grupo Equipamentos de Acesso exige no mínimo 1 equipamento${exigidos.length?'':`, e a Revisão 1 não define dimensionamento automático para ${tec}`}. Escolha o que incluir:`,
+      EQUIP_TIPOS.filter(t=>!agEquipBloqueio(t,arr)).map(t=>({l:'Incluir '+t,f:()=>agEquipIncluir(t)})), src);
+    return;
+  }
+  /* 3 · quantidade inválida */
+  const qtdRuim=arr.find(x=>Number(x.Quantidade===undefined?1:x.Quantidade) < 1);
+  if(qtdRuim){ agSay(`A quantidade de ${qtdRuim.TipoEquipamento} precisa ser maior que zero.`, [{l:'Corrigir a quantidade',f:()=>agEquipQtd(qtdRuim.TipoEquipamento),pri:true}], src); return; }
+  /* 4 · cardinalidade do roteador */
+  const rot=arr.filter(x=>x.TipoEquipamento==='Roteador').reduce((s,x)=>s+Number(x.Quantidade||1),0);
+  if(rot>1){ agSay('O Roteador tem cardinalidade máxima de 1 e está com '+rot+'.', [{l:'Ajustar para 1',f:()=>{ const it=arr.find(x=>x.TipoEquipamento==='Roteador'); it.Quantidade=1; agSay('Roteador: 1 unidade.',agEquipChips()); },pri:true}], src); return; }
+  /* 5 · modalidade por item */
+  const semMod=arr.find(x=>!x.ModalidadeEquipamento);
+  if(semMod){ agSay(`Falta a modalidade de ${semMod.TipoEquipamento} — a relação é de 1 para 1 entre equipamento e modalidade.`, [{l:'Informar agora',f:()=>agEquipMod(semMod.TipoEquipamento),pri:true}], src); return; }
+  /* 6 · tudo certo */
+  AG.equipOk=true;
+  agSay(`Equipamentos validados: ${agEquipResumo()}.`, []);
+  agNextCfg();
+}
 function agEquipQtd(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
   agSay(t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1, então só ofereço essa opção.`:`${t}: quantidade?`,
     [1,2,3,4].filter(n=>!(t==='Roteador'&&n>1)).map(n=>({l:n+(n>1?' unidades':' unidade'),f:()=>{ it.Quantidade=n; agEquipMod(t); }})) ); }
-function agEquipMod(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
+function agEquipFila(){
+  const arr=AG.cfg.c.equip||[];
+  const pend=arr.find(x=>!x.ModalidadeEquipamento);
+  if(pend){ agEquipMod(pend.TipoEquipamento, agEquipFila); return; }
+  agEquipConcluir();
+}
+function agEquipMod(t, depois){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
   const R=avaliar(AG.cfg); const podeEditar=CTX.usuario.perms.includes('complementacao')||R.cls.v==='Customizado';
   const vals=podeEditar?ATTRS.ModalidadeEquipamento.values:['Locação'];
   const fora=ATTRS.ModalidadeEquipamento.values.filter(v=>!vals.includes(v));
   agSay(`${t}: modalidade do equipamento?${agObg('ModalidadeEquipamento')}${podeEditar?'':' Só ofereço Locação: '+fora.join(' e ')+' exigem atendimento customizado ou permissão de complementação técnica.'}`,
-    vals.map(v=>({l:v,f:()=>{ it.ModalidadeEquipamento=v; agSay(`${t}: ${it.Quantidade||1}× ${v}. Equipamentos: ${agEquipResumo()}.`, agEquipChips()); }})) ); }
+    vals.map(v=>({l:v,f:()=>{ it.ModalidadeEquipamento=v;
+      if(depois){ agSay(`${t}: ${it.Quantidade||1}× ${v}.`, []); depois(); }
+      else agSay(`${t}: ${it.Quantidade||1}× ${v}. Equipamentos: ${agEquipResumo()}.`, agEquipChips()); }})) ); }
 function agPedirData(key,label){ AG.dateAsk={key,label,val:new Date().toISOString().slice(0,10)}; agSay(`${label}? Escolha no calendário — começa em hoje.`,[]); }
 function agDataOk(){ const d=AG.dateAsk; const v=($('#ag-date')||{}).value||d.val; AG.dateAsk=null; agUser(v.split('-').reverse().join('/')); agSet(d.key,v); agNextCfg(); }
 function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg);
@@ -1687,7 +1731,7 @@ function agValidar(){
   const R=avaliar(AG.cfg); const errs=R.msgs.filter(m=>m.sev==='Error');
   if(errs.length){ const m=errs[0]; const att=Object.keys(ATTRS).find(k=>m.texto.includes(ATTRS[k].name)); 
     if(att && ATTRS[att].ui==='picklist' && !att.includes('#')){ agSay(`Passo 8 (validação): ${m.texto}. Escolha:`, agVals(att).map(v=>({l:v,f:()=>{agSet(att,v);agValidar();}})).concat([{l:'Abrir no configurador',f:agOpenCfg}])); return; }
-    if(/equipamento/i.test(m.texto)){ agSay('Passo 8 (validação): '+m.texto, agEquipChips()); return; }
+    if(/equipamento/i.test(m.texto)){ AG.equipOk=false; agSay('Passo 8 (validação): '+m.texto); agEquipConcluir(); return; }
     agSay(`Passo 8 (validação): ${errs.map(e=>e.texto).join('; ')}. Quer ajustar no configurador?`, [{l:'Abrir no configurador',f:agOpenCfg,pri:true}]); return; }
   const a=AG.cfg.a, defs=AG.cfg.defs;
   const attrs=defs.filter(x=>!x.hidden&&!R.hidden[x.key]&&!vazio(a[x.key])).map(x=>[x.name, a[x.key]===true?'Sim':String(a[x.key])]);
