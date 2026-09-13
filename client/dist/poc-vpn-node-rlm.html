@@ -183,6 +183,26 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .fnt.proto .tg{background:#706e6b;color:#fff}
 .proc small{display:block;margin-top:2px}
 .hgrid{display:grid;grid-template-columns:1fr;gap:0}
+.rpt{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0;overflow:hidden}
+.rpt .rh2{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bd)}
+.rpt .rh2 b{font-size:14px;flex:1}
+.rpt .rh2 .sub{color:var(--mut);font-size:11.5px}
+.rpt .filtros{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;background:var(--gray);border-bottom:1px solid var(--bd);font-size:12px;align-items:center}
+.rpt .filtros select{border:1px solid var(--bd2);border-radius:4px;padding:4px 6px;font-size:12px;background:#fff}
+.rpt table{width:100%;border-collapse:collapse;font-size:12.5px}
+.rpt th{background:#f7f8fa;text-align:left;font-weight:700;color:#33475b;padding:8px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}
+.rpt td{padding:7px 12px;border-bottom:1px solid #eef1f5}
+.rpt tr.grp td{background:#eef2f7;font-weight:700;color:#0b5cab}
+.rpt tr.tot td{background:#f7f8fa;font-weight:700}
+.rpt td.n,.rpt th.n{text-align:right}
+.rpt .vazio{padding:14px;color:var(--mut);font-size:12.5px}
+.dashg{display:grid;grid-template-columns:1fr;gap:0}
+.dash{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0}
+.dash h4{margin:0;padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--bd)}
+.dash .body{padding:12px 14px}
+.dash .leg{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11.5px;color:var(--tx2)}
+.dash .leg i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px}
+.rptlink{color:var(--brand);font-size:12px}
 .tle-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
 .tle-h .oi{width:28px;height:28px;border-radius:4px;background:#f4592f;color:#fff;display:grid;place-items:center;font-size:14px}
 .tle-h b{flex:1;font-size:15px}
@@ -429,6 +449,10 @@ body,#app{font-size:12.5px}
 .line .kv{font-size:12px}
 .fnt{font-size:10.5px}
 .doc{font-size:12.5px}
+/* dashboard em grade de dois componentes */
+.dashg{grid-template-columns:1fr 1fr;gap:0 16px}
+.dash{margin:16px 0 0}
+.rpt{margin:14px 0 0}
 /* Home em duas colunas, como no Lightning */
 .hgrid{grid-template-columns:1fr 380px;gap:0 16px}
 .hgrid>div{min-width:0}
@@ -805,6 +829,7 @@ const FONTES = [
   ['Página do Customer Asset (Summary/Details/Related)','ver','Captura oficial do Revenue Cloud: highlights com Account, Start Date, End Date, Status e Next Renewal; ações Amend / Renew / Cancel; cartões de quantidade, MRR, total e uso; coluna direita com Overview e Details (Pricing, Billing).'],
   ['Asset Contract Relationship','ver','Objeto oficial AssetContractRelationship (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate. A exibição da faixa no asset é inferida.'],
   ['Agentforce · barra e painel','ver','Trailhead "Agentforce on the Salesforce Mobile App" e captura do painel de conversa. As opções em botões são inferidas.'],
+  ['Relatórios e dashboards','proto','Relatórios com agrupamento, contagem e totais, e dashboard com quatro componentes, calculados sobre os registros da sessão. No Lightning, relatórios e dashboards são objetos configuráveis com tipos de relatório, filtros e permissões — aqui a estrutura é reproduzida, não o construtor.'],
   ['Documentos (proposta, cotação, contrato, pedido)','proto','Visualização do protótipo montada a partir dos registros; no app esses dados são consultados nas abas do registro.'],
   ['Roteiro flutuante e marcador de atendimento','proto','Chrome do protótipo, fora da interface Salesforce.'],
   ['Barra escura de cenário','proto','Chrome do protótipo: troca conta, usuário, localidade e endereço, e simula ações feitas no Lightning.'],
@@ -942,7 +967,7 @@ function telaHome(){
   const d=homeDados();
   const card=(t,corpo,acao)=>`<div class="rel"><div class="h"><div class="oi b">▦</div><b>${esc(t)}</b>${acao||''}</div>${corpo}</div>`;
   return topbar('Home', false) + `
-  ${fonte('proto','<b>Home</b> — os painéis refletem o estado da jornada nesta sessão. No Lightning, a Home traz relatórios e dashboards do Analytics; aqui eles são representados pelo progresso e pelos indicadores do próprio protótipo.')}
+  ${fonte('proto','<b>Home</b> — assistente, dashboard e relatórios rodam sobre os registros desta sessão. A estrutura segue a Home do Lightning; o que não existe aqui é o construtor de relatórios e as permissões por pasta.')}
   <div class="hgrid">
     <div>
       ${card('Assistente', d.tarefas.length
@@ -969,11 +994,8 @@ function telaHome(){
           <span style="flex:1;height:10px;border-radius:5px;background:${S.oStage===s?'var(--brand)':'#eef1f5'}"></span>
           <span style="font-size:12px;color:var(--mut);width:16px;text-align:right">${S.oStage===s?1:0}</span>
         </div>`).join('')}</div>`)}
-      ${card('Relatórios e dashboards', `
-        <div class="it" onclick="toast('Relatório: Pipeline por estágio — não implementado no protótipo.','warn')"><b>Pipeline por estágio</b><small>Relatório padrão do Sales Cloud</small></div>
-        <div class="it" onclick="toast('Relatório: Cotações por status — não implementado no protótipo.','warn')"><b>Cotações por status</b><small>Relatório padrão</small></div>
-        <div class="it" onclick="toast('Dashboard: Receita recorrente — depende de precificação.','warn')"><b>Receita recorrente (MRR)</b><small>Dashboard do Revenue Cloud</small></div>
-        ${fonte('nv','Relatórios e dashboards existem no Lightning, mas não foram reproduzidos aqui — os cartões acima são atalhos ilustrativos.')}`)}
+      ${card('Dashboard', `<div class="body" style="padding:10px 14px">${dashComponentes()[0].c}</div>`, `<a onclick="go('dash')">Ver dashboard</a>`)}
+      ${card('Relatórios', Object.entries(rptDefs()).map(([k,d])=>`<div class="it" onclick="S.rpt='${k}';go('rpt')"><b>${esc(d.nome)}</b><small>${esc(d.obj)} · ${d.linhas.length} registro(s)</small></div>`).join(''), `<a onclick="go('rpts')">Ver todos</a>`)}
     </div>
   </div>`;
 }
@@ -985,6 +1007,127 @@ function telaOpps(){
     ${linhas.length? linhas.map(l=>`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(l.n)}</b><small>${esc(l.c)} · ${esc(l.s)} · fechamento ${esc(l.d)} · ${esc(l.v)}</small></div>`).join('')
       : `<div class="note">Nenhuma oportunidade ainda. Converta o lead <b>${esc(LEADS[0].Company)}</b> para criar a primeira.</div>
          <div class="it" onclick="S.leadId='00Q1';S.tab='Details';go('lead')"><b>Ir para o lead</b><small>${esc(LEADS[0].Name)} — ${esc(LEADS[0].Company)}</small></div>`}
+  </div>`;
+}
+/* ============================ relatórios e dashboards ============================
+   Tudo abaixo é calculado a partir dos registros desta sessão: linhas da cotação,
+   pedido, plano de orquestração e assets. Não há dado inventado: onde a Revisão 1
+   não define preço, a coluna sai como Pendente. */
+const CORES = ['#0b5cab','#0b827c','#f4592f','#9050e9','#e4a201','#1b96ff','#c23934'];
+function fmtInt(n){ return String(n); }
+function rptDefs(){
+  const itens = lines.filter(l=>l.parent);
+  const comps = lines.filter(l=>!l.parent && l.parentUid);
+  return {
+    pipeline: { nome:'Pipeline por estágio', obj:'Opportunities', grupo:'Estágio',
+      cols:[['Oportunidade','n'],['Conta','c'],['Fechamento','d'],['Valor','v']],
+      linhas: S.conv ? [{g:S.oStage, n:oppName(), c:CTX.conta.nome, d:S.opp.close, v:S.opp.amount}] : [] },
+    cotacoes: { nome:'Cotações por status', obj:'Quotes', grupo:'Status',
+      cols:[['Cotação','n'],['Conta','c'],['Itens','q'],['Total','v']],
+      linhas: S.quote ? [{g:S.qStatus, n:S.quote.number, c:CTX.conta.nome, q:itens.length, v:'Pendente'}] : [] },
+    itens: { nome:'Itens de cotação por tecnologia', obj:'Quote Line Items', grupo:'Tecnologia',
+      cols:[['Produto','n'],['Velocidade','vel'],['Atendimento','cl'],['Endereço','e'],['Componentes','q']],
+      linhas: itens.map(l=>({ g:(l.attrs&&l.attrs['Tecnologia'])||'—', n:l.name, vel:(l.attrs&&l.attrs['Velocidade'])||'—',
+        cl:l.classif||'—', e:(l.attrs&&l.attrs['Endereço de instalação'])||'—', q:lines.filter(x=>x.parentUid===l.uid).length })) },
+    equip: { nome:'Equipamentos por modalidade', obj:'Components', grupo:'Modalidade',
+      cols:[['Equipamento','n'],['Item','p'],['Quantidade','q']],
+      linhas: comps.filter(c=>c.attrs&&c.attrs['Modalidade Equipamento']).map(c=>{
+        const pai=lines.find(x=>x.uid===c.parentUid)||{};
+        return { g:c.attrs['Modalidade Equipamento'], n:c.name, p:pai.name||'—', q:Number((c.attrs&&c.attrs['Quantidade'])||1) }; }) },
+    pedidos: { nome:'Pedidos e orquestração', obj:'Orders', grupo:'Status',
+      cols:[['Pedido','n'],['Produtos técnicos','t'],['Etapas concluídas','q'],['Plano','pl']],
+      linhas: S.order ? [{ g:S.order.status+(S.order.submitStatus?' · '+S.order.submitStatus:''), n:S.order.number,
+        t:(S.order.fls||[]).length, q:S.order.plan?S.order.plan.steps.filter(s=>s.status==='Completed').length+'/'+S.order.plan.steps.length:'—',
+        pl:S.order.plan?S.order.plan.status:'—' }] : [] },
+    assets: { nome:'Assets por contrato', obj:'Assets', grupo:'Contrato',
+      cols:[['Asset','n'],['Componentes','c'],['Vigência','v'],['ACR','a']],
+      linhas: S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id);
+        return { g:acr?('Contrato '+acr.contract):'Sem contrato', n:a.name, c:a.children.join(', '),
+                 v:acr?(acr.start+(acr.end?' a '+acr.end:'')):'—', a:acr?acr.name:'—' }; }) }
+  };
+}
+function rptAgrupar(def, campoGrupo){
+  const mapa = {};
+  def.linhas.forEach(l=>{ const k = campoGrupo==='(nenhum)' ? 'Todos' : (l.g||'—'); (mapa[k]=mapa[k]||[]).push(l); });
+  return mapa;
+}
+function barrasSvg(pares, titulo){
+  const max = Math.max(1, ...pares.map(p=>p[1]));
+  const W=560, lh=26, H=pares.length*lh+18;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+    ${pares.map(([n,v],i)=>{ const w=(W-200)*(v/max);
+      return `<g>
+        <text x="0" y="${i*lh+16}" font-size="11.5" fill="#3e3e3c">${esc(String(n).slice(0,26))}</text>
+        <rect x="170" y="${i*lh+5}" width="${Math.max(2,w)}" height="14" rx="3" fill="${CORES[i%CORES.length]}"/>
+        <text x="${175+Math.max(2,w)}" y="${i*lh+16}" font-size="11" fill="#706e6b">${esc(fmtInt(v))}</text></g>`; }).join('')}
+  </svg>`;
+}
+function rosquinhaSvg(pares){
+  const total = pares.reduce((s,p)=>s+p[1],0) || 1;
+  const R=52, r=32, cx=70, cy=70; let ang=-Math.PI/2;
+  const arco = (a0,a1,cor)=>{ const x0=cx+R*Math.cos(a0), y0=cy+R*Math.sin(a0), x1=cx+R*Math.cos(a1), y1=cy+R*Math.sin(a1);
+    const xi1=cx+r*Math.cos(a1), yi1=cy+r*Math.sin(a1), xi0=cx+r*Math.cos(a0), yi0=cy+r*Math.sin(a0);
+    const grande = (a1-a0) > Math.PI ? 1 : 0;
+    return `<path d="M${x0},${y0} A${R},${R} 0 ${grande} 1 ${x1},${y1} L${xi1},${yi1} A${r},${r} 0 ${grande} 0 ${xi0},${yi0} Z" fill="${cor}"/>`; };
+  const partes = pares.map(([n,v],i)=>{ const a0=ang, a1=ang+(v/total)*Math.PI*2; ang=a1; return arco(a0,a1,CORES[i%CORES.length]); }).join('');
+  return `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <svg viewBox="0 0 140 140" style="width:140px;height:140px">${partes}<text x="70" y="75" text-anchor="middle" font-size="18" font-weight="700" fill="#181818">${total}</text></svg>
+    <div class="leg">${pares.map(([n,v],i)=>`<span><i style="background:${CORES[i%CORES.length]}"></i>${esc(n)} · ${v}</span>`).join('')}</div></div>`;
+}
+function contar(lista, chave){ const m={}; lista.forEach(x=>{ const k=chave(x)||'—'; m[k]=(m[k]||0)+1; }); return Object.entries(m); }
+function dashComponentes(){
+  const itens = lines.filter(l=>l.parent);
+  const plano = S.order && S.order.plan ? S.order.plan : null;
+  return [
+    { t:'Pipeline por estágio', c: barrasSvg(OSTAGES.map(s=>[s, S.conv && S.oStage===s ? 1 : 0])), r:'pipeline' },
+    { t:'Itens por atendimento', c: itens.length ? rosquinhaSvg(contar(itens, l=>l.classif)) : '<div class="vazio">Sem itens na cotação.</div>', r:'itens' },
+    { t:'Etapas da orquestração', c: plano ? barrasSvg(contar(plano.steps, s=>s.status).sort()) : '<div class="vazio">Pedido ainda não submetido.</div>', r:'pedidos' },
+    { t:'Equipamentos por modalidade', c: (()=>{ const comps=lines.filter(l=>!l.parent&&l.parentUid&&l.attrs&&l.attrs['Modalidade Equipamento']);
+        return comps.length ? rosquinhaSvg(contar(comps, c=>c.attrs['Modalidade Equipamento'])) : '<div class="vazio">Sem equipamentos configurados.</div>'; })(), r:'equip' }
+  ];
+}
+function telaDash(){
+  return topbar('Dashboard', false) + `
+  ${fonte('proto','<b>Dashboard</b> — componentes calculados sobre os registros desta sessão. No Lightning, um dashboard é montado sobre relatórios salvos; aqui cada componente aponta para o relatório equivalente.')}
+  <div class="dashg">${dashComponentes().map(d=>`<div class="dash"><h4>${esc(d.t)} <a class="rptlink" style="float:right" onclick="S.rpt='${d.r}';go('rpt')">Ver relatório</a></h4><div class="body">${d.c}</div></div>`).join('')}</div>`;
+}
+function telaRpts(){
+  const defs=rptDefs();
+  return topbar('Reports', false) + `
+  ${fonte('proto','<b>Relatórios</b> — cada um roda sobre os objetos do protótipo, com agrupamento, contagem e totais, como um relatório tabular/sumarizado do Lightning.')}
+  <div class="rel"><div class="h"><div class="oi b">▤</div><b>Relatórios (${Object.keys(defs).length})</b><a onclick="go('dash')">Abrir dashboard</a></div>
+    ${Object.entries(defs).map(([k,d])=>`<div class="it" onclick="S.rpt='${k}';go('rpt')"><b>${esc(d.nome)}</b><small>${esc(d.obj)} · ${d.linhas.length} registro(s) · agrupado por ${esc(d.grupo)}</small></div>`).join('')}
+  </div>`;
+}
+function telaRpt(){
+  const defs=rptDefs(), k=S.rpt||'pipeline', d=defs[k];
+  const grupoAtual = S.rptGrupo || d.grupo;
+  const mapa = rptAgrupar(d, grupoAtual);
+  const chaves = Object.keys(mapa).sort();
+  const total = d.linhas.length;
+  const pares = chaves.map(g=>[g, mapa[g].length]);
+  return topbar('Report', true) + `
+  <div class="rpt">
+    <div class="rh2"><div class="oi b">▤</div><div><b>${esc(d.nome)}</b><div class="sub">${esc(d.obj)} · ${total} registro(s)</div></div>
+      <a class="rptlink" onclick="go('dash')">Dashboard</a></div>
+    <div class="filtros">
+      <span>Agrupar por</span>
+      <select onchange="S.rptGrupo=this.value;render()">
+        <option ${grupoAtual===d.grupo?'selected':''}>${esc(d.grupo)}</option>
+        <option ${grupoAtual==='(nenhum)'?'selected':''}>(nenhum)</option>
+      </select>
+      <span>Relatório</span>
+      <select onchange="S.rpt=this.value;S.rptGrupo=null;render()">
+        ${Object.entries(defs).map(([kk,dd])=>`<option value="${kk}" ${kk===k?'selected':''}>${esc(dd.nome)}</option>`).join('')}
+      </select>
+      <span style="margin-left:auto;color:var(--mut)">Linhas: ${total}</span>
+    </div>
+    ${total ? `<div style="padding:12px 14px;border-bottom:1px solid var(--bd)">${barrasSvg(pares)}</div>
+    <table><thead><tr>${d.cols.map(([c,f])=>`<th class="${['q','v'].includes(f)?'n':''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>
+      ${chaves.map(g=>`<tr class="grp"><td colspan="${d.cols.length}">${esc(g)} (${mapa[g].length})</td></tr>
+        ${mapa[g].map(l=>`<tr>${d.cols.map(([c,f])=>`<td class="${['q','v'].includes(f)?'n':''}">${esc(String(l[f]===undefined?'—':l[f]))}</td>`).join('')}</tr>`).join('')}`).join('')}
+      <tr class="tot"><td>Total</td>${d.cols.slice(1).map(([c,f])=>`<td class="${['q','v'].includes(f)?'n':''}">${f==='q'?fmtInt(d.linhas.reduce((s,l)=>s+(Number(l.q)||0),0)):(f==='v'?'Pendente':'')}</td>`).join('')}</tr>
+    </tbody></table>` : '<div class="vazio">Sem registros para este relatório ainda. Avance a jornada para preenchê-lo.</div>'}
   </div>`;
 }
 function telaProcedencia(){
@@ -1034,7 +1177,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -1251,6 +1394,10 @@ body,#app{font-size:12.5px}
 .line .kv{font-size:12px}
 .fnt{font-size:10.5px}
 .doc{font-size:12.5px}
+/* dashboard em grade de dois componentes */
+.dashg{grid-template-columns:1fr 1fr;gap:0 16px}
+.dash{margin:16px 0 0}
+.rpt{margin:14px 0 0}
 /* Home em duas colunas, como no Lightning */
 .hgrid{grid-template-columns:1fr 380px;gap:0 16px}
 .hgrid>div{min-width:0}
@@ -1925,7 +2072,7 @@ function telaList(kind){
 function telaMenu(){ return topbar('Menu', false) + `<div class="menu-list">
   ${[['⋮⋮','#747474','App Launcher',"toast('App Launcher: Sales, Service, Revenue Management…')"],['≡','#747474','All Items',"toast('All Items: lista completa de objetos.')"],['🔎','#0b5cab','Procedência das telas',"go('procedencia')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}
   <div class="sec">Revenue Management <em style="float:right;color:var(--brand);font-style:normal">✎ Edit</em></div>
-  ${[['⌂','#0b5cab','Home',"go('home')"],['👑','#f4592f','Opportunities',"go('opps')"],['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
+  ${[['⌂','#0b5cab','Home',"go('home')"],['👑','#f4592f','Opportunities',"go('opps')"],['▤','#0b827c','Reports',"go('rpts')"],['◫','#9050e9','Dashboard',"go('dash')"],['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
 function telaChatter(){ return topbar('Chatter', false) + feedHtml(); }
 function telaSearch(){ const q=(S.q2||'').toLowerCase(); const hits=[]; if(S.quote&&(!q||S.quote.name.toLowerCase().includes(q))) hits.push(['🏷','g',S.quote.name,'Quote',"go('quote')"]); if(!q||oppName().toLowerCase().includes(q)) hits.push(['👑','o',oppName(),'Opportunity',"go('opp')"]); if(!q||CTX.conta.nome.toLowerCase().includes(q)) hits.push(['🏢','p',CTX.conta.nome,'Account',"go('accounts')"]); if(S.order&&(!q||'order'.includes(q))) hits.push(['📦','y',S.order.number,'Order',"go('order')"]);
   return topbar('Search', true) + `<div class="srch">🔍 <input autofocus placeholder="Search Salesforce" value="${esc(S.q2||'')}" oninput="S.q2=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div><div class="list">${hits.map(([i,c,t,s,on])=>`<div class="it" onclick="${on}"><div class="oi ${c}">${i}</div><div><b>${esc(t)}</b><small>${s}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">No results.</div>'}</div>`; }
@@ -2332,6 +2479,15 @@ function guia(){
   add(S.tela==='home','A Home mostra o que está pendente na jornada.',
       ['O <b>Assistente</b> lista o próximo passo de cada registro.','O progresso mostra até onde a jornada chegou.','Toque num item para abrir o registro.'],
       (function(){ const t=homeDados().tarefas[0]; return t?{l:'Abrir o próximo passo',f:()=>{ eval(t.on); }}:null; })());
+  add(S.tela==='rpts','Abra um relatório para ver os dados agrupados.',
+      ['Cada relatório roda sobre os registros desta sessão.','Dentro dele dá para trocar o agrupamento.','O dashboard reúne os mesmos números em gráficos.'],
+      {l:'Abrir dashboard',f:()=>go('dash')});
+  add(S.tela==='rpt','Troque o agrupamento ou o relatório nos filtros.',
+      ['O gráfico acompanha o agrupamento escolhido.','As linhas do grupo aparecem abaixo de cada cabeçalho.','A linha de total soma as quantidades; preço fica pendente.'],
+      {l:'Ver todos os relatórios',f:()=>go('rpts')});
+  add(S.tela==='dash','Cada componente aponta para o relatório equivalente.',
+      ['Os números vêm dos registros desta sessão.','“Ver relatório” abre o detalhe com as linhas.'],
+      {l:'Ver relatórios',f:()=>go('rpts')});
   add(S.tela==='opps','Abra a oportunidade na lista.',
       ['A lista traz conta, estágio, data de fechamento e valor.','Clique na linha para abrir o registro.'],
       S.conv?{l:'Abrir a oportunidade',f:()=>{S.tab='Details';go('opp');}}:{l:'Ir para o lead',f:()=>{S.leadId='00Q1';S.tab='Details';go('lead');}});
@@ -2437,7 +2593,7 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={home:telaHome,opps:telaOpps,convert:telaConvert,asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={home:telaHome,opps:telaOpps,rpts:telaRpts,rpt:telaRpt,dash:telaDash,convert:telaConvert,asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,'asset-more':sheetAssetMore};
@@ -2445,7 +2601,7 @@ function render(){
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset','convert','home','opps'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset','convert','home','opps','rpts','rpt','dash'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia(); atdRender();
 }
@@ -2463,8 +2619,8 @@ const LXTABS = [['Home','home'],['Accounts','accounts'],['Opportunities','opp'],
 function lxTabs(){
   const atual = {opp:'Opportunities',quote:'Quotes',browse:'Quotes',config:'Quotes',local:'Quotes',flow:'Quotes',
     order:'Orders',plan:'Orders',contract:'Contracts',accounts:'Accounts',accountsList:'Accounts',lead:'Leads',leads:'Leads',
-    contacts:'Contacts',quotes:'Quotes',chatter:'Chatter',procedencia:'Procedência',menu:'Home',search:'Home',home:'Home',opps:'Opportunities',convert:'Leads',asset:'Assets'}[S.tela]||'Home';
-  const itens = [['Home','home'],['Accounts','accountsList'],['Contacts','contacts'],['Leads','leads'],['Opportunities','opps'],['Quotes','quotes'],['Orders','ordersTab'],['Contracts','contractsTab'],['Assets','assetsTab'],['Procedência','procedencia']];
+    contacts:'Contacts',quotes:'Quotes',chatter:'Chatter',procedencia:'Procedência',menu:'Home',search:'Home',home:'Home',opps:'Opportunities',convert:'Leads',asset:'Assets',rpts:'Reports',rpt:'Reports',dash:'Dashboard'}[S.tela]||'Home';
+  const itens = [['Home','home'],['Accounts','accountsList'],['Contacts','contacts'],['Leads','leads'],['Opportunities','opps'],['Quotes','quotes'],['Orders','ordersTab'],['Contracts','contractsTab'],['Assets','assetsTab'],['Reports','rpts'],['Dashboard','dash'],['Procedência','procedencia']];
   $('#lxtabs').innerHTML = itens.map(([n,t])=>`<a class="${n===atual?'on':''}" onclick="lxIr('${t}')">${n}</a>`).join('');
 }
 function lxIr(t){
