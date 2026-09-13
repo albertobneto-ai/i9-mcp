@@ -386,7 +386,10 @@ app.use('/explorer', express.static(explorerDir));
 const controlDir = path.join(__dirname, '..', 'client', 'control');
 app.use('/control', express.static(controlDir));
 
-  app.use(express.static(clientDist));
+  // URLs amigáveis do protótipo navegável
+app.get('/poc', (req, res) => res.sendFile(path.join(clientDist, 'poc.html')));
+app.get('/poc/mobile', (req, res) => res.sendFile(path.join(clientDist, 'poc-mobile.html')));
+app.use(express.static(clientDist));
 // Bug Tracker page
 app.get('/bugs', (req, res) => {
   res.sendFile(path.join(clientDist, 'bugs.html'), err => {
