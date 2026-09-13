@@ -777,7 +777,7 @@ function layoutHtml(secs, vals, nota){
     return `<div class="fr"><span>${esc(c.label)}${c.req?' <b style="color:var(--err)">*</b>':''}</span><span>${c.type==='reference'&&txt?`<a>${esc(txt)}</a>`:esc(txt)}${c.ro?' <small style="color:var(--mut)">(somente leitura)</small>':''}</span></div>`; }).join('')}</div>`).join('');
 }
 let S;
-function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
+function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Em qualificação',
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
   form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
@@ -805,7 +805,7 @@ function bnav(){ $('#bnav').innerHTML = [['Chatter','〰','chatter'],['Accounts'
 function fields(rows){ return `<div class="fl">${rows.map(([k,v])=>`<div class="fr"><span>${k}</span><span>${v}</span></div>`).join('')}</div>`; }
 
 /* ---------- Oportunidade ---------- */
-const oppName = () => 'VPN Corporativa — '+CTX.conta.nome;
+const oppName = () => S.oppNome || ('VPN Corporativa — '+CTX.conta.nome);
 function telaOpp(){
   const quotes = S.quote ? [S.quote] : [];
   return topbar('Opportunity', S.hist.length>0) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'☑',c:'g',n:'New Task',on:"go('task')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
@@ -1425,15 +1425,59 @@ function telaAccount(){
 function sheetMoreAcc(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit account: campos padrão.','warn');render()")}${row('📍','t','Check In',"S.sheet=null;toast('Check-in registrado (Salesforce Maps).');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function telaLead(){
   const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
-  return topbar('Lead', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'✓',c:'g',n:'Convert',on:"toast('Convert: cria conta, contato e oportunidade.','warn')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-lead';render()"}]) + `
+  return topbar('Lead', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'✓',c:'g',n:'Convert',on:"go('convert')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-lead';render()"}]) + `
   <div class="rh"><div class="oi t">★</div><div><small>Lead</small><b>${esc(l.Name)} — ${esc(l.Company)}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
-   : pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], l.Status==='Novo'?'Novo':'Em qualificação', null, 'Status', 'lead')
+  ${S.tab==='Related' ? `${S.conv?`<div class="rel"><div class="h"><div class="oi o">✓</div><b>Registros da conversão</b></div>
+       <div class="it" onclick="S.tab='Details';go('accounts')"><b>${esc(S.conv.conta)}</b><small>Account · criada em ${esc(S.conv.quando)}</small></div>
+       <div class="it"><b>${esc(S.conv.contato)}</b><small>Contact · Decision Maker</small></div>
+       ${S.conv.opp?`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(S.conv.opp)}</b><small>Opportunity · ${esc(S.oStage)}</small></div>`:''}</div>`:''}
+     <div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
+   : pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], S.leadStatus, null, 'Status', 'lead')
      + fonte('ver','<b>Layout Lead · Record Type Nacional</b> lido da org HOMOL em consulta somente leitura (7 seções, 54 campos). Valores exibidos são fictícios.')
      + layoutHtml(LAYOUTS.lead, l, '')}`;
 }
 function leadSel(){ } function leadMark(){ toast('Status do lead: alteração fora do escopo do protótipo.','warn'); }
+function telaConvert(){
+  const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
+  const f = S.form.conv || (S.form.conv = {
+    conta: CTX_DATA.contas.find(c=>c.nome===l.Company) ? l.Company : l.Company,
+    novaConta: !CTX_DATA.contas.some(c=>c.nome===l.Company),
+    contato: l.Name, opp: l.Company+' — '+(l['Produto_Interesse__c']||'VPN Corporativa'),
+    criarOpp: true, status: 'Convertido'
+  });
+  const set=(k,v)=>`S.form.conv.${k}=${v};render()`;
+  return topbar('Convert Lead', true) + `
+  <div class="form-h"><a onclick="back()">Cancel</a><b>Convert Lead</b><a class="brand" onclick="convertLead()">Convert</a></div>
+  ${fonte('ver','Conversão de lead do Sales Cloud: gera conta, contato e, opcionalmente, oportunidade; o lead fica somente leitura com o status convertido.')}
+  <div class="ff"><label>Account</label>
+    <select onchange="${set('conta','this.value')}">
+      ${CTX_DATA.contas.map(c=>`<option ${f.conta===c.nome?'selected':''}>${esc(c.nome)}</option>`).join('')}
+      <option value="${esc(l.Company)}" ${f.conta===l.Company?'selected':''}>${esc(l.Company)} — criar nova</option>
+    </select></div>
+  <div class="ff"><label>Contact</label><input value="${esc(f.contato)}" onchange="${set('contato','this.value')}"></div>
+  <div class="ff"><label>Opportunity</label>
+    <input value="${esc(f.opp)}" ${f.criarOpp?'':'disabled'} onchange="${set('opp','this.value')}"></div>
+  <div class="ff"><label>Criar oportunidade</label>
+    <span><input type="checkbox" ${f.criarOpp?'checked':''} onchange="${set('criarOpp','this.checked')}"> Criar uma oportunidade na conversão</span></div>
+  <div class="ff"><label>Converted Status</label>
+    <select onchange="${set('status','this.value')}">${['Convertido','Qualificado — sem oportunidade'].map(v=>`<option ${f.status===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>
+  <div class="ff"><label>Record Owner</label><span>${esc(CTX.usuario.nome)}</span></div>
+  <div class="foot"><button class="btn" onclick="back()">Cancel</button><button class="btn brand" onclick="convertLead()">Convert</button></div>`;
+}
+function convertLead(){
+  const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
+  const f = S.form.conv || {};
+  const conta = CTX_DATA.contas.find(c=>c.nome===f.conta);
+  if(conta) CTX.conta = conta;
+  S.conv = { lead:l.id, conta:f.conta, contato:f.contato, opp:f.criarOpp?f.opp:null, quando:new Date().toLocaleString('pt-BR'), status:f.status||'Convertido' };
+  S.leadStatus = 'Convertido';
+  S.contacts = [{name:f.contato, role:'Decision Maker', email:(l.Email||'contato@cliente.com.br')}];
+  if(f.criarOpp){ S.oppNome = f.opp; S.oStage = 'Qualification'; S.tab='Details'; S.hist=['lead']; go('opp',true);
+    toast('Lead convertido: conta, contato e oportunidade criados.');
+    agSay(`Converti o lead. Conta ${f.conta}, contato ${f.contato} e a oportunidade "${f.opp}" em Qualification. O próximo passo é avançar o estágio e criar a cotação.`, agAtuais(), 'Conversão de lead (Sales Cloud)');
+  } else { S.tab='Details'; go('accounts',true); toast('Lead convertido sem oportunidade.'); }
+}
 function sheetMoreLead(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit lead: campos do layout Nacional.','warn');render()")}${row('✓','g','Convert',"S.sheet=null;toast('Convert: cria conta, contato e oportunidade.','warn');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function telaList(kind){
   const items = kind==='contacts' ? S.contacts.map(c=>({t:c.name,s:CTX.conta.nome+' · '+(c.role||''),on:"toast('Contact record: campos padrão.','warn')"}))
@@ -1538,7 +1582,15 @@ function agIntent(t){
 }
 function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
 /* ---- passos, na ordem do UC-VPN-001 ---- */
+function agLead(){
+  const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
+  agSay(`Estou no lead ${l.Name} — ${l.Company} (${S.leadStatus}). Posso conduzir a partir daqui: qualificação, conversão em conta, contato e oportunidade, e depois a cotação.`,
+    [{l:'Converter o lead',f:()=>{agClose();go('convert');agSay('Abri a tela de conversão. Confira conta, contato e oportunidade e toque em Convert.',agAtuais());},pri:true},
+     {l:'Resumir o lead',f:()=>agSay(`${l.Name}, ${l['Title']||'contato'} na ${l.Company}. Segmento ${l['Segmento__c']||'—'}, ticket ${l['Ticket_Potencial__c']||'—'}, produto de interesse ${l['Produto_Interesse__c']||'—'}, origem ${l.LeadSource||'—'}, rating ${l.Rating||'—'}.`, agAtuais(),'Layout Lead · Record Type Nacional (HOMOL)')},
+     {l:'O que a conversão cria?',f:()=>agSay('A conversão cria a conta, o contato e, se você marcar, a oportunidade. O lead fica somente leitura com o status convertido, e os registros ficam vinculados a ele.', agAtuais(),'Conversão de lead (Sales Cloud)')}]);
+}
 function agStart(){
+  if(S.tela==='lead' && !S.conv){ agLead(); return; }
   if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Eu conduzo a jornada passo a passo: em cada etapa explico o que está em jogo e você escolhe.`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
   else agNext();
 }
@@ -1842,6 +1894,18 @@ function atdDetalhe(){ const a=atdAtual(); if(!a) return; toast(`Atendimento ${a
 function guia(){
   const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk);
   const C=[]; const add=(cond,t,passos,acao)=>{ if(cond && !C.length) C.push({t,passos,acao}); };
+  add(S.tela==='lead'&&!S.conv&&S.leadStatus!=='Em qualificação','Qualifique o lead antes de converter.',
+      ['No path, toque em <b>Em qualificação</b>.','Depois em <b>Mark Status as Complete</b>.','Só então a conversão faz sentido no processo.'],
+      {l:'Marcar Em qualificação',f:()=>{S.leadStatus='Em qualificação';render();toast('Status changed successfully.');}});
+  add(S.tela==='lead'&&!S.conv,'Converta o lead em conta, contato e oportunidade.',
+      ['Toque em <b>Convert</b> na barra de ações.','Confira conta, contato e o nome da oportunidade.','Toque em <b>Convert</b> para concluir.'],
+      {l:'Convert',f:()=>go('convert')});
+  add(S.tela==='convert','Confira os registros que a conversão vai criar.',
+      ['A conta pode ser existente ou nova.','O contato vem dos dados do lead.','Desmarque a oportunidade se ainda não houver negócio.'],
+      {l:'Converter',f:convertLead});
+  add(S.tela==='opp'&&S.conv&&!S.quote&&S.oStage!=='Proposal/Price Quote','Avance o estágio da oportunidade.',
+      ['No path, toque no próximo estágio.','Depois em <b>Mark as Current Stage</b>.','Em Proposal/Price Quote a cotação entra em cena.'],
+      {l:'Avançar estágio',f:()=>{ const i=OSTAGES.indexOf(S.oStage); S.oStage=OSTAGES[Math.min(i+1,OSTAGES.length-1)]; S.oSel=null; render(); toast('Stage changed successfully.'); }});
   add(S.tela==='opp'&&!S.quote&&S.tab!=='Related','Crie a cotação a partir desta oportunidade.',
       ['Toque na aba <b>Related</b>, aqui no registro da oportunidade.','Na lista <b>Quotes</b>, toque em <b>New</b>.','Também dá para usar <b>More › New Quote</b>.'],
       {l:'Abrir Related',f:()=>{S.tab='Related';render();}});
@@ -1929,7 +1993,7 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={convert:telaConvert,asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,'asset-more':sheetAssetMore};
@@ -1937,7 +2001,7 @@ function render(){
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset','convert'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia(); atdRender();
 }
@@ -2069,6 +2133,15 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
+    ok('lead traz a ação Convert', [...document.querySelectorAll('.act')].some(a=>a.textContent.includes('Convert')));
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Convert')));
+    ok('tela de conversão com conta, contato, oportunidade e status', S.tela==='convert' && ['Account','Contact','Opportunity','Converted Status'].every(k=>$('#view').textContent.includes(k)));
+    convertLead();
+    ok('conversão cria os registros e leva à oportunidade em Qualification', S.tela==='opp' && !!S.conv && S.oStage==='Qualification' && S.contacts.length===1 && S.leadStatus==='Convertido');
+    ok('nome da oportunidade vem da conversão', oppName()===S.conv.opp);
+    S.tab='Related'; go('lead',true);
+    ok('lead convertido mostra os registros criados', $('#view').textContent.includes('Registros da conversão'));
+    S.tab='Details'; go('opp',true);
     ok('no Lead o path vem logo abaixo do cabeçalho, antes dos campos', (()=>{ const pw=$('.pathw'), fl=$('.fl'); return !!pw && !!fl && pw.getBoundingClientRect().top < fl.getBoundingClientRect().top; })());
     (function(){ const antes=(tela)=>{ S.tab='Details'; go(tela); const els=[...document.querySelectorAll('#view > *')];
         const pw=els.findIndex(e=>e.classList.contains('pathw')), fl=els.findIndex(e=>e.classList.contains('fl')||e.classList.contains('flds'));
