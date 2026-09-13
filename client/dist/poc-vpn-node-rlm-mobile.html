@@ -65,10 +65,18 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 #agp{position:fixed;inset:0;background:#fff;z-index:70;display:none;flex-direction:column;max-width:430px;margin:0 auto}
 #agp.show{display:flex}
 .agp-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
-.agp-h b{font-size:17px;flex:1;font-weight:400}
+.agp-h b{font-size:18px;flex:1;font-weight:600}
 .agp-h .ic{width:26px;height:26px;border-radius:50%;background:#ecebea;color:#706e6b;display:grid;place-items:center;font-size:12px;border:0}
 .agp-h .ic.av{background:#032d60;color:#fff;overflow:hidden}.agp-h .ic.av img{width:100%;height:100%;object-fit:cover;display:none}.agp-h .ic.av.has img{display:block}.agp-h .ic.av.has span{display:none}
 .agp-b{flex:1;overflow:auto;background:linear-gradient(180deg,#f7f5fb 0%,#f1f0fa 40%,#ffffff 100%);padding:0 0 12px}
+.welcome{margin:14px;background:#f5f7fb;border:1px solid #e3e8f0;border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.welcome .bot{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid #d8e0ea;display:grid;place-items:center;flex:none;overflow:hidden}
+.welcome .bot img{width:100%;height:100%;object-fit:cover;display:none}.welcome .bot.has img{display:block}.welcome .bot.has svg{display:none}
+.welcome p{margin:0;font-size:16px;line-height:1.5}
+.sugg{display:flex;flex-direction:column;gap:8px;margin:2px 14px 10px}
+.sugg button{display:flex;align-items:center;gap:10px;border:1px solid #d6dbe3;background:#fff;border-radius:8px;padding:12px 14px;font-size:15px;text-align:left;color:var(--tx)}
+.sugg button.pri{border-color:var(--brand)}
+.sugg button i{color:var(--brand);font-style:normal;font-size:15px;flex:none}
 .agp-hero{padding:34px 24px 10px;text-align:center}
 .agp-hero .orb{width:210px;height:210px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 30% 30%,#e9e4f8,#b9b3ea 60%,#8f8fe0);display:grid;place-items:center;overflow:hidden;position:relative}
 .agp-hero .orb img{width:100%;height:100%;object-fit:cover;display:none}.agp-hero .orb.has img{display:block}.agp-hero .orb.has .ph{display:none}
@@ -86,7 +94,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .agp-f{border-top:1px solid var(--bd);padding:10px 14px 14px;background:#fff}
 .agp-f .box{border:1px solid var(--bd2);border-radius:8px;min-height:64px;padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between}
 .agp-f textarea{border:0;outline:0;resize:none;font-size:15px;min-height:26px;width:100%}
-.agp-f .send{align-self:flex-end;background:0;border:0;color:var(--brand);font-size:20px;padding:0}
+.agp-f .send{align-self:flex-end;background:0;border:0;color:var(--brand);font-size:22px;padding:0;transform:rotate(-20deg)}
 .agp-f .send.off{color:#c9c9c9}
 .bnav{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#fff;border-top:1px solid var(--bd);display:flex;height:64px;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
 .bnav button{flex:1;background:0;border:0;color:var(--tx2);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
@@ -277,9 +285,9 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 </div>
 <div id="overlay"></div>
 <div class="agent" id="agent"><div onclick="agOpen()"><span class="afi" id="afi"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><span>Ask Agentforce</span><span class="mic" onclick="event.stopPropagation();agOpen();toast('Microfone: use o texto neste protótipo.')">🎤</span></div></div>
-<div id="agp"><div class="agp-h"><button class="ic" onclick="agClose()">‹</button><b>Algar Sales Agent</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato e pedido.')">ⓘ</button><span class="ic av" id="agav"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><button class="ic" onclick="agClose()">✕</button></div>
+<div id="agp"><div class="agp-h"><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><b>Agentforce</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato, pedido e acompanha a orquestração.')">ⓘ</button><button class="ic" onclick="agClose()">✕</button></div>
   <div class="agp-b" id="agp-b"></div>
-  <div class="agp-f"><div class="box"><textarea id="agp-in" placeholder="Describe your task or ask a question..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();agSend()}" oninput="document.getElementById('agp-send').className='send'+(this.value.trim()?'':' off')"></textarea><button class="send off" id="agp-send" onclick="agSend()">➤</button></div></div></div>
+  <div class="agp-f"><div class="box"><textarea id="agp-in" placeholder="Describe your task or ask a question..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();agSend()}" oninput="document.getElementById('agp-send').className='send'+(this.value.trim()?'':' off')"></textarea><button class="send off" id="agp-send" onclick="agSend()" aria-label="Send">✈</button></div></div></div>
 <div class="bnav" id="bnav"></div>
 <pre id="tst"></pre>
 <script>
@@ -485,7 +493,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'', close:'2026-10-30', prob:'50%' }, feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -754,6 +762,93 @@ function saveExit(){ const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(
   const line=addLine(p,cfgProduct,R); line.cfgState={a:cfgProduct.a,c:cfgProduct.c,toque:cfgProduct.toque,autoSig:cfgProduct.autoSig};
   cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
 
+/* ================= Dynamic Revenue Orchestrator ================= */
+/* Verificado (Trailhead DRO): Activate → Submit Order → decomposição em produtos técnicos (record type Technical; escopo
+   Bundle / Order Line Item / Account; Is Assetizable) → aba Decomposition Details → View Orchestration Plan → raias por
+   produto técnico, etapas Manual Task / Callout / Auto Task / Milestone → Managed Assets + Fulfillment Assets.
+   Inferido (projeto): quais produtos técnicos, etapas e sistemas do VPN Node. */
+const TECH = {
+  ACESSO: { code:'TECH-ACESSO', name:'Circuito de Acesso', scope:'Order Line Item', sistema:'OSS / Provisionamento Algar',
+    steps:[['Designação de rede e porta','Auto Task'],['Ordem de serviço de construção/instalação','Callout'],['Configuração de porta e VLAN','Callout'],['Testes de aceitação (TAC)','Manual Task'],['Ativação lógica do circuito','Callout'],['Circuito ativo','Milestone']] },
+  CPE: { code:'TECH-CPE', name:'Equipamento de Acesso (CPE)', scope:'Order Line Item', sistema:'Estoque / Field Service',
+    steps:[['Reserva no estoque','Callout'],['Expedição e instalação no cliente','Manual Task'],['Configuração do equipamento','Callout']] },
+  NETWORK: { code:'TECH-VPN-NET', name:'VPN Network', scope:'Account', sistema:'Core VPN (MPLS)',
+    steps:[['Criar/validar a network do cliente','Callout'],['Associar o node à network','Callout'],['Rede privativa configurada','Milestone']] },
+  MIR: { code:'TECH-MIR', name:'Monitoramento (Zabbix)', scope:'Order Line Item', sistema:'Zabbix',
+    steps:[['Criar host com o template do plano','Callout'],['Validar coleta','Auto Task'],['Monitoramento ativo','Milestone']] },
+  UPG: { code:'TECH-UPG', name:'Upgrade Temporário', scope:'Order Line Item', sistema:'Provisionamento',
+    steps:[['Agendar perfil de velocidade temporário','Auto Task'],['Programar reversão automática','Auto Task']] },
+  FAT: { code:'TECH-FAT', name:'Faturamento', scope:'Bundle', sistema:'Billing Algar',
+    steps:[['Criar conta de faturamento na entidade faturadora','Callout'],['Gerar fatura','Auto Task'],['Fatura emitida','Milestone']] }
+};
+const DECOMP_RULES = [
+  { src:'VPN Node', tech:['ACESSO','NETWORK','FAT'], cond:'sempre' },
+  { src:'Link de Internet Dedicado', tech:['ACESSO','FAT'], cond:'sempre' },
+  { src:'Banda Larga Empresarial', tech:['ACESSO','FAT'], cond:'sempre' },
+  { src:'Equipamento de Acesso', tech:['CPE'], cond:'um por equipamento' },
+  { src:'Upgrade Temporário de Velocidade', tech:['UPG'], cond:'se SVA contratado' },
+  { src:'Monitoramento Inteligente de Rede', tech:['MIR'], cond:'se SVA contratado' }
+];
+function decompor(order){
+  const out=[]; let seq=0;
+  const add=(k,src,det)=>{ const t=TECH[k]; const key=t.scope==='Account'?k:t.scope==='Bundle'?k+'|'+src.uid:k+'|'+src.uid; if(out.some(x=>x.key===key)) return; seq++; out.push({ id:'FL-'+seq, key, tech:k, name:t.name+(det?' · '+det:''), scope:t.scope, sistema:t.sistema, source:src.name, srcUid:src.uid }); };
+  order.lines.filter(l=>l.parent).forEach(l=>{
+    const rule=DECOMP_RULES.find(r=>r.src===l.name); if(rule) rule.tech.forEach(k=>add(k,l,k==='ACESSO'?(l.attrs&&l.attrs['Tecnologia']||''):''));
+    order.lines.filter(x=>x.parentUid===l.uid).forEach(k=>{
+      if(EQUIP_TIPOS.includes(k.name)) add('CPE',k,k.name);
+      else { const r2=DECOMP_RULES.find(r=>r.src===k.name); if(r2) r2.tech.forEach(t=>add(t,k,k.attrs&&(k.attrs['Plano MIR']||k.attrs['Velocidade Temporária'])||'')); }
+    });
+  });
+  return out;
+}
+function montarPlano(fls){
+  const steps=[]; let n=0;
+  fls.forEach(fl=>{ let prev=null; TECH[fl.tech].steps.forEach(([nm,tp])=>{ n++; const s={ id:'S'+n, lane:fl.id, laneName:fl.name, name:nm, type:tp, status:'Not Started', deps:prev?[prev]:[] }; steps.push(s); prev=s.id; }); });
+  // dependências entre raias (inferidas): ativação lógica do circuito depende do CPE configurado; fatura depende do circuito ativo; associar node depende do circuito ativo
+  const find=(tech,nm)=>steps.filter(s=>s.laneName.startsWith(TECH[tech].name)&&s.name===nm);
+  find('ACESSO','Ativação lógica do circuito').forEach(s=>{ find('CPE','Configuração do equipamento').forEach(c=>s.deps.push(c.id)); });
+  find('NETWORK','Associar o node à network').forEach(s=>{ find('ACESSO','Circuito ativo').forEach(c=>s.deps.push(c.id)); });
+  find('FAT','Gerar fatura').forEach(s=>{ find('ACESSO','Circuito ativo').forEach(c=>s.deps.push(c.id)); });
+  find('MIR','Criar host com o template do plano').forEach(s=>{ find('ACESSO','Circuito ativo').forEach(c=>s.deps.push(c.id)); });
+  return { status:'In Progress', steps, log:[] };
+}
+function planoTick(){
+  const o=S.order; if(!o||!o.plan||o.plan.status==='Completed') return;
+  const P=o.plan; const done=id=>P.steps.find(s=>s.id===id).status==='Completed';
+  let changed=false;
+  P.steps.forEach(s=>{ if(s.status!=='Not Started'&&s.status!=='In Progress') return;
+    if(!s.deps.every(done)) return;
+    if(s.type==='Manual Task'){ if(s.status!=='In Progress'){ s.status='In Progress'; P.log.push(`${s.laneName}: tarefa manual "${s.name}" aguardando conclusão`); changed=true; } return; }
+    if(s.status==='Not Started'){ s.status='In Progress'; changed=true; }
+    else { s.status='Completed'; P.log.push(`${s.laneName}: ${s.name} — ${s.type} concluída`); changed=true; }
+  });
+  if(P.steps.every(s=>s.status==='Completed')){ P.status='Completed'; P.log.push('Plano concluído: assets comerciais e de fulfillment criados'); criarAssets(); }
+  if(changed) render();
+  if(P.status!=='Completed' && P.steps.some(s=>s.status==='In Progress'&&s.type!=='Manual Task')) setTimeout(planoTick,900);
+}
+function completarManual(id){ const s=S.order.plan.steps.find(x=>x.id===id); if(!s||s.type!=='Manual Task'||s.status!=='In Progress') return; s.status='Completed'; S.order.plan.log.push(`${s.laneName}: ${s.name} — concluída manualmente`); toast('Task completed.'); render(); setTimeout(planoTick,300); }
+function pendentesManuais(){ const P=S.order&&S.order.plan; return P?P.steps.filter(s=>s.type==='Manual Task'&&s.status==='In Progress'):[]; }
+function criarAssets(){
+  const o=S.order;
+  S.assets=o.lines.filter(l=>l.parent).map(l=>({name:l.name,start:new Date().toLocaleString('pt-BR'),children:o.lines.filter(x=>x.parentUid===l.uid).map(x=>x.name),attrs:l.attrs}));
+  S.fassets=o.fls.map(f=>({name:f.name,qty:1,product:TECH[f.tech].name,status:'Active'}));
+}
+function ativarPedido(){ const o=S.order; if(o.status==='Activated') return; o.status='Activated'; o.sel=null; o.activatedAt=new Date().toLocaleString('pt-BR'); toast('Order activated.'); render(); }
+function submeterPedido(){ const o=S.order; if(o.status!=='Activated'){ toast('Activate the order first.','warn'); return; } if(o.submitted) return;
+  o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); S.modal='submit'; render(); setTimeout(planoTick,700); }
+function modalSubmit(){ const o=S.order; return `<div class="modal-bg"><div class="modal"><h3>Submit Order</h3><div class="mb"><div class="mrow Info" style="border:0"><i>✓</i><span>Submit Status: Submitted. Order ${o.number} was submitted for fulfillment — ${o.fls.length} technical product(s) decomposed, orchestration plan started.</span></div></div>
+  <div class="mf"><button class="btn brand" onclick="S.modal=null;S.tab='Decomp';render()">Finish</button></div></div></div>`; }
+function telaPlano(){
+  const o=S.order, P=o.plan; const lanes=[...new Set(P.steps.map(s=>s.lane))];
+  const pill=st=>`<span class="badge ${st==='Completed'?'ok':st==='In Progress'?'warn':''}">${st}</span>`;
+  return `<div class="form-h"><a onclick="back()">‹ Order</a><b>Orchestration Plan</b><a></a></div>
+  <div class="nv-tag">Fulfillment Plan (DRO): ${NV}. Produtos técnicos e etapas do VPN Node são proposta do projeto.</div>
+  <div class="fl"><div class="fr"><span>Source</span><span><a onclick="back()">${o.number}</a></span></div><div class="fr"><span>Priority</span><span>Default</span></div><div class="fr"><span>Plan Status</span><span>${pill(P.status)}</span></div></div>
+  ${lanes.map(l=>{ const fl=o.fls.find(f=>f.id===l); const ss=P.steps.filter(s=>s.lane===l);
+    return `<div class="rel"><div class="h"><div class="oi p">▦</div><b>${esc(fl.name)}</b><small style="color:var(--mut)">${esc(fl.scope)} · ${esc(fl.sistema)}</small></div>
+      ${ss.map(s=>`<div class="it"><div style="display:flex;align-items:center;gap:8px"><b style="color:var(--tx);flex:1">${esc(s.name)}</b>${pill(s.status)}${s.type==='Manual Task'&&s.status==='In Progress'?`<button class="btn sm brand" onclick="completarManual('${s.id}')">Complete</button>`:''}</div><small>${esc(s.type)}${s.deps.length?' · depends on '+s.deps.map(d=>esc(P.steps.find(x=>x.id===d).name)).join(', '):''}</small></div>`).join('')}</div>`; }).join('')}
+  <div class="rel"><div class="h"><div class="oi m">≡</div><b>Activity log</b></div>${P.log.slice(-8).reverse().map(x=>`<div class="note">${esc(x)}</div>`).join('')||'<div class="note">—</div>'}</div>`;
+}
 /* ---------- Passo 1 · endereço de instalação do node (Service Account) → Passo 2 · viabilidade automática ---------- */
 function telaLocal(){
   const p=findProd(S.pend.pid); const e=endFull();
@@ -828,22 +923,27 @@ function modalOrder(){ return `<div class="modal-bg"><div class="modal"><h3>Crea
   <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="createOrder()">Finish</button></div></div></div>`; }
 function createOrder(){ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.modal=null; S.sheet=null; toast('Order '+S.order.number+' was created.'); S.tab='Details'; go('order'); }
 function orderSel(s){ S.order.sel=s; render(); }
-function orderMark(){ const o=S.order; if(o.status==='Activated') return; o.status='Activated'; o.sel=null; S.assets=o.lines.filter(l=>l.parent).map(l=>({name:l.name,start:new Date().toLocaleString('pt-BR'),children:o.lines.filter(x=>x.parentUid===l.uid).map(x=>x.name),attrs:l.attrs})); toast('Status changed successfully.'); render(); }
+function orderMark(){ ativarPedido(); }
 function telaOrder(){
   const o=S.order, roots=o.lines.filter(l=>l.parent);
-  return topbar('Order', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📝',c:'b',n:'Edit',on:"toast('Edit order: campos padrão.','warn')"},{i:'🏢',c:'p',n:'Account',on:"go('accounts')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-order';render()"}]) + `
-  <div class="nv-tag">Order Products (Revenue Management): ${NV}.</div>
+  return topbar('Order', true) + actions([{i:'✓',c:'g',n:'Activate',on:o.status==='Activated'?"toast('Order is already activated.','warn')":"S.modal='activate';render()"},{i:'⇪',c:'b',n:'Submit Order',on:o.submitted?"toast('Order already submitted.','warn')":'submeterPedido()'},{i:'🏢',c:'p',n:'Account',on:"go('accounts')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-order';render()"}]) + `
+  <div class="nv-tag">Order Products / DRO (Revenue Management): ${NV}.</div>
   <div class="rh"><div class="oi" style="background:#769ed9">📦</div><div><small>Order</small><b>${o.number}</b></div></div>
-  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
-  ${S.tab==='Details' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Contract Number',S.contract?S.contract.number:''],['Order Start Date',o.start],['Status',o.status],['Order Amount',fmtMoney()]]) + pathHtml(['Draft','Activated'], o.status, o.sel, 'Status', 'order').replace('Mark Status as Complete','Mark Status as Complete')
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a>${o.submitted?`<a class="${S.tab==='Decomp'?'on':''}" onclick="S.tab='Decomp';render()">Decomposition</a>`:''}<a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
+  ${S.tab==='Decomp' ? `<div class="fl"><div class="fr"><span>Submit Status</span><span>${esc(o.submitStatus||'—')}</span></div><div class="fr"><span>Plan Status</span><span>${esc(o.plan?o.plan.status:'—')}</span></div></div>
+    <div class="rel"><div class="h"><div class="oi p">▦</div><b>Technical Products (${o.fls.length})</b><a onclick="go('plan')">View Orchestration Plan</a></div>
+      ${o.fls.map(f=>`<div class="it"><b>${esc(f.name)}</b><small>${esc(f.scope)} · ${esc(f.sistema)} · from ${esc(f.source)}</small></div>`).join('')}</div>
+    ${pendentesManuais().length?`<div class="rel"><div class="h"><div class="oi y">☑</div><b>Pending Manual Fulfillment Tasks (${pendentesManuais().length})</b></div>${pendentesManuais().map(s=>`<div class="it"><div style="display:flex;align-items:center;gap:8px"><b style="color:var(--tx);flex:1">${esc(s.name)}</b><button class="btn sm brand" onclick="completarManual('${s.id}')">Complete</button></div><small>${esc(s.laneName)}</small></div>`).join('')}</div>`:''}`
+  : S.tab==='Details' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Contract Number',S.contract?S.contract.number:''],['Order Start Date',o.start],['Status',o.status],['Submit Status',esc(o.submitStatus||'Not submitted')],['Order Amount',fmtMoney()]]) + pathHtml(['Draft','Activated'], o.status, o.sel, 'Status', 'order')
   : S.tab==='Lines' ? `<div class="tle-h"><div class="oi">▤</div><b>Order Products (${roots.length})</b></div>
     ${roots.map((l,i)=>`<div class="line"><div class="n"><span>${i+1}</span><b>${esc(l.name)}</b></div><div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Net Unit Price <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Net Total Price <b>${fmtMoney()}</b></span><span>Billing Frequency <b>Monthly</b></span></div>
       ${o.lines.filter(x=>x.parentUid===l.uid).map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · Included · Monthly</div>`).join('')}</div>`).join('')}
     <div class="line grp">Order Summary <span class="badge">Product Subtotal ${fmtMoney()} · Total with Tax ${fmtMoney()}</span></div>
-    ${o.status==='Activated'?'<div class="nv-tag">Order activated: line editing is locked; assets were created on the account.</div>':''}`
-  : `<div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${S.assets.length})</b></div>${S.assets.map(a=>`<div class="it" onclick="go('accounts')"><b>${esc(a.name)}</b><small>${a.children.join(' · ')}</small></div>`).join('')||'<div class="note">Assets are created when the order is activated.</div>'}</div>`}`;
+    ${o.status==='Activated'?'<div class="nv-tag">Order activated: line editing is locked. Submit Order starts decomposition and orchestration.</div>':''}`
+  : `<div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${S.assets.length})</b></div>${S.assets.map(a=>`<div class="it" onclick="S.tab='Assets';go('accounts')"><b>${esc(a.name)}</b><small>${a.children.join(' · ')}</small></div>`).join('')||'<div class="note">Assets are created when the orchestration plan completes.</div>'}</div>`}`;
 }
-function sheetMoreOrder(){ return sheet(`${row('🏷','g','Quote',"go('quote')")}${row('🏢','p','Account',"go('accounts')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function sheetMoreOrder(){ const o=S.order; return sheet(`${row('✓','g','Activate',"S.sheet=null;S.modal='activate';render()",'',o.status==='Activated')}${row('⇪','b','Submit Order',"S.sheet=null;submeterPedido()",'',o.status!=='Activated'||o.submitted)}${row('▦','p','View Orchestration Plan',"go('plan')",'',!o.plan)}${row('🏷','g','Quote',"go('quote')")}${row('🏢','p','Account',"go('accounts')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function modalActivate(){ return `<div class="modal-bg"><div class="modal"><h3>Activate Order</h3><div class="mb"><p style="margin:0;font-size:14px;line-height:1.5">Activating locks the order products. After activation, use Submit Order to start decomposition and orchestration.</p></div><div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.modal=null;ativarPedido()">Activate</button></div></div></div>`; }
 
 /* ---------- Account, listas, Chatter, menu, busca, Agentforce ---------- */
 function telaAccount(){
@@ -852,7 +952,8 @@ function telaAccount(){
   <div class="rtabs"><a class="${S.tab!=='Related'&&S.tab!=='Assets'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Assets'?'on':''}" onclick="S.tab='Assets';render()">Assets</a></div>
   ${S.tab==='Assets' ? `<div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
       <div class="tle-tools"><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Amend: cria cotação de alteração a partir do asset.','warn')">Amend</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Renew: cria cotação de renovação.','warn')">Renew</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Cancel: cria cotação de cancelamento.','warn')">Cancel</button></div>
-      ${S.assets.map(a=>`<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small><div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div></div>`).join('')||'<div class="note">No assets yet. Activate an order to create assets.</div>'}</div>`
+      ${S.assets.map(a=>`<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small><div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div></div>`).join('')||'<div class="note">No assets yet. Assets are created when the orchestration plan completes.</div>'}</div>
+     <div class="rel"><div class="h"><div class="oi p">▦</div><b>Fulfillment Assets (${(S.fassets||[]).length})</b></div>${(S.fassets||[]).map(f=>`<div class="it"><b>${esc(f.name)}</b><small>Quantity ${f.qty} · Product ${esc(f.product)} · Status ${esc(f.status)}</small></div>`).join('')||'<div class="note">Technical assets created by decomposition appear here.</div>'}</div>`
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (1)</b></div><div class="it" onclick="go('opp')"><b>${esc(oppName())}</b><small>${esc(S.oStage)}</small></div></div>
      <div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${S.quote?1:0})</b></div>${S.quote?`<div class="it" onclick="go('quote')"><b>${esc(S.quote.name)}</b><small>${esc(S.qStatus)}</small></div>`:'<div class="note">No quotes.</div>'}</div>
      <div class="rel"><div class="h"><div class="oi p">👤</div><b>Contacts (${S.contacts.length})</b><a onclick="go('newcontact')">New</a></div>${S.contacts.map(c=>`<div class="it"><b>${esc(c.name)}</b><small>${esc(c.email||'')}</small></div>`).join('')}</div>
@@ -890,9 +991,10 @@ function agUser(text){ AG.thread.push({u:true,text}); AG.chips=[]; agRender(); }
 function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; then(); }, ms); }
 function agRender(){
   const b=$('#agp-b'); if(!b) return;
-  b.innerHTML = (AG.thread.length>1?'':`<div class="agp-hero"><div class="orb" id="agorb"><img src="img/agentforce-hero.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><div class="ph">imagem do mascote<br>(img/agentforce-hero.png)</div></div><h2>Let's chat!</h2><p>Hi, I'm an AI agent! I can create and configure quotes, check technical feasibility, generate contracts and orders, and more. How can I help?</p></div>`)
+  const BOT='<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><rect x="12" y="18" width="40" height="32" rx="10" fill="#0b5cab"/><rect x="18" y="26" width="28" height="16" rx="8" fill="#fff"/><circle cx="27" cy="34" r="3.2" fill="#0b5cab"/><circle cx="37" cy="34" r="3.2" fill="#0b5cab"/><rect x="30" y="9" width="4" height="9" rx="2" fill="#0b5cab"/><circle cx="32" cy="8" r="3" fill="#0b5cab"/><rect x="6" y="28" width="6" height="12" rx="3" fill="#0b5cab"/><rect x="52" y="28" width="6" height="12" rx="3" fill="#0b5cab"/></svg>';
+  b.innerHTML = (AG.thread.length>1?'':`<div class="welcome"><div class="bot" id="agbot"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'">${BOT}</div><p>Welcome! I'm Agentforce. I can help you create and manage quotes quickly and accurately — from feasibility to order fulfillment.</p></div>`)
     + AG.thread.map(m=>m.u?`<div class="msg-u">${esc(m.text)}</div>`:`<div class="msg-a ${m.think?'think':''}">${esc(m.text)}${m.src?`<span class="src">${esc(m.src)}</span>`:''}</div>`).join('')
-    + (AG.chips.length?`<div class="chips">${AG.chips.map((c,i)=>`<button class="${c.pri?'pri':''}" onclick="agChip(${i})">${esc(c.l)}</button>`).join('')}</div>`:'');
+    + (AG.chips.length?`<div class="sugg">${AG.chips.map((c,i)=>`<button class="${c.pri?'pri':''}" onclick="agChip(${i})"><i>✦</i>${esc(c.l)}</button>`).join('')}</div>`:'');
   b.scrollTop = b.scrollHeight;
   const dot=$('#agent .dot'); if(AG.pending&&!AG.open&&!dot){ const d=document.createElement('span'); d.className='dot'; $('#agent .afi').after(d); } if((!AG.pending||AG.open)&&dot) dot.remove();
 }
@@ -908,8 +1010,20 @@ function agIntent(t){
   if(/proposta|pdf/.test(s)){ agProposta(); return; }
   if(/contrato|assinatura/.test(s)){ agContrato(); return; }
   if(/pedido|order/.test(s)){ agPedido(); return; }
-  if(/resum|status/.test(s)){ agSay(agResumo(), AG.chips); return; }
-  agSay('Não entendi. Você pode escolher uma das opções abaixo ou descrever o que quer fazer (por exemplo: "criar a cotação", "velocidade 200 Mbps", "gerar a proposta").', AG.chips);
+  if(/ativ/.test(s)&&S.order&&S.order.status!=='Activated'){ agAtivar(); return; }
+  if(/submet|orquestr|andamento|progresso|fulfil/.test(s)&&S.order){ S.order.submitted?agAndamento():agAtivar(); return; }
+  if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), AG.chips, 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
+  if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, AG.chips, 'Regra: matriz de formatação × situações de customização'); return; } }
+  if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', AG.chips); return; }
+  if(/fatur|entidade|quem fatura/.test(s)){ agSay(`Entidade faturadora: ${entidadeFaturadora().valor} (${entidadeFaturadora().regra}) — derivada da localidade ${CTX.localidade.nome}, território ${CTX.localidade.territorio}.`, AG.chips); return; }
+  if(/reajust|fideliz|multa|contrat/.test(s)&&!/criar/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const a=l&&l.attrs||{}; agSay(l?`Condições contratuais: fidelização ${a['Período Fidelização']||'—'} meses · reajuste ${a['Tipo de Reajuste']||'—'} (${a['Índice de Reajuste']||'—'}) · próximo reajuste ${a['Data do Próximo Reajuste']||'—'} · multa ${a['Percentual da Multa']||'não elegível'} · aviso prévio ${a['Quantidade de Dias Aviso Previo']||'—'}.`:'Ainda não há item na cotação.', AG.chips); return; }
+  if(/pre[çc]o|valor|custa|quanto/.test(s)){ agSay('Preço pendente: a tabela e o procedimento de precificação não foram definidos na Revisão 1. Assim que existirem, o Instant Pricing calcula na configuração.', AG.chips); return; }
+  if(/viab/.test(s)){ const e=endFull(); agSay(S.viab[e.id]?`Viabilidade de ${e.nome}: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · anel':''}.`:`A viabilidade de ${e.nome} ainda não foi consultada — ela é o passo 2, logo após o endereço.`, AG.chips); return; }
+  if(/eleg|territ|localidade/.test(s)){ const qp=qualificadoProduto(findProd('VPNNODE')); agSay(qp.ok?`VPN Node elegível em ${CTX.localidade.nome} (${CTX.localidade.territorio}). Elegibilidade é comercial/regulatória; viabilidade é técnica, por endereço.`:qp.hits[qp.hits.length-1].motivo, AG.chips); return; }
+  if(/falta|pendent|pr[oó]xim/.test(s)){ agNext(); return; }
+  if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), AG.chips); return; }
+  if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', AG.chips); return; }
+  agSay('Não entendi. Posso: criar e configurar a cotação, consultar viabilidade, explicar a classificação ("por que customizado?"), listar equipamentos, condições contratuais, entidade faturadora, gerar a proposta, contrato, pedido e acompanhar a orquestração. O que prefere?', AG.chips);
 }
 function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
 /* ---- passos, na ordem do UC-VPN-001 ---- */
@@ -979,8 +1093,10 @@ function agNext(){
   else if(S.contract.esig==='Sent') chips.push({l:'Verificar assinatura',f:()=>agSay('Aguardando assinatura do cliente no DocuSign. (No protótipo: botão "Simular assinatura" na barra.)',AG.chips)});
   if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') chips.push({l:'Marcar a cotação como Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;render();agSay('Cotação marcada como Accepted.',[]);agNext();},pri:true});
   if(S.qStatus==='Accepted'&&!S.order) chips.push({l:'Criar o pedido',f:agPedido,pri:true});
-  if(S.order&&S.order.status!=='Activated') chips.push({l:'Ativar o pedido',f:()=>{orderMark();agSay(`Pedido ${S.order.number} ativado; assets criados na conta.`,[]);agNext();},pri:true});
-  if(S.order&&S.order.status==='Activated') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
+  if(S.order&&S.order.status!=='Activated') chips.push({l:'Ativar o pedido',f:agAtivar,pri:true});
+  if(S.order&&S.order.status==='Activated'&&!S.order.submitted) chips.push({l:'Submeter o pedido (orquestração)',f:agSubmeter,pri:true});
+  if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') chips.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
+  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
   chips.push({l:'Resumo',f:()=>agSay(agResumo(),AG.chips)});
   agSay(`${agResumo()} O que fazemos agora?`, chips);
 }
@@ -988,8 +1104,21 @@ function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink
 function agContrato(){ if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
   agThink('Criando o contrato, gerando o documento e enviando para assinatura (DocuSign)…',1400,()=>{ if(!S.contract.docs.length) genContractDoc(); if(S.contract.esig==='Not sent'){ S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}]; S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); }
     S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Ver o contrato',f:()=>{agClose();}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
+function agDescreverAtivacao(){
+  const o=S.order; const fls=decompor(o); const plan=montarPlano(fls);
+  const tipos=plan.steps.reduce((a,s)=>{a[s.type]=(a[s.type]||0)+1;return a;},{});
+  const lista=fls.map(f=>`• ${f.name} — escopo ${f.scope}, ${f.sistema} (origem: ${f.source})`).join('\n');
+  return { fls, plan, texto:`Fluxo de ativação do pedido ${o.number}:\n1) Activate — trava os itens do pedido.\n2) Submit Order — dispara o Dynamic Revenue Orchestrator.\n3) Decomposição do produto comercial em ${fls.length} produtos técnicos:\n${lista}\n4) Plano de orquestração: ${plan.steps.length} etapas em ${fls.length} raias — ${Object.entries(tipos).map(([k,v])=>v+' '+k).join(', ')}. As tarefas manuais (TAC e instalação do CPE) pedem confirmação; callouts vão aos sistemas Algar.\n5) Ao concluir: assets comerciais (Managed Assets) e técnicos (Fulfillment Assets) na conta.` };
+}
+function agAtivar(){ const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que eu ative e submeta agora?', [{l:'Ativar e submeter',f:agSubmeter,pri:true},{l:'Ver os produtos técnicos no pedido',f:()=>{agClose();S.tab='Details';go('order',true);}},{l:'Ainda não',f:agNext}], 'DRO: Activate › Submit Order › Decomposition Details › View Orchestration Plan'); }
+function agSubmeter(){ const o=S.order; agThink('Ativando e submetendo o pedido (Activate › Submit Order)…',1100,()=>{ if(o.status!=='Activated'){ o.status='Activated'; o.sel=null; } if(!o.submitted){ o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); setTimeout(planoTick,500); }
+  S.tab='Decomp'; S.hist=['quote']; S.tela='order'; render(); agSay(`Pedido ${o.number} ativado e submetido. ${o.fls.length} produtos técnicos gerados; o plano de orquestração começou (${o.plan.steps.length} etapas). Vou avisar quando uma tarefa manual precisar de você.`, [{l:'Andamento da orquestração',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}], 'Submit Status: Submitted'); setTimeout(agAndamento,2600); }); }
+function agAndamento(){ const o=S.order; if(!o||!o.plan){ agNext(); return; } const P=o.plan; const done=P.steps.filter(s=>s.status==='Completed').length; const man=pendentesManuais();
+  if(P.status==='Completed'){ agSay(`Plano concluído: ${P.steps.length}/${P.steps.length} etapas. Assets criados: ${S.assets.length} comercial (${S.assets.map(a=>a.name).join(', ')}) e ${(S.fassets||[]).length} de fulfillment (${(S.fassets||[]).map(f=>f.name).join('; ')}).`, [{l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);},pri:true},{l:'Resumo',f:()=>agSay(agResumo(),AG.chips)}]); return; }
+  if(man.length){ const s=man[0]; agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas. A etapa manual "${s.name}" (${s.laneName}) está aguardando conclusão. Já foi feita?`, [{l:`Concluir "${s.name}"`,f:()=>{completarManual(s.id); agSay(`"${s.name}" concluída; a orquestração continua.`,[]); setTimeout(agAndamento,2200);},pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}},{l:'Ainda não',f:agNext}]); return; }
+  agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas; em execução: ${P.steps.filter(s=>s.status==='In Progress').map(s=>s.name).join(', ')||'—'}.`, [{l:'Atualizar',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}]); }
 function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
-  agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Ativar agora?`, [{l:'Ativar o pedido',f:()=>{orderMark();agSay(`Pedido ativado; assets criados na conta.`,[]);agNext();},pri:true},{l:'Ver o pedido',f:agClose}], 'Ação: Create Order'); }); }
+  agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Quer ver o fluxo de ativação antes de ativar?`, [{l:'Ativar o pedido',f:agAtivar,pri:true},{l:'Ver o pedido',f:agClose}], 'Ação: Create Order'); }); }
 
 /* ---------- roteiro (chrome do protótipo) ---------- */
 function guia(){
@@ -1010,20 +1139,22 @@ function guia(){
   else if(S.tela==='contract'&&S.contract.esig==='Sent') t='10 · Use <b>Simular assinatura (DocuSign)</b> na barra do protótipo.';
   else if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') t='11 · Na cotação (Details), toque em <b>Accepted</b> no path e em <b>Mark as Current Status</b>.';
   else if(S.qStatus==='Accepted'&&!S.order) t='12 · <b>More › Create Order</b> › Create Single Order › <b>Finish</b>.';
-  else if(S.order&&S.order.status!=='Activated') t='13 · No pedido (Details), toque em <b>Activated</b> e em <b>Mark as Current Status</b>.';
-  else if(S.order&&S.order.status==='Activated') t='14 · Concluído: veja os assets em <b>Account › Assets</b>.';
+  else if(S.order&&S.order.status!=='Activated') t='13 · No pedido, toque em <b>Activate</b> (ou pergunte ao Agentforce: "ativar o pedido" — ele explica o fluxo antes).';
+  else if(S.order&&S.order.status==='Activated'&&!S.order.submitted) t='14 · <b>Submit Order</b> dispara a decomposição em produtos técnicos e o plano de orquestração.';
+  else if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') t='15 · Acompanhe em <b>Decomposition › View Orchestration Plan</b>; conclua as tarefas manuais (<b>Complete</b>).';
+  else if(S.order&&S.order.plan&&S.order.plan.status==='Completed') t='16 · Concluído: <b>Account › Assets</b> mostra Managed Assets e Fulfillment Assets.';
   $('#guia').innerHTML=t?'Roteiro — '+t:''; $('#guia').style.display=t?'block':'none';
 }
 
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
   if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
-  if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
+  if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml();
   $('#overlay').innerHTML=o;
   const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','quotes','accountsList'].includes(S.tela);
@@ -1100,16 +1231,26 @@ if(/selftest=1/.test(location.search)){
     quoteMark(); ok('cotação Accepted, 6 etapas concluídas', S.qStatus==='Accepted' && document.querySelectorAll('.ps.done').length===6);
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('Create Order habilitado', ![...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
     click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order'))); ok('Create Order: Create Single Order + Finish', $('.modal').textContent.includes('Create Single Order') && $('.modal .brand').textContent==='Finish');
-    click($('.modal .brand')); ok('pedido criado e aberto: Details com Contract Number e path Draft/Activated', S.tela==='order' && $('.rh b').textContent==='00000037' && document.body.textContent.includes('Contract Number') && document.querySelectorAll('.ps').length===2);
+    click($('.modal .brand')); ok('pedido criado e aberto: Details com Contract Number, Submit Status e path Draft/Activated', S.tela==='order' && $('.rh b').textContent==='00000037' && $('#view').textContent.includes('Contract Number') && $('#view').textContent.includes('Submit Status') && document.querySelectorAll('.ps').length===2);
+    ok('ações do pedido: Activate e Submit Order', [...document.querySelectorAll('.acts .act')].map(a=>a.textContent).join('|').includes('Activate') && [...document.querySelectorAll('.acts .act')].map(a=>a.textContent).join('|').includes('Submit Order'));
     click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Lines')); ok('Order Products com Quantity / Net Unit Price / Discount / Net Total Price / Billing Frequency e Order Summary', ['Quantity','Net Unit Price','Discount','Net Total Price','Billing Frequency','Order Summary'].every(x=>$('#view').textContent.includes(x)));
-    S.tab='Details'; render(); orderSel('Activated'); orderMark(); ok('pedido Activated e assets criados', S.order.status==='Activated' && S.assets.length===1);
-    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Account'))); ok('Account abre', S.tela==='accounts');
-    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Assets')); ok('Assets: Managed Assets (1) com Amend/Renew/Cancel e o VPN Node', $('.rel .h b').textContent==='Managed Assets (1)' && $('.tle-tools').textContent.includes('Amend') && $('.rel').textContent.includes('VPN Node'));
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Activate'))); ok('Activate pede confirmação', S.modal==='activate');
+    click($('.modal .brand')); ok('pedido Activated; ainda sem decomposição', S.order.status==='Activated' && !S.order.submitted && S.assets.length===0);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Submit Order'))); ok('Submit Order: status Submitted, produtos técnicos decompostos, plano criado', S.order.submitted && S.order.fls.length>=5 && S.order.plan && $('.modal h3').textContent==='Submit Order');
+    click($('.modal .brand')); ok('Finish abre Decomposition Details com Technical Products e View Orchestration Plan', S.tab==='Decomp' && $('.rel .h b').textContent.startsWith('Technical Products') && $('.rel .h a').textContent==='View Orchestration Plan');
+    ok('decomposição: Circuito de Acesso, VPN Network, Faturamento, CPE por equipamento (3)', S.order.fls.filter(f=>f.tech==='CPE').length===3 && ['ACESSO','NETWORK','FAT'].every(t=>S.order.fls.some(f=>f.tech===t)));
+    click($('.rel .h a')); ok('plano de orquestração com raias, etapas tipadas e dependências', S.tela==='plan' && document.querySelectorAll('.rel').length>=6 && $('#view').textContent.includes('Manual Task') && $('#view').textContent.includes('Callout') && $('#view').textContent.includes('Milestone') && $('#view').textContent.includes('depends on'));
+    for(let i=0;i<40&&pendentesManuais().length===0&&S.order.plan.status!=='Completed';i++) planoTick();
+    ok('etapas automáticas avançam até a primeira tarefa manual', pendentesManuais().length>=1);
+    while(S.order.plan.status!=='Completed'){ const m=pendentesManuais(); if(m.length) completarManual(m[0].id); planoTick(); }
+    ok('plano concluído: assets comerciais e fulfillment assets', S.order.plan.status==='Completed' && S.assets.length===1 && S.fassets.length===S.order.fls.length);
+    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Accounts'))); S.tab='Assets'; render();
+    ok('Assets: Managed Assets (1) e Fulfillment Assets (n)', $('.rel .h b').textContent==='Managed Assets (1)' && [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Fulfillment Assets (')));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista', S.tela==='leads' && document.querySelectorAll('.list .it').length===2);
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
-    click($('#agent div')); ok('Ask Agentforce abre o painel com cabeçalho, ícones e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===5 && $('#agp-in').placeholder.startsWith('Describe your task'));
+    click($('#agent div')); ok('Ask Agentforce abre o painel: pin, título Agentforce, fechar, boas-vindas com robô e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===3 && $('.welcome .bot') && $('#agp-in').placeholder.startsWith('Describe your task'));
     ok('agente propõe a próxima ação em conversa com opções', AG.thread.length>=1 && AG.chips.length>=1);
     agClose(); go('search'); S.q2='vpn'; render(); ok('busca encontra cotação e oportunidade', document.querySelectorAll('.list .it').length>=2);
     click($('.list .it')); ok('resultado abre o registro', S.tela==='quote');
