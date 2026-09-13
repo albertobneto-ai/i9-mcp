@@ -14,6 +14,15 @@
         return r.json();
       });
   }
+  function marcarAplicada(rodada) {
+    return fetch(API + '/api/uc/' + encodeURIComponent(CFG.docId) + '/comentarios/' + rodada + '/aplicar',
+      { method: 'POST' }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          return j;
+        });
+      });
+  }
   function gravarSalvos(comentarios) {
     return fetch(API + '/api/uc/' + encodeURIComponent(CFG.docId) + '/comentarios', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -43,12 +52,20 @@
       if (!box) return;
       var bloco = document.createElement('div');
       bloco.className = 'usec uapl';
-      bloco.innerHTML = '<b>Decisão da revisão:</b> ';
+      bloco.innerHTML = '<b>Definição aplicada na revisão:</b> ';
       bloco.appendChild(document.createTextNode(texto));
       var det = box.closest('details[data-ckey="' + k + '"]');
       if (det) {
         var body = det.querySelector(':scope > .ubody');
-        body.insertBefore(bloco, box.nextSibling);
+        // entra no contexto do item: logo após as regras, antes de melhorias e caminhos
+        var depois = null;
+        all(':scope > .usec', body).forEach(function (sec) {
+          var b = sec.querySelector('b');
+          if (b && /Regras de validação|Regra de preenchimento|^Valores|^Categorias|^Valor aplicável/.test(txt(b)))
+            depois = sec;
+        });
+        if (depois) body.insertBefore(bloco, depois.nextSibling);
+        else body.insertBefore(bloco, box.nextSibling);
         // o item comentado sai do regime de dúvida
         all(':scope > summary .uc-chip.cd', det).forEach(function (ch) {
           ch.setAttribute('data-duv-off', '1'); ch.style.display = 'none';
@@ -720,8 +737,16 @@
       lerSalvos().then(function (j) {
         if (!j) { aplicar(null); stat('Nenhum comentário salvo nesta rodada.'); return; }
         var n = aplicar(j);
-        stat(n ? ('Documento atualizado com ' + n + ' comentário(s) da rodada ' + CFG.rodada + '.')
-               : 'Nenhum comentário aplicável nesta rodada.');
+        if (!n) { stat('Nenhum comentário aplicável nesta rodada.'); return; }
+        if (j.status === 'APLICADA') {
+          stat('Documento atualizado com ' + n + ' definição(ões) da rodada ' + CFG.rodada + '.');
+          return;
+        }
+        stat('Registrando a aplicação…');
+        return marcarAplicada(CFG.rodada).then(function (r) {
+          stat('Documento atualizado: ' + n + ' comentário(s) viraram definição do documento '
+            + '(rodada ' + r.rodada + ' aplicada).');
+        });
       }).catch(function (e) { stat('Não foi possível atualizar (' + e.message + ').'); });
     };
     bW.onclick = function () { preverWord(stat); };
