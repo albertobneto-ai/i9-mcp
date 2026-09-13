@@ -165,6 +165,17 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#2e844a;color:#fff;padding:12px 18px;border-radius:8px;z-index:60;font-size:14px;max-width:88%}
 .toast.warn{background:#8c4b02}
 .nv-tag{margin:8px 14px 0;font-size:11px;color:var(--warnt);background:#fef3d7;border:1px solid #fadfa4;border-radius:6px;padding:6px 10px;line-height:1.4}
+.fnt{margin:8px 14px 0;font-size:11px;line-height:1.45;border-radius:6px;padding:6px 10px;display:flex;gap:7px;align-items:flex-start}
+.fnt .tg{flex:none;font-weight:700;letter-spacing:.03em;font-size:9.5px;text-transform:uppercase;border-radius:3px;padding:1px 5px;margin-top:1px}
+.fnt.ver{background:#ebf7e6;border:1px solid #b6e3c2;color:#1d6b38}
+.fnt.ver .tg{background:#1d6b38;color:#fff}
+.fnt.inf{background:#eef2fb;border:1px solid #c9d6ef;color:#2b4a80}
+.fnt.inf .tg{background:#2b4a80;color:#fff}
+.fnt.nv{background:#fef3d7;border:1px solid #fadfa4;color:#8c4b02}
+.fnt.nv .tg{background:#8c4b02;color:#fff}
+.fnt.proto{background:#f3f3f3;border:1px solid var(--bd2);color:#444}
+.fnt.proto .tg{background:#706e6b;color:#fff}
+.proc small{display:block;margin-top:2px}
 .tle-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
 .tle-h .oi{width:28px;height:28px;border-radius:4px;background:#f4592f;color:#fff;display:grid;place-items:center;font-size:14px}
 .tle-h b{flex:1;font-size:15px}
@@ -533,6 +544,45 @@ const fmtMoney = () => 'Pendente';
 const QSTEPS = ['Draft','Needs Review','In Review','Approved','Rejected','Presented','Accepted','Denied'];
 const OSTAGES = ['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed Won'];
 const NV = 'documentado para Lightning Experience; exibição no app não verificada';
+function fonte(nivel, texto){
+  const rot={ver:'Verificado',inf:'Inferido',nv:'Não verificado',proto:'Protótipo'}[nivel];
+  return `<div class="fnt ${nivel}"><span class="tg">${rot}</span><span>${texto}</span></div>`;
+}
+const FONTES = [
+  ['Oportunidade · campos e seções','ver','Layout padrão de Opportunity lido da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org.'],
+  ['Oportunidade · ações, path e navegação','ver','Trailhead "Salesforce Mobile App Basics": Post / Log a Call / New Task / More, path de estágios e barra inferior.'],
+  ['Lead · campos e seções','ver','Layout do Record Type Nacional lido da org HOMOL: 7 seções, 54 campos, obrigatórios conforme a org. Valores exibidos são fictícios.'],
+  ['Cotação · criação a partir da oportunidade','ver','Trailhead "Discover and Configure Products" e ajuda de limitações de cotações no app.'],
+  ['Cotação · sem Create PDF, Email Quote e Start Sync','ver','Ajuda oficial "Quotes: What\'s Different or Not Available in the Salesforce Mobile App".'],
+  ['Oportunidade · Products (0)','ver','Ajuda "Sync Quotes and Opportunities": os produtos só chegam à oportunidade com Start Sync, indisponível no app.'],
+  ['Transaction Line Editor (aba Lines)','nv','Documentado para Lightning Experience; exibição no app não verificada.'],
+  ['Browse Catalogs / Choose Price Book / Browse Products','nv','Sequência conferida no Trailhead para Lightning; exibição no app não verificada.'],
+  ['Product Configurator','nv','Documentado para Lightning Experience; exibição no app não verificada.'],
+  ['Catálogo · 46 atributos, 10 categorias, 22 regras','ver','UC-VPN-001 Revisão 1: atributos, obrigatoriedade, regras e classificação de atendimento.'],
+  ['Viabilidade técnica (passos 1 e 2)','inf','Integração MuleSoft do projeto. Não há componente nativo de viabilidade no Revenue Cloud; tela e retorno são proposta do projeto.'],
+  ['Proposta em PDF','ver','Gerada no Lightning (Create PDF › Save to Quote › Email Quote); no app o PDF só aparece listado, sem visualização.'],
+  ['Contrato e assinatura','ver','Salesforce Contracts com DocuSign: geração de documento e envio para assinatura. Disposição da tela é inferida.'],
+  ['Create Order › Create Single Order › Finish','ver','Trailhead "Create and Fulfill Orders": Create Order só com a cotação em Accepted.'],
+  ['Activate e Submit Order','ver','Trailhead: Draft → Activated, itens deixam de ser editáveis, Flow cria os assets.'],
+  ['Decomposição em produtos técnicos','inf','O mecanismo (DRO) é oficial; quais produtos técnicos, escopos e sistemas do VPN Node são proposta do projeto.'],
+  ['Plano de orquestração (raias e etapas)','inf','Estrutura oficial (Manual Task, Callout, Auto Task, Milestone); etapas e dependências do VPN Node são proposta do projeto.'],
+  ['Conta · aba Assets, Managed e Fulfillment Assets','ver','Trailhead do DRO: na aba Assets da conta ficam os assets comerciais em Managed Assets e os técnicos em Fulfillment Assets.'],
+  ['Asset Contract Relationship','ver','Objeto oficial AssetContractRelationship (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate. A exibição da faixa no asset é inferida.'],
+  ['Agentforce · barra e painel','ver','Trailhead "Agentforce on the Salesforce Mobile App" e captura do painel de conversa. As opções em botões são inferidas.'],
+  ['Documentos (proposta, cotação, contrato, pedido)','proto','Visualização do protótipo montada a partir dos registros; no app esses dados são consultados nas abas do registro.'],
+  ['Roteiro flutuante e marcador de atendimento','proto','Chrome do protótipo, fora da interface Salesforce.'],
+  ['Barra escura de cenário','proto','Chrome do protótipo: troca conta, usuário, localidade e endereço, e simula ações feitas no Lightning.']
+];
+function telaProcedencia(){
+  const g=n=>FONTES.filter(f=>f[1]===n);
+  const bloco=(t,n)=>g(n).length?`<div class="rel"><div class="h"><div class="oi ${n==='ver'?'g':n==='inf'?'b':n==='nv'?'y':'m'}">${n==='ver'?'✓':n==='inf'?'≈':n==='nv'?'▲':'◻'}</div><b>${t} (${g(n).length})</b></div>${g(n).map(f=>`<div class="it proc"><b style="color:var(--tx)">${esc(f[0])}</b><small>${esc(f[2])}</small></div>`).join('')}</div>`:'';
+  return topbar('Procedência', true) + `
+  ${fonte('ver','Confirmado em documentação oficial da Salesforce, no UC-VPN-001 Revisão 1 ou na leitura da org HOMOL.')}
+  ${fonte('inf','Proposta do projeto: o mecanismo é oficial, o conteúdo específico do VPN Node ainda precisa de validação.')}
+  ${fonte('nv','Existe na documentação, mas descrito para Lightning Experience; a exibição no app Salesforce Mobile não foi verificada.')}
+  ${fonte('proto','Elemento do protótipo, fora da interface Salesforce.')}
+  ${bloco('Verificado','ver')}${bloco('Inferido — precisa de validação','inf')}${bloco('Não verificado no app','nv')}${bloco('Chrome do protótipo','proto')}`;
+}
 /* Layouts lidos da org HOMOL em consulta somente leitura (13/09/2026):
    Lead → Record Type "Nacional" (layout padrão do RT). Opportunity → Record Type padrão é o Master,
    com o layout "Opportunity Layout"; não existe RT "Nacional" para Opportunity nessa org.
@@ -562,7 +612,7 @@ function oppValores(){
     CreatedById:CTX.usuario.nome, LastModifiedById:CTX.usuario.nome };
 }
 function layoutHtml(secs, vals, nota){
-  return (nota?`<div class="nv-tag">${esc(nota)}</div>`:'') + secs.map(s=>`<div class="lsec">${esc(s.sec)}</div><div class="fl">${s.campos.map(c=>{
+  return (nota?fonte('ver',esc(nota)):'') + secs.map(s=>`<div class="lsec">${esc(s.sec)}</div><div class="fl">${s.campos.map(c=>{
     const v = vals[c.api]; const txt = (v===undefined||v==='') ? '' : v;
     return `<div class="fr"><span>${esc(c.label)}${c.req?' <b style="color:var(--err)">*</b>':''}</span><span>${c.type==='reference'&&txt?`<a>${esc(txt)}</a>`:esc(txt)}${c.ro?' <small style="color:var(--mut)">(somente leitura)</small>':''}</span></div>`; }).join('')}</div>`).join('');
 }
@@ -601,7 +651,7 @@ function telaOpp(){
   return topbar('Opportunity', S.hist.length>0) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'☑',c:'g',n:'New Task',on:"go('task')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
   <div class="rh"><div class="oi o">👑</div><div><small>Opportunity</small><b>${esc(oppName())}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Details' ? layoutHtml(LAYOUTS.opp, oppValores(), 'Campos e seções do layout padrão de Opportunity, lidos da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org — o padrão é o Master.')
+  ${S.tab==='Details' ? fonte('ver','<b>Layout padrão de Opportunity</b> lido da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org — o padrão é o Master.') + layoutHtml(LAYOUTS.opp, oppValores(), '')
       + pathHtml(OSTAGES, S.oStage, S.oSel, 'Stage', 'opp')
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
       ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${esc(S.qStatus)} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
@@ -661,7 +711,7 @@ function telaQuote(){
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
   ${S.tab==='Details' ? fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)]])
       + pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote')
-  : S.tab==='Lines' ? `<div class="nv-tag">Transaction Line Editor: ${NV}.</div>
+  : S.tab==='Lines' ? `${fonte('nv','<b>Transaction Line Editor</b> — documentado para Lightning Experience; exibição no app não verificada.')}
     <div class="tle-h"><div class="oi">▤</div><b>Quote Line Items (${roots.length})</b><div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Active':'Inactive'}</small></div></div></div>
     <div class="tle-tools"><button class="btn sm" onclick="S.sheet='addassets';render()">Add Assets</button><button class="btn sm" onclick="addGroup()">Add Group</button><button class="btn sm" style="flex:1" onclick="browse(true)">🔍 Add Product</button></div>
     ${S.groups.map(g=>`<div class="line grp">${esc(g)} <span class="badge">group</span></div>`).join('')}
@@ -677,7 +727,7 @@ function quoteSel(s){ S.qSel=s; render(); }
 function quoteMark(){ const ci=QSTEPS.indexOf(S.qStatus); S.qStatus = S.qSel&&S.qSel!==S.qStatus ? S.qSel : QSTEPS[Math.min(ci+1,QSTEPS.length-1)]; S.qSel=null; toast('Status changed successfully.'); render(); }
 function relatedQuote(){
   const c=S.contract, o=S.order;
-  return `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Quote PDFs (${S.pdfs.length})</b></div>${S.pdfs.map(pf=>`<div class="it" onclick="S.sheet='pdf';render()"><b>${esc(pf.name)}</b><small>${esc(pf.tpl)} · ${pf.quando} · ${pf.emailed?'Emailed':'Created'} in Lightning Experience</small></div>`).join('')}<div class="note">Creating, emailing and deleting quote PDFs isn't available in the Salesforce mobile app. PDFs created in Lightning Experience appear here but can't be viewed.</div></div>
+  return `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Quote PDFs (${S.pdfs.length})</b></div>${S.pdfs.map(pf=>`<div class="it" onclick="S.sheet='pdf';render()"><b>${esc(pf.name)}</b><small>${esc(pf.tpl)} · ${pf.quando} · ${pf.emailed?'Emailed':'Created'} in Lightning Experience</small></div>`).join('')}${fonte('ver','Ajuda oficial: criar, enviar por e-mail e excluir PDFs de cotação não está disponível no app; PDFs criados no Lightning aparecem listados, mas não podem ser abertos.')}</div>
   <div class="rel"><div class="h"><div class="oi p">📝</div><b>Contracts (${c?1:0})</b>${c?'':'<a onclick="createContract()">New</a>'}</div>${c?`<div class="it" onclick="go('contract')"><b>${c.number}</b><small>Status ${esc(c.status)} · eSignature ${esc(c.esig)}</small></div>`:'<div class="it" style="color:var(--mut)">No contracts.</div>'}</div>
   <div class="rel"><div class="h"><div class="oi" style="background:#769ed9">📦</div><b>Orders (${o?1:0})</b></div>${o?`<div class="it" onclick="go('order')"><b>${o.number}</b><small>Status ${esc(o.status)} · Order Amount ${fmtMoney()}</small></div>`:'<div class="it" style="color:var(--mut)">No orders. Set the quote to Accepted and use More › Create Order.</div>'}</div>
   <div class="rel"><div class="h"><div class="oi p">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`;
@@ -722,7 +772,7 @@ const DOC_CSS = `
 function docMoldura(titulo, corpo, nota){
   return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column">
     <div class="form-h"><a onclick="S.docView=null;S.pdfView=false;render();agRetoma()">Fechar</a><b>${esc(titulo)}</b><a></a></div>
-    ${nota?`<div class="nv-tag">${esc(nota)}</div>`:''}
+    ${nota?fonte('proto',esc(nota)):''}
     <div style="overflow:auto;background:#5f6b76;padding:12px;flex:1">
       <div class="doc" style="max-width:780px;margin:0 auto;box-shadow:0 6px 22px rgba(0,0,0,.45)">${DOC_CSS}${corpo}</div>
     </div></div></div>`;
@@ -872,7 +922,7 @@ function telaBrowse(){
   const q=(S.q||'').toLowerCase();
   const elig=CATALOG.filter(p=>qualificadoProduto(p).ok && (S.categoria==='all'||p.cat===S.categoria) && (!q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)));
   const nsel=Object.values(S.checked).filter(Boolean).length;
-  return `<div class="nv-tag">Product Discovery: ${NV}.</div>
+  return `${fonte('nv','<b>Product Discovery</b> — Browse Catalogs › Choose Price Book › All Catalogs conferido no Trailhead para Lightning; exibição no app não verificada.')}
   <div class="bp-top"><b>Catalog:</b> ${esc(S.catalogo)}<a onclick="S.tab='Lines';go('quote')">🏷 New Quote Line Items (${lines.filter(l=>l.parent).length})</a></div>
   <div class="bp-head"><div class="oi">▤</div><b>Browse Products</b></div>
   <div class="srch">🔍 <input placeholder="Search for products" value="${esc(S.q||'')}" oninput="S.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div>
@@ -924,7 +974,7 @@ function telaConfig(){
   if(!S.atab||!cats.includes(S.atab)) S.atab=cats[0];
   const fieldsL=cfg.defs.filter(a=>a.cat===S.atab&&!a.hidden&&!R.hidden[a.key]);
   const sumAttrs=cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]&&!vazio(cfg.a[a.key])).map(a=>`<div><span>${esc(a.name)}</span>${esc(cfg.a[a.key]===true?'Sim':cfg.a[a.key])}</div>`).join('');
-  return `<div class="nv-tag">Product Configurator: ${NV}.</div>
+  return `${fonte('nv','<b>Product Configurator</b> — documentado para Lightning Experience; exibição no app não verificada. Atributos, regras e classificação vêm do UC-VPN-001 Revisão 1.')}
   <div class="cfg-top"><h1>Configure ${esc(p.name)}</h1><div class="togs">
     <div class="tog ${S.validacao?'on':''}"><span>Product Validation</span><div><div class="sw" onclick="S.validacao=!S.validacao;render()"></div><small>${S.validacao?'Enabled':'Disabled'}</small></div></div>
     <div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Enabled':'Disabled'}</small></div></div></div></div>
@@ -1067,7 +1117,7 @@ function telaPlano(){
   const o=S.order, P=o.plan; if(P.status!=='Completed') setTimeout(planoTick,120); const lanes=[...new Set(P.steps.map(s=>s.lane))];
   const pill=st=>`<span class="badge ${st==='Completed'?'ok':st==='In Progress'?'warn':''}">${st}</span>`;
   return `<div class="form-h"><a onclick="back()">‹ Order</a><b>Orchestration Plan</b><a></a></div>
-  <div class="nv-tag">Fulfillment Plan (DRO): ${NV}. Produtos técnicos e etapas do VPN Node são proposta do projeto.</div>
+  ${fonte('inf','<b>Plano de orquestração</b> — a estrutura (raias, Manual Task, Callout, Auto Task, Milestone) é do Dynamic Revenue Orchestrator; as etapas e dependências do VPN Node são proposta do projeto.')}
   <div class="fl"><div class="fr"><span>Source</span><span><a onclick="back()">${o.number}</a></span></div><div class="fr"><span>Priority</span><span>Default</span></div><div class="fr"><span>Plan Status</span><span>${pill(P.status)}</span></div></div>
   ${lanes.map(l=>{ const fl=o.fls.find(f=>f.id===l); const ss=P.steps.filter(s=>s.lane===l);
     return `<div class="rel"><div class="h"><div class="oi p">▦</div><b>${esc(fl.name)}</b><small style="color:var(--mut)">${esc(fl.scope)} · ${esc(fl.sistema)}</small></div>
@@ -1078,7 +1128,7 @@ function telaPlano(){
 function telaLocal(){
   const p=findProd(S.pend.pid); const e=endFull();
   return `<div class="form-h"><a onclick="S.pend=null;back()">Cancel</a><b>Endereço de instalação</b><a></a></div>
-  <div class="nv-tag">Passo 1 do UC-VPN-001: o usuário informa o endereço em que o serviço será instalado. Passo 2: o sistema consulta a viabilidade automaticamente. Integração MuleSoft do projeto — não há componente nativo.</div>
+  ${fonte('inf','<b>Viabilidade</b> — passos 1 e 2 do UC-VPN-001; a consulta é integração MuleSoft do projeto. Não há componente nativo de viabilidade no Revenue Cloud.')}
   <div class="ff"><label>Produto</label><span class="pill">${p.icon} ${esc(p.name)}</span></div>
   <div class="ff"><label><span class="rq">*</span>Localidade (grupo de cidades)</label><select onchange="setLoc(this.value);S.tela='local';render()">${LOCALIDADES.map(l=>`<option value="${l.id}" ${CTX.localidade.id===l.id?'selected':''}>${esc(l.nome)} · ${esc(l.territorio)}</option>`).join('')}</select></div>
   <div class="ff"><label><span class="rq">*</span>Endereço de instalação (Service Account do node)</label><select onchange="setEnd(this.value,true);S.tela='local';render()">${enderecosDaLocalidade(CTX.localidade.id).map(x=>`<option value="${x.id}" ${e.id===x.id?'selected':''}>${esc(x.nome)}</option>`).join('')}</select></div>
@@ -1127,7 +1177,7 @@ function createContract(){ if(S.contract){ go('contract'); return; } S.contract=
 function telaContract(){
   const c=S.contract, roots=lines.filter(l=>l.parent);
   return topbar('Contract', true) + actions([{i:'📄',c:'m',n:'Generate Doc',on:c.docs.length?"toast('Document already generated.','warn')":'genContractDoc()'},{i:'✍',c:'g',n:'Send eSign',on:(c.docs.length&&c.esig==='Not sent')?"S.modal='esig';render()":"toast('Generate the document first, or already sent.','warn')"},{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-contract';render()"}]) + `
-  <div class="nv-tag">Salesforce Contracts / DocuSign: ${NV}.</div>
+  ${fonte('ver','<b>Salesforce Contracts com DocuSign</b> — geração de documento e envio para assinatura são oficiais; a disposição desta tela é inferida.')}
   <div class="rh"><div class="oi p">📝</div><div><small>Contract</small><b>${c.number}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
   ${S.tab!=='Related' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Quote',`<a onclick="go('quote')">${esc(S.quote.name)}</a>`],['Contract Term',esc(roots[0]&&roots[0].attrs&&roots[0].attrs['Período Fidelização']||'—')+' meses'],['Status',esc(c.status)],['eSignature Status',esc(c.esig)]])
@@ -1154,7 +1204,7 @@ function orderMark(){ ativarPedido(); }
 function telaOrder(){
   const o=S.order, roots=o.lines.filter(l=>l.parent);
   return topbar('Order', true) + actions([{i:'✓',c:'g',n:'Activate',on:o.status==='Activated'?"toast('Order is already activated.','warn')":"S.modal='activate';render()"},{i:'⇪',c:'b',n:'Submit Order',on:o.submitted?"toast('Order already submitted.','warn')":'submeterPedido()'},{i:'🏢',c:'p',n:'Account',on:"go('accounts')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-order';render()"}]) + `
-  <div class="nv-tag">Order Products / DRO (Revenue Management): ${NV}.</div>
+  ${fonte('ver','<b>Pedido</b> — Activate, Submit Order, Order Products e criação de assets por Flow vêm do Trailhead "Create and Fulfill Orders" e do módulo do DRO.')}
   <div class="rh"><div class="oi" style="background:#769ed9">📦</div><div><small>Order</small><b>${o.number}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a>${o.submitted?`<a class="${S.tab==='Decomp'?'on':''}" onclick="S.tab='Decomp';render()">Decomposition</a>`:''}<a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
   ${S.tab==='Decomp' ? `<div class="fl"><div class="fr"><span>Submit Status</span><span>${esc(o.submitStatus||'—')}</span></div><div class="fr"><span>Plan Status</span><span>${esc(o.plan?o.plan.status:'—')}</span></div></div>
@@ -1166,7 +1216,7 @@ function telaOrder(){
     ${roots.map((l,i)=>`<div class="line"><div class="n"><span>${i+1}</span><b>${esc(l.name)}</b></div><div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Net Unit Price <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Net Total Price <b>${fmtMoney()}</b></span><span>Billing Frequency <b>Monthly</b></span></div>
       ${o.lines.filter(x=>x.parentUid===l.uid).map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · Included · Monthly</div>`).join('')}</div>`).join('')}
     <div class="line grp">Order Summary <span class="badge">Product Subtotal ${fmtMoney()} · Total with Tax ${fmtMoney()}</span></div>
-    ${o.status==='Activated'?'<div class="nv-tag">Order activated: line editing is locked. Submit Order starts decomposition and orchestration.</div>':''}`
+    ${o.status==='Activated'?fonte('ver','Pedido ativado: a edição dos itens fica travada; o Submit Order inicia a decomposição e a orquestração.'):''}`
   : `<div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${S.assets.length})</b></div>${S.assets.map(a=>`<div class="it" onclick="S.tab='Assets';go('accounts')"><b>${esc(a.name)}</b><small>${a.children.join(' · ')}</small></div>`).join('')||'<div class="note">Assets are created when the orchestration plan completes.</div>'}</div>`}`;
 }
 function sheetMoreOrder(){ const o=S.order; return sheet(`
@@ -1178,13 +1228,14 @@ function telaAccount(){
   return topbar('Account', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'👤',c:'p',n:'New Contact',on:"go('newcontact')"},{i:'👑',c:'o',n:'New Opp.',on:"toast('New Opportunity: formulário padrão.','warn')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-acc';render()"}]) + `
   <div class="rh"><div class="oi p">🏢</div><div><small>Account</small><b>${esc(CTX.conta.nome)}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'&&S.tab!=='Assets'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Assets'?'on':''}" onclick="S.tab='Assets';render()">Assets</a></div>
-  ${S.tab==='Assets' ? `<div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
+  ${S.tab==='Assets' ? `${fonte('ver','<b>Aba Assets da conta</b> — o Trailhead do DRO descreve os assets comerciais em Managed Assets e os técnicos em Fulfillment Assets, nesta aba.')}
+     <div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
       <div class="tle-tools"><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Amend: cria cotação de alteração a partir do asset.','warn')">Amend</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Renew: cria cotação de renovação.','warn')">Renew</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Cancel: cria cotação de cancelamento.','warn')">Cancel</button></div>
       ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id);
         return `<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small>
         <div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div>
         ${acr?`<div class="acr" onclick="event.stopPropagation();S.docView='contract';render()">📝 Contrato <b>${esc(acr.contract)}</b> · vigência ${esc(acr.start)}${acr.end?' a '+esc(acr.end):''} <span class="badge">Asset Contract Relationship ${esc(acr.name)}</span></div>`:'<div class="acr vazio">Sem contrato vinculado — o ACR é criado quando o pedido vem de um contrato.</div>'}</div>`; }).join('')||'<div class="note">No assets yet. Assets are created when the orchestration plan completes.</div>'}</div>
-     ${(S.acrs||[]).length?`<div class="rel"><div class="h"><div class="oi p">🔗</div><b>Asset Contract Relationships (${S.acrs.length})</b></div>${S.acrs.map(x=>`<div class="it" onclick="S.tela='contract';S.tab='Related';render()"><b>${esc(x.name)}</b><small>${esc(x.assetName)} ↔ Contrato ${esc(x.contract)} · ${esc(x.start)}${x.end?' a '+esc(x.end):''}</small></div>`).join('')}<div class="note">Objeto oficial AssetContractRelationship (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate.</div></div>`:''}
+     ${(S.acrs||[]).length?`<div class="rel"><div class="h"><div class="oi p">🔗</div><b>Asset Contract Relationships (${S.acrs.length})</b></div>${S.acrs.map(x=>`<div class="it" onclick="S.tela='contract';S.tab='Related';render()"><b>${esc(x.name)}</b><small>${esc(x.assetName)} ↔ Contrato ${esc(x.contract)} · ${esc(x.start)}${x.end?' a '+esc(x.end):''}</small></div>`).join('')}${fonte('ver','Objeto oficial <b>AssetContractRelationship</b> (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate. A exibição da faixa dentro do asset é inferida.')}</div>`:''}
      <div class="rel"><div class="h"><div class="oi p">▦</div><b>Fulfillment Assets (${(S.fassets||[]).length})</b></div>${(S.fassets||[]).map(f=>`<div class="it"><b>${esc(f.name)}</b><small>Quantity ${f.qty} · Product ${esc(f.product)} · Status ${esc(f.status)}</small></div>`).join('')||'<div class="note">Technical assets created by decomposition appear here.</div>'}</div>`
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (1)</b></div><div class="it" onclick="go('opp')"><b>${esc(oppName())}</b><small>${esc(S.oStage)}</small></div></div>
      <div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${S.quote?1:0})</b></div>${S.quote?`<div class="it" onclick="go('quote')"><b>${esc(S.quote.name)}</b><small>${esc(S.qStatus)}</small></div>`:'<div class="note">No quotes.</div>'}</div>
@@ -1199,7 +1250,7 @@ function telaLead(){
   <div class="rh"><div class="oi t">★</div><div><small>Lead</small><b>${esc(l.Name)} — ${esc(l.Company)}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="S.tab='Chatter';render()">Chatter</a></div>
   ${S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
-   : layoutHtml(LAYOUTS.lead, l, 'Campos e seções do layout do Record Type Nacional, lidos da org HOMOL em consulta somente leitura. Valores de exemplo.')
+   : fonte('ver','<b>Layout Lead · Record Type Nacional</b> lido da org HOMOL em consulta somente leitura (7 seções, 54 campos). Valores exibidos são fictícios.') + layoutHtml(LAYOUTS.lead, l, '')
      + pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], l.Status==='Novo'?'Novo':'Em qualificação', null, 'Status', 'lead')}`;
 }
 function leadSel(){ } function leadMark(){ toast('Status do lead: alteração fora do escopo do protótipo.','warn'); }
@@ -1210,11 +1261,11 @@ function telaList(kind){
     : kind==='quotes' ? (S.quote?[{t:S.quote.name,s:'Quote '+S.quote.number+' · '+S.qStatus,on:"go('quote')"}]:[])
     : [{t:CTX.conta.nome,s:'Account · '+CTX.conta.segmento,on:"go('accounts')"}].concat(CTX_DATA.contas.filter(c=>c.id!==CTX.conta.id).map(c=>({t:c.nome,s:'Account · '+c.segmento,on:`CTX.conta=CTX_DATA.contas.find(x=>x.id==='${c.id}');go('accounts')`})));
   const titles={contacts:'Contacts',leads:'Leads',quotes:'Quotes',accountsList:'Accounts'};
-  return topbar(titles[kind], true) + `<div class="srch">🔍 <input placeholder="Search ${titles[kind].toLowerCase()}…"></div>${kind==='quotes'?'<div class="nv-tag">Cotações são criadas a partir da oportunidade (a home de Quotes não cria cotações no app).</div>':''}
+  return topbar(titles[kind], true) + `<div class="srch">🔍 <input placeholder="Search ${titles[kind].toLowerCase()}…"></div>${kind==='quotes'?fonte('ver','Cotações são criadas a partir da oportunidade; a home de Quotes não cria cotações no app.'):''}
   <div class="list">${items.map(i=>`<div class="it" onclick="${i.on}"><div class="oi ${kind==='contacts'?'p':kind==='leads'?'t':kind==='quotes'?'g':'p'}">${kind==='contacts'?'👤':kind==='leads'?'★':kind==='quotes'?'🏷':'🏢'}</div><div><b>${esc(i.t)}</b><small>${esc(i.s)}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">Nothing here yet.</div>'}</div>`;
 }
 function telaMenu(){ return topbar('Menu', false) + `<div class="menu-list">
-  ${[['⋮⋮','#747474','App Launcher',"toast('App Launcher: Sales, Service, Revenue Management…')"],['≡','#747474','All Items',"toast('All Items: lista completa de objetos.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}
+  ${[['⋮⋮','#747474','App Launcher',"toast('App Launcher: Sales, Service, Revenue Management…')"],['≡','#747474','All Items',"toast('All Items: lista completa de objetos.')"],['🔎','#0b5cab','Procedência das telas',"go('procedencia')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}
   <div class="sec">Revenue Management <em style="float:right;color:var(--brand);font-style:normal">✎ Edit</em></div>
   ${[['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
 function telaChatter(){ return topbar('Chatter', false) + feedHtml(); }
@@ -1285,6 +1336,7 @@ function agIntent(t){
   if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), agAtuais(), 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
   if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, agAtuais(), 'Regra: matriz de formatação × situações de customização'); return; } }
   if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', agAtuais()); return; }
+  if(/proced|fonte|de onde|oficial|document|verificad|inferid/.test(s)){ agSay('Cada tela traz uma faixa de procedência: verde para o que está confirmado em documentação oficial, no UC-VPN-001 ou na leitura da org HOMOL; azul para proposta do projeto; âmbar para o que existe na doc mas só para Lightning; cinza para chrome do protótipo. A lista completa está em Menu › Procedência das telas.', agAtuais().concat([{l:'Abrir a lista de procedência',f:()=>{agClose();go('procedencia');}}])); return; }
   if(/acr|contrato.*(asset|ativo)|asset.*contrato|vincul/.test(s)){
     if((S.acrs||[]).length) agSay(`Vínculo asset ↔ contrato: ${S.acrs.map(x=>x.assetName+' ↔ contrato '+x.contract+' ('+x.name+', vigência '+x.start+(x.end?' a '+x.end:'')+')').join('; ')}. No Salesforce isso é o objeto AssetContractRelationship, criado quando os assets nascem do pedido ligado ao contrato.`, agAtuais(),'AssetContractRelationship (API 60.0+)');
     else agSay('Ainda não há vínculo: o Asset Contract Relationship é criado quando a orquestração conclui e os assets nascem de um pedido com contrato.', agAtuais());
@@ -1610,7 +1662,7 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
@@ -1618,7 +1670,7 @@ function render(){
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia(); atdRender();
 }
@@ -1653,7 +1705,7 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('More da cotação sem Create PDF / Email Quote / Start Sync (limitação oficial) e com Create Contract/Create Order/Viabilidade', ![...document.querySelectorAll('.bsheet .row')].some(r=>/Email Quote|Create PDF|Start Sync/.test(r.textContent)) && $('.bsheet').textContent.includes('Create Contract') && $('.bsheet').textContent.includes('Create Order') && $('.bsheet').textContent.includes('Consultar Viabilidade'));
     ok('Create Order desabilitado antes de Accepted', [...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
     S.sheet=null; render();
-    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs (0) com nota oficial (não criar/visualizar no app)', $('.rel .h b').textContent==='Quote PDFs (0)' && $('.rel .note').textContent.includes("isn't available in the Salesforce mobile app"));
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs (0) com a procedência oficial', $('.rel .h b').textContent==='Quote PDFs (0)' && [...document.querySelectorAll('.fnt.ver')].some(x=>/não está disponível no app/.test(x.textContent)));
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Browse Catalogs'))); ok('Browse Catalogs → Choose Price Book', $('.modal h3').textContent==='Choose Price Book');
     click($('.modal .brand')); ok('→ All Catalogs', $('.modal h3').textContent==='All Catalogs');
     click($('.modal .brand')); ok('→ Browse Products com busca, categorias e Save Quote', S.tela==='browse' && $('.srch input') && document.querySelectorAll('.cats button').length===4 && $('.foot .brand').textContent.includes('Save Quote'));
@@ -1726,7 +1778,10 @@ if(/selftest=1/.test(location.search)){
     S.docView=null; S.tela='contract'; S.tab='Related'; render();
     ok('o contrato tem a lista relacionada de assets', [...document.querySelectorAll('.rel .h b')].some(b=>/^Assets \(1\)$/.test(b.textContent)));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
-    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
+    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Procedência')));
+    ok('tela de procedência lista as fontes por nível', S.tela==='procedencia' && document.querySelectorAll('.fnt').length>=4 && document.querySelectorAll('.proc').length>=20 && $('#view').textContent.includes('AssetContractRelationship'));
+    go('menu');
+    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
     ok('seções na ordem do layout', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Lead Information|Endereço|Endereço de visita|Dados do contato|Telefones para contato|Dados de marketing|Informações de duplicidade');
