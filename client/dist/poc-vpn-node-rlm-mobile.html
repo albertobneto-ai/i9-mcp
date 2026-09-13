@@ -720,7 +720,7 @@ function addLine(p,cfg,R){
   attrs['Localidade']=CTX.localidade.nome+' · '+CTX.localidade.territorio; attrs['Endereço de instalação']=endFull().nome; attrs['Entidade faturadora']=entidadeFaturadora().valor;
   const line={uid:'L'+lineSeq,id:p.id,name:p.name,sell:p.sell,qty:(S.qtd[p.id]||1),parent:true,attrs,classif:R?R.cls.v:'',loc:CTX.localidade.id,end:endFull().id,viabOk:!!S.viab[endFull().id]};
   lines.push(line);
-  if(cfg) (p.groups||[]).flatMap(g=>g.produtos).forEach(pid=>(cfg.c[compKey(pid)]||[]).forEach(x=>{ const cp=findProd(pid),at={}; resolveAttrs(cp).forEach(a=>{ if(!vazio(x[a.key])) at[a.name]=x[a.key]; }); lineSeq++; lines.push({uid:'L'+lineSeq,id:cp.id,name:(x.TipoEquipamento||cp.name),sell:cp.sell,qty:1,parent:false,parentUid:line.uid,attrs:at}); }));
+  if(cfg) (p.groups||[]).flatMap(g=>g.produtos).forEach(pid=>(cfg.c[compKey(pid)]||[]).forEach(x=>{ const cp=findProd(pid),at={}; resolveAttrs(cp).forEach(a=>{ if(!vazio(x[a.key])) at[a.name]=x[a.key]; }); if(x.Quantidade) at['Quantidade']=x.Quantidade; lineSeq++; lines.push({uid:'L'+lineSeq,id:cp.id,name:(x.TipoEquipamento||cp.name),sell:cp.sell,qty:x.Quantidade||1,parent:false,parentUid:line.uid,attrs:at}); }));
   return line;
 }
 const ACESSO = ['VPNNODE','LINKDED','BLEMP'];
@@ -1118,9 +1118,12 @@ function agNextCfg(){
   if(a.ModalidadeInstalacao==='Virtual/Fabric'){ for(const k of ['ModeloDisponibilizacao','ProvedorCloud']){ if(vazio(a[k])){ agSay(`${ATTRS[k].name}?`, agVals(k).map(v=>({l:v,f:()=>{agSet(k,v);agNextCfg();}}))); return; } } if(vazio(a.VelocidadeConexao)){ agSay('Velocidade da conexão (Mbps)?', ['100','500','1000'].map(v=>({l:v+' Mbps',f:()=>{agSet('VelocidadeConexao',v);agNextCfg();}}))); return; } }
   if(CTX.endereco.dataCenter && vazio(a.GoldenJumper)){ agSay('Endereço de Data Center: quem é o responsável pela conexão interna (Golden Jumper)?', agVals('GoldenJumper').map(v=>({l:v,f:()=>{agSet('GoldenJumper',v);agNextCfg();}}))); return; }
   if(a.GoldenJumper==='Algar'){ for(const k of ['InterfaceGJ','NomeJumper']){ if(vazio(a[k])){ if(ATTRS[k].ui==='picklist') agSay(`${ATTRS[k].name}?`, agVals(k).map(v=>({l:v,f:()=>{agSet(k,v);agNextCfg();}}))); else agSay(`Informe ${ATTRS[k].name} (texto):`, [{l:'Cross Servidor BD',f:()=>{agSet(k,'Cross Servidor BD');agNextCfg();}}]); return; } } }
-  if(!AG.equipOk){ const eq=(AG.cfg.c.equip||[]).map(x=>x.TipoEquipamento);
-    if(!eq.length){ agSay(`Passo 5: a Revisão 1 não define o dimensionamento automático de equipamentos para ${a.Tecnologia}. Quais equipamentos incluir (em comodato)?`, agEquipChips()); return; }
-    agSay(`Passo 5: pela tecnologia ${a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}, os equipamentos são ${eq.join(', ')} em comodato. Confirmar?`, [{l:'Confirmar',f:()=>{AG.equipOk=true;agNextCfg();},pri:true},{l:'Alterar equipamentos',f:()=>agSay('Marque ou desmarque os equipamentos:',agEquipChips())},{l:'Ajustar no configurador',f:agOpenCfg}]); return; }
+  if(!AG.equipOk){ const arr=AG.cfg.c.equip||[];
+    if(!arr.length){ const semRegra=!['GPON','Metro','Rádio'].includes(a.Tecnologia);
+      agSay(semRegra
+        ? `Passo 5: a Revisão 1 não define o dimensionamento automático para ${a.Tecnologia}. Escolha os equipamentos — a cada um eu pergunto a quantidade e a modalidade.`
+        : `Passo 5: o dimensionamento automático vale na esteira formatada; aqui o atendimento é ${String(d.classificacao).toLowerCase()}, então os equipamentos são definidos manualmente. Escolha os equipamentos — a cada um pergunto quantidade e modalidade.`, agEquipChips()); return; }
+    agSay(`Passo 5: pela tecnologia ${a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}, ficaram estes equipamentos: ${arr.map(x=>x.TipoEquipamento+' ('+(x.Quantidade||1)+'× '+(x.ModalidadeEquipamento||'—')+')').join(', ')}. Confirmar?`, [{l:'Confirmar',f:()=>{AG.equipOk=true;agNextCfg();},pri:true},{l:'Alterar equipamentos',f:()=>agSay('Toque num equipamento para incluir e configurar, ou num incluído para alterar:',agEquipChips())},{l:'Ajustar no configurador',f:agOpenCfg}]); return; }
   if(!AG.svaOk){ agSay('Passo 6: serviços de valor agregado?', [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Upgrade temporário de velocidade',f:agUpgrade},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
   if(vazio(a.PeriodoFidelizacao)){ agSay('Passo 7: condições contratuais. Período de fidelização?', agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}}))); return; }
   if(vazio(a.TipoReajuste)){ agSay('Tipo de reajuste?', agVals('TipoReajuste').map(v=>({l:v,f:()=>{agSet('TipoReajuste',v);agNextCfg();}}))); return; }
@@ -1131,9 +1134,22 @@ function agNextCfg(){
   if(!R.hidden.ValorMoeda && vazio(a.ValorMoeda)){ agSay('Cliente internacional: cotação de conversão do dólar?', [{l:'5,20',f:()=>{agSet('ValorMoeda','5.20');agNextCfg();}}]); return; }
   agValidar();
 }
-function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]); const has=t=>arr.some(x=>x.TipoEquipamento===t);
-  return EQUIP_TIPOS.map(t=>({l:(has(t)?'✓ ':'')+t,f:()=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); if(i>=0) arr.splice(i,1); else { const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.ModalidadeEquipamento='Comodato'; arr.push(o); } AG.cfg.autoSig='manual'; agSay('Equipamentos: '+(arr.map(x=>x.TipoEquipamento).join(', ')||'nenhum')+'.', agEquipChips()); }}))
-    .concat([{l:'Concluir',f:()=>{ if(!(AG.cfg.c.equip||[]).length){ agSay('O grupo exige pelo menos 1 equipamento.',agEquipChips()); return; } AG.equipOk=true; agNextCfg(); },pri:true}]); }
+function agEquipResumo(){ const arr=AG.cfg.c.equip||[]; return arr.length?arr.map(x=>`${x.TipoEquipamento} — ${x.Quantidade||1}× ${x.ModalidadeEquipamento||'modalidade pendente'}`).join(' · '):'nenhum'; }
+function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
+  return EQUIP_TIPOS.map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
+    return { l:(on?'✓ ':'')+t+(on?` — ${arr[i].Quantidade||1}× ${arr[i].ModalidadeEquipamento||'pendente'}`:''),
+      f:()=>{ if(on){ agSay(`${t}: o que deseja?`, [{l:'Alterar quantidade',f:()=>agEquipQtd(t)},{l:'Alterar modalidade',f:()=>agEquipMod(t)},{l:'Remover',f:()=>{ const j=arr.findIndex(x=>x.TipoEquipamento===t); if(j>=0) arr.splice(j,1); AG.cfg.autoSig='manual'; agSay('Equipamentos: '+agEquipResumo()+'.', agEquipChips()); }},{l:'Voltar',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]); return; }
+        const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual'; agEquipQtd(t); } }; })
+  .concat([{l:'Concluir',f:()=>{ const a2=AG.cfg.c.equip||[]; if(!a2.length){ agSay('O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.',agEquipChips()); return; }
+    const semMod=a2.find(x=>!x.ModalidadeEquipamento); if(semMod){ agEquipMod(semMod.TipoEquipamento); return; } AG.equipOk=true; agNextCfg(); },pri:true}]); }
+function agEquipQtd(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
+  agSay(t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1.`:`${t}: quantidade?`,
+    [1,2,3,4].filter(n=>!(t==='Roteador'&&n>1)).map(n=>({l:n+(n>1?' unidades':' unidade'),f:()=>{ it.Quantidade=n; agEquipMod(t); }})) ); }
+function agEquipMod(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
+  const R=avaliar(AG.cfg); const podeEditar=CTX.usuario.perms.includes('complementacao')||R.cls.v==='Customizado';
+  const vals=podeEditar?ATTRS.ModalidadeEquipamento.values:['Locação'];
+  agSay(`${t}: modalidade do equipamento?${podeEditar?'':' Padrão Locação na esteira formatada; alterar exige permissão de complementação técnica.'}`,
+    vals.map(v=>({l:v,f:()=>{ it.ModalidadeEquipamento=v; agSay(`${t}: ${it.Quantidade||1}× ${v}. Equipamentos: ${agEquipResumo()}.`, agEquipChips()); }})) ); }
 function agPedirData(key,label){ AG.dateAsk={key,label,val:new Date().toISOString().slice(0,10)}; agSay(`${label}? Escolha no calendário — começa em hoje.`,[]); }
 function agDataOk(){ const d=AG.dateAsk; const v=($('#ag-date')||{}).value||d.val; AG.dateAsk=null; agUser(v.split('-').reverse().join('/')); agSet(d.key,v); agNextCfg(); }
 function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg); agSay(`${v}. Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, [], 'Regra: matriz de formatação × viabilidade'); agNextCfg(); }
