@@ -18,15 +18,22 @@ a{color:var(--brand);text-decoration:none}
 #poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px}
 #guia{position:fixed;left:0;right:0;bottom:118px;max-width:430px;margin:0 auto;padding:0 12px;z-index:26;display:none}
 #guia.show{display:block}
-#guia .g-body{background:#fff;border:1px solid #fadfa4;border-left:4px solid #fe9339;border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.18);padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:12.5px;line-height:1.35;color:#3e3e3c}
-#guia .g-ic{font-size:16px;flex:none}
+#guia .g-body{background:#fff;border:1px solid #fadfa4;border-left:4px solid #fe9339;border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.18);padding:10px 12px;font-size:13px;line-height:1.4;color:#3e3e3c;max-height:56vh;overflow:auto}
+#guia .g-top{display:flex;align-items:flex-start;gap:10px}
+#guia .g-ic{font-size:16px;flex:none;line-height:1.3}
 #guia .g-txt{flex:1}
 #guia .g-txt b{color:#8c4b02}
-#guia .g-txt small{display:block;color:var(--mut);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
-#guia .g-go{flex:none;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:16px;padding:7px 12px;font-size:12px;font-weight:600}
+#guia .g-x{flex:none;border:0;background:0;color:var(--mut);font-size:15px;padding:0 2px;line-height:1}
+#guia .g-passos{display:none}
+#guia.open .g-passos{display:block;margin:8px 0 0 4px}
+#guia .g-passos ol{margin:0;padding-left:20px}
+#guia .g-passos li{margin:5px 0;color:#444}
+#guia .g-acts{display:flex;gap:8px;align-items:center;margin-top:9px}
+#guia .g-exp{border:1px solid var(--bd2);background:#fff;color:var(--brand);border-radius:16px;padding:7px 12px;font-size:12px;font-weight:600}
+#guia .g-go{margin-left:auto;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:16px;padding:7px 14px;font-size:12px;font-weight:600}
 #guia .g-go.hide{display:none}
-#guia .g-x{flex:none;border:0;background:0;color:var(--mut);font-size:14px;padding:0 2px}
-#guia.min .g-txt small,#guia.min .g-go{display:none}
+#guia-abrir{position:fixed;right:12px;bottom:124px;z-index:26;display:none;width:44px;height:44px;border-radius:50%;border:1px solid #fadfa4;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.2);font-size:19px}
+#guia-abrir.show{display:block}
 #app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;background:#fff;padding-bottom:128px}
 .sb{height:22px;display:flex;justify-content:space-between;padding:3px 14px;font-size:11px}
 .top{display:flex;align-items:center;padding:8px 12px;gap:8px;min-height:44px}
@@ -304,7 +311,12 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 </div>
 <div id="overlay"></div>
 <div id="atd" onclick="atdDetalhe()"></div>
-<div id="guia"><div class="g-body"><span class="g-ic">🧭</span><div class="g-txt" id="guia-txt"></div><button class="g-go" id="guia-go"></button><button class="g-x" onclick="S.guiaOff=!S.guiaOff;render()">▾</button></div></div>
+<div id="guia"><div class="g-body">
+  <div class="g-top"><span class="g-ic">🧭</span><div class="g-txt" id="guia-txt"></div><button class="g-x" title="Ocultar" onclick="S.guiaMode='off';render()">✕</button></div>
+  <div class="g-passos" id="guia-passos"></div>
+  <div class="g-acts"><button class="g-exp" id="guia-exp" onclick="S.guiaMode=(S.guiaMode==='open'?'compact':'open');render()">Como faço?</button><button class="g-go" id="guia-go"></button></div>
+</div></div>
+<button id="guia-abrir" title="Mostrar roteiro" onclick="S.guiaMode='compact';render()">🧭</button>
 <div class="agent" id="agent"><div onclick="agOpen()"><span class="afi" id="afi"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><span>Ask Agentforce</span><span class="mic" onclick="event.stopPropagation();agOpen();toast('Microfone: use o texto neste protótipo.')">🎤</span></div></div>
 <div id="agp"><div class="agp-h"><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><b>Agentforce</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato, pedido e acompanha a orquestração.')">ⓘ</button><button class="ic" onclick="agClose()">✕</button></div>
   <div class="agp-b" id="agp-b"></div>
@@ -547,7 +559,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, docView:null, guiaOff:false, flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -1297,37 +1309,87 @@ function atdRender(){
 }
 function atdDetalhe(){ const a=atdAtual(); if(!a) return; toast(`Atendimento ${a.cls.v} — ${(a.cls.motivos||[]).join('; ')} · ${endFull().nome}`, a.cls.v==='Formatado'?'':'warn'); }
 function guia(){
-  const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk); let t='', acao=null;
-  if(S.tela==='opp'&&!S.quote) { t=S.tab==='Related'?'Em <b>Quotes</b>, toque em <b>New</b> para criar a cotação.':'Abra a aba <b>Related</b> e crie a cotação em Quotes › New.'; acao={l:S.tab==='Related'?'New':'Related',f:()=>{ if(S.tab==='Related') go('newquote'); else { S.tab='Related'; render(); } }}; }
-  else if(S.tela==='newquote') { t='Confira o nome da cotação e toque em <b>Save</b>.'; }
-  else if(S.tela==='quote'&&!n) { t='Adicione o produto: <b>Browse Catalogs</b> › tabela de preços › catálogo.'; acao={l:'Browse',f:()=>browse()}; }
-  else if(S.tela==='browse'&&!n) { t='No VPN Node, toque em <b>⚙</b>: primeiro o endereço de instalação (UC passo 1).'; acao={l:'Configurar',f:()=>openConfig('VPNNODE')}; }
-  else if(S.tela==='local') { t='<b>UC passo 1</b> · confirme localidade e endereço; a viabilidade (passo 2) roda automática.'; }
-  else if(S.tela==='flow'&&S.flow&&S.flow.auto) { t='<b>UC passo 2</b> · retorno da viabilidade: tecnologia, interface, abordagem e distância.'; }
-  else if(S.tela==='config') { t='<b>UC passos 3 a 7</b> · rede › velocidade › infraestrutura › equipamentos › SVAs › contrato › <b>Save &amp; Exit</b>.'; }
-  else if(S.tela==='browse'&&n) { t='Toque em <b>Save Quote</b> para voltar à cotação com o item.'; }
-  else if(S.tela==='flow') { t='Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.'; }
-  else if(S.tela==='quote'&&n&&!S.pdfs.length) { t='Gere e envie a <b>proposta</b>; depois marque <b>Presented</b> no path.'; acao={l:'Gerar proposta',f:()=>gerarProposta()}; }
-  else if(S.tela==='quote'&&viab&&!S.contract) { t='Crie o <b>contrato</b>, gere o documento e envie para assinatura.'; acao={l:'Create Contract',f:()=>createContract()}; }
-  else if(S.tela==='contract'&&!S.contract.docs.length) { t='Toque em <b>Generate Doc</b> e depois em <b>Send eSign</b>.'; acao={l:'Generate Doc',f:()=>genContractDoc()}; }
-  else if(S.tela==='contract'&&S.contract.esig==='Not sent') { t='Toque em <b>Send eSign</b> › Send para criar o envelope DocuSign.'; acao={l:'Send eSign',f:()=>{S.modal='esig';render();}}; }
-  else if(S.tela==='contract'&&S.contract.esig==='Sent') { t='Aguardando assinatura — use <b>Simular assinatura</b> para o retorno do DocuSign.'; acao={l:'Simular',f:()=>simularAssinatura()}; }
-  else if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') { t='Na cotação, marque <b>Accepted</b> no path para liberar o pedido.'; acao={l:'Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;S.tab='Details';go('quote',true);toast('Status changed successfully.');}}; }
-  else if(S.qStatus==='Accepted'&&!S.order) { t='<b>Create Order</b> › Create Single Order › Finish.'; acao={l:'Create Order',f:()=>{S.modal='order';render();}}; }
-  else if(S.order&&S.order.status!=='Activated') { t='No pedido, toque em <b>Activate</b> — ou peça ao Agentforce, que explica o fluxo antes.'; acao={l:'Activate',f:()=>{S.modal='activate';render();}}; }
-  else if(S.order&&S.order.status==='Activated'&&!S.order.submitted) { t='<b>Submit Order</b> dispara a decomposição em produtos técnicos e a orquestração.'; acao={l:'Submit',f:()=>submeterPedido()}; }
-  else if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') { t='Acompanhe em <b>Decomposition › View Orchestration Plan</b> e conclua as tarefas manuais.'; acao={l:'Ver plano',f:()=>go('plan')}; }
-  else if(S.order&&S.order.plan&&S.order.plan.status==='Completed') { t='Concluído: veja os <b>assets</b> na conta ou o resumo do pedido.'; acao={l:'Ver pedido',f:()=>{S.docView='order';render();}}; }
-  else if(S.tela==='quote'&&n) { t='Acompanhe pela aba <b>Lines</b> ou veja o resumo da cotação.'; acao={l:'Ver cotação',f:()=>{S.docView='quote';render();}}; }
-  else if(S.tela==='order') { t='Veja o resumo do pedido com itens, produtos técnicos e orquestração.'; acao={l:'Ver pedido',f:()=>{S.docView='order';render();}}; }
-  else if(S.tela==='accounts'&&S.assets.length) { t='Assets criados: use <b>Amend</b>, <b>Renew</b> ou <b>Cancel</b> para o pós-venda.'; }
-  const el=$('#guia'); const esconder = !t || AG.open || S.pdfView || S.docView || S.modal || S.sheet;
-  el.className = esconder ? '' : ('show'+(S.guiaOff?' min':''));
-  if(esconder) return;
-  $('#guia-txt').innerHTML = (S.guiaOff?'':'<small>Roteiro sugerido</small>')+t;
-  const go=$('#guia-go');
-  if(acao && !S.guiaOff){ go.className='g-go'; go.textContent=acao.l; go.onclick=acao.f; } else { go.className='g-go hide'; go.onclick=null; }
-  $('#guia .g-x').textContent = S.guiaOff?'▴':'▾';
+  const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk);
+  const C=[]; const add=(cond,t,passos,acao)=>{ if(cond && !C.length) C.push({t,passos,acao}); };
+  add(S.tela==='opp'&&!S.quote&&S.tab!=='Related','Crie a cotação a partir desta oportunidade.',
+      ['Toque na aba <b>Related</b>, aqui no registro da oportunidade.','Na lista <b>Quotes</b>, toque em <b>New</b>.','Também dá para usar <b>More › New Quote</b>.'],
+      {l:'Abrir Related',f:()=>{S.tab='Related';render();}});
+  add(S.tela==='opp'&&!S.quote,'Em <b>Quotes</b>, toque em <b>New</b> para criar a cotação.',
+      ['O link <b>New</b> fica à direita do título Quotes.','Confira o nome e toque em <b>Save</b>.','No app, a cotação só nasce a partir da oportunidade.'],
+      {l:'New Quote',f:()=>go('newquote')});
+  add(S.tela==='newquote','Confira o nome e toque em <b>Save</b>.',
+      ['<b>Quote Name</b> e <b>Account for Quote</b> são obrigatórios.','Expiration Date e Status já vêm preenchidos.','<b>Save</b> fica no canto superior direito.'],
+      {l:'Salvar',f:()=>saveQuote()});
+  add(S.tela==='quote'&&!n,'Adicione o produto pelo catálogo.',
+      ['Na barra de ações, toque em <b>Browse Catalogs</b>.','Escolha a tabela de preços e toque em <b>Save</b>.','Escolha o catálogo e toque em <b>Next</b>.'],
+      {l:'Browse Catalogs',f:()=>browse()});
+  add(S.tela==='browse'&&!n,'No VPN Node, toque em <b>⚙</b> para configurar.',
+      ['O <b>⚙</b> abre a configuração; <b>Add</b> adiciona direto.','Primeiro vem o endereço de instalação (UC passo 1).','Depois a viabilidade roda sozinha (UC passo 2).'],
+      {l:'Configurar',f:()=>openConfig('VPNNODE')});
+  add(S.tela==='local','<b>UC passo 1</b> · confirme localidade e endereço.',
+      ['A localidade define território e entidade faturadora.','O endereço é a Service Account do node.','Toque em <b>Consultar viabilidade</b> para o passo 2.'],null);
+  add(S.tela==='flow'&&S.flow&&S.flow.auto,'<b>UC passo 2</b> · resultado da viabilidade.',
+      ['Tecnologia, interface, abordagem e distância vêm da consulta.','Sem cobertura ou rede neutra encerram como inviável.','Toque em <b>Continuar para a configuração</b>.'],null);
+  add(S.tela==='config','<b>UC passos 3 a 7</b> · configure na ordem das abas.',
+      ['Rede privativa › Acesso (velocidade) › infraestrutura.','Depois equipamentos, SVAs e condições contratuais.','Campos com <b style="color:var(--err)">*</b> são obrigatórios.','Ao final, <b>Save &amp; Exit</b>.'],null);
+  add(S.tela==='browse'&&n,'Toque em <b>Save Quote</b> para voltar à cotação.',
+      ['O rodapé tem <b>Back to Catalogs</b> e <b>Save Quote</b>.','Os itens aparecem na aba <b>Lines</b>.'],null);
+  add(S.tela==='flow','Selecione o item e toque em <b>Next</b>.',
+      ['Marque os itens a consultar.','No resultado, toque em <b>Finish</b>.'],null);
+  add(S.tela==='quote'&&n&&!S.pdfs.length,'Gere e envie a <b>proposta</b>, depois marque <b>Presented</b>.',
+      ['No app não dá para criar nem abrir PDF — é limitação oficial.','Use <b>Gerar proposta (Lightning)</b> na barra escura do topo: é o vendedor fazendo isso no desktop.','O arquivo passa a aparecer em <b>Related › Quote PDFs</b>.','Depois toque em <b>Presented</b> no path e em <b>Mark as Current Status</b>.'],
+      {l:'Gerar proposta',f:()=>gerarProposta()});
+  add(S.tela==='quote'&&viab&&!S.contract,'Crie o <b>contrato</b> e envie para assinatura.',
+      ['Toque em <b>More › Create Contract</b>.','No contrato, <b>Generate Doc</b> cria o documento.','Depois <b>Send eSign</b> abre o envio via DocuSign.'],
+      {l:'Create Contract',f:()=>createContract()});
+  add(S.tela==='contract'&&S.contract&&!S.contract.docs.length,'Gere o documento do contrato.',
+      ['Toque em <b>Generate Doc</b> na barra de ações.','O documento aparece na aba <b>Related</b>.'],
+      {l:'Generate Doc',f:()=>genContractDoc()});
+  add(S.tela==='contract'&&S.contract&&S.contract.esig==='Not sent','Envie o contrato para assinatura.',
+      ['Toque em <b>Send eSign</b>.','Confira fornecedor, template e destinatários.','Toque em <b>Send</b> para criar o envelope.'],
+      {l:'Send eSign',f:()=>{S.modal='esig';render();}});
+  add(S.tela==='contract'&&S.contract&&S.contract.esig==='Sent','Aguardando a assinatura do cliente.',
+      ['No mundo real, o cliente assina no DocuSign.','Aqui, use <b>Simular assinatura</b> na barra escura do topo.','O contrato passa a Activated.'],
+      {l:'Simular',f:()=>simularAssinatura()});
+  add(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted','Marque a cotação como <b>Accepted</b>.',
+      ['Abra a cotação na aba <b>Details</b>.','No path, toque em <b>Accepted</b>.','Toque em <b>Mark as Current Status</b>.','Só então o Create Order é liberado.'],
+      {l:'Marcar Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;S.tab='Details';go('quote',true);toast('Status changed successfully.');}});
+  add(S.qStatus==='Accepted'&&!S.order,'Crie o <b>pedido</b> a partir da cotação.',
+      ['Toque em <b>More › Create Order</b>.','Escolha <b>Create Single Order</b> e toque em <b>Finish</b>.'],
+      {l:'Create Order',f:()=>{S.modal='order';render();}});
+  add(S.order&&S.order.status!=='Activated','Ative o pedido.',
+      ['No pedido, toque em <b>Activate</b> na barra de ações.','A ativação trava a edição dos itens.','Ou pergunte ao Agentforce: ele explica o fluxo antes de agir.'],
+      {l:'Activate',f:()=>{S.modal='activate';render();}});
+  add(S.order&&S.order.status==='Activated'&&!S.order.submitted,'<b>Submit Order</b> inicia a orquestração.',
+      ['Toque em <b>Submit Order</b>.','O pedido é decomposto em produtos técnicos.','O plano de orquestração começa a rodar.'],
+      {l:'Submit Order',f:()=>submeterPedido()});
+  add(S.order&&S.order.plan&&S.order.plan.status!=='Completed','Acompanhe a orquestração.',
+      ['A aba <b>Decomposition</b> lista os produtos técnicos.','<b>View Orchestration Plan</b> mostra raias e etapas.','As tarefas manuais esperam o botão <b>Complete</b>.'],
+      {l:'Ver plano',f:()=>go('plan')});
+  add(S.order&&S.order.plan&&S.order.plan.status==='Completed','Concluído: assets criados na conta.',
+      ['<b>Account › Assets</b> traz Managed e Fulfillment Assets.','<b>Amend</b>, <b>Renew</b> e <b>Cancel</b> são o pós-venda.','O resumo do pedido mostra tudo junto.'],
+      {l:'Ver pedido',f:()=>{S.docView='order';render();}});
+  add(S.tela==='quote'&&n,'Consulte os itens ou o resumo da cotação.',
+      ['A aba <b>Lines</b> lista itens e componentes.','<b>More › Visualizar cotação</b> abre o resumo completo.'],
+      {l:'Ver cotação',f:()=>{S.docView='quote';render();}});
+  add(S.tela==='order','Consulte o resumo do pedido.',
+      ['<b>More › Visualizar pedido</b> abre o resumo.','Traz itens, produtos técnicos e orquestração.'],
+      {l:'Ver pedido',f:()=>{S.docView='order';render();}});
+  add(S.tela==='accounts'&&S.assets.length,'Assets do cliente.',
+      ['A aba <b>Assets</b> lista os Managed Assets.','<b>Amend</b>, <b>Renew</b> e <b>Cancel</b> abrem o pós-venda.'],null);
+
+  const el=$('#guia'), bt=$('#guia-abrir'), c=C[0];
+  const esconder = !c || AG.open || S.pdfView || S.docView || S.modal || S.sheet;
+  if(esconder){ el.className=''; bt.className=''; return; }
+  if(S.guiaMode==='off'){ el.className=''; bt.className='show'; return; }
+  bt.className='';
+  const aberto = S.guiaMode==='open';
+  el.className='show'+(aberto?' open':'');
+  $('#guia-txt').innerHTML=c.t;
+  $('#guia-passos').innerHTML = aberto ? '<ol>'+c.passos.map(x=>`<li>${x}</li>`).join('')+'</ol>' : '';
+  const g=$('#guia-go');
+  if(c.acao){ g.className='g-go'; g.textContent=c.acao.l; g.onclick=c.acao.f; } else { g.className='g-go hide'; g.onclick=null; }
+  $('#guia-exp').textContent = aberto ? 'Ocultar passos' : 'Como faço?';
 }
 
 /* ---------- render ---------- */
@@ -1393,10 +1455,15 @@ if(/selftest=1/.test(location.search)){
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
     ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
     ok('asterisco em todos os obrigatórios da categoria e legenda no topo', (()=>{ const R=avaliarUI(cfgProduct); const vis=cfgProduct.defs.filter(x=>x.cat===S.atab&&!x.hidden&&!R.hidden[x.key]); const esp=vis.filter(x=>R.required[x.key]||(x.obg&&!x.ro)).length; return document.querySelectorAll('.fld .rq').length===esp && esp>0 && $('#view').textContent.includes('campo obrigatório'); })());
-    ok('roteiro flutuante na parte de baixo, com ação sugerida', $('#guia').classList.contains('show') && $('#guia').getBoundingClientRect().top > window.innerHeight/2 && $('#guia-txt').textContent.length>10);
+    ok('roteiro flutuante no rodapé, com "Como faço?"', $('#guia').classList.contains('show') && $('#guia').getBoundingClientRect().top > window.innerHeight/2 && $('#guia-exp').textContent==='Como faço?');
+    $('#guia-exp').click(); ok('expandir mostra o passo a passo numerado', $('#guia').classList.contains('open') && document.querySelectorAll('#guia-passos li').length>=2 && $('#guia-exp').textContent==='Ocultar passos');
+    $('#guia-exp').click(); ok('recolhe os passos', !$('#guia').classList.contains('open'));
+    $('#guia .g-x').click(); ok('ocultar esconde o cartão e deixa o botão de voltar', !$('#guia').classList.contains('show') && $('#guia-abrir').classList.contains('show'));
+    $('#guia-abrir').click(); ok('botão traz o roteiro de volta', $('#guia').classList.contains('show') && !$('#guia-abrir').classList.contains('show'));
     ok('marcador flutuante mostra o atendimento', $('#atd').classList.contains('show') && /Atendimento (Formatado|Customizado|Pendente|Inviável)/.test($('#atd').textContent));
     const n=lines.length; click($('.foot .brand')); ok('Save & Exit cria a linha com 3 componentes e volta ao Browse Products', lines.length===n+4 && S.tela==='browse');
     click($('.foot .brand')); ok('Save Quote → aba Lines com a linha viável e Quote Summary', S.tela==='quote' && S.tab==='Lines' && $('.badge.ok') && $('#view').textContent.includes('Quote Summary'));
+    ok('na cotação o roteiro sugere a ação do cenário', $('#guia-go').className==='g-go' && $('#guia-go').textContent.length>3);
     click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Group')); ok('Add Group cria um grupo de linhas', S.groups.length===1);
     click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Assets')); ok('Add Assets informa que não há assets', $('.bsheet').textContent.includes('No assets')); S.sheet=null; render();
     const nv=lines.filter(l=>l.parent)[0];
