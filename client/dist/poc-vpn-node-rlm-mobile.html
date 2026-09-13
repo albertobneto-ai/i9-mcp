@@ -27,7 +27,7 @@ a{color:var(--brand);text-decoration:none}
 .acts{display:flex;justify-content:space-around;padding:10px 6px 8px;border-bottom:1px solid var(--bd)}
 .act{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--tx2);background:0;border:0;width:78px}
 .act i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-size:17px}
-.b{background:#1b96ff}.t{background:#0b827c}.g{background:#2e844a}.m{background:#747474}.o{background:#f88962}.p{background:#7f8de1}.r{background:#ba0517}.y{background:#ff9e2c}
+i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#2e844a}i.m,.oi.m{background:#747474}i.o,.oi.o{background:#f88962}i.p,.oi.p{background:#7f8de1}i.r,.oi.r{background:#ba0517}i.y,.oi.y{background:#ff9e2c}
 .rh{background:var(--gray);padding:14px;display:flex;gap:12px;align-items:flex-start}
 .rh .oi{width:34px;height:34px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:17px;flex:none}
 .rh small{display:block;font-size:14px;color:var(--tx2)}
@@ -239,7 +239,7 @@ a{color:var(--brand);text-decoration:none}
 <body>
 <div id="poc"><b>Protótipo · cenário</b>
   <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
-  <button onclick="simularAssinatura()">Simular assinatura (DocuSign)</button><button onclick="reset()">Reiniciar</button></div>
+  <button onclick="gerarProposta()">Gerar proposta (Lightning)</button><button onclick="simularAssinatura()">Simular assinatura (DocuSign)</button><button onclick="reset()">Reiniciar</button></div>
 <div id="guia"></div>
 <div id="app">
   <div class="sb"><span>9:41</span><span>●●● ⌂ 100%</span></div>
@@ -452,7 +452,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'', close:'2026-10-30', prob:'50%' }, feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], groups:[], hist:[] }; }
+  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -551,17 +551,38 @@ function telaQuote(){
       return `<div class="line"><div class="n"><span>${i+1}</span><b onclick="S.sheet='line:${l.uid}';render()">${esc(l.name)}</b>${l.viabOk?'<span class="badge ok">viável</span>':(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP')?'<span class="badge warn">viabilidade pendente</span>':''}<button class="act" onclick="S.sheet='menu:${l.uid}';render()">▾</button></div>
         <div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Selling Model <b>${SM[l.sell]||l.sell}</b></span><span>List Price <b>${fmtMoney()}</b></span><span>Net Amount <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Atendimento <b>${esc(l.classif||'—')}</b></span></div>
         ${kids.map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · ${SM[k.sell]||k.sell} · Included</div>`).join('')}</div>`; }).join('')
-      : '<div class="line" style="color:var(--mut)">No quote line items. Use Browse Catalogs to add products.</div>'}`
+      : '<div class="line" style="color:var(--mut)">No quote line items. Use Browse Catalogs to add products.</div>'}
+    ${roots.length?`<div class="line grp">Quote Summary <span class="badge">Product Subtotal ${fmtMoney()} · Discount 0.00% · Total with Tax ${fmtMoney()}</span></div>`:''}`
   : S.tab==='Related' ? relatedQuote() : feedHtml()}`;
 }
 function quoteSel(s){ S.qSel=s; render(); }
 function quoteMark(){ const ci=QSTEPS.indexOf(S.qStatus); S.qStatus = S.qSel&&S.qSel!==S.qStatus ? S.qSel : QSTEPS[Math.min(ci+1,QSTEPS.length-1)]; S.qSel=null; toast('Status changed successfully.'); render(); }
 function relatedQuote(){
   const c=S.contract, o=S.order;
-  return `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Quote PDFs (0)</b></div><div class="note">Creating, emailing and deleting quote PDFs isn't available in the Salesforce mobile app. PDFs created in Lightning Experience appear here but can't be viewed.</div></div>
+  return `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Quote PDFs (${S.pdfs.length})</b></div>${S.pdfs.map(pf=>`<div class="it" onclick="S.sheet='pdf';render()"><b>${esc(pf.name)}</b><small>${esc(pf.tpl)} · ${pf.quando} · ${pf.emailed?'Emailed':'Created'} in Lightning Experience</small></div>`).join('')}<div class="note">Creating, emailing and deleting quote PDFs isn't available in the Salesforce mobile app. PDFs created in Lightning Experience appear here but can't be viewed.</div></div>
   <div class="rel"><div class="h"><div class="oi p">📝</div><b>Contracts (${c?1:0})</b>${c?'':'<a onclick="createContract()">New</a>'}</div>${c?`<div class="it" onclick="go('contract')"><b>${c.number}</b><small>Status ${esc(c.status)} · eSignature ${esc(c.esig)}</small></div>`:'<div class="it" style="color:var(--mut)">No contracts.</div>'}</div>
   <div class="rel"><div class="h"><div class="oi" style="background:#769ed9">📦</div><b>Orders (${o?1:0})</b></div>${o?`<div class="it" onclick="go('order')"><b>${o.number}</b><small>Status ${esc(o.status)} · Order Amount ${fmtMoney()}</small></div>`:'<div class="it" style="color:var(--mut)">No orders. Set the quote to Accepted and use More › Create Order.</div>'}</div>
   <div class="rel"><div class="h"><div class="oi p">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`;
+}
+function sheetPdf(){ return sheet(`<div class="row" style="border:0;font-weight:700">${esc(S.pdfs[0].name)}</div><div class="note" style="padding:0 18px 12px;color:var(--mut);font-size:13px;line-height:1.45">Quote PDFs aren't viewable in the Salesforce mobile app (ajuda oficial). O documento foi gerado e enviado pelo Lightning Experience.</div>${row('👁','b','Ver a proposta enviada (visualização do protótipo, fora do app)','S.sheet=null;S.pdfView=true;render()')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function gerarProposta(){ if(!S.quote||!lines.some(l=>l.parent)){ toast('Crie a cotação e adicione o VPN Node antes de gerar a proposta.','warn'); return; } if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1', tpl:'Proposta Comercial Algar — Conectividade', quando:new Date().toLocaleDateString('pt-BR'), emailed:true}); if(S.qStatus==='Draft') S.qSel='Presented'; S.pdfView=true; S.tab='Related'; S.hist=['opp']; go('quote',true); toast('Proposta gerada e enviada pelo Lightning Experience (Create PDF › Save to Quote › Email Quote).'); }
+function pdfViewHtml(){
+  const roots=lines.filter(l=>l.parent); const l0=roots[0]||{attrs:{}};
+  return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column"><div class="form-h"><a onclick="S.pdfView=false;render()">Fechar</a><b>Proposta enviada (PDF)</b><a></a></div>
+  <div class="nv-tag">Visualização do protótipo: no app o PDF só aparece listado. Documento gerado no Lightning pelo template "Proposta Comercial Algar — Conectividade".</div>
+  <div style="overflow:auto;padding:14px;background:#5a5a5a;flex:1"><div style="background:#fff;padding:22px 18px;font-size:13px;line-height:1.5;color:#111;box-shadow:0 4px 18px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">Proposta Comercial · Conectividade Corporativa</div></div><div style="text-align:right"><b>Cotação ${S.quote.number}</b><div style="color:#666;font-size:12px">Validade ${esc(S.quote.exp)}</div></div></div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Cliente</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Segmento</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.segmento)}</td></tr><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Preparado por</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.usuario.nome)}</td></tr></table>
+    <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Itens da proposta</h3>
+    ${roots.map((l,i)=>`<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px"><b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · ${SM[l.sell]||l.sell}<div style="color:#444;font-size:12px;margin-top:4px">${['Velocidade','Tecnologia','Interface','Abordagem','VPN Network','Protocolo de Roteamento','Modalidade de Instalação','Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l.attrs&&l.attrs[k]).map(k=>'<b>'+k+':</b> '+esc(l.attrs[k])).join(' · ')}</div>
+      <div style="color:#444;font-size:12px;margin-top:4px"><b>Local de instalação:</b> ${esc(l.attrs&&l.attrs['Endereço de instalação']||'')} — ${esc(l.attrs&&l.attrs['Localidade']||'')}</div>
+      ${lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} (${esc(k.attrs&&k.attrs['Modalidade Equipamento']||'—')}${k.attrs&&k.attrs['Velocidade Temporária']?' · '+esc(k.attrs['Velocidade Temporária']):''})</div>`).join('')}
+      <div style="text-align:right;margin-top:6px"><b>Valor mensal: Pendente</b></div></div>`).join('')}
+    <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Total mensal: Pendente</div>
+    <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Condições contratuais</h3>
+    <p style="margin:0;font-size:12.5px">${['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l0.attrs&&l0.attrs[k]).map(k=>k+': '+esc(l0.attrs[k])).join(' · ')||'—'}</p>
+    <p style="margin:6px 0 0;font-size:12px;color:#666">Entidade faturadora: ${esc(l0.attrs&&l0.attrs['Entidade faturadora']||'—')}. Preços sujeitos à precificação pendente na Revisão 1.</p>
+  </div></div></div></div>`;
 }
 function sheetMoreQuote(){
   const nodes = lines.some(l=>l.parent && (l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP'));
@@ -625,13 +646,15 @@ function addLine(p,cfg,R){
   if(cfg) (p.groups||[]).flatMap(g=>g.produtos).forEach(pid=>(cfg.c[compKey(pid)]||[]).forEach(x=>{ const cp=findProd(pid),at={}; resolveAttrs(cp).forEach(a=>{ if(!vazio(x[a.key])) at[a.name]=x[a.key]; }); lineSeq++; lines.push({uid:'L'+lineSeq,id:cp.id,name:(x.TipoEquipamento||cp.name),sell:cp.sell,qty:1,parent:false,parentUid:line.uid,attrs:at}); }));
   return line;
 }
-function quickAdd(pid){ const p=findProd(pid); if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
+const ACESSO = ['VPNNODE','LINKDED','BLEMP'];
+function quickAdd(pid){ const p=findProd(pid); if(ACESSO.includes(pid) && !S.viab[endFull().id]){ S.pend={pid, mode:'add'}; go('local'); return; } if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
 function addSel(){ Object.keys(S.checked).filter(k=>S.checked[k]).forEach(pid=>quickAdd(pid)); S.checked={}; render(); }
 
 /* ---------- Product Configurator ---------- */
 function avaliarUI(cfg){ const R=avaliar(cfg); if(!S.viab[endFull().id]) R.msgs=R.msgs.filter(m=>!(m.regra==='R11'&&m.texto.indexOf('no mínimo 1 equipamento')>=0)); return R; }
 function openConfig(id,uid){
   const p=findProd(id); const qp=qualificadoProduto(p); if(!qp.ok){ toast(qp.hits[qp.hits.length-1].motivo,'warn'); return; }
+  if(ACESSO.includes(id) && !S.viab[endFull().id] && !uid){ S.pend={pid:id, mode:'config'}; go('local'); return; }
   cfgProduct=novoCfg(p); cfgProduct.uid=uid||null;
   if(uid){ const l=lines.find(x=>x.uid===uid); if(l&&l.cfgState){ cfgProduct.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfgProduct.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfgProduct.toque=Object.assign({},l.cfgState.toque); cfgProduct.autoSig=l.cfgState.autoSig; } }
   S.msgTab=null; S.atab=null; S.grpOpen={}; S.compOpen={}; S.sumOpen=false; go('config');
@@ -642,7 +665,9 @@ function telaConfig(){
   if(!S.viab[endFull().id]) msgs.push({sev:'Info',texto:'Viabilidade técnica ainda não consultada para '+endFull().nome+'. Tecnologia, interface, abordagem e equipamentos serão preenchidos após a ação Consultar Viabilidade (More) na cotação.',regra:'Viabilidade'});
   const nE=msgs.filter(m=>m.sev==='Error').length,nW=msgs.filter(m=>m.sev==='Warning').length,nI=msgs.filter(m=>m.sev==='Info').length;
   if(!S.msgTab) S.msgTab=nE?'Error':nW?'Warning':'Info';
+  const ORDEM=['Rede privativa (VPN)','Acesso','Golden Jumper','Infraestrutura de acesso','Acesso terceiro (Last Mile)','Informações contratuais','Regras de negócio'];
   const cats=[]; cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]).forEach(a=>{ if(!cats.includes(a.cat)) cats.push(a.cat); });
+  cats.sort((x,y)=>(ORDEM.indexOf(x)<0?99:ORDEM.indexOf(x))-(ORDEM.indexOf(y)<0?99:ORDEM.indexOf(y)));
   if(!S.atab||!cats.includes(S.atab)) S.atab=cats[0];
   const fieldsL=cfg.defs.filter(a=>a.cat===S.atab&&!a.hidden&&!R.hidden[a.key]);
   const sumAttrs=cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]&&!vazio(cfg.a[a.key])).map(a=>`<div><span>${esc(a.name)}</span>${esc(cfg.a[a.key]===true?'Sim':cfg.a[a.key])}</div>`).join('');
@@ -696,6 +721,27 @@ function saveExit(){ const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(
   const line=addLine(p,cfgProduct,R); line.cfgState={a:cfgProduct.a,c:cfgProduct.c,toque:cfgProduct.toque,autoSig:cfgProduct.autoSig};
   cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
 
+/* ---------- Passo 1 · endereço de instalação do node (Service Account) → Passo 2 · viabilidade automática ---------- */
+function telaLocal(){
+  const p=findProd(S.pend.pid); const e=endFull();
+  return `<div class="form-h"><a onclick="S.pend=null;back()">Cancel</a><b>Endereço de instalação</b><a></a></div>
+  <div class="nv-tag">Passo 1 do UC-VPN-001: o usuário informa o endereço em que o serviço será instalado. Passo 2: o sistema consulta a viabilidade automaticamente. Integração MuleSoft do projeto — não há componente nativo.</div>
+  <div class="ff"><label>Produto</label><span class="pill">${p.icon} ${esc(p.name)}</span></div>
+  <div class="ff"><label><span class="rq">*</span>Localidade (grupo de cidades)</label><select onchange="setLoc(this.value);S.tela='local';render()">${LOCALIDADES.map(l=>`<option value="${l.id}" ${CTX.localidade.id===l.id?'selected':''}>${esc(l.nome)} · ${esc(l.territorio)}</option>`).join('')}</select></div>
+  <div class="ff"><label><span class="rq">*</span>Endereço de instalação (Service Account do node)</label><select onchange="setEnd(this.value,true);S.tela='local';render()">${enderecosDaLocalidade(CTX.localidade.id).map(x=>`<option value="${x.id}" ${e.id===x.id?'selected':''}>${esc(x.nome)}</option>`).join('')}</select></div>
+  <div class="ff"><label>Território · entidade faturadora</label><span>${esc(CTX.localidade.territorio)} · ${esc(entidadeFaturadora().valor)}</span>${CTX.localidade.arq5?'<div class="help" style="color:var(--warnt);font-size:12px;margin-top:4px">Localidade ARQ5 — dúvida aberta com o time Algar.</div>':''}</div>
+  ${qualificadoProduto(p).ok?'':`<div class="mrow Error"><i>⊘</i><span>${esc(qualificadoProduto(p).hits.slice(-1)[0].motivo)}</span></div>`}
+  <div style="height:70px"></div>
+  <div class="foot"><button class="btn" onclick="S.pend=null;back()">Cancel</button><button class="btn brand" ${qualificadoProduto(p).ok?'':'disabled'} onclick="viabAuto()">Consultar viabilidade</button></div>`;
+}
+function viabAuto(){ S.flow={step:2, auto:true, sel:{}, result:null, end:endFull()}; go('flow',true); setTimeout(()=>{ if(S.flow&&S.flow.auto){ S.flow.result=[{uid:null,name:findProd(S.pend.pid).name,end:S.flow.end}]; S.flow.step=3; render(); } },1400); }
+function finishViabAuto(){
+  const e=S.flow.end; S.viab[e.id]=true; S.flow=null; CTX.endereco=endEff();
+  const pend=S.pend; S.pend=null;
+  if(e.cobertura===false || e.redeNeutra){ toast('Atendimento inviável neste endereço — item não adicionado.','warn'); S.tab='Lines'; S.hist=['opp']; go('quote',true); return; }
+  if(pend.mode==='add'){ const p=findProd(pend.pid); const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; toast(p.name+' added to quote.'); S.tab='Lines'; S.hist=['opp']; go('quote',true); }
+  else openConfig(pend.pid);
+}
 /* ---------- Consultar Viabilidade (Screen Flow · integração MuleSoft do projeto) ---------- */
 function startViab(){ const nodes=lines.filter(l=>l.parent&&(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP')); S.sheet=null; S.flow={step:1,sel:Object.fromEntries(nodes.map(n=>[n.uid,!S.viab[n.end]])),result:null}; go('flow'); }
 function telaFlow(){
@@ -706,13 +752,14 @@ function telaFlow(){
     <div class="fl-note">Integração MuleSoft (API-led) → base de viabilidade Algar, via Named Credential; retorno gravado no item da cotação. Tela inferida — não há componente nativo de viabilidade no Revenue Cloud.</div>`;
     foot=`<button class="btn" onclick="S.flow=null;back()">Cancel</button><button class="btn brand" ${Object.values(f.sel).some(Boolean)?'':'disabled'} onclick="S.flow.step=2;render();setTimeout(runViab,1400)">Next</button>`; }
   else if(f.step===2){ body=`<div class="fl-spin"><div class="spinner"></div><p>Consultando viabilidade técnica…</p><p style="color:var(--mut);font-size:12px">POST /api/viabilidade/consultar · MuleSoft_Viabilidade</p></div>`; foot=`<button class="btn" disabled>Next</button>`; }
-  else { body=`<p style="margin:0 0 10px;font-weight:600">Resultado da consulta</p>${f.result.map(r=>`<div class="fl-res"><b>${esc(r.name)}</b><div style="color:var(--mut)">${esc(r.end.nome)}</div>
+  else { const inv = f.auto && (f.end.cobertura===false || f.end.redeNeutra);
+    body=`<p style="margin:0 0 10px;font-weight:600">Resultado da consulta</p>${inv?`<div class="mrow Error"><i>⊘</i><span>${f.end.cobertura===false?'2 ✕ Sem cobertura: nenhuma tecnologia disponível — atendimento inviável, encerra a configuração e segue para estudo dedicado.':'2 ✕ Rede neutra: endereço atendido por rede neutra — atendimento inviável.'}</span></div>`:''}${f.result.map(r=>`<div class="fl-res"><b>${esc(r.name)}</b><div style="color:var(--mut)">${esc(r.end.nome)}</div>
     <table><tr><th>Cobertura</th><td>${r.end.cobertura===false?'<span style="color:var(--err)">Sem cobertura</span>':r.end.redeNeutra?'<span style="color:var(--err)">Rede neutra</span>':'Rede própria'}</td></tr><tr><th>Tecnologia</th><td>${esc(r.end.tecnologia||'—')}</td></tr><tr><th>Interface</th><td>${esc(r.end.interface||'—')}</td></tr><tr><th>Abordagem</th><td>${esc(r.end.abordagem||'—')}${r.end.metragem?' · '+r.end.metragem+' m':''}</td></tr><tr><th>Distância</th><td>${r.end.metragemDistancia==null?'—':r.end.metragemDistancia+' m'}</td></tr><tr><th>Entrega em anel</th><td>${r.end.anel?'Sim':'Não'}</td></tr></table></div>`).join('')}`;
-    foot=`<button class="btn brand" onclick="finishViab()">Finish</button>`; }
-  return `<div class="form-h"><a onclick="S.flow=null;back()">Cancel</a><b>Consultar Viabilidade Técnica</b><a></a></div><div class="fl-prog"><span class="${f.step>=1?'on':''}">1 Itens</span><span class="${f.step>=2?'on':''}">2 Consulta</span><span class="${f.step>=3?'on':''}">3 Resultado</span></div>
+    foot = f.auto ? `<button class="btn brand" onclick="finishViabAuto()">${inv?'Voltar à cotação':'Continuar para a configuração'}</button>` : `<button class="btn brand" onclick="finishViab()">Finish</button>`; }
+  return `<div class="form-h"><a onclick="S.flow=null;S.pend=null;back()">Cancel</a><b>${f.auto?'Viabilidade técnica do endereço':'Consultar Viabilidade Técnica'}</b><a></a></div><div class="fl-prog"><span class="${f.step>=1?'on':''}">${f.auto?'1 Endereço':'1 Itens'}</span><span class="${f.step>=2?'on':''}">2 Consulta</span><span class="${f.step>=3?'on':''}">3 Resultado</span></div>
   <div style="padding:14px">${body}</div><div style="height:70px"></div><div class="foot">${foot}</div>`;
 }
-function runViab(){ if(!S.flow||S.flow.step!==2) return; const sel=lines.filter(l=>l.parent&&S.flow.sel[l.uid]); S.flow.result=sel.map(l=>({uid:l.uid,name:l.name,end:CTX_DATA.enderecos.find(x=>x.id===l.end)})); S.flow.step=3; render(); }
+function runViab(){ if(!S.flow||S.flow.step!==2||S.flow.auto) return; const sel=lines.filter(l=>l.parent&&S.flow.sel[l.uid]); S.flow.result=sel.map(l=>({uid:l.uid,name:l.name,end:CTX_DATA.enderecos.find(x=>x.id===l.end)})); S.flow.step=3; render(); }
 function finishViab(){
   S.flow.result.forEach(r=>{ S.viab[r.end.id]=true; const l=lines.find(x=>x.uid===r.uid); if(!l) return;
     const p=findProd(l.id); const cfg=novoCfg(p); if(l.cfgState){ cfg.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfg.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfg.toque=Object.assign({},l.cfgState.toque); }
@@ -807,12 +854,14 @@ function guia(){
   if(S.tela==='opp'&&!S.quote) t=S.tab==='Related'?'1 · Em <b>Quotes</b>, toque em <b>New</b> (ou More › New Quote).':'1 · Toque em <b>Related</b> e, em Quotes, em <b>New</b> (ou More › New Quote).';
   else if(S.tela==='newquote') t='2 · Confira o nome e toque em <b>Save</b>.';
   else if(S.tela==='quote'&&!n) t='3 · <b>Browse Catalogs</b> › tabela de preços › catálogo › <b>Next</b>.';
-  else if(S.tela==='browse'&&!n) t='4 · No VPN Node, toque em <b>⚙</b> para configurar.';
-  else if(S.tela==='config') t='5 · Preencha os atributos com * em cada seção e toque em <b>Save &amp; Exit</b>.';
-  else if(S.tela==='browse'&&n) t='6 · Toque em <b>Save Quote</b>.';
-  else if(S.tela==='quote'&&n&&!viab) t='7 · <b>More › Consultar Viabilidade</b> preenche tecnologia e equipamentos do item.';
-  else if(S.tela==='flow') t='7 · Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.';
-  else if(S.tela==='quote'&&viab&&!S.contract) t='8 · <b>More › Create Contract</b> para gerar o documento e enviar para assinatura.';
+  else if(S.tela==='browse'&&!n) t='4 · No VPN Node, toque em <b>⚙</b>: primeiro o endereço de instalação (UC passo 1).';
+  else if(S.tela==='local') t='UC passo 1 · Confirme localidade e endereço e toque em <b>Consultar viabilidade</b> (UC passo 2, automático).';
+  else if(S.tela==='flow'&&S.flow&&S.flow.auto) t='UC passo 2 · Retorno da viabilidade: tecnologia, interface, abordagem e distância. <b>Continuar</b>.';
+  else if(S.tela==='config') t='UC passos 3 a 7 · Rede privativa › Acesso (velocidade) › infraestrutura › equipamentos › SVAs › condições contratuais › <b>Save &amp; Exit</b>.';
+  else if(S.tela==='browse'&&n) t='Toque em <b>Save Quote</b>.';
+  else if(S.tela==='flow') t='Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.';
+  else if(S.tela==='quote'&&n&&!S.pdfs.length) t='Proposta · use <b>Gerar proposta (Lightning)</b> na barra do protótipo para ver o documento enviado; depois marque <b>Presented</b> no path.';
+  else if(S.tela==='quote'&&viab&&!S.contract) t='<b>More › Create Contract</b> para gerar o documento e enviar para assinatura.';
   else if(S.tela==='contract'&&!S.contract.docs.length) t='9 · Toque em <b>Generate Doc</b> e depois em <b>Send eSign</b>.';
   else if(S.tela==='contract'&&S.contract.esig==='Not sent') t='9 · Toque em <b>Send eSign</b> › Send.';
   else if(S.tela==='contract'&&S.contract.esig==='Sent') t='10 · Use <b>Simular assinatura (DocuSign)</b> na barra do protótipo.';
@@ -826,12 +875,13 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,agent:sheetAgent};
-  if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
+  if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
   if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
+  if(S.pdfView) o+=pdfViewHtml();
   $('#overlay').innerHTML=o;
   const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','quotes','accountsList'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
@@ -868,26 +918,34 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('More da cotação sem Create PDF / Email Quote / Start Sync (limitação oficial) e com Create Contract/Create Order/Viabilidade', ![...document.querySelectorAll('.bsheet .row')].some(r=>/Email Quote|Create PDF|Start Sync/.test(r.textContent)) && $('.bsheet').textContent.includes('Create Contract') && $('.bsheet').textContent.includes('Create Order') && $('.bsheet').textContent.includes('Consultar Viabilidade'));
     ok('Create Order desabilitado antes de Accepted', [...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
     S.sheet=null; render();
-    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs com nota oficial (não criar/visualizar no app)', $('.rel .note').textContent.includes("isn't available in the Salesforce mobile app"));
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs (0) com nota oficial (não criar/visualizar no app)', $('.rel .h b').textContent==='Quote PDFs (0)' && $('.rel .note').textContent.includes("isn't available in the Salesforce mobile app"));
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Browse Catalogs'))); ok('Browse Catalogs → Choose Price Book', $('.modal h3').textContent==='Choose Price Book');
     click($('.modal .brand')); ok('→ All Catalogs', $('.modal h3').textContent==='All Catalogs');
     click($('.modal .brand')); ok('→ Browse Products com busca, categorias e Save Quote', S.tela==='browse' && $('.srch input') && document.querySelectorAll('.cats button').length===4 && $('.foot .brand').textContent.includes('Save Quote'));
     S.q='vpn'; render(); ok('busca filtra produtos', document.querySelectorAll('.prow').length===1); S.q=''; render();
     setLoc('LOC05'); ok('Expansão: Banda Larga oculta', ![...document.querySelectorAll('.prow .nm')].some(n=>n.textContent.includes('Banda Larga'))); setLoc('LOC01');
-    click([...document.querySelectorAll('.prow .r2 .btn')].find(b=>b.textContent.includes('⚙'))); ok('⚙ abre o configurador', S.tela==='config' && $('.cfg-top h1').textContent==='Configure VPN Node');
+    click([...document.querySelectorAll('.prow .r2 .btn')].find(b=>b.textContent.includes('⚙'))); ok('⚙ abre primeiro o endereço de instalação (UC passo 1)', S.tela==='local' && $('.form-h b').textContent==='Endereço de instalação');
+    click($('.foot .brand')); ok('Consultar viabilidade dispara o passo 2 automaticamente', S.tela==='flow' && S.flow.auto && S.flow.step===2);
+    S.flow.result=[{uid:null,name:'VPN Node',end:S.flow.end}]; S.flow.step=3; render();
+    ok('resultado com tecnologia Metro e entrega em anel', $('.fl-res').textContent.includes('Metro') && $('.fl-res').textContent.includes('Sim'));
+    click($('.foot .brand')); ok('Continuar abre o configurador com a viabilidade aplicada', S.tela==='config' && S.viab[endFull().id]===true);
+    ok('ordem das seções segue o UC: Rede privativa, depois Acesso', [...document.querySelectorAll('.atabs a')].slice(0,2).map(a=>a.textContent).join('|')==='Rede privativa (VPN)|Acesso');
     setAttr('Velocidade','200 Mbps');
-    ok('antes da viabilidade: aviso Info de viabilidade, sem equipamentos, atendimento Pendente', /Info \(\d+\)/.test($('.mtabs').textContent) && (cfgProduct.c.equip||[]).length===0 && avaliar(cfgProduct).cls.v==='Pendente');
+    ok('com a viabilidade: tecnologia preenchida, 3 equipamentos, atendimento Formatado', cfgProduct.a.Tecnologia==='Metro' && (cfgProduct.c.equip||[]).length===3 && avaliar(cfgProduct).cls.v==='Formatado');
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
     ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
-    const n=lines.length; click($('.foot .brand')); ok('Save & Exit cria a linha e volta ao Browse Products', lines.length===n+1 && S.tela==='browse');
-    click($('.foot .brand')); ok('Save Quote → aba Lines com a linha "viabilidade pendente"', S.tela==='quote' && S.tab==='Lines' && $('.badge.warn'));
+    const n=lines.length; click($('.foot .brand')); ok('Save & Exit cria a linha com 3 componentes e volta ao Browse Products', lines.length===n+4 && S.tela==='browse');
+    click($('.foot .brand')); ok('Save Quote → aba Lines com a linha viável e Quote Summary', S.tela==='quote' && S.tab==='Lines' && $('.badge.ok') && $('#view').textContent.includes('Quote Summary'));
     click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Group')); ok('Add Group cria um grupo de linhas', S.groups.length===1);
     click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Assets')); ok('Add Assets informa que não há assets', $('.bsheet').textContent.includes('No assets')); S.sheet=null; render();
+    const nv=lines.filter(l=>l.parent)[0];
+    ok('linha guarda tecnologia, endereço e entidade faturadora', nv.viabOk && nv.attrs['Tecnologia']==='Metro' && !!nv.attrs['Endereço de instalação']);
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Consultar Viabilidade')));
-    ok('Consultar Viabilidade abre o Flow em tela cheia', S.tela==='flow' && $('.fl-prog'));
-    S.flow.step=2; runViab(); ok('resultado com tecnologia Metro', S.flow.step===3 && S.flow.result[0].end.tecnologia==='Metro');
-    click($('.foot .brand')); const nv=lines.filter(l=>l.parent)[0];
-    ok('Finish: linha viável, 3 equipamentos, tecnologia preenchida', S.tela==='quote' && nv.viabOk && lines.filter(x=>x.parentUid===nv.uid).length===3 && nv.attrs['Tecnologia']==='Metro');
+    ok('reconsulta manual continua disponível em More', S.tela==='flow' && !S.flow.auto); S.flow=null; S.tab='Lines'; go('quote',true);
+    gerarProposta(); ok('Gerar proposta: PDF listado em Quote PDFs e visualização aberta', S.pdfs.length===1 && S.pdfView && $('.modal').textContent.includes('Proposta enviada') && $('.modal').textContent.includes('VPN Node'));
+    S.pdfView=false; render(); click($('.rel .it')); ok('tocar no PDF mostra a nota oficial (não abre no app)', S.sheet==='pdf' && $('.bsheet').textContent.includes("aren't viewable")); S.sheet=null; render();
+    quoteMark(); ok('path marcado como Presented', S.qStatus==='Presented');
+    S.tab='Lines'; render();
     click($('.line .n b')); ok('toque no item abre Details/Attributes', S.sheet && S.sheet.startsWith('line:')); S.stab='Attributes'; render(); ok('Attributes com localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade')); S.sheet=null; render();
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Contract')));
     ok('Create Contract abre o contrato', S.tela==='contract' && $('.rh b').textContent==='00000123');
