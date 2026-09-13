@@ -298,6 +298,9 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .list .it{display:flex;gap:12px;align-items:center;padding:13px 14px;border-bottom:1px solid var(--bd)}
 .list .it .oi{width:32px;height:32px;border-radius:5px;display:grid;place-items:center;color:#fff;flex:none}
 .list .it b{display:block;font-size:15px;color:var(--brand)}.list .it small{color:var(--tx2)}
+.acr{margin-top:8px;background:#f5f7fb;border:1px solid #e3e8f0;border-radius:6px;padding:7px 10px;font-size:12.5px;color:var(--tx2)}
+.acr b{color:var(--brand)}
+.acr.vazio{background:#fafaf9;color:var(--mut)}
 .lsec{background:var(--gray);padding:9px 14px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-top:6px}
 .feed .post{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .feed .post .who{display:flex;gap:10px;align-items:center;margin-bottom:6px}
@@ -567,7 +570,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -719,7 +722,7 @@ function docHtml(tipo){
         ${o.fls.map(f=>`<div style="font-size:12.5px;margin-bottom:4px">• ${esc(f.name)} — ${esc(f.scope)} · ${esc(f.sistema)} <span style="color:#666">(de ${esc(f.source)})</span></div>`).join('')}
         <p style="margin:8px 0 0;font-size:12.5px"><b>Plano de orquestração:</b> ${esc(o.plan.status)} — ${o.plan.steps.filter(s=>s.status==='Completed').length}/${o.plan.steps.length} etapas.</p>`:'<p style="font-size:12.5px;color:#666">Pedido ainda não submetido: sem decomposição em produtos técnicos.</p>'}
       ${S.assets.length?`<h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Assets</h3>
-        ${S.assets.map(a=>`<div style="font-size:12.5px">• ${esc(a.name)} — ${esc(a.children.join(', '))}</div>`).join('')}
+        ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id); return `<div style="font-size:12.5px">• ${esc(a.name)} — ${esc(a.children.join(', '))}${acr?' · contrato '+esc(acr.contract)+' ('+esc(acr.name)+')':''}</div>`; }).join('')}
         ${(S.fassets||[]).map(f=>`<div style="font-size:12.5px;color:#666">• ${esc(f.name)} (fulfillment) — ${esc(f.status)}</div>`).join('')}`:''}`;
   }
   if(tipo==='contract'){
@@ -740,6 +743,7 @@ function docHtml(tipo){
       <b>Faturamento:</b> ${esc((l1.attrs&&l1.attrs['Entidade faturadora'])||'—')} · valores pendentes de precificação.</p>
       <h3 style="font-size:13px;margin:16px 0 6px;text-transform:uppercase">Assinaturas</h3>
       ${(c.recipients.length?c.recipients:[{email:'—',role:'Signer',status:'Pendente'}]).map(r=>`<div style="border-top:1px solid #111;margin-top:22px;padding-top:4px;font-size:12px">${esc(r.email)}<br><span style="color:#666">${esc(r.role)} · ${esc(r.status)}</span>${r.status==='Completed'?'<div style="color:#1d6b38;font-weight:700;margin-top:2px">✓ assinado eletronicamente via DocuSign</div>':''}</div>`).join('')}
+      ${(S.acrs||[]).length?`<h3 style="font-size:13px;margin:16px 0 6px;text-transform:uppercase">Assets cobertos por este contrato</h3>${S.acrs.map(x=>`<div style="font-size:12.5px">• ${esc(x.assetName)} — ${esc(x.name)} · vigência ${esc(x.start)}${x.end?' a '+esc(x.end):''}</div>`).join('')}`:''}
       ${c.events.length?`<p style="margin:12px 0 0;font-size:11.5px;color:#666">${c.events.map(esc).join('<br>')}</p>`:''}`;
   }
   const tit = tipo==='quote'?'Cotação '+S.quote.number:tipo==='contract'?'Contrato '+S.contract.number:'Pedido '+S.order.number;
@@ -982,9 +986,13 @@ function planoTick(){
 function completarManual(id){ const s=S.order.plan.steps.find(x=>x.id===id); if(!s||s.type!=='Manual Task'||s.status!=='In Progress') return; s.status='Completed'; S.order.plan.log.push(`${s.laneName}: ${s.name} — concluída manualmente`); toast('Task completed.'); render(); setTimeout(planoTick,300); }
 function pendentesManuais(){ const P=S.order&&S.order.plan; return P?P.steps.filter(s=>s.type==='Manual Task'&&s.status==='In Progress'):[]; }
 function criarAssets(){
-  const o=S.order;
-  S.assets=o.lines.filter(l=>l.parent).map(l=>({name:l.name,start:new Date().toLocaleString('pt-BR'),children:o.lines.filter(x=>x.parentUid===l.uid).map(x=>x.name),attrs:l.attrs}));
+  const o=S.order; const hoje=new Date();
+  const meses=parseInt((o.lines.find(l=>l.parent)||{attrs:{}}).attrs&&(o.lines.find(l=>l.parent)||{attrs:{}}).attrs['Período Fidelização'])||0;
+  const fim=meses?new Date(hoje.getFullYear(), hoje.getMonth()+meses, hoje.getDate()).toLocaleDateString('pt-BR'):'';
+  S.assets=o.lines.filter(l=>l.parent).map((l,i)=>({id:'02i'+i, name:l.name, start:hoje.toLocaleString('pt-BR'), children:o.lines.filter(x=>x.parentUid===l.uid).map(x=>x.name), attrs:l.attrs}));
   S.fassets=o.fls.map(f=>({name:f.name,qty:1,product:TECH[f.tech].name,status:'Active'}));
+  /* AssetContractRelationship (ACR) — objeto oficial do Revenue Cloud (API 60.0+): AssetId, ContractId, StartDate, EndDate */
+  S.acrs = S.contract ? S.assets.map((a,i)=>({ name:'ACR-'+String(i+1).padStart(4,'0'), assetId:a.id, assetName:a.name, contract:S.contract.number, start:hoje.toLocaleDateString('pt-BR'), end:fim })) : [];
 }
 function ativarPedido(){ const o=S.order; if(o.status==='Activated') return; o.status='Activated'; o.sel=null; o.activatedAt=new Date().toLocaleString('pt-BR'); toast('Order activated.'); render(); }
 function submeterPedido(){ const o=S.order; if(o.status!=='Activated'){ toast('Activate the order first.','warn'); return; } if(o.submitted) return;
@@ -1060,6 +1068,7 @@ function telaContract(){
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
   ${S.tab!=='Related' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Quote',`<a onclick="go('quote')">${esc(S.quote.name)}</a>`],['Contract Term',esc(roots[0]&&roots[0].attrs&&roots[0].attrs['Período Fidelização']||'—')+' meses'],['Status',esc(c.status)],['eSignature Status',esc(c.esig)]])
   : `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Contract Documents (${c.docs.length})</b></div>${c.docs.map(d=>`<div class="it" onclick="S.docView='contract';render()"><b>${esc(d.name)}</b><small>${esc(d.tpl)} · ${d.v} · Signature ${esc(d.sig)} · toque para abrir</small></div>`).join('')||'<div class="note">Use Generate Document to create the contract document from the template.</div>'}</div>
+     <div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${(S.acrs||[]).length})</b></div>${(S.acrs||[]).map(x=>`<div class="it" onclick="S.tab='Assets';S.hist=['contract'];go('accounts',true)"><b>${esc(x.assetName)}</b><small>${esc(x.name)} · vigência ${esc(x.start)}${x.end?' a '+esc(x.end):''}</small></div>`).join('')||'<div class="note">Os assets aparecem aqui depois que o pedido é ativado, submetido e a orquestração conclui.</div>'}</div>
      <div class="rel"><div class="h"><div class="oi g">✍</div><b>eSignature (DocuSign)</b></div>${c.recipients.map(r=>`<div class="it"><b>${esc(r.email)}</b><small>${esc(r.role)} · ${esc(r.status)}</small></div>`).join('')||'<div class="note">Not sent. Send for eSignature creates the DocuSign envelope for the recipients.</div>'}${c.events.map(e=>`<div class="note">${esc(e)}</div>`).join('')}</div>`}`;
 }
 function sheetMoreContract(){ return sheet(`
@@ -1107,7 +1116,11 @@ function telaAccount(){
   <div class="rtabs"><a class="${S.tab!=='Related'&&S.tab!=='Assets'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Assets'?'on':''}" onclick="S.tab='Assets';render()">Assets</a></div>
   ${S.tab==='Assets' ? `<div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
       <div class="tle-tools"><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Amend: cria cotação de alteração a partir do asset.','warn')">Amend</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Renew: cria cotação de renovação.','warn')">Renew</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Cancel: cria cotação de cancelamento.','warn')">Cancel</button></div>
-      ${S.assets.map(a=>`<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small><div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div></div>`).join('')||'<div class="note">No assets yet. Assets are created when the orchestration plan completes.</div>'}</div>
+      ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id);
+        return `<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small>
+        <div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div>
+        ${acr?`<div class="acr" onclick="event.stopPropagation();S.docView='contract';render()">📝 Contrato <b>${esc(acr.contract)}</b> · vigência ${esc(acr.start)}${acr.end?' a '+esc(acr.end):''} <span class="badge">Asset Contract Relationship ${esc(acr.name)}</span></div>`:'<div class="acr vazio">Sem contrato vinculado — o ACR é criado quando o pedido vem de um contrato.</div>'}</div>`; }).join('')||'<div class="note">No assets yet. Assets are created when the orchestration plan completes.</div>'}</div>
+     ${(S.acrs||[]).length?`<div class="rel"><div class="h"><div class="oi p">🔗</div><b>Asset Contract Relationships (${S.acrs.length})</b></div>${S.acrs.map(x=>`<div class="it" onclick="S.tela='contract';S.tab='Related';render()"><b>${esc(x.name)}</b><small>${esc(x.assetName)} ↔ Contrato ${esc(x.contract)} · ${esc(x.start)}${x.end?' a '+esc(x.end):''}</small></div>`).join('')}<div class="note">Objeto oficial AssetContractRelationship (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate.</div></div>`:''}
      <div class="rel"><div class="h"><div class="oi p">▦</div><b>Fulfillment Assets (${(S.fassets||[]).length})</b></div>${(S.fassets||[]).map(f=>`<div class="it"><b>${esc(f.name)}</b><small>Quantity ${f.qty} · Product ${esc(f.product)} · Status ${esc(f.status)}</small></div>`).join('')||'<div class="note">Technical assets created by decomposition appear here.</div>'}</div>`
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (1)</b></div><div class="it" onclick="go('opp')"><b>${esc(oppName())}</b><small>${esc(S.oStage)}</small></div></div>
      <div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${S.quote?1:0})</b></div>${S.quote?`<div class="it" onclick="go('quote')"><b>${esc(S.quote.name)}</b><small>${esc(S.qStatus)}</small></div>`:'<div class="note">No quotes.</div>'}</div>
@@ -1208,6 +1221,10 @@ function agIntent(t){
   if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), agAtuais(), 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
   if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, agAtuais(), 'Regra: matriz de formatação × situações de customização'); return; } }
   if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', agAtuais()); return; }
+  if(/acr|contrato.*(asset|ativo)|asset.*contrato|vincul/.test(s)){
+    if((S.acrs||[]).length) agSay(`Vínculo asset ↔ contrato: ${S.acrs.map(x=>x.assetName+' ↔ contrato '+x.contract+' ('+x.name+', vigência '+x.start+(x.end?' a '+x.end:'')+')').join('; ')}. No Salesforce isso é o objeto AssetContractRelationship, criado quando os assets nascem do pedido ligado ao contrato.`, agAtuais(),'AssetContractRelationship (API 60.0+)');
+    else agSay('Ainda não há vínculo: o Asset Contract Relationship é criado quando a orquestração conclui e os assets nascem de um pedido com contrato.', agAtuais());
+    return; }
   if(/fatur|entidade|quem fatura/.test(s)){ agSay(`Entidade faturadora: ${entidadeFaturadora().valor} (${entidadeFaturadora().regra}) — derivada da localidade ${CTX.localidade.nome}, território ${CTX.localidade.territorio}.`, agAtuais()); return; }
   if(/reajust|fideliz|multa|contrat/.test(s)&&!/criar/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const a=l&&l.attrs||{}; agSay(l?`Condições contratuais: fidelização ${a['Período Fidelização']||'—'} meses · reajuste ${a['Tipo de Reajuste']||'—'} (${a['Índice de Reajuste']||'—'}) · próximo reajuste ${a['Data do Próximo Reajuste']||'—'} · multa ${a['Percentual da Multa']||'não elegível'} · aviso prévio ${a['Quantidade de Dias Aviso Previo']||'—'}.`:'Ainda não há item na cotação.', agAtuais()); return; }
   if(/pre[çc]o|valor|custa|quanto/.test(s)){ agSay('Preço pendente: a tabela e o procedimento de precificação não foram definidos na Revisão 1. Assim que existirem, o Instant Pricing calcula na configuração.', agAtuais()); return; }
@@ -1358,7 +1375,8 @@ function agNext(){
   if(S.order&&S.order.status!=='Activated') chips.push({l:'Ativar o pedido',f:agAtivar,pri:true});
   if(S.order&&S.order.status==='Activated'&&!S.order.submitted) chips.push({l:'Submeter o pedido (orquestração)',f:agSubmeter,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status!=='Completed'){ chips.push({l:'Concluir a orquestração',f:agConcluirPlano,pri:true}); chips.push({l:'Andamento da orquestração',f:agAndamento}); }
-  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets da conta.',agAtuais());}});
+  if(S.order&&S.order.plan&&S.order.plan.status==='Completed'){ chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets da conta, com o contrato vinculado em cada um.',agAtuais());}});
+    if((S.acrs||[]).length) chips.push({l:'Ver o contrato dos assets',f:()=>{agClose();S.docView='contract';render();agSay('Abri o contrato; ele lista os assets cobertos. Quando fechar, seguimos daqui.',agAtuais());}}); }
   chips.push({l:'Ver a cotação',f:()=>{agClose();S.docView='quote';render();agSay('Abri o resumo da cotação. Quando fechar, seguimos daqui.',agAtuais());}});
   if(S.order) chips.push({l:'Ver o pedido',f:()=>{agClose();S.docView='order';render();agSay('Abri o resumo do pedido. Quando fechar, seguimos daqui.',agAtuais());}});
   chips.push({l:'Resumo',f:()=>agSay(agResumo(),agAtuais())});
@@ -1638,6 +1656,11 @@ if(/selftest=1/.test(location.search)){
     ok('plano concluído: assets comerciais e fulfillment assets', S.order.plan.status==='Completed' && S.assets.length===1 && S.fassets.length===S.order.fls.length);
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Accounts'))); S.tab='Assets'; render();
     ok('Assets: Managed Assets (1) e Fulfillment Assets (n)', $('.rel .h b').textContent==='Managed Assets (1)' && [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Fulfillment Assets (')));
+    ok('cada asset mostra o contrato vinculado (ACR) com vigência', $('.acr') && /Contrato 00000123/.test($('.acr').textContent) && /Asset Contract Relationship/.test($('.acr').textContent));
+    ok('lista Asset Contract Relationships na conta', [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Asset Contract Relationships (')) && S.acrs.length===S.assets.length);
+    click($('.acr')); ok('tocar no vínculo abre o contrato, que lista os assets cobertos', S.docView==='contract' && /Assets cobertos por este contrato/.test($('.modal').textContent));
+    S.docView=null; S.tela='contract'; S.tab='Related'; render();
+    ok('o contrato tem a lista relacionada de assets', [...document.querySelectorAll('.rel .h b')].some(b=>/^Assets \(1\)$/.test(b.textContent)));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
