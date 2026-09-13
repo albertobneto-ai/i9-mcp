@@ -81,8 +81,9 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 #atd i{font-style:normal;font-size:15px}
 .agent{position:fixed;left:0;right:0;bottom:64px;max-width:430px;margin:0 auto;padding:0 14px 6px;z-index:20}
 .agent div{background:#f3f3f3;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;color:#444;font-size:17px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.agent .afi{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:#032d60;color:#fff;font-size:14px}
-.agent .afi img{width:100%;height:100%;object-fit:cover;display:none}
+.agent .afi{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:#fff;border:1px solid var(--bd2);color:#032d60;font-size:12px;font-weight:700}
+.agent .afi.has{background:0;border:0}
+.agent .afi img{width:100%;height:100%;object-fit:contain;display:none}
 .agent .afi.has img{display:block}.agent .afi.has span{display:none}
 .agent .mic{margin-left:auto;font-size:20px;color:#444}
 .agent .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);margin-left:-6px;margin-top:-18px}
@@ -97,8 +98,8 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .agp-h .ic.av{background:#032d60;color:#fff;overflow:hidden}.agp-h .ic.av img{width:100%;height:100%;object-fit:cover;display:none}.agp-h .ic.av.has img{display:block}.agp-h .ic.av.has span{display:none}
 .agp-b{flex:1;overflow:auto;background:linear-gradient(180deg,#f7f5fb 0%,#f1f0fa 40%,#ffffff 100%);padding:0 0 12px}
 .welcome{margin:14px;background:#f5f7fb;border:1px solid #e3e8f0;border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
-.welcome .bot{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid #d8e0ea;display:grid;place-items:center;flex:none;overflow:hidden}
-.welcome .bot img{width:100%;height:100%;object-fit:cover;display:none}.welcome .bot.has img{display:block}.welcome .bot.has svg{display:none}
+.welcome .bot{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid #d8e0ea;display:grid;place-items:center;flex:none;overflow:hidden;padding:7px}
+.welcome .bot img{width:100%;height:100%;object-fit:contain;display:none}.welcome .bot.has img{display:block}.welcome .bot.has svg{display:none}
 .welcome p{margin:0;font-size:16px;line-height:1.5}
 .sugg{display:flex;flex-direction:column;gap:8px;margin:2px 14px 10px}
 .sugg button{display:flex;align-items:center;gap:10px;border:1px solid #d6dbe3;background:#fff;border-radius:8px;padding:12px 14px;font-size:15px;text-align:left;color:var(--tx)}
@@ -315,6 +316,46 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .list .it{display:flex;gap:12px;align-items:center;padding:13px 14px;border-bottom:1px solid var(--bd)}
 .list .it .oi{width:32px;height:32px;border-radius:5px;display:grid;place-items:center;color:#fff;flex:none}
 .list .it b{display:block;font-size:15px;color:var(--brand)}.list .it small{color:var(--tx2)}
+.ahl{background:#fff;border:1px solid var(--bd);border-radius:6px;padding:14px 16px;margin:12px 14px 0}
+.ahl .l1{display:flex;align-items:center;gap:12px}
+.ahl .l1 .oi{width:40px;height:40px;border-radius:6px;font-size:20px}
+.ahl .l1 small{color:var(--mut);font-size:12px;display:block}
+.ahl .l1 b{font-size:20px}
+.ahl .abtn{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.ahl .abtn button{border:1px solid var(--bd2);background:#fff;color:var(--brand);border-radius:4px;padding:6px 14px;font-size:13px}
+.ahl .abtn button:hover{background:#f4f6f9}
+.ahl .l2{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}
+.ahl .l2 div span{display:block;color:var(--mut);font-size:11.5px;margin-bottom:3px}
+.ahl .l2 div b{font-size:13.5px;font-weight:600;display:block}
+.ahl .l2 .badge{display:inline-block;width:auto}
+.acols{display:grid;grid-template-columns:1fr;gap:0 14px;align-items:start}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:12px 14px 0}
+.kpi{background:#fff;border:1px solid var(--bd);border-radius:6px;padding:12px 14px}
+.kpi .t{color:var(--tx2);font-size:13px}
+.kpi .v{font-size:22px;font-weight:700;margin:6px 0 2px}
+.kpi .v.pend{font-size:16px;color:var(--mut);font-weight:600}
+.kpi a{font-size:12.5px}
+.kpi .bar{height:22px;border-radius:4px;background:var(--gray);overflow:hidden;display:flex;align-items:center;margin:6px 0 2px}
+.kpi .bar i{background:#c23934;color:#fff;font-style:normal;font-size:11.5px;padding:3px 8px;white-space:nowrap}
+.chartc{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0;padding:14px}
+.chartc h4{margin:0 0 10px;font-size:15px;font-weight:600}
+.ovw{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0;padding:14px}
+.ovw h4{margin:0 0 10px;font-size:15px;font-weight:600}
+.ovw .row2{display:flex;gap:12px}
+.ovw .ph2{width:70px;height:70px;border:1px solid var(--bd2);border-radius:4px;display:grid;place-items:center;font-size:26px;color:#b0b7c3;flex:none}
+.ovw dt{color:var(--mut);font-size:11.5px;margin-top:8px}
+.ovw dd{margin:2px 0 0;font-size:13.5px}
+.accord{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0;overflow:hidden}
+.accord h4{margin:0;padding:12px 14px;font-size:15px;font-weight:600;border-bottom:1px solid var(--bd)}
+.accord .sec{border-bottom:1px solid var(--bd)}
+.accord .sec:last-child{border-bottom:0}
+.accord .sh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--gray);font-size:13.5px;font-weight:600}
+.accord .sh i{font-style:normal;color:var(--mut);transition:transform .12s}
+.accord .sec.open .sh i{transform:rotate(90deg)}
+.accord .sb2{display:none;padding:4px 14px 12px}
+.accord .sec.open .sb2{display:block}
+.accord .sb2 dt{color:var(--mut);font-size:11.5px;margin-top:9px}
+.accord .sb2 dd{margin:2px 0 0;font-size:13.5px}
 .acr{margin-top:8px;background:#f5f7fb;border:1px solid #e3e8f0;border-radius:6px;padding:7px 10px;font-size:12.5px;color:var(--tx2)}
 .acr b{color:var(--brand)}
 .acr.vazio{background:#fafaf9;color:var(--mut)}
@@ -579,12 +620,113 @@ const FONTES = [
   ['Decomposição em produtos técnicos','inf','O mecanismo (DRO) é oficial; quais produtos técnicos, escopos e sistemas do VPN Node são proposta do projeto.'],
   ['Plano de orquestração (raias e etapas)','inf','Estrutura oficial (Manual Task, Callout, Auto Task, Milestone); etapas e dependências do VPN Node são proposta do projeto.'],
   ['Conta · aba Assets, Managed e Fulfillment Assets','ver','Trailhead do DRO: na aba Assets da conta ficam os assets comerciais em Managed Assets e os técnicos em Fulfillment Assets.'],
+  ['Página do Customer Asset (Summary/Details/Related)','ver','Captura oficial do Revenue Cloud: highlights com Account, Start Date, End Date, Status e Next Renewal; ações Amend / Renew / Cancel; cartões de quantidade, MRR, total e uso; coluna direita com Overview e Details (Pricing, Billing).'],
   ['Asset Contract Relationship','ver','Objeto oficial AssetContractRelationship (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate. A exibição da faixa no asset é inferida.'],
   ['Agentforce · barra e painel','ver','Trailhead "Agentforce on the Salesforce Mobile App" e captura do painel de conversa. As opções em botões são inferidas.'],
   ['Documentos (proposta, cotação, contrato, pedido)','proto','Visualização do protótipo montada a partir dos registros; no app esses dados são consultados nas abas do registro.'],
   ['Roteiro flutuante e marcador de atendimento','proto','Chrome do protótipo, fora da interface Salesforce.'],
   ['Barra escura de cenário','proto','Chrome do protótipo: troca conta, usuário, localidade e endereço, e simula ações feitas no Lightning.']
 ];
+function assetSel(){ return S.assets.find(a=>a.id===S.assetId) || S.assets[0]; }
+function assetDatas(a){
+  const meses = parseInt((a.attrs||{})['Período Fidelização']) || 0;
+  const ini = new Date(); const fim = meses ? new Date(ini.getFullYear(), ini.getMonth()+meses, ini.getDate()) : null;
+  const acr = (S.acrs||[]).find(x=>x.assetId===a.id);
+  return { ini, fim, iniTxt: ini.toLocaleDateString('pt-BR'), fimTxt: fim?fim.toLocaleDateString('pt-BR'):'—',
+           renov: fim?fim.toLocaleDateString('pt-BR'):'—', meses, acr };
+}
+function assetChart(a){
+  const d=assetDatas(a); if(!d.meses) return '<p class="note">Sem período de fidelização informado: não há linha do tempo para desenhar.</p>';
+  const W=640,H=150,L=44,B=26, hoje=0.06;
+  const marcos=[[0,'Ativação'],[0.5,'Metade do ciclo'],[1,'Término / renovação']];
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img">
+    <line x1="${L}" y1="${H-B}" x2="${W-10}" y2="${H-B}" stroke="#d8dde6"/>
+    ${[0,1,2,3].map(i=>`<line x1="${L}" y1="${H-B-i*28}" x2="${W-10}" y2="${H-B-i*28}" stroke="#eef1f5"/>`).join('')}
+    <text x="4" y="${H-B+4}" font-size="10" fill="#706e6b">0</text>
+    <text x="4" y="${H-B-84+4}" font-size="10" fill="#706e6b">qtd</text>
+    <path d="M${L},${H-B} L${L},${H-B-56} L${W-10},${H-B-56}" fill="none" stroke="#1b96ff" stroke-width="2"/>
+    <rect x="${L}" y="${H-B-56}" width="${W-10-L}" height="56" fill="#1b96ff" opacity=".10"/>
+    <line x1="${L+(W-10-L)*hoje}" y1="14" x2="${L+(W-10-L)*hoje}" y2="${H-B}" stroke="#7f2ff5" stroke-width="2"/>
+    <rect x="${L+(W-10-L)*hoje-22}" y="4" width="46" height="14" rx="3" fill="#7f2ff5"/>
+    <text x="${L+(W-10-L)*hoje}" y="14.5" font-size="9" fill="#fff" text-anchor="middle">HOJE</text>
+    ${marcos.map(([f,t])=>`<text x="${L+(W-10-L)*f}" y="${H-6}" font-size="10" fill="#706e6b" text-anchor="${f===0?'start':f===1?'end':'middle'}">${esc(t)}</text>`).join('')}
+    <text x="${L+6}" y="${H-B-62}" font-size="10.5" fill="#3e3e3c">Quantidade contratada: 1 · valor mensal pendente de precificação</text>
+  </svg>`;
+}
+function telaAsset(){
+  const a=assetSel(); if(!a) return topbar('Asset', true)+'<div class="note">Nenhum asset criado ainda.</div>';
+  const d=assetDatas(a), at=a.attrs||{};
+  const kpi=(t,v,pend,link)=>`<div class="kpi"><div class="t">${esc(t)}</div><div class="v ${pend?'pend':''}">${v}</div>${link?`<a onclick="toast('${esc(link)}')">${esc(link)}</a>`:''}</div>`;
+  const sec=(id,tit,linhas)=>`<div class="sec ${S.aacc===id?'open':''}"><div class="sh" onclick="S.aacc=(S.aacc==='${id}'?null:'${id}');render()"><i>›</i>${esc(tit)}</div><div class="sb2"><dl>${linhas.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl></div></div>`;
+  const comps=(a.children||[]).map(esc).join(' · ')||'—';
+  const fa=(S.fassets||[]);
+  return topbar('Customer Asset', true) + `
+  <div class="ahl">
+    <div class="l1"><div class="oi" style="background:#0b827c">▤</div><div><small>Customer Asset</small><b>${esc(a.name)}</b></div>
+      <div class="abtn"><button onclick="assetAcao('Amend')">Amend</button><button onclick="assetAcao('Renew')">Renew</button><button onclick="assetAcao('Cancel')">Cancel</button><button onclick="S.sheet='asset-more';render()">▾</button></div></div>
+    <div class="l2">
+      <div><span>Account</span><b><a onclick="S.tab='Details';go('accounts')">${esc(CTX.conta.nome)}</a></b></div>
+      <div><span>Start Date</span><b>${esc(d.iniTxt)}</b></div>
+      <div><span>End Date</span><b>${esc(d.fimTxt)}</b></div>
+      <div><span>Status</span><b><span class="badge ok">Active</span></b></div>
+      <div><span>Next Renewal</span><b>${esc(d.renov)}</b></div>
+    </div>
+  </div>
+  <div class="rtabs">${['Summary','Details','Related'].map(t=>`<a class="${S.atab2===t||(!S.atab2&&t==='Summary')?'on':''}" onclick="S.atab2='${t}';render()">${t}</a>`).join('')}</div>
+  <div class="acols">
+   <div>
+   ${(!S.atab2||S.atab2==='Summary') ? `
+     <div class="kpis">
+       ${kpi("Today's Quantity", '1', false, 'View Quantity Changes')}
+       ${kpi("Today's MRR", 'Pendente', true, 'View MRR Changes')}
+       ${kpi('Total Amount', 'Pendente', true, 'View Amount Changes')}
+       ${kpi('Usage', '<div class="bar"><i>não se aplica</i></div>', true, '')}
+     </div>
+     <div class="chartc"><h4>Ciclo de vida do asset</h4>${assetChart(a)}</div>
+     ${fonte('inf','Os cartões de <b>MRR</b>, <b>Total Amount</b> e <b>Usage</b> existem no Revenue Cloud, mas a Revisão 1 não define precificação nem produto por uso para o VPN Node — por isso aparecem como pendentes.')}`
+   : S.atab2==='Details' ? `
+     <div class="accord"><h4>Asset</h4>
+       ${sec('id','Identificação',[['Asset Name',esc(a.name)],['Account',esc(CTX.conta.nome)],['Lifecycle Start',esc(a.start)],['Componentes',esc(comps)]])}
+       ${sec('acesso','Acesso',[['Velocidade',esc(at['Velocidade']||'—')],['Tecnologia',esc(at['Tecnologia']||'—')],['Interface',esc(at['Interface']||'—')],['Abordagem',esc(at['Abordagem']||'—')],['Metragem',esc(at['Metragem']||'—')]])}
+       ${sec('rede','Rede privativa',[['VPN Network',esc(at['VPN Network']||'—')],['Protocolo de Roteamento',esc(at['Protocolo de Roteamento']||'—')]])}
+       ${sec('local','Instalação e faturamento',[['Endereço de instalação',esc(at['Endereço de instalação']||'—')],['Localidade',esc(at['Localidade']||'—')],['Entidade faturadora',esc(at['Entidade faturadora']||'—')],['Modalidade de Instalação',esc(at['Modalidade de Instalação']||'—')]])}
+     </div>`
+   : `
+     <div class="rel"><div class="h"><div class="oi p">🔗</div><b>Asset Contract Relationship (${d.acr?1:0})</b></div>
+       ${d.acr?`<div class="it" onclick="S.docView='contract';render()"><b>${esc(d.acr.name)}</b><small>Contrato ${esc(d.acr.contract)} · vigência ${esc(d.acr.start)}${d.acr.end?' a '+esc(d.acr.end):''}</small></div>`:'<div class="note">Sem contrato vinculado.</div>'}
+       ${fonte('ver','Objeto oficial <b>AssetContractRelationship</b> (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate.')}</div>
+     <div class="rel"><div class="h"><div class="oi y">▦</div><b>Fulfillment Assets (${fa.length})</b></div>
+       ${fa.map(f=>`<div class="it"><b>${esc(f.name)}</b><small>Quantity ${f.qty} · Product ${esc(f.product)} · Status ${esc(f.status)}</small></div>`).join('')||'<div class="note">Nenhum.</div>'}</div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#769ed9">📦</div><b>Origem</b></div>
+       ${S.order?`<div class="it" onclick="S.tab='Details';go('order')"><b>Pedido ${esc(S.order.number)}</b><small>${esc(S.order.status)} · início ${esc(S.order.start)}</small></div>`:''}
+       ${S.quote?`<div class="it" onclick="S.tab='Lines';go('quote')"><b>Cotação ${esc(S.quote.number)}</b><small>${esc(S.qStatus)}</small></div>`:''}</div>`}
+   </div>
+   <div>
+     <div class="ovw"><h4>Overview</h4><div class="row2"><div class="ph2">▤</div><div>
+       <dt>Product</dt><dd><a onclick="toast('Produto do catálogo: VPN Node')">VPN Node</a></dd>
+       <dt>Description</dt><dd>${esc(findProd('VPNNODE').desc)}</dd></div></div></div>
+     <div class="accord"><h4>Details</h4>
+       ${sec('pricing','Pricing',[['Product & Pricing Frequency','Recorrente mensal'],['Pricebook Unit Price','Pendente'],['Desconto','Pendente']])}
+       ${sec('billing','Billing',[['Billing Period Amount & Term','Mensal'],['Total Billed Amount','Pendente'],['Entidade faturadora',esc(at['Entidade faturadora']||'—')]])}
+       ${sec('contrato','Contrato',[['Período de fidelização',esc(at['Período Fidelização']||'—')+' meses'],['Tipo de Reajuste',esc(at['Tipo de Reajuste']||'—')],['Índice de Reajuste',esc(at['Índice de Reajuste']||'—')],['Data do Próximo Reajuste',esc(at['Data do Próximo Reajuste']||'—')],['Percentual da Multa',esc(at['Percentual da Multa']||'—')],['Aviso prévio',esc(at['Quantidade de Dias Aviso Previo']||'—')]])}
+     </div>
+   </div>
+  </div>`;
+}
+function assetAcao(qual){
+  const txt={Amend:'Amend abre uma nova transação de alteração sobre o asset, mantendo tabela de preços e moeda da venda inicial.',
+             Renew:'Renew gera a transação de renovação a partir do asset e do contrato vinculado.',
+             Cancel:'Cancel encerra o asset e o ciclo de faturamento.'}[qual];
+  S.sheet=null;
+  toast(qual+': '+txt.split(':')[0], 'warn');
+  agSay(`${qual} — ${txt}\n\nA Revisão 1 do UC-VPN-001 não descreve o fluxo de pós-venda do VPN Node, então aqui a ação é apenas informativa.`, agAtuais(), 'Asset Lifecycle (Revenue Cloud) · fluxo do VPN Node não definido na Revisão 1');
+  agOpen();
+}
+function sheetAssetMore(){ return sheet(`
+  ${row('👁','m','Visualizar contrato',"S.sheet=null;S.docView='contract';render()",'',!(S.contract&&S.contract.docs.length))}
+  ${row('📦','y','Ver o pedido de origem',"S.sheet=null;S.tab='Details';go('order')",'',!S.order)}
+  ${row('🏢','b','Abrir a conta',"S.sheet=null;S.tab='Assets';go('accounts')")}
+`,'Asset'); }
 function telaProcedencia(){
   const g=n=>FONTES.filter(f=>f[1]===n);
   const bloco=(t,n)=>g(n).length?`<div class="rel"><div class="h"><div class="oi ${n==='ver'?'g':n==='inf'?'b':n==='nv'?'y':'m'}">${n==='ver'?'✓':n==='inf'?'≈':n==='nv'?'▲':'◻'}</div><b>${t} (${g(n).length})</b></div>${g(n).map(f=>`<div class="it proc"><b style="color:var(--tx)">${esc(f[0])}</b><small>${esc(f[2])}</small></div>`).join('')}</div>`:'';
@@ -632,7 +774,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, acrs:[], docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -1256,7 +1398,7 @@ function telaAccount(){
      <div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
       <div class="tle-tools"><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Amend: cria cotação de alteração a partir do asset.','warn')">Amend</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Renew: cria cotação de renovação.','warn')">Renew</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Cancel: cria cotação de cancelamento.','warn')">Cancel</button></div>
       ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id);
-        return `<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small>
+        return `<div class="it" onclick="S.assetId='${a.id}';S.atab2='Summary';S.hist=['accounts'];go('asset',true)"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small>
         <div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div>
         ${acr?`<div class="acr" onclick="event.stopPropagation();S.docView='contract';render()">📝 Contrato <b>${esc(acr.contract)}</b> · vigência ${esc(acr.start)}${acr.end?' a '+esc(acr.end):''} <span class="badge">Asset Contract Relationship ${esc(acr.name)}</span></div>`:'<div class="acr vazio">Sem contrato vinculado — o ACR é criado quando o pedido vem de um contrato.</div>'}</div>`; }).join('')||'<div class="note">No assets yet. Assets are created when the orchestration plan completes.</div>'}</div>
      ${(S.acrs||[]).length?`<div class="rel"><div class="h"><div class="oi p">🔗</div><b>Asset Contract Relationships (${S.acrs.length})</b></div>${S.acrs.map(x=>`<div class="it" onclick="S.tela='contract';S.tab='Related';render()"><b>${esc(x.name)}</b><small>${esc(x.assetName)} ↔ Contrato ${esc(x.contract)} · ${esc(x.start)}${x.end?' a '+esc(x.end):''}</small></div>`).join('')}${fonte('ver','Objeto oficial <b>AssetContractRelationship</b> (Revenue Cloud, API 60.0+): AssetId, ContractId, StartDate, EndDate. A exibição da faixa dentro do asset é inferida.')}</div>`:''}
@@ -1686,15 +1828,15 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
-  const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
+  const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,'asset-more':sheetAssetMore};
   if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia(); atdRender();
 }
@@ -1804,6 +1946,15 @@ if(/selftest=1/.test(location.search)){
     ok('plano concluído: assets comerciais e fulfillment assets', S.order.plan.status==='Completed' && S.assets.length===1 && S.fassets.length===S.order.fls.length);
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Accounts'))); S.tab='Assets'; render();
     ok('Assets: Managed Assets (1) e Fulfillment Assets (n)', $('.rel .h b').textContent==='Managed Assets (1)' && [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Fulfillment Assets (')));
+    click([...document.querySelectorAll('.rel .it')].find(x=>/VPN Node/.test(x.textContent)));
+    ok('tocar no asset abre a página do Customer Asset', S.tela==='asset' && $('.ahl .l1 b').textContent==='VPN Node' && $('.ahl .l2').textContent.includes('Next Renewal'));
+    ok('highlights trazem conta, datas, status e renovação', ['Account','Start Date','End Date','Status','Next Renewal'].every(k=>$('.ahl .l2').textContent.includes(k)));
+    ok('ações Amend / Renew / Cancel presentes', ['Amend','Renew','Cancel'].every(t=>[...document.querySelectorAll('.ahl .abtn button')].some(b=>b.textContent===t)));
+    ok('Summary com quatro cartões e gráfico do ciclo de vida', document.querySelectorAll('.kpi').length===4 && !!$('.chartc svg'));
+    S.atab2='Details'; render(); ok('Details com seções recolhíveis', document.querySelectorAll('.accord .sec').length>=4);
+    click($('.accord .sh')); ok('seção abre e fecha', !!$('.accord .sec.open'));
+    S.atab2='Related'; render(); ok('Related traz ACR, fulfillment assets e origem', $('#view').textContent.includes('Asset Contract Relationship') && $('#view').textContent.includes('Fulfillment Assets'));
+    S.tab='Assets'; go('accounts',true);
     ok('cada asset mostra o contrato vinculado (ACR) com vigência', $('.acr') && /Contrato 00000123/.test($('.acr').textContent) && /Asset Contract Relationship/.test($('.acr').textContent));
     ok('lista Asset Contract Relationships na conta', [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Asset Contract Relationships (')) && S.acrs.length===S.assets.length);
     click($('.acr')); ok('tocar no vínculo abre o contrato, que lista os assets cobertos', S.docView==='contract' && /Assets cobertos \(Asset Contract Relationship\)/.test($('.modal').textContent) && $('.modal .doc table'));
