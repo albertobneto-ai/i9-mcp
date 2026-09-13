@@ -334,6 +334,22 @@ document.getElementById('cSave').onclick=function(){
 padding:6px 12px;font-size:11.5px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center}
 .cbar #cHub:hover{background:#2A2A2A}
 @media print{.cbar #cHub{display:none}}
+.umodal{position:fixed;inset:0;background:rgba(13,13,13,.72);z-index:80;display:flex;
+align-items:center;justify-content:center;padding:24px}
+.umbox{background:#FAFBFC;border-radius:10px;width:min(1100px,96vw);height:min(90vh,1000px);
+display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.umtop{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0D0D0D;color:#FAFBFC}
+.umtop b{font-size:13px}
+.umsub{font-size:11.5px;color:#9A9A9A}
+.umflex{flex:1}
+.umtop button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 14px;
+font-size:11.5px;font-weight:700;cursor:pointer}
+.umtop button.umsec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.umbody{flex:1;overflow:auto;background:#E8E9EC;padding:20px}
+.umload{font-size:13px;color:#3A3A3A;padding:20px}
+.umdocx-wrapper{background:transparent!important;padding:0!important}
+.umdocx-wrapper>section.umdocx{background:#FFFFFF;margin:0 auto 18px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+@media print{.umodal{display:none}}
 </style>
 <script>window.__UC__={docId:"UC-VPN-001",fileBase:"UC-VPN-001-VPN-Node",rodada:3};</script>
 <script src="vendor/uc-doc.js"></script></body></html>
