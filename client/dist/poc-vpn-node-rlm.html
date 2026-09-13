@@ -90,6 +90,9 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 #agp.show{display:flex}
 .agp-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
 .agp-h b{font-size:18px;flex:1;font-weight:600}
+.agp-h .afi-h{width:26px;height:26px;flex:none;display:grid;place-items:center;overflow:hidden;font-size:10.5px;font-weight:700;color:#032d60}
+.agp-h .afi-h img{width:100%;height:100%;object-fit:contain;display:none}
+.agp-h .afi-h.has img{display:block}.agp-h .afi-h.has span{display:none}
 .agp-h .ic{width:26px;height:26px;border-radius:50%;background:#ecebea;color:#706e6b;display:grid;place-items:center;font-size:12px;border:0}
 .agp-h .ic.av{background:#032d60;color:#fff;overflow:hidden}.agp-h .ic.av img{width:100%;height:100%;object-fit:cover;display:none}.agp-h .ic.av.has img{display:block}.agp-h .ic.av.has span{display:none}
 .agp-b{flex:1;overflow:auto;background:linear-gradient(180deg,#f7f5fb 0%,#f1f0fa 40%,#ffffff 100%);padding:0 0 12px}
@@ -460,7 +463,7 @@ body.agp-open #guia-abrir{right:416px}
 </div></div>
 <button id="guia-abrir" title="Mostrar roteiro" onclick="S.guiaMode='compact';render()">🧭</button>
 <div class="agent" id="agent"><div onclick="agOpen()"><span class="afi" id="afi"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><span>Ask Agentforce</span><span class="mic" onclick="event.stopPropagation();agOpen();toast('Microfone: use o texto neste protótipo.')">🎤</span></div></div>
-<div id="agp"><div class="agp-h"><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><b>Agentforce</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato, pedido e acompanha a orquestração.')">ⓘ</button><button class="ic" onclick="agClose()">✕</button></div>
+<div id="agp"><div class="agp-h"><span class="afi-h"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><b>Agentforce</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato, pedido e acompanha a orquestração.')">ⓘ</button><button class="ic" onclick="agClose()">✕</button></div>
   <div class="agp-b" id="agp-b"></div>
   <div class="agp-f"><div class="box"><textarea id="agp-in" placeholder="Describe your task or ask a question..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();agSend()}" oninput="document.getElementById('agp-send').className='send'+(this.value.trim()?'':' off')"></textarea><button class="send off" id="agp-send" onclick="agSend()" aria-label="Send">✈</button></div></div></div>
 <div class="bnav" id="bnav" style="display:none"></div>
@@ -2117,6 +2120,7 @@ if(/selftest=1/.test(location.search)){
     go('opp'); S.tab='Details'; render();
     ok('oportunidade usa o layout real: Opportunity Information, Additional Information, System Information', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Opportunity Information|Additional Information|System Information' && $('#view').textContent.includes('Budget Confirmed') && $('#view').textContent.includes('somente leitura'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
+    ok('ícone oficial do Agentforce na barra e no cabeçalho do painel', document.querySelectorAll('img[src="img/agentforce-icon.png"]').length>=2);
     click($('#agent div')); ok('Ask Agentforce abre o painel: pin, título Agentforce, fechar, boas-vindas com robô e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===3 && $('.welcome .bot') && $('#agp-in').placeholder.startsWith('Describe your task'));
     ok('agente propõe a próxima ação em conversa com opções', AG.thread.length>=1 && AG.chips.length>=1);
     agClose(); go('search'); S.q2='vpn'; render(); ok('busca encontra cotação e oportunidade', document.querySelectorAll('.list .it').length>=2);
