@@ -417,13 +417,15 @@ body.agp-open #app{margin-right:400px}
 #lx .launcher{flex:none;width:34px;height:34px;border:0;background:0;border-radius:4px;display:grid;grid-template-columns:repeat(3,4px);grid-template-rows:repeat(3,4px);gap:3px;place-content:center;padding:0}
 #lx .launcher:hover{background:#f4f6f9}
 #lx .launcher span{width:4px;height:4px;border-radius:50%;background:#747474;display:block}
-#lx .sflogo{height:26px;width:auto;flex:none;display:block}
+#lx .sflogo{height:32px;width:auto;flex:none;display:block}
 #lx .sep{width:1px;height:24px;background:var(--bd);flex:none;margin:0 2px}
 #lx .appname{font-size:18px;font-weight:700;flex:none;color:var(--tx)}
 #lx .search{flex:1;max-width:660px;border:1px solid var(--bd2);border-radius:18px;padding:7px 16px;color:var(--mut);font-size:13.5px;background:#fff;margin:0 6px}
 #lx .search:hover{border-color:#b0adab;box-shadow:0 0 0 1px #b0adab inset}
-#lx .icons{display:flex;gap:14px;color:#706e6b;font-size:16px;margin-left:auto;align-items:center}
-#lx .icons .av{width:28px;height:28px;border-radius:50%;background:#7f8de1;color:#fff;display:grid;place-items:center;font-size:12px}
+#lx .icons{display:flex;gap:6px;color:#706e6b;font-size:14px;margin-left:auto;align-items:center}
+#lx .icons>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
+#lx .icons>span:hover{background:#f4f6f9}
+#lx .icons .av{width:26px;height:26px;border-radius:50%;background:#7f8de1;color:#fff;display:grid;place-items:center;font-size:11px;margin-left:4px}
 #lx .tabs{display:flex;gap:2px;padding:0 16px;border-top:1px solid #f0f0f0}
 #lx .tabs a{padding:10px 14px;font-size:14px;color:var(--tx);border-bottom:3px solid transparent;white-space:nowrap}
 #lx .tabs a.on{color:var(--navy);font-weight:700;border-bottom-color:var(--brand)}
@@ -438,8 +440,8 @@ body,#app{font-size:12.5px}
 .rh b{font-size:18px}
 .rh small{font-size:11.5px}
 .acts{padding:8px 18px}
-.act{font-size:12px;padding:5px 10px}
-.act i{width:17px;height:17px;font-size:10px}
+.act{font-size:12.5px;padding:4px 10px;gap:6px}
+.act i{width:18px;height:18px;font-size:10px;border-radius:3px;line-height:18px}
 .rtabs a{font-size:13px;padding:9px 13px}
 .fl{padding:10px 18px 16px}
 .fr{font-size:12.5px;padding:7px 0}
@@ -547,9 +549,9 @@ body,#app{font-size:12.5px}
 .bsheet-bg{background:rgba(0,0,0,.15)}
 /* Agentforce ancorado à direita */
 .agent{display:none!important}
-#lx .icons .agbtn{border:0;background:0;padding:0;width:30px;height:30px;display:grid;place-items:center;border-radius:50%}
+#lx .icons .agbtn{border:0;background:0;padding:0;width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
 #lx .icons .agbtn:hover{background:#f4f6f9}
-#lx .icons .agbtn img{width:24px;height:24px;object-fit:contain;display:block}
+#lx .icons .agbtn img{width:19px;height:19px;object-fit:contain;display:block}
 #agp{left:auto;right:0;top:var(--poch,0px);bottom:0;width:400px;max-width:400px;margin:0;border-left:1px solid var(--bd);box-shadow:-2px 0 10px rgba(0,0,0,.08);z-index:35}
 #agp .agp-h{padding:16px}
 /* utility bar do Lightning */
@@ -1380,13 +1382,15 @@ body.agp-open #app{margin-right:400px}
 #lx .launcher{flex:none;width:34px;height:34px;border:0;background:0;border-radius:4px;display:grid;grid-template-columns:repeat(3,4px);grid-template-rows:repeat(3,4px);gap:3px;place-content:center;padding:0}
 #lx .launcher:hover{background:#f4f6f9}
 #lx .launcher span{width:4px;height:4px;border-radius:50%;background:#747474;display:block}
-#lx .sflogo{height:26px;width:auto;flex:none;display:block}
+#lx .sflogo{height:32px;width:auto;flex:none;display:block}
 #lx .sep{width:1px;height:24px;background:var(--bd);flex:none;margin:0 2px}
 #lx .appname{font-size:18px;font-weight:700;flex:none;color:var(--tx)}
 #lx .search{flex:1;max-width:660px;border:1px solid var(--bd2);border-radius:18px;padding:7px 16px;color:var(--mut);font-size:13.5px;background:#fff;margin:0 6px}
 #lx .search:hover{border-color:#b0adab;box-shadow:0 0 0 1px #b0adab inset}
-#lx .icons{display:flex;gap:14px;color:#706e6b;font-size:16px;margin-left:auto;align-items:center}
-#lx .icons .av{width:28px;height:28px;border-radius:50%;background:#7f8de1;color:#fff;display:grid;place-items:center;font-size:12px}
+#lx .icons{display:flex;gap:6px;color:#706e6b;font-size:14px;margin-left:auto;align-items:center}
+#lx .icons>span{width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
+#lx .icons>span:hover{background:#f4f6f9}
+#lx .icons .av{width:26px;height:26px;border-radius:50%;background:#7f8de1;color:#fff;display:grid;place-items:center;font-size:11px;margin-left:4px}
 #lx .tabs{display:flex;gap:2px;padding:0 16px;border-top:1px solid #f0f0f0}
 #lx .tabs a{padding:10px 14px;font-size:14px;color:var(--tx);border-bottom:3px solid transparent;white-space:nowrap}
 #lx .tabs a.on{color:var(--navy);font-weight:700;border-bottom-color:var(--brand)}
@@ -1401,8 +1405,8 @@ body,#app{font-size:12.5px}
 .rh b{font-size:18px}
 .rh small{font-size:11.5px}
 .acts{padding:8px 18px}
-.act{font-size:12px;padding:5px 10px}
-.act i{width:17px;height:17px;font-size:10px}
+.act{font-size:12.5px;padding:4px 10px;gap:6px}
+.act i{width:18px;height:18px;font-size:10px;border-radius:3px;line-height:18px}
 .rtabs a{font-size:13px;padding:9px 13px}
 .fl{padding:10px 18px 16px}
 .fr{font-size:12.5px;padding:7px 0}
@@ -1510,9 +1514,9 @@ body,#app{font-size:12.5px}
 .bsheet-bg{background:rgba(0,0,0,.15)}
 /* Agentforce ancorado à direita */
 .agent{display:none!important}
-#lx .icons .agbtn{border:0;background:0;padding:0;width:30px;height:30px;display:grid;place-items:center;border-radius:50%}
+#lx .icons .agbtn{border:0;background:0;padding:0;width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
 #lx .icons .agbtn:hover{background:#f4f6f9}
-#lx .icons .agbtn img{width:24px;height:24px;object-fit:contain;display:block}
+#lx .icons .agbtn img{width:19px;height:19px;object-fit:contain;display:block}
 #agp{left:auto;right:0;top:var(--poch,0px);bottom:0;width:400px;max-width:400px;margin:0;border-left:1px solid var(--bd);box-shadow:-2px 0 10px rgba(0,0,0,.08);z-index:35}
 #agp .agp-h{padding:16px}
 /* utility bar do Lightning */
