@@ -777,7 +777,7 @@ function layoutHtml(secs, vals, nota){
     return `<div class="fr"><span>${esc(c.label)}${c.req?' <b style="color:var(--err)">*</b>':''}</span><span>${c.type==='reference'&&txt?`<a>${esc(txt)}</a>`:esc(txt)}${c.ro?' <small style="color:var(--mut)">(somente leitura)</small>':''}</span></div>`; }).join('')}</div>`).join('');
 }
 let S;
-function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Em qualificação',
+function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
   form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
@@ -1433,11 +1433,18 @@ function telaLead(){
        <div class="it"><b>${esc(S.conv.contato)}</b><small>Contact · Decision Maker</small></div>
        ${S.conv.opp?`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(S.conv.opp)}</b><small>Opportunity · ${esc(S.oStage)}</small></div>`:''}</div>`:''}
      <div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
-   : pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], S.leadStatus, null, 'Status', 'lead')
+   : pathHtml(LSTATUS, S.leadStatus, S.lSel, 'Status', 'lead')
      + fonte('ver','<b>Layout Lead · Record Type Nacional</b> lido da org HOMOL em consulta somente leitura (7 seções, 54 campos). Valores exibidos são fictícios.')
      + layoutHtml(LAYOUTS.lead, l, '')}`;
 }
-function leadSel(){ } function leadMark(){ toast('Status do lead: alteração fora do escopo do protótipo.','warn'); }
+const LSTATUS = ['Novo','Em qualificação','Em conversão','Convertido'];
+function leadSel(s){ if(S.conv){ toast('Lead convertido: registro somente leitura.','warn'); return; } S.lSel = (s===S.leadStatus?null:s); render(); }
+function leadMark(){
+  if(S.conv){ toast('Lead convertido: registro somente leitura.','warn'); return; }
+  const alvo = S.lSel || LSTATUS[Math.min(LSTATUS.indexOf(S.leadStatus)+1, LSTATUS.length-1)];
+  if(alvo==='Convertido'){ S.lSel=null; toast('O status Convertido é aplicado pela própria conversão.','warn'); go('convert'); return; }
+  S.leadStatus = alvo; S.lSel = null; render(); toast('Status changed successfully.');
+}
 function telaConvert(){
   const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
   const f = S.form.conv || (S.form.conv = {
@@ -1585,7 +1592,8 @@ function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`C
 function agLead(){
   const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
   agSay(`Estou no lead ${l.Name} — ${l.Company} (${S.leadStatus}). Posso conduzir a partir daqui: qualificação, conversão em conta, contato e oportunidade, e depois a cotação.`,
-    [{l:'Converter o lead',f:()=>{agClose();go('convert');agSay('Abri a tela de conversão. Confira conta, contato e oportunidade e toque em Convert.',agAtuais());},pri:true},
+    [{l:'Avançar o status',f:()=>{ leadMark(); agSay(`Status do lead agora: ${S.leadStatus}.`, agAtuais()); }},
+     {l:'Converter o lead',f:()=>{agClose();go('convert');agSay('Abri a tela de conversão. Confira conta, contato e oportunidade e toque em Convert.',agAtuais());},pri:true},
      {l:'Resumir o lead',f:()=>agSay(`${l.Name}, ${l['Title']||'contato'} na ${l.Company}. Segmento ${l['Segmento__c']||'—'}, ticket ${l['Ticket_Potencial__c']||'—'}, produto de interesse ${l['Produto_Interesse__c']||'—'}, origem ${l.LeadSource||'—'}, rating ${l.Rating||'—'}.`, agAtuais(),'Layout Lead · Record Type Nacional (HOMOL)')},
      {l:'O que a conversão cria?',f:()=>agSay('A conversão cria a conta, o contato e, se você marcar, a oportunidade. O lead fica somente leitura com o status convertido, e os registros ficam vinculados a ele.', agAtuais(),'Conversão de lead (Sales Cloud)')}]);
 }
@@ -1894,9 +1902,12 @@ function atdDetalhe(){ const a=atdAtual(); if(!a) return; toast(`Atendimento ${a
 function guia(){
   const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk);
   const C=[]; const add=(cond,t,passos,acao)=>{ if(cond && !C.length) C.push({t,passos,acao}); };
-  add(S.tela==='lead'&&!S.conv&&S.leadStatus!=='Em qualificação','Qualifique o lead antes de converter.',
-      ['No path, toque em <b>Em qualificação</b>.','Depois em <b>Mark Status as Complete</b>.','Só então a conversão faz sentido no processo.'],
-      {l:'Marcar Em qualificação',f:()=>{S.leadStatus='Em qualificação';render();toast('Status changed successfully.');}});
+  add(S.tela==='lead'&&!S.conv&&S.leadStatus==='Novo','Avance o lead para <b>Em qualificação</b>.',
+      ['No path, toque no próximo status.','Depois em <b>Mark Status as Complete</b>.','O path do lead funciona como o da oportunidade.'],
+      {l:'Marcar Em qualificação',f:leadMark});
+  add(S.tela==='lead'&&!S.conv&&S.leadStatus==='Em qualificação','Avance para <b>Em conversão</b> ou converta direto.',
+      ['Em qualificação é a etapa de checar interesse, orçamento e produto.','Em conversão indica que a negociação vai virar oportunidade.','O status Convertido é aplicado pela própria conversão.'],
+      {l:'Marcar Em conversão',f:leadMark});
   add(S.tela==='lead'&&!S.conv,'Converta o lead em conta, contato e oportunidade.',
       ['Toque em <b>Convert</b> na barra de ações.','Confira conta, contato e o nome da oportunidade.','Toque em <b>Convert</b> para concluir.'],
       {l:'Convert',f:()=>go('convert')});
@@ -2133,6 +2144,10 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
+    ok('path do lead começa em Novo e avança pelo Mark Status as Complete', S.leadStatus==='Novo' && (()=>{ leadMark(); return S.leadStatus==='Em qualificação'; })());
+    click([...document.querySelectorAll('.path .ps')].find(p=>p.textContent==='Em conversão'));
+    ok('tocar num status futuro oferece Mark as Current Status', S.lSel==='Em conversão' && $('.stage .btn').textContent.includes('Mark as Current Status'));
+    leadMark(); ok('aplica o status escolhido', S.leadStatus==='Em conversão' && S.lSel===null);
     ok('lead traz a ação Convert', [...document.querySelectorAll('.act')].some(a=>a.textContent.includes('Convert')));
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Convert')));
     ok('tela de conversão com conta, contato, oportunidade e status', S.tela==='convert' && ['Account','Contact','Opportunity','Converted Status'].every(k=>$('#view').textContent.includes(k)));
