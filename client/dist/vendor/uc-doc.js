@@ -491,7 +491,7 @@
     }).catch(function () { return blob; });   // sem recolhimento, o documento continua válido
   }
 
-  function baixarWord(stat) {
+  function gerarWord(stat) {
     stat('Montando o documento…');
     var dados = lerDocumento();
     var svgs = [];
@@ -506,13 +506,74 @@
     }).then(function (blob) {
       stat('Preparando a árvore recolhível…');
       return recolher(blob);
-    }).then(function (blob) {
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = CFG.fileBase + '.docx';
-      a.click();
-      stat('Word gerado (' + CFG.fileBase + '.docx).');
-    }).catch(function (e) { stat('Não foi possível gerar o Word (' + e.message + ').'); });
+    });
+  }
+  function salvarBlob(blob) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = CFG.fileBase + '.docx';
+    a.click();
+  }
+
+  // ---------------------------------------------------------------- pré-visualização
+  // a biblioteca de leitura usa o mesmo nome global da de escrita: guardamos e devolvemos
+  var PV = null;
+  function libPreview() {
+    if (PV) return Promise.resolve(PV);
+    return lib('jszip', 'vendor/jszip.min.js', 'JSZip').then(function () {
+      var escritor = window.docx;
+      window.docx = undefined;
+      return fetch('vendor/docx-preview.min.js').then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status); return r.text();
+      }).then(function (codigo) {
+        return new Promise(function (res, rej) {
+          var sc = document.createElement('script');
+          sc.src = URL.createObjectURL(new Blob([codigo], { type: 'application/javascript' }));
+          sc.onload = function () {
+            PV = window.docx;
+            window.docx = escritor;                 // devolve o gerador ao lugar
+            PV && PV.renderAsync ? res(PV) : rej(new Error('pré-visualização indisponível'));
+          };
+          sc.onerror = function () { window.docx = escritor; rej(new Error('pré-visualização')); };
+          document.head.appendChild(sc);
+        });
+      });
+    });
+  }
+  function preverWord(stat) {
+    var fundoM = document.createElement('div'); fundoM.className = 'umodal';
+    fundoM.innerHTML = '<div class="umbox"><div class="umtop"><b>' + CFG.fileBase + '.docx</b>'
+      + '<span class="umsub">pré-visualização do documento</span>'
+      + '<span class="umflex"></span>'
+      + '<button type="button" class="umsec" id="umFechar">Fechar</button>'
+      + '<button type="button" id="umBaixar">Baixar</button></div>'
+      + '<div class="umbody"><div class="umload">Montando a pré-visualização…</div>'
+      + '<div id="umDoc"></div></div></div>';
+    document.body.appendChild(fundoM);
+    var fechar = function () { fundoM.remove(); document.removeEventListener('keydown', esc); };
+    var esc = function (e) { if (e.key === 'Escape') fechar(); };
+    document.addEventListener('keydown', esc);
+    fundoM.addEventListener('click', function (e) { if (e.target === fundoM) fechar(); });
+    fundoM.querySelector('#umFechar').onclick = fechar;
+    var pronto = null;
+    fundoM.querySelector('#umBaixar').onclick = function () {
+      if (pronto) { salvarBlob(pronto); stat('Word salvo (' + CFG.fileBase + '.docx).'); fechar(); }
+    };
+    return gerarWord(stat).then(function (blob) {
+      pronto = blob;
+      return libPreview().then(function (pv) {
+        return pv.renderAsync(blob, fundoM.querySelector('#umDoc'), null,
+          { className: 'umdocx', inWrapper: true, ignoreWidth: false, breakPages: true,
+            experimental: true, renderHeaders: true, renderFooters: true });
+      });
+    }).then(function () {
+      var l = fundoM.querySelector('.umload'); if (l) l.remove();
+      stat('Pré-visualização pronta. Revise e clique em Baixar.');
+    }).catch(function (e) {
+      var l = fundoM.querySelector('.umload');
+      if (l) l.textContent = 'Não foi possível montar a pré-visualização (' + e.message + ').';
+      stat('Falha na pré-visualização (' + e.message + ').');
+    });
   }
 
   // ---------------------------------------------------------------- botões
@@ -542,7 +603,7 @@
                : 'Nenhum comentário aplicável nesta rodada.');
       }).catch(function (e) { stat('Não foi possível atualizar (' + e.message + ').'); });
     };
-    bW.onclick = function () { baixarWord(stat); };
+    bW.onclick = function () { preverWord(stat); };
     // aplica automaticamente o que já está salvo
     lerSalvos().then(function (j) { if (j) aplicar(j); }).catch(function () {});
   }
