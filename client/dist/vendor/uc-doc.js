@@ -488,12 +488,16 @@
     var bar = document.querySelector('.cbar');
     if (!bar) return setTimeout(montar, 200);
     var stat = function (t) { var s = document.getElementById('cStat'); if (s) s.textContent = t; };
+    var bHub = document.createElement('a');
+    bHub.id = 'cHub'; bHub.className = 'sec'; bHub.href = 'uc-hub.html';
+    bHub.textContent = '← Hub';
     var bUp = document.createElement('button');
     bUp.id = 'cUpd'; bUp.className = 'sec'; bUp.type = 'button'; bUp.textContent = 'Atualizar documento';
     var bW = document.createElement('button');
     bW.id = 'cWord'; bW.type = 'button'; bW.textContent = 'Baixar Word';
     var alvo = document.getElementById('cStat');
     bar.insertBefore(bUp, alvo); bar.insertBefore(bW, alvo);
+    bar.insertBefore(bHub, bar.firstChild);
     window.__UC_APLICAR__ = function () {
       return lerSalvos().then(function (j) { return aplicar(j); }).catch(function () { return 0; });
     };
