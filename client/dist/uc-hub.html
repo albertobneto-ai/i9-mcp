@@ -228,28 +228,9 @@ var itens=[];
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function plural(n,s,p){return n+' '+(n===1?s:p);}
-function token(novo){
- if(!tokenP||novo){
-  tokenP=fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({email:'admin@everi9.com',password:'admin2026'})})
-  .then(function(r){return r.json();}).then(function(j){if(!j.token)throw new Error('login');return j.token;});
-  tokenP.catch(function(){tokenP=null;});
- }
- return tokenP;
-}
-function lerComentarios(path,novo){
- return token(novo).then(function(t){
-  return fetch(API+'/api/github/repo/i9-mcp/files?path='+encodeURIComponent(path),{headers:{'Authorization':'Bearer '+t},cache:'no-store'});
- }).then(function(r){
-  if(r.status===401&&!novo)return lerComentarios(path,true);
-  if(r.status===404)return null;
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  return r.json().then(function(o){
-   var bin=atob(String(o.content||'').replace(/\s/g,'')),bytes=new Uint8Array(bin.length);
-   for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-   return JSON.parse(new TextDecoder('utf-8').decode(bytes));
-  });
- });
+function lerComentarios(docId){
+ return fetch(API+'/api/uc/'+encodeURIComponent(docId)+'/rodadas',{cache:'no-store'})
+ .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
 }
 function semUC(){var e=new Error('sem caso de uso');e.ausente=true;return e;}
 
@@ -267,8 +248,8 @@ function lerPagina(p){
    if(dt&&dd&&/data/i.test(dt.textContent))info.data=dd.textContent.trim();});
   Array.prototype.forEach.call(d.querySelectorAll('.kpi'),function(k){
    var l=k.querySelector('.l'),v=k.querySelector('.v');if(l&&v)info.kpi[l.textContent.trim()]=v.textContent.trim();});
-  var m=t.match(/path:'(client\/dist\/data\/comentarios-[^']+?-r(\d+)\.json)'/);
-  if(m){info.comentarios=m[1];info.rodada=parseInt(m[2],10);}
+  var m=t.match(/__UC__\s*=\s*\{[^}]*docId:\s*"([^"]+)"[^}]*rodada:\s*(\d+)/);
+  if(m){info.id=m[1];info.rodada=parseInt(m[2],10);}
   return info;
  });
 }
@@ -318,27 +299,28 @@ function filtrar(){
 
 function resumo(){
  document.getElementById('mProdutos').textContent=itens.length;
- var pend=itens.filter(function(it){return it.salvos===undefined&&it.info&&it.info.comentarios;}).length;
+ var pend=itens.filter(function(it){return it.salvos===undefined&&it.info&&it.info.rodada;}).length;
  document.getElementById('mComent').textContent=pend?'Verificando…':itens.filter(function(it){return it.salvos>0;}).length;
  document.getElementById('mDuv').textContent=itens.reduce(function(s,it){return s+(it.info?it.info.duvidas:0);},0);
 }
 
 function checar(it){
  var el=document.getElementById('st-'+it.i);
- if(!el||!it.info||!it.info.comentarios)return;
- var path=it.info.comentarios,n=it.info.rodada,atend=n>1?' '+plural(n-1,'rodada atendida','rodadas atendidas')+'.':'';
+ if(!el||!it.info||!it.info.rodada)return;
+ var n=it.info.rodada;
  it.salvos=undefined;resumo();
  el.innerHTML='<span class="st st-load">Verificando comentários…</span>';
- lerComentarios(path).then(function(j){
-  if(j===null){it.salvos=0;
-   el.innerHTML='<span class="st st-off">Nenhum comentário salvo</span><div class="rod">Rodada '+n+' aberta para revisão.'+atend+'</div>';return;}
-  {
-   var c=Object.keys(j.comentarios||{}).length;it.salvos=c;
-   var q=j.quando?new Date(j.quando):null;
-   var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
-   el.innerHTML='<span class="st '+(c?'st-on':'st-off')+'">'+(c?plural(c,'comentário salvo','comentários salvos'):'Nenhum comentário salvo')+
-    '</span><div class="rod">Rodada '+n+qt+'.'+atend+'</div>';
-  }
+ lerComentarios(it.info.id).then(function(j){
+  var lista=(j&&j.rodadas)||[];
+  var atual=lista.filter(function(r){return r.rodada===n;})[0];
+  var atendidas=lista.filter(function(r){return r.rodada<n;}).length;
+  var atend=atendidas?' '+plural(atendidas,'rodada atendida','rodadas atendidas')+'.':'';
+  var c=atual?atual.total:0; it.salvos=c;
+  var q=atual&&atual.quando?new Date(atual.quando):null;
+  var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+  el.innerHTML='<span class="st '+(c?'st-on':'st-off')+'">'+
+   (c?plural(c,'comentário salvo','comentários salvos'):'Nenhum comentário salvo')+
+   '</span><div class="rod">Rodada '+n+(c?qt:' aberta para revisão')+'.'+atend+'</div>';
  }).catch(function(e){it.salvos=null;
   el.innerHTML='<span class="st st-err">Status indisponível</span><div class="rod">Não foi possível ler os comentários ('+esc(e.message)+'). Use Atualizar status.</div>';
  }).then(resumo);
