@@ -582,7 +582,7 @@ document.getElementById('cSave').onclick=function(){
       return new P({ alignment: o.align, spacing: { before: o.before || 0,
           after: o.after === undefined ? 100 : o.after },
         indent: o.indent, border: o.border, keepNext: o.keepNext,
-        shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
+        shading: o.fill ? fundo(o.fill) : undefined,
         children: [new T({ text: t, font: FONT, size: o.size || 20, bold: !!o.bold,
           color: o.color || TX, allCaps: !!o.caps, characterSpacing: o.track })] });
     }
@@ -591,14 +591,19 @@ document.getElementById('cSave').onclick=function(){
       return new P({ spacing: { before: o.before || 0, after: o.after === undefined ? 100 : o.after,
           line: 260 },
         indent: o.indent,
-        border: o.border, shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
+        border: o.border, shading: o.fill ? fundo(o.fill) : undefined,
         children: [new T({ text: r + ' ', font: FONT, size: o.size || 20, bold: true, color: o.color || TX }),
                    new T({ text: c, font: FONT, size: o.size || 20, color: o.color || TX })] });
     }
+    var fundo = function (cor) {
+      // escuro em modo sólido: o Word ignora o tema e pinta a cor pedida
+      return cor === TX ? { type: SH.SOLID, color: TX, fill: TX }
+                        : { type: SH.CLEAR, color: 'auto', fill: cor };
+    };
     function cel(conteudo, o) {
       o = o || {};
       return new D.TableCell({ width: { size: o.w, type: WT.DXA },
-        shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
+        shading: o.fill ? fundo(o.fill) : undefined,
         margins: { top: 90, bottom: 90, left: 130, right: 130 },
         columnSpan: o.span, verticalAlign: o.vAlign, borders: o.borders,
         children: Array.isArray(conteudo) ? conteudo : [conteudo] });
@@ -609,7 +614,7 @@ document.getElementById('cSave').onclick=function(){
       layout: TL.FIXED, borders: nada,
       rows: [new D.TableRow({ height: { value: 4200, rule: 'atLeast' }, children: [
         new D.TableCell({ width: { size: LARG, type: WT.DXA }, borders: nada,
-          shading: { type: SH.CLEAR, color: 'auto', fill: TX }, verticalAlign: VA.CENTER,
+          shading: fundo(TX), verticalAlign: VA.CENTER,
           margins: { top: 500, bottom: 500, left: 520, right: 400 },
           children: [
             tx(dados.kicker, { size: 16, color: 'FFFFFF', caps: true, track: 30, after: 260 }),
@@ -624,6 +629,7 @@ document.getElementById('cSave').onclick=function(){
           ] })] })] }));
     filhos.push(tx('', { after: 240 }));
     // indicadores
+    dados.kpis = dados.kpis.filter(function (k) { return !/fluxo|passo|desvio|escolha/i.test(k[0]); });
     if (dados.kpis.length) {
       var w = Math.floor(LARG / dados.kpis.length);
       filhos.push(new D.Table({ width: { size: LARG, type: WT.DXA },
@@ -637,7 +643,7 @@ document.getElementById('cSave').onclick=function(){
     }
     // sumário
     filhos.push(tx('Conteúdo', { size: 15, color: MUT, caps: true, track: 30, after: 120 }));
-    dados.toc.forEach(function (t) {
+    dados.toc.filter(function (t) { return t[0] === '01'; }).forEach(function (t) {
       filhos.push(new P({ spacing: { after: 60 }, border: { bottom: li(S2) },
         children: [new T({ text: t[0] + '   ', font: FONT, size: 17, color: MUT }),
                    new T({ text: t[1], font: FONT, size: 20, color: TX })] }));
@@ -648,14 +654,14 @@ document.getElementById('cSave').onclick=function(){
     var TAM = { root: 26, fam: 23, grp: 21, attr: 20 };
     function no(n) {
       var ind = IND[n.tipo];
-      var fundo = n.tipo === 'root' ? TX : n.tipo === 'fam' ? S2 : n.tipo === 'grp' ? S1 : 'FFFFFF';
+      var fundoNo = n.tipo === 'root' ? TX : n.tipo === 'fam' ? S2 : n.tipo === 'grp' ? S1 : 'FFFFFF';
       var cor = n.tipo === 'root' ? 'FFFFFF' : TX;
       var borda = caixa(n.tipo === 'root' ? TX : BD);
       var runs = [];
       if (n.lvl) {
         runs.push(new T({ text: ' ' + n.lvl + ' ', font: FONT, size: 14, bold: true,
           color: n.tipo === 'root' ? TX : 'FFFFFF', allCaps: true, characterSpacing: 20,
-          shading: { type: SH.CLEAR, color: 'auto', fill: n.tipo === 'root' ? 'FFFFFF' : TX } }));
+          shading: fundo(n.tipo === 'root' ? 'FFFFFF' : TX) }));
         runs.push(new T({ text: '  ', font: FONT }));
       }
       runs.push(new T({ text: n.nome, font: FONT, size: TAM[n.tipo], bold: true, color: cor }));
@@ -664,18 +670,18 @@ document.getElementById('cSave').onclick=function(){
         n.chips.forEach(function (c, i) {
           runs.push(new T({ text: ' ' + c.t + ' ', font: FONT, size: 15, bold: c.forte,
             color: c.forte ? TX : TX2,
-            shading: { type: SH.CLEAR, color: 'auto', fill: c.forte ? S2 : 'F7F8F9' } }));
+            shading: fundo(c.forte ? S2 : 'F7F8F9') }));
           if (i < n.chips.length - 1) runs.push(new T({ text: '  ', font: FONT, size: 15 }));
         });
       }
       filhos.push(new P({ heading: NIV[n.tipo], keepNext: true, outlineLevel: NVL[n.tipo],
-        border: borda, shading: { type: SH.CLEAR, color: 'auto', fill: fundo },
+        border: borda, shading: fundo(fundoNo),
         indent: { left: ind }, tabStops: [{ type: D.TabStopType.RIGHT, position: LARG - ind - 220 }],
         spacing: { before: n.tipo === 'attr' ? 180 : 240, after: 120, line: 260 },
         children: runs }));
       n.blocos.forEach(function (b) {
         var opts = { indent: { left: ind }, border: borda, before: 80,
-          fill: b.tipo === 'duvida' ? S2 : b.tipo === 'rec' ? S1 : b.tipo === 'decisao' ? TX : fundo,
+          fill: b.tipo === 'duvida' ? S2 : b.tipo === 'rec' ? S1 : b.tipo === 'decisao' ? TX : fundoNo,
           color: b.tipo === 'decisao' ? 'FFFFFF' : TX, after: 60 };
         filhos.push(b.rotulo
           ? rotulado(b.rotulo || 'Decisão da revisão:', b.texto, opts)
@@ -715,7 +721,7 @@ document.getElementById('cSave').onclick=function(){
         borders: { top: li(), bottom: li(), left: li(), right: li(),
           insideHorizontal: li(), insideVertical: li() } });
     }
-    dados.secoes.forEach(function (sec) {
+    dados.secoes.filter(function (s) { return s.num === '01'; }).forEach(function (sec) {
       filhos.push(new P({ children: [new D.PageBreak()] }));
       filhos.push(new D.Table({ width: { size: LARG, type: WT.DXA },
         columnWidths: [700, LARG - 700], layout: TL.FIXED, borders: nada,
@@ -775,7 +781,7 @@ document.getElementById('cSave').onclick=function(){
       return JSZip.loadAsync(blob).then(function (zip) {
         return zip.file('word/document.xml').async('string').then(function (xml) {
           var n = 0;
-          xml = xml.replace(/<w:pPr><w:pStyle w:val="Heading[345]"\/>[\s\S]*?<\/w:pPr>/g, function (b) {
+          xml = xml.replace(/<w:pPr><w:pStyle w:val="Heading[45]"\/>[\s\S]*?<\/w:pPr>/g, function (b) {
             if (b.indexOf('w15:collapsed') >= 0) return b;
             n++; return b.replace('</w:pPr>', '<w15:collapsed/></w:pPr>');
           });
