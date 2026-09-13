@@ -1032,6 +1032,15 @@ function telaProcedencia(){
   const modo = S.fonteModo||'atencao';
   const bloco=(t,n)=>g(n).length?`<div class="rel"><div class="h"><div class="oi ${n==='ver'?'g':n==='inf'?'b':n==='nv'?'y':'m'}">${n==='ver'?'✓':n==='inf'?'≈':n==='nv'?'▲':'◻'}</div><b>${t} (${g(n).length})</b></div>${g(n).map(f=>`<div class="it proc"><b style="color:var(--tx)">${esc(f[0])}</b><small>${esc(f[2])}</small></div>`).join('')}</div>`:'';
   return topbar('Procedência', true) + `
+  <div class="rel"><div class="h"><div class="oi b">🗺</div><b>Mapa de componentes — protótipo × Salesforce</b></div>
+    <div class="note">Nome de API conferido na Referência de Objetos do Salesforce. <b>inferido</b> marca a correspondência proposta pelo projeto: o objeto existe, o uso para o VPN Node é que precisa de validação.</div>
+    ${MAPA_SF.map(([grupo,linhas])=>`
+      <div class="mapg">${esc(grupo)}</div>
+      ${linhas.map(([peca,obj,niv,nota])=>`<div class="mapr">
+        <div class="p">${esc(peca)}</div>
+        <div class="o"><code>${esc(obj)}</code> <span class="nv ${niv}">${niv==='ver'?'verificado':'inferido'}</span></div>
+        <div class="n">${esc(nota)}</div></div>`).join('')}`).join('')}
+  </div>
   <div class="rel"><div class="h"><div class="oi b">⚙</div><b>Faixas nas telas</b></div>
     <div style="padding:10px 14px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span>Mostrar</span>
@@ -1047,15 +1056,7 @@ function telaProcedencia(){
   <div class="fnt nv"><span class="tg">Não verificado</span><span>Existe na documentação, mas descrito para Lightning Experience; a exibição no app Salesforce Mobile não foi verificada.</span></div>
   <div class="fnt proto"><span class="tg">Protótipo</span><span>Elemento do protótipo, fora da interface Salesforce.</span></div>
   ${bloco('Verificado','ver')}${bloco('Inferido — precisa de validação','inf')}${bloco('Não verificado no app','nv')}${bloco('Chrome do protótipo','proto')}
-  <div class="rel"><div class="h"><div class="oi b">🗺</div><b>Mapa de componentes — protótipo × Salesforce</b></div>
-    <div class="note">Nome de API conferido na Referência de Objetos do Salesforce. <b>inferido</b> marca a correspondência proposta pelo projeto: o objeto existe, o uso para o VPN Node é que precisa de validação.</div>
-    ${MAPA_SF.map(([grupo,linhas])=>`
-      <div class="mapg">${esc(grupo)}</div>
-      ${linhas.map(([peca,obj,niv,nota])=>`<div class="mapr">
-        <div class="p">${esc(peca)}</div>
-        <div class="o"><code>${esc(obj)}</code> <span class="nv ${niv}">${niv==='ver'?'verificado':'inferido'}</span></div>
-        <div class="n">${esc(nota)}</div></div>`).join('')}`).join('')}
-  </div>`;
+`;
 }
 /* Layouts lidos da org HOMOL em consulta somente leitura (13/09/2026):
    Lead → Record Type "Nacional" (layout padrão do RT). Opportunity → Record Type padrão é o Master,
