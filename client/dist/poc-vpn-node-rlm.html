@@ -1663,8 +1663,9 @@ function telaLead(){
   <div class="rh"><div class="oi t">★</div><div><small>Lead</small><b>${esc(l.Name)} — ${esc(l.Company)}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="S.tab='Chatter';render()">Chatter</a></div>
   ${S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
-   : fonte('ver','<b>Layout Lead · Record Type Nacional</b> lido da org HOMOL em consulta somente leitura (7 seções, 54 campos). Valores exibidos são fictícios.') + layoutHtml(LAYOUTS.lead, l, '')
-     + pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], l.Status==='Novo'?'Novo':'Em qualificação', null, 'Status', 'lead')}`;
+   : pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], l.Status==='Novo'?'Novo':'Em qualificação', null, 'Status', 'lead')
+     + fonte('ver','<b>Layout Lead · Record Type Nacional</b> lido da org HOMOL em consulta somente leitura (7 seções, 54 campos). Valores exibidos são fictícios.')
+     + layoutHtml(LAYOUTS.lead, l, '')}`;
 }
 function leadSel(){ } function leadMark(){ toast('Status do lead: alteração fora do escopo do protótipo.','warn'); }
 function sheetMoreLead(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit lead: campos do layout Nacional.','warn');render()")}${row('✓','g','Convert',"S.sheet=null;toast('Convert: cria conta, contato e oportunidade.','warn');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
@@ -2286,6 +2287,7 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
+    ok('no Lead o path vem logo abaixo do cabeçalho, antes dos campos', (()=>{ const pw=$('.pathw'), fl=$('.fl'); return !!pw && !!fl && pw.getBoundingClientRect().top < fl.getBoundingClientRect().top; })());
     ok('seções na ordem do layout', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Lead Information|Endereço|Endereço de visita|Dados do contato|Telefones para contato|Dados de marketing|Informações de duplicidade');
     ok('54 campos do layout, com obrigatórios marcados', document.querySelectorAll('#view .fr').length===54 && $('#view').textContent.includes('CNPJ') && $('#view').textContent.includes('Telefone 1 blacklist') && document.querySelectorAll('#view .fr b').length>=5);
     go('opp'); S.tab='Details'; render();
