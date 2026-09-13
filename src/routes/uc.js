@@ -78,10 +78,11 @@ router.get('/:documento/comentarios', async (req, res) => {
 router.get('/:documento/rodadas', async (req, res) => {
   const id = doc(req, res); if (!id) return;
   try {
-    const q = await pool.query(`SELECT rodada, status, atualizado_em, comentarios
+    const q = await pool.query(`SELECT rodada, status, atualizado_em, aplicada_em, comentarios
       FROM uc_comentarios WHERE documento=$1 ORDER BY rodada DESC`, [id]);
     res.json({ documento: id, rodadas: q.rows.map(x => ({ rodada: x.rodada, status: x.status,
-      quando: x.atualizado_em, total: Object.keys(x.comentarios || {}).length })) });
+      quando: x.atualizado_em, aplicada_em: x.aplicada_em,
+      total: Object.keys(x.comentarios || {}).length })) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -105,6 +106,39 @@ router.post('/:documento/comentarios', async (req, res) => {
     res.json({ ok: true, documento: id, rodada: q.rows[0].rodada,
       quando: q.rows[0].atualizado_em,
       total: Object.keys(q.rows[0].comentarios || {}).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/uc/:documento/comentarios/:rodada/aplicar
+// O conteúdo do comentário passa a fazer parte do documento: a rodada sai da fila de revisão
+// e fica registrada como aplicada, com o vínculo documento → item → texto.
+router.post('/:documento/comentarios/:rodada/aplicar', async (req, res) => {
+  const id = doc(req, res); if (!id) return;
+  try {
+    const r = rodada(req.params.rodada);
+    if (!r) return res.status(400).json({ error: 'rodada inválida' });
+    const q = await pool.query(`UPDATE uc_comentarios
+      SET status = 'APLICADA', aplicada_em = now(), atualizado_em = now()
+      WHERE documento=$1 AND rodada=$2
+      RETURNING rodada, status, aplicada_em, comentarios`, [id, r]);
+    if (!q.rows.length) return res.status(404).json({ error: 'rodada não encontrada' });
+    const l = q.rows[0];
+    res.json({ ok: true, documento: id, rodada: l.rodada, status: l.status,
+      aplicada_em: l.aplicada_em, total: Object.keys(l.comentarios || {}).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/uc/:documento/comentarios/:rodada/reabrir — desfaz a aplicação
+router.post('/:documento/comentarios/:rodada/reabrir', async (req, res) => {
+  const id = doc(req, res); if (!id) return;
+  try {
+    const r = rodada(req.params.rodada);
+    if (!r) return res.status(400).json({ error: 'rodada inválida' });
+    const q = await pool.query(`UPDATE uc_comentarios
+      SET status = 'ABERTA', aplicada_em = NULL, atualizado_em = now()
+      WHERE documento=$1 AND rodada=$2 RETURNING rodada, status`, [id, r]);
+    if (!q.rows.length) return res.status(404).json({ error: 'rodada não encontrada' });
+    res.json({ ok: true, documento: id, rodada: q.rows[0].rodada, status: q.rows[0].status });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
