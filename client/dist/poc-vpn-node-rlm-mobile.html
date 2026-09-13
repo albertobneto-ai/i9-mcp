@@ -694,7 +694,7 @@ function docHtml(tipo){
       <p style="margin:0;font-size:12.5px">${['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Data do Próximo Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l0.attrs&&l0.attrs[k]).map(k=>k+': '+esc(l0.attrs[k])).join(' · ')||'—'}</p>
       ${S.pdfs.length?`<p style="margin:8px 0 0;font-size:12px;color:#666">Proposta enviada: ${esc(S.pdfs[0].name)} · ${S.pdfs[0].quando}.</p>`:''}
       ${S.contract?`<p style="margin:4px 0 0;font-size:12px;color:#666">Contrato ${S.contract.number} · ${esc(S.contract.status)} · assinatura ${esc(S.contract.esig)}.</p>`:''}`;
-  } else {
+  } else if(tipo==='order'){
     const o=S.order, oroots=o.lines.filter(l=>l.parent);
     corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Pedido')}<td style="padding:6px;border:1px solid #ddd">${o.number} · ${esc(o.status)}${o.submitStatus?' · '+esc(o.submitStatus):''}</td></tr>
       <tr>${th('Cliente')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr>
@@ -713,12 +713,32 @@ function docHtml(tipo){
         ${S.assets.map(a=>`<div style="font-size:12.5px">• ${esc(a.name)} — ${esc(a.children.join(', '))}</div>`).join('')}
         ${(S.fassets||[]).map(f=>`<div style="font-size:12.5px;color:#666">• ${esc(f.name)} (fulfillment) — ${esc(f.status)}</div>`).join('')}`:''}`;
   }
-  const tit = tipo==='quote'?'Cotação '+S.quote.number:'Pedido '+S.order.number;
+  if(tipo==='contract'){
+    const c=S.contract, l1=roots[0]||{attrs:{}};
+    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Contrato')}<td style="padding:6px;border:1px solid #ddd">${c.number} · ${esc(c.status)}</td></tr>
+      <tr>${th('Contratante')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr>
+      <tr>${th('Contratada')}<td style="padding:6px;border:1px solid #ddd">${esc(entidadeFaturadora().valor)}</td></tr>
+      <tr>${th('Origem')}<td style="padding:6px;border:1px solid #ddd">Cotação ${S.quote.number}</td></tr>
+      <tr>${th('Assinatura')}<td style="padding:6px;border:1px solid #ddd">${esc(c.esig)}${c.docs[0]?' · '+esc(c.docs[0].v):''}</td></tr></table>
+      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Objeto</h3>
+      <p style="margin:0;font-size:12.5px">Prestação de serviço de conectividade corporativa nos termos da cotação ${S.quote.number}, compreendendo ${roots.length} item(ns):</p>
+      ${roots.map((l,i)=>`<div style="font-size:12.5px;margin-top:6px">${i+1}. <b>${esc(l.name)}</b> — ${esc((l.attrs&&l.attrs['Velocidade'])||'')} · ${esc((l.attrs&&l.attrs['Tecnologia'])||'')} · ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')}${lines.filter(x=>x.parentUid===l.uid).length?'<div style="margin-left:14px;color:#444">Equipamentos: '+lines.filter(x=>x.parentUid===l.uid).map(k=>esc(k.name)+' ('+esc((k.attrs&&k.attrs['Modalidade Equipamento'])||'—')+')').join(', ')+'</div>':''}</div>`).join('')}
+      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Cláusulas contratuais</h3>
+      <p style="margin:0;font-size:12.5px"><b>Prazo:</b> ${esc((l1.attrs&&l1.attrs['Período Fidelização'])||'—')} meses de fidelização.<br>
+      <b>Reajuste:</b> ${esc((l1.attrs&&l1.attrs['Tipo de Reajuste'])||'—')}${l1.attrs&&l1.attrs['Índice de Reajuste']?' pelo '+esc(l1.attrs['Índice de Reajuste']):''}${l1.attrs&&l1.attrs['Data do Próximo Reajuste']?', próximo em '+esc(l1.attrs['Data do Próximo Reajuste']):''}.<br>
+      <b>Multa por rescisão:</b> ${esc((l1.attrs&&l1.attrs['Percentual da Multa'])||'não elegível')}.<br>
+      <b>Aviso prévio:</b> ${esc((l1.attrs&&l1.attrs['Quantidade de Dias Aviso Previo'])||'—')} dias.<br>
+      <b>Faturamento:</b> ${esc((l1.attrs&&l1.attrs['Entidade faturadora'])||'—')} · valores pendentes de precificação.</p>
+      <h3 style="font-size:13px;margin:16px 0 6px;text-transform:uppercase">Assinaturas</h3>
+      ${(c.recipients.length?c.recipients:[{email:'—',role:'Signer',status:'Pendente'}]).map(r=>`<div style="border-top:1px solid #111;margin-top:22px;padding-top:4px;font-size:12px">${esc(r.email)}<br><span style="color:#666">${esc(r.role)} · ${esc(r.status)}</span>${r.status==='Completed'?'<div style="color:#1d6b38;font-weight:700;margin-top:2px">✓ assinado eletronicamente via DocuSign</div>':''}</div>`).join('')}
+      ${c.events.length?`<p style="margin:12px 0 0;font-size:11.5px;color:#666">${c.events.map(esc).join('<br>')}</p>`:''}`;
+  }
+  const tit = tipo==='quote'?'Cotação '+S.quote.number:tipo==='contract'?'Contrato '+S.contract.number:'Pedido '+S.order.number;
   return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column">
     <div class="form-h"><a onclick="S.docView=null;render()">Fechar</a><b>${esc(tit)}</b><a></a></div>
     <div class="nv-tag">Visualização do protótipo: documento montado a partir do registro. No app, o registro é consultado nas abas Details, Lines e Related.</div>
     <div style="overflow:auto;padding:14px;background:#5a5a5a;flex:1"><div style="background:#fff;padding:22px 18px;font-size:13px;line-height:1.5;color:#111;box-shadow:0 4px 18px rgba(0,0,0,.4)">
-      <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">${tipo==='quote'?'Resumo da cotação':'Resumo do pedido'} · Conectividade Corporativa</div></div><div style="text-align:right"><b>${esc(tit)}</b><div style="color:#666;font-size:12px">${new Date().toLocaleDateString('pt-BR')}</div></div></div>
+      <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">${tipo==='quote'?'Resumo da cotação':tipo==='contract'?'Contrato de prestação de serviços':'Resumo do pedido'} · Conectividade Corporativa</div></div><div style="text-align:right"><b>${esc(tit)}</b><div style="color:#666;font-size:12px">${new Date().toLocaleDateString('pt-BR')}</div></div></div>
       ${corpo}</div></div></div></div>`;
 }
 function pdfViewHtml(){
@@ -1023,10 +1043,11 @@ function telaContract(){
   <div class="rh"><div class="oi p">📝</div><div><small>Contract</small><b>${c.number}</b></div></div>
   <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
   ${S.tab!=='Related' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Quote',`<a onclick="go('quote')">${esc(S.quote.name)}</a>`],['Contract Term',esc(roots[0]&&roots[0].attrs&&roots[0].attrs['Período Fidelização']||'—')+' meses'],['Status',esc(c.status)],['eSignature Status',esc(c.esig)]])
-  : `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Contract Documents (${c.docs.length})</b></div>${c.docs.map(d=>`<div class="it"><b>${esc(d.name)}</b><small>${esc(d.tpl)} · ${d.v} · Signature ${esc(d.sig)}</small></div>`).join('')||'<div class="note">Use Generate Document to create the contract document from the template.</div>'}</div>
+  : `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Contract Documents (${c.docs.length})</b></div>${c.docs.map(d=>`<div class="it" onclick="S.docView='contract';render()"><b>${esc(d.name)}</b><small>${esc(d.tpl)} · ${d.v} · Signature ${esc(d.sig)} · toque para abrir</small></div>`).join('')||'<div class="note">Use Generate Document to create the contract document from the template.</div>'}</div>
      <div class="rel"><div class="h"><div class="oi g">✍</div><b>eSignature (DocuSign)</b></div>${c.recipients.map(r=>`<div class="it"><b>${esc(r.email)}</b><small>${esc(r.role)} · ${esc(r.status)}</small></div>`).join('')||'<div class="note">Not sent. Send for eSignature creates the DocuSign envelope for the recipients.</div>'}${c.events.map(e=>`<div class="note">${esc(e)}</div>`).join('')}</div>`}`;
 }
-function sheetMoreContract(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit contract: campos padrão.','warn');render()")}${row('🏷','g','Back to Quote',"go('quote')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function sheetMoreContract(){ return sheet(`
+  ${row('👁','m','Visualizar contrato',"S.sheet=null;S.docView='contract';render()",'',!(S.contract&&S.contract.docs.length))}${row('📝','b','Edit',"S.sheet=null;toast('Edit contract: campos padrão.','warn');render()")}${row('🏷','g','Back to Quote',"go('quote')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function genContractDoc(){ S.contract.docs.push({name:'Contrato de Prestação de Serviços — VPN Corporativa',tpl:'Contrato Conectividade Algar (DocGen)',v:'V1',sig:'Unsigned'}); toast('Document generated.'); S.tab='Related'; render(); }
 function modalEsig(){ return `<div class="modal-bg"><div class="modal"><h3>Send for eSignature</h3><div class="mb">
   <div class="fld" style="padding:0"><label>eSignature Vendor</label><select><option>DocuSign</option></select></div><div class="fld" style="padding:12px 0 0"><label>Email Template</label><select><option>Contrato_Assinatura_Cliente</option></select></div>
@@ -1274,7 +1295,7 @@ function agNext(){
 function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();agSay('Abri a proposta enviada.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
 function agContrato(){ if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
   agThink('Criando o contrato, gerando o documento e enviando para assinatura (DocuSign)…',1400,()=>{ if(!S.contract.docs.length) genContractDoc(); if(S.contract.esig==='Not sent'){ S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}]; S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); }
-    S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Ver o contrato',f:()=>{agClose();agSay('Abri o contrato.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
+    S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Abrir o documento do contrato',f:()=>{agClose();S.docView='contract';render();agSay('Abri o documento do contrato.',agAtuais());}},{l:'Ver o registro do contrato',f:()=>{agClose();S.tab='Related';S.hist=['quote'];go('contract',true);agSay('Abri o contrato.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
 function agDescreverAtivacao(){
   const o=S.order; const fls=decompor(o); const plan=montarPlano(fls);
   const tipos=plan.steps.reduce((a,s)=>{a[s.type]=(a[s.type]||0)+1;return a;},{});
@@ -1349,8 +1370,11 @@ function guia(){
       ['Toque em <b>Send eSign</b>.','Confira fornecedor, template e destinatários.','Toque em <b>Send</b> para criar o envelope.'],
       {l:'Send eSign',f:()=>{S.modal='esig';render();}});
   add(S.tela==='contract'&&S.contract&&S.contract.esig==='Sent','Aguardando a assinatura do cliente.',
-      ['No mundo real, o cliente assina no DocuSign.','Aqui, use <b>Simular assinatura</b> na barra escura do topo.','O contrato passa a Activated.'],
+      ['Toque no documento em <b>Contract Documents</b> para abri-lo.','No mundo real, o cliente assina no DocuSign.','Aqui, use <b>Simular assinatura</b> na barra escura do topo.'],
       {l:'Simular',f:()=>simularAssinatura()});
+  add(S.tela==='contract'&&S.contract&&S.contract.esig==='Completed','Contrato assinado.',
+      ['Toque no documento para ver as assinaturas.','Agora marque a cotação como <b>Accepted</b>.'],
+      {l:'Ver documento',f:()=>{S.docView='contract';render();}});
   add(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted','Marque a cotação como <b>Accepted</b>.',
       ['Abra a cotação na aba <b>Details</b>.','No path, toque em <b>Accepted</b>.','Toque em <b>Mark as Current Status</b>.','Só então o Create Order é liberado.'],
       {l:'Marcar Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;S.tab='Details';go('quote',true);toast('Status changed successfully.');}});
@@ -1481,6 +1505,11 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Send eSign'))); ok('Send eSign abre o modal DocuSign', S.modal==='esig');
     click($('.modal .brand')); ok('envelope enviado', S.contract.esig==='Sent' && S.contract.recipients.length===2);
     simularAssinatura(); ok('assinatura concluída: contrato Activated', S.contract.status==='Activated');
+    S.tela='contract'; S.tab='Related'; render();
+    const docRow=[...document.querySelectorAll('.rel .it')].find(x=>/Contrato de Prestação/.test(x.textContent));
+    ok('documento do contrato aparece com "toque para abrir"', !!docRow && /toque para abrir/.test(docRow.textContent));
+    click(docRow); ok('tocar abre o documento com cláusulas e assinaturas', S.docView==='contract' && /Cláusulas contratuais/.test($('.modal').textContent) && /assinado eletronicamente/.test($('.modal').textContent));
+    S.docView=null; render();
     go('quote'); S.tab='Details'; render(); quoteSel('Accepted'); ok('path: Accepted selecionado → Mark as Current Status', $('.stage .btn').textContent.includes('Mark as Current Status'));
     quoteMark(); ok('cotação Accepted, 6 etapas concluídas', S.qStatus==='Accepted' && document.querySelectorAll('.ps.done').length===6);
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('Create Order habilitado', ![...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
