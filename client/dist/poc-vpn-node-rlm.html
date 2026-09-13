@@ -940,8 +940,9 @@ function telaOpp(){
   return topbar('Opportunity', S.hist.length>0) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'☑',c:'g',n:'New Task',on:"go('task')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
   <div class="rh"><div class="oi o">👑</div><div><small>Opportunity</small><b>${esc(oppName())}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Details' ? fonte('ver','<b>Layout padrão de Opportunity</b> lido da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org — o padrão é o Master.') + layoutHtml(LAYOUTS.opp, oppValores(), '')
-      + pathHtml(OSTAGES, S.oStage, S.oSel, 'Stage', 'opp')
+  ${S.tab==='Details' ? pathHtml(OSTAGES, S.oStage, S.oSel, 'Stage', 'opp')
+      + fonte('ver','<b>Layout padrão de Opportunity</b> lido da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org — o padrão é o Master.')
+      + layoutHtml(LAYOUTS.opp, oppValores(), '')
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
       ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${esc(S.qStatus)} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
       <div class="rfoot"><a onclick="go('quotes')">View All</a></div></div>
@@ -998,8 +999,7 @@ function telaQuote(){
   return topbar('Quote', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'🗂',c:'g',n:'Browse Catalogs',on:'browse()'},{i:'👤',c:'p',n:'New Contact',on:"go('newcontact')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-quote';render()"}]) + `
   <div class="rh"><div class="oi g">🏷</div><div><small>Quote</small><b>${esc(q.name)}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Details' ? fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)]])
-      + pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote')
+  ${S.tab==='Details' ? pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote') + fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)]])
   : S.tab==='Lines' ? `${fonte('ver','<b>Transaction Line Editor</b> — componente documentado para Lightning Experience (Trailhead "Discover and Configure Products").')}
     <div class="tle-h"><div class="oi">▤</div><b>Quote Line Items (${roots.length})</b><div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Active':'Inactive'}</small></div></div></div>
     <div class="tle-tools"><button class="btn sm" onclick="S.sheet='addassets';render()">Add Assets</button><button class="btn sm" onclick="addGroup()">Add Group</button><button class="btn sm" style="flex:1" onclick="browse(true)">🔍 Add Product</button></div>
@@ -2387,6 +2387,11 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
     ok('no Lead o path vem logo abaixo do cabeçalho, antes dos campos', (()=>{ const pw=$('.pathw'), fl=$('.fl'); return !!pw && !!fl && pw.getBoundingClientRect().top < fl.getBoundingClientRect().top; })());
+    (function(){ const antes=(tela)=>{ S.tab='Details'; go(tela); const els=[...document.querySelectorAll('#view > *')];
+        const pw=els.findIndex(e=>e.classList.contains('pathw')), fl=els.findIndex(e=>e.classList.contains('fl')||e.classList.contains('flds'));
+        return pw>-1 && fl>-1 && pw<fl; };
+      ok('path antes dos campos também na oportunidade e na cotação', antes('opp') && antes('quote')); })();
+    S.leadId='00Q1'; S.tab='Details'; go('lead');
     ok('seções na ordem do layout', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Lead Information|Endereço|Endereço de visita|Dados do contato|Telefones para contato|Dados de marketing|Informações de duplicidade');
     ok('54 campos do layout, com obrigatórios marcados', document.querySelectorAll('#view .fr').length===54 && $('#view').textContent.includes('CNPJ') && $('#view').textContent.includes('Telefone 1 blacklist') && document.querySelectorAll('#view .fr b').length>=5);
     go('opp'); S.tab='Details'; render();
