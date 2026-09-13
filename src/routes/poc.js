@@ -7,6 +7,27 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
+// O protótipo também é servido pelo domínio everi9.albertobottaro.info, então a sessão
+// chega de outra origem. Liberação estreita: só estes hosts, só os métodos usados aqui.
+const ORIGENS = new Set([
+  'https://everi9.albertobottaro.info',
+  'https://everi9.com',
+  'https://www.everi9.com',
+  'https://portal.albertobottaro.info',
+  'https://i9-mcp-da48589780b2.herokuapp.com',
+]);
+router.use((req, res, next) => {
+  const o = req.headers.origin;
+  if (o && ORIGENS.has(o)) {
+    res.set('Access-Control-Allow-Origin', o);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 const MAX_BYTES = 400 * 1024;          // estado de uma sessão é pequeno; corta abuso
 const CODIGO = /^[A-Za-z0-9_-]{4,40}$/; // código legível, sem caminho nem espaço
 const PROTOS = ['lightning', 'mobile'];
