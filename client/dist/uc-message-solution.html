@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Configurar Message Solution na proposta comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F2F3F5;--s1:#FAFBFC;--s2:#ECECEC;--s3:#D9D9D9;
+--tx:#0D0D0D;--tx2:#3A3A3A;--mut:#6B6B6B;--bd:#D9D9D9;--bd2:#A8A8A8;
+}
+body{background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;
+font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px 80px}
+
+/* capa */
+.cover{background:linear-gradient(135deg,#0D0D0D 0%,#4A4A4A 100%);color:#FAFBFC;
+padding:64px 32px 56px;margin-bottom:48px}
+.cover-in{max-width:1080px;margin:0 auto}
+.kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#B8B8B8;margin-bottom:18px}
+h1{font-size:34px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin-bottom:12px}
+.sub{font-size:16px;color:#D4D4D4;font-weight:400;margin-bottom:28px;max-width:640px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+background:rgba(250,251,252,.2);border:1px solid rgba(250,251,252,.2);margin-top:8px}
+.meta div{background:rgba(250,251,252,.08);padding:12px 14px}
+.meta dt{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:#B8B8B8;margin-bottom:5px}
+.meta dd{font-size:13px;color:#FAFBFC}
+
+/* sumario */
+.toc{background:var(--s1);border:1px solid var(--bd);padding:22px 26px;margin-bottom:48px}
+.toc h2{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut);
+margin-bottom:14px;font-weight:500}
+.toc ol{list-style:none;columns:2;column-gap:36px}
+.toc li{margin-bottom:7px;font-size:13px;break-inside:avoid}
+.toc a{color:var(--tx2);text-decoration:none;border-bottom:1px solid transparent}
+.toc a:hover{color:var(--tx);border-bottom-color:var(--bd2)}
+.toc .n{color:var(--mut);font-variant-numeric:tabular-nums;margin-right:9px}
+
+/* secoes */
+section{margin-bottom:52px}
+.sh{display:flex;align-items:center;gap:14px;padding-bottom:12px;
+border-bottom:1px solid var(--bd2);margin-bottom:24px}
+.sh .num{flex:0 0 34px;height:34px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;font-size:13px;
+font-variant-numeric:tabular-nums;color:var(--tx2)}
+.sh h2{font-size:19px;font-weight:600;letter-spacing:-.2px}
+h3{font-size:14px;font-weight:600;color:var(--tx);margin:26px 0 10px;
+letter-spacing:.3px;text-transform:uppercase;font-size:11px;letter-spacing:2px;color:var(--mut)}
+p{margin-bottom:12px;color:var(--tx2)}
+strong{color:var(--tx);font-weight:600}
+code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;
+background:var(--s2);border:1px solid var(--bd);padding:1px 6px;color:var(--tx)}
+
+/* listas de passos */
+ol.steps{list-style:none;counter-reset:s;margin:4px 0 8px}
+ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 44px;
+border-bottom:1px solid var(--bd);color:var(--tx2)}
+ol.steps li:last-child{border-bottom:none}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;
+width:26px;height:26px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;
+font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* fluxo alternativo */
+.alt{border-left:2px solid var(--bd2);background:var(--s1);padding:12px 16px;margin-bottom:10px}
+.alt.fail{border-left-color:#6B6B6B;background:#ECECEC}
+.alt .tag{display:inline-block;font-family:'SF Mono',Menlo,monospace;font-size:11px;
+color:var(--tx);background:var(--s3);border:1px solid var(--bd2);padding:1px 7px;margin-right:9px}
+.alt .ttl{font-weight:600;color:var(--tx);font-size:13.5px}
+.alt p{margin:7px 0 0;font-size:13px}
+
+/* tabelas */
+table{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:12.5px}
+thead th{background:#0D0D0D;color:#FAFBFC;text-align:left;padding:10px 12px;
+font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;
+border-bottom:1px solid var(--bd2)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--bd);color:var(--tx2);vertical-align:top}
+tbody tr:nth-child(even) td{background:#ECECEC}
+tbody tr:hover td{background:var(--s2)}
+td.mono,th.mono{font-family:'SF Mono',Menlo,monospace;font-size:11.5px}
+
+/* badges monocromaticos: peso e borda diferenciam, nunca cor */
+.b{display:inline-block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+padding:2px 9px;border:1px solid var(--bd2);white-space:nowrap;font-weight:600}
+.b-solid{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
+.b-mid{background:var(--s3);color:var(--tx)}
+.b-out{background:transparent;color:var(--mut);border-style:dashed}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+background:var(--bd);border:1px solid var(--bd);margin:8px 0 20px}
+.kpi{background:#FAFBFC;padding:16px 14px}
+.kpi .l{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.kpi.hi{background:#E2E2E2}
+
+/* callout */
+.call{border:1px solid var(--bd);border-left-width:3px;background:var(--s1);
+padding:14px 18px;margin:16px 0}
+.call .cl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.call p{margin:0;font-size:13px}
+.call.strong{border-left-color:var(--tx)}
+.call.mid{border-left-color:var(--bd2)}
+
+/* diagrama */
+figure{margin:22px 0;background:var(--s1);border:1px solid var(--bd);padding:24px 20px 16px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:11px;color:var(--mut);text-align:center;margin-top:14px;
+padding-top:12px;border-top:1px solid var(--bd)}
+
+/* perguntas */
+.q{border:1px solid var(--bd);background:var(--s1);padding:14px 18px;margin-bottom:10px}
+.q .qi{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);margin-bottom:5px}
+.q .qt{color:var(--tx);font-weight:600;font-size:13.5px;margin-bottom:7px}
+.q .qd{font-size:12.5px;color:var(--tx2)}
+.q .qd b{color:var(--mut);font-weight:600;font-size:9.5px;letter-spacing:1.4px;
+text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* cartao de componente — substitui tabela larga */
+.comps{display:grid;gap:10px;margin:14px 0}
+.comp{border:1px solid var(--bd);background:var(--s1);padding:14px 16px}
+.comp.criar{border-left:3px solid var(--tx)}
+.comp.estender{border-left:3px solid var(--bd2)}
+.comp.reusar{border-left:3px solid #C4C4C4}
+.comp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.comp-h .id{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);min-width:22px}
+.comp-h .nm{font-size:14px;font-weight:600;color:var(--tx)}
+.comp-h .tp{font-size:11px;color:var(--mut);border:1px solid var(--bd);padding:1px 7px}
+.comp-h .st{margin-left:auto}
+.comp dl{display:grid;grid-template-columns:104px 1fr;gap:5px 14px;font-size:12.5px}
+.comp dt{color:var(--mut);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;padding-top:2px}
+.comp dd{color:var(--tx2)}
+.comp .desc{font-size:13px;color:var(--tx2);margin:0 0 11px;line-height:1.6}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}
+.lk{font-size:11.5px;color:var(--tx);text-decoration:none;border:1px solid var(--bd2);
+padding:3px 10px;background:var(--s1);white-space:nowrap}
+.lk:hover{border-color:var(--tx);background:var(--s2)}
+.lk.doc{border-style:dashed}
+@media print{.lk{border-style:solid;background:none}}
+/* navegacao fixa */
+.navbar{position:sticky;top:0;z-index:20;background:rgba(242,243,245,.94);
+backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);margin:0 -32px 32px;padding:9px 32px;
+display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.navbar a{flex:0 0 auto;font-size:11px;color:var(--mut);text-decoration:none;
+padding:5px 11px;border:1px solid transparent;white-space:nowrap}
+.navbar a:hover{color:var(--tx);border-color:var(--bd2)}
+.navbar a .n{font-variant-numeric:tabular-nums;margin-right:6px;opacity:.65}
+section{scroll-margin-top:56px}
+@media print{.navbar{display:none}}
+
+.grp{display:flex;align-items:center;gap:12px;margin:26px 0 12px}
+.grp .gl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.grp .gc{font-size:11px;color:var(--tx);border:1px solid var(--bd2);padding:1px 8px}
+.grp .gr{flex:1;height:1px;background:var(--bd)}
+@media(max-width:700px){.comp dl{grid-template-columns:1fr}.comp dt{padding-top:8px}}
+
+footer{border-top:1px solid var(--bd2);margin-top:60px;padding-top:20px;
+display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:1.6px;
+text-transform:uppercase;color:var(--mut)}
+
+@page{size:A4;margin:16mm 14mm}
+@media print{
+ body{background:#fff}
+ .cover{page-break-after:always}
+ section,figure,table,.alt,.q{page-break-inside:avoid}
+ .toc{page-break-after:always}
+}
+</style></head><body>
+<div class="cover"><div class="cover-in">
+<div class="kicker">ALGAR · CRM B2B</div>
+<h1>Configurar Message Solution na proposta comercial</h1><p class="sub">Caso de Uso — UC-MSG-001</p>
+<dl class="meta"><div><dt>Escopo</dt><dd>Revenue Cloud</dd></div><div><dt>Nível</dt><dd>Objetivo do usuário</dd></div><div><dt>Data</dt><dd>13/09/2026</dd></div></dl></div></div>
+<div class="wrap">
+<div class="navbar"><a href="#s1"><span class="n">01</span>Identificação e modelagem</a><a href="#s2"><span class="n">02</span>Atores</a><a href="#s3"><span class="n">03</span>Gatilho</a><a href="#s4"><span class="n">04</span>Fluxo único — escolhas, efeitos e falhas</a></div>
+<nav class="toc"><h2>Conteúdo</h2><ol><li><a href="#s1"><span class="n">01</span>Identificação e modelagem</a></li><li><a href="#s2"><span class="n">02</span>Atores</a></li><li><a href="#s3"><span class="n">03</span>Gatilho</a></li><li><a href="#s4"><span class="n">04</span>Fluxo único — escolhas, efeitos e falhas</a></li></ol></nav>
+<div class="kpis"><div class="kpi"><div class="l">Passos do fluxo único</div><div class="v">7</div></div><div class="kpi hi"><div class="l">Escolhas com efeito</div><div class="v">6</div></div><div class="kpi"><div class="l">Desvios de falha no fluxo</div><div class="v">4</div></div><div class="kpi"><div class="l">Atributos no catálogo</div><div class="v">15</div></div></div><section id="s1"><div class="sh"><div class="num">01</div><h2>Identificação e modelagem do produto</h2></div><table><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody><tr><td class="mono">ID</td><td>UC-MSG-001</td></tr><tr><td class="mono">Nome</td><td>Configurar o produto Message Solution em uma proposta comercial</td></tr><tr><td class="mono">Escopo</td><td>Revenue Cloud — Catálogo e configuração de produto</td></tr><tr><td class="mono">Nível</td><td>Objetivo do usuário</td></tr><tr><td class="mono">Data</td><td>13/09/2026</td></tr></tbody></table><h3 class="umodel">Modelagem do produto</h3><div class="ubar"><button type="button" id="uExp">Expandir tudo</button><button type="button" id="uCol">Recolher tudo</button><span class="uinfo">15 atributos · 8 grupos · 1 família · 5 regras gerais · 5 blocos de precificação · 1 caminhos na plataforma</span></div><div class="utree"><details class="u-root" open><summary><span class="ulvl up">PRODUTO RAIZ</span>MESSAGE SOLUTION</summary><div class="ubody"><details class="u-fam" open><summary><span class="ulvl uf">FAMÍLIA</span>TIC</summary><div class="ubody"><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Plataforma<span class="uc-chip">4 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l2" data-clabel="Tipo de Mensageria"><summary>Tipo de Mensageria <span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (4):</b><div class="upills"><span class="upill">SMS</span><span class="upill">RCS</span><span class="upill">E-mail</span><span class="upill">WhatsApp</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona na lista o tipo de mensageria que o cliente vai contratar.</div><div class="usec"><b>Regras de validação:</b> A escolha abre o conjunto de atributos daquele canal: rota, envio e número exclusivo no SMS; modalidade e desvio no RCS; tipo de disparo no e-mail; tipo de conversa no WhatsApp.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A cardinalidade registrada é um por item, mas os quatro canais convivem na planilha com atributos próprios: o cliente contrata um canal por item da proposta, ou um item pode reunir mais de um canal?</div></div></details><details class="u-attr" data-ckey="s1-l8" data-clabel="RCS — Tipo de Mensageria"><summary>RCS — Tipo de Mensageria <span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valor (1):</b><div class="upills"><span class="upill">Serviço de RCS</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona a opção na lista quando o cliente contrata o serviço de RCS.</div><div class="usec"><b>Regras de validação:</b> O atributo confirma a contratação do serviço de RCS e habilita a modalidade de disparo e o desvio.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> O atributo tem um único valor e só aparece quando o canal escolhido é RCS: ele é confirmação do canal já escolhido no atributo anterior? Havendo um único valor possível, precisa ser apresentado?</div></div></details><details class="u-attr" data-ckey="s1-l11" data-clabel="E-mail — Tipo de Mensageria"><summary>E-mail — Tipo de Mensageria <span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valor (1):</b><div class="upills"><span class="upill">Serviço de e-mail</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona a opção na lista quando o cliente contrata o serviço de e-mail.</div><div class="usec"><b>Regras de validação:</b> O atributo confirma a contratação do serviço de e-mail e habilita o tipo de disparo.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Mesma dúvida do RCS: valor único que repete a escolha do canal.</div></div></details><details class="u-attr" data-ckey="s1-l13" data-clabel="WhatsApp — Tipo de Mensageria"><summary>WhatsApp — Tipo de Mensageria <span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valor (1):</b><div class="upills"><span class="upill">Serviço de WhatsApp</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona a opção na lista quando o cliente contrata o serviço de WhatsApp.</div><div class="usec"><b>Regras de validação:</b> O atributo confirma a contratação do serviço de WhatsApp e habilita o tipo de conversa.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> O canal WhatsApp está marcado na planilha como desenho futuro, incluindo a configuração com os demais sistemas: o canal entra nesta fase do catálogo ou fica para a fase seguinte?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Fornecedor<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l3" data-clabel="Fornecedor"><summary>Fornecedor <span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (4):</b><div class="upills"><span class="upill">Infobip</span><span class="upill">Yupchat</span><span class="upill">Huni</span><span class="upill">Outros</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona um item da lista.</div><div class="usec"><b>Regras de validação:</b> A lista apresenta apenas os parceiros homologados. O fornecedor participa da formação do preço.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: cadastrar o novo parceiro Huni.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A lista é a mesma para os quatro canais, ou cada canal tem seus fornecedores homologados?</div></div></details><details class="u-attr" data-ckey="s1-l4" data-clabel="Fornecedor (descrição)"><summary>Fornecedor (descrição) <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cn">Obrigatório: NÃO</span><span class="uc-chip">Texto</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Regra de preenchimento:</b> O consultor descreve o fornecedor quando a opção escolhida na lista é Outros.</div><div class="usec"><b>Regras de validação:</b> O campo aparece apenas quando o fornecedor selecionado é Outros, e deve abrir na mesma tela, logo após a seleção.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: hoje o campo de descrição fica na área de preenchimento de valores; precisa abrir assim que o fornecedor for selecionado, ainda na mesma tela.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Fornecedor descrito como texto livre não entra na lista de homologados: essa venda exige aprovação ou cadastro prévio do parceiro antes de seguir?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Rota<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l5" data-clabel="SMS — Modalidade de Disparos"><summary>SMS — Modalidade de Disparos <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (3):</b><div class="upills"><span class="upill">Massiva</span><span class="upill">Instantânea</span><span class="upill">Intermediária</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona o tipo de rota de disparo desejado pelo cliente.</div><div class="usec"><b>Regras de validação:</b> A lista só aparece para o canal SMS. A rota instantânea é a condição para oferecer o número exclusivo (short code).</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A planilha grafa a terceira opção como "intermidiária": o nome correto é Intermediária? E qual a diferença comercial entre as três rotas?</div></div></details><details class="u-attr" data-ckey="s1-l9" data-clabel="RCS — Modalidade de Disparos"><summary>RCS — Modalidade de Disparos <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (3):</b><div class="upills"><span class="upill">Basic</span><span class="upill">Single</span><span class="upill">Conversation</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona uma única modalidade de disparo.</div><div class="usec"><b>Regras de validação:</b> A lista só aparece nas vendas de RCS e admite uma opção por item.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A planilha grafa a segunda opção como "Sigle": o nome correto é Single?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Envio<span class="uc-chip">1 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l6" data-clabel="SMS — Modalidade de Envio"><summary>SMS — Modalidade de Envio <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (2):</b><div class="upills"><span class="upill">Nacional</span><span class="upill">Internacional</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona apenas um tipo de envio.</div><div class="usec"><b>Regras de validação:</b> A lista só aparece para o canal SMS.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> O envio internacional muda a tributação e a rota contratada junto ao fornecedor? E o mesmo item pode ter os dois envios?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Número exclusivo<span class="uc-chip">1 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l7" data-clabel="SMS — Short Code"><summary>SMS — Short Code <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cn">Obrigatório: NÃO</span><span class="uc-chip">Número</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Regra de preenchimento:</b> O consultor informa se o cliente deseja o serviço adicional e, em caso afirmativo, a quantidade de números a contratar.</div><div class="usec"><b>Regras de validação:</b> O campo só aparece no canal SMS e apenas quando a rota contratada é a instantânea. A escolha é feita em duas etapas: uma seleção entre sim e não e, ao marcar sim, a abertura automática do campo de quantidade. Marcando não, a cotação segue normalmente.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: permitir contratar mais de um short code na mesma venda e acrescentar números a quem já contratou.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A cardinalidade registrada é um, mas a melhoria pede vários números na mesma venda: qual passa a valer? E o short code é cobrado por número ou por contratação?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Desvio de disparos<span class="uc-chip">1 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l10" data-clabel="RCS — Desvio de Disparos"><summary>RCS — Desvio de Disparos <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cn">Obrigatório: NÃO</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Regra de preenchimento:</b> O consultor informa se o cliente deseja o desvio automático para SMS em caso de erro na entrega do RCS.</div><div class="usec"><b>Regras de validação:</b> O atributo só aparece nas vendas de RCS. Se o cliente escolher o desvio e não tiver contrato de SMS ativo, é preciso criar uma cotação de SMS, e as duas ordens de serviço caminham e são encerradas juntas.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: o sistema só deve oferecer o atributo quando a venda incluir RCS.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Quando o desvio gera a cotação de SMS, quem escolhe a rota e o envio desse SMS? E o desvio é cobrado à parte ou está incluído no RCS?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Tipo<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l12" data-clabel="E-mail — Tipo de Disparo"><summary>E-mail — Tipo de Disparo <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1..2</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (2):</b><div class="upills"><span class="upill">Marketing</span><span class="upill">Validation</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona o tipo de disparo desejado pelo cliente, podendo escolher mais de um na mesma venda, sem repetir a mesma opção.</div><div class="usec"><b>Regras de validação:</b> A lista só aparece nas vendas de e-mail.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: hoje o cliente contrata apenas uma modalidade de disparo por cotação; é preciso permitir as duas modalidades, com precificações distintas, na mesma venda.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Com as duas modalidades na mesma venda, cada uma vira um item da cotação com preço próprio, ou é um item com dois preços?</div></div></details><details class="u-attr" data-ckey="s1-l14" data-clabel="WhatsApp — Tipo de Conversa"><summary>WhatsApp — Tipo de Conversa <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1..3</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Valores (3):</b><div class="upills"><span class="upill">Marketing</span><span class="upill">Utilidade</span><span class="upill">Autenticação</span></div></div><div class="usec"><b>Regra de preenchimento:</b> O consultor seleciona os tipos de conversa contratados.</div><div class="usec"><b>Regras de validação:</b> A lista só aparece nas vendas de WhatsApp e admite até três opções.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> O canal WhatsApp está marcado como desenho futuro em toda a linha: as regras deste atributo já valem ou serão redefinidas com o desenho do canal?</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Relatório<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="s1-l15" data-clabel="SMS — Extração de Relatório de Uso"><summary>SMS — Extração de Relatório de Uso <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cn">Obrigatório: NÃO</span><span class="uc-chip">Número</span><span class="uc-chip">Cardinalidade: 1..N</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Regra de preenchimento:</b> O consultor informa a quantidade de relatórios, ciente de que há custo por relatório quando o período solicitado passa de noventa dias.</div><div class="usec"><b>Regras de validação:</b> O serviço só é elegível se o ativo do cliente estiver ativo há mais de noventa dias. Abaixo desse período o próprio cliente extrai o relatório na plataforma.</div><div class="usec"><b>Melhoria prevista:</b> Melhoria prevista: retirar a opção da área de vendas e levá-la para a área de seleção de fornecedor.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A regra cita o ativo do cliente ativo há mais de noventa dias e, ao mesmo tempo, o custo para período solicitado acima de noventa dias: as duas condições valem juntas? E o relatório é vendido junto do SMS ou depois da ativação?</div></div></details><details class="u-attr" data-ckey="s1-l16" data-clabel="SMS — Meses/Ano da Extração"><summary>SMS — Meses/Ano da Extração <span class="uc-chip cc">condicional</span><span class="uc-chip cd">dúvida</span><span class="uchips"><span class="uc-chip cn">Obrigatório: NÃO</span><span class="uc-chip">Data (MM/AA)</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span></span></summary><div class="ubody"><div class="usec"><b>Regra de preenchimento:</b> O consultor preenche o período desejado pelo cliente.</div><div class="usec"><b>Regras de validação:</b> O período é informado para cada relatório solicitado, desde que acima de noventa dias.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A cardinalidade é um, mas a quantidade de relatórios é de um a N: como se informa o período de cada relatório quando são vários?</div></div></details></div></details></div></details><details class="u-fam"><summary><span class="ulvl uf">TRANSVERSAL</span>Regras Gerais do Produto</summary><div class="ubody"><details class="u-attr" data-ckey="s2-l1" data-clabel="Faturamento dos valores recorrentes"><summary>Faturamento dos valores recorrentes</summary><div class="ubody"><div class="usec">O faturamento automático hoje cobre apenas os valores recorrentes, como a franquia e, no novo modelo, também o item de plataforma.</div></div></details><details class="u-attr" data-ckey="s2-l2" data-clabel="Faturamento dos excedentes"><summary>Faturamento dos excedentes<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">O faturamento dos excedentes ainda é feito manualmente. Está em andamento a automatização dos excedentes de SMS, pela integração entre plataforma, mediação e o sistema de cobrança.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Enquanto a automatização não conclui, o excedente continua manual: o catálogo precisa refletir essa limitação em alguma regra de venda, ou é tratamento posterior ao faturamento?</div></div></details><details class="u-attr" data-ckey="s2-l3" data-clabel="Tributos por canal"><summary>Tributos por canal<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">O SMS tem ICMS. O RCS e o e-mail têm PIS e COFINS.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> A planilha não registra a tributação do WhatsApp: qual se aplica?</div></div></details><details class="u-attr" data-ckey="s2-l4" data-clabel="Reforma tributária"><summary>Reforma tributária<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">A regra registra atenção à reforma tributária.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> O que muda na formação do preço e no faturamento com a reforma, e em que prazo?</div></div></details><details class="u-attr" data-ckey="s2-l5" data-clabel="Configurações atuais"><summary>Configurações atuais<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">A regra pede garantir que as configurações atuais sejam levadas para o Salesforce.</div><div class="usec uduv"><b>Dúvida — regra não definida:</b> Quais configurações precisam ser migradas — planos, franquias, preços por fornecedor, contratos ativos? E qual é a fonte dessas informações hoje?</div></div></details></div></details><details class="u-fam"><summary><span class="ulvl uf">TRANSVERSAL</span>Precificação</summary><div class="ubody"><div class="usec"><b>Origem:</b> regras registradas na aba de precificação da planilha. Cada dúvida abaixo é uma definição a fechar com o time de precificação antes da especificação.</div><details class="u-attr" data-ckey="prc-l1" data-clabel="Precificação — Atributos que formam o preço"><summary>Atributos que formam o preço<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">Participam da formação do preço o tipo de mensageria, o fornecedor, a rota e o envio do SMS, o short code, a modalidade e o desvio do RCS, o tipo de disparo do e-mail, o tipo de conversa do WhatsApp e a extração de relatório. Nenhum atributo do produto está marcado para ir ao ativo do cliente.</div><div class="usec uduv"><b>Dúvida de precificação:</b> Sem atributo levado ao ativo, o pós-venda não tem onde consultar canal, fornecedor e rota contratados: onde essas informações ficam disponíveis depois da ativação?</div></div></details><details class="u-attr" data-ckey="prc-l2" data-clabel="Precificação — Custo e preço por canal"><summary>Custo e preço por canal<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">Todos os atributos estão classificados como despesa corrente, sem investimento inicial.</div><div class="usec uduv"><b>Dúvida de precificação:</b> A planilha não traz regra de cálculo nem tabela: o preço é por disparo, por franquia mensal ou por pacote? Existe preço diferente por fornecedor e por rota?</div></div></details><details class="u-attr" data-ckey="prc-l3" data-clabel="Precificação — Franquia e excedente"><summary>Franquia e excedente<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">As regras gerais citam franquia entre os valores recorrentes e excedente faturado à parte.</div><div class="usec"><div class="urec"><b>Caminho na plataforma:</b> a franquia com excedente é um modelo de preço por consumo, que a documentação oficial da Salesforce trata como preço baseado em uso, com faixas e medição; o detalhe técnico fica para a especificação. Capacidade confirmada na documentação oficial da Salesforce; o detalhe técnico fica para a especificação.</div></div><div class="usec uduv"><b>Dúvida de precificação:</b> Como a franquia é dimensionada na venda — quantidade de disparos contratada? E qual o preço do excedente?</div></div></details><details class="u-attr" data-ckey="prc-l4" data-clabel="Precificação — E-mail com duas modalidades"><summary>E-mail com duas modalidades<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">A melhoria prevista pede contratar as duas modalidades de disparo na mesma venda, com precificações distintas.</div><div class="usec uduv"><b>Dúvida de precificação:</b> Cada modalidade vira uma linha de cotação com preço próprio? E isso vale também para os três tipos de conversa do WhatsApp?</div></div></details><details class="u-attr" data-ckey="prc-l5" data-clabel="Precificação — Relatório acima de noventa dias"><summary>Relatório acima de noventa dias<span class="uc-chip cd">dúvida</span></summary><div class="ubody"><div class="usec">O relatório de uso tem custo por quantidade quando o período solicitado passa de noventa dias.</div><div class="usec uduv"><b>Dúvida de precificação:</b> O preço é por relatório, por período ou por volume de registros extraídos?</div></div></details></div></details></div></details></div></section><section id="s2"><div class="sh"><div class="num">02</div><h2>Atores</h2></div><table><thead><tr><th>Ator</th><th>Papel no caso de uso</th></tr></thead><tbody><tr><td>Consultor com permissão de venda (primário)</td><td>Seleciona o canal, o fornecedor e os atributos do canal, inclui os serviços adicionais e confirma o item na proposta.</td></tr><tr><td>Fornecedor homologado (secundário)</td><td>Entrega o serviço de mensageria contratado e é a origem do custo que forma o preço do item.</td></tr><tr><td>Plataforma de mensageria (secundário)</td><td>Registra o consumo do cliente, base do faturamento da franquia e da apuração do excedente.</td></tr></tbody></table><figure><svg viewBox="0 0 1190 370" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#6B6B6B"/></marker>
+<marker id="arw" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#0D0D0D"/></marker>
+</defs><g transform="translate(0,14)"><circle cx="60" cy="84" r="9" fill="none" stroke="#0D0D0D" stroke-width="1.5"/><line x1="60" y1="93" x2="60" y2="116" stroke="#0D0D0D" stroke-width="1.5"/><line x1="47" y1="102" x2="73" y2="102" stroke="#0D0D0D" stroke-width="1.5"/><line x1="60" y1="116" x2="49" y2="134" stroke="#0D0D0D" stroke-width="1.5"/><line x1="60" y1="116" x2="71" y2="134" stroke="#0D0D0D" stroke-width="1.5"/><text x="60" y="152" text-anchor="middle" fill="#0D0D0D" font-size="12" font-family="Inter,Arial">Consultor com</text><text x="60" y="167" text-anchor="middle" fill="#6B6B6B" font-size="10" font-family="Inter,Arial">permissão de venda</text><ellipse cx="400" cy="116" rx="180" ry="48" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/><text x="400" y="113" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">Configurar Message Solution</text><text x="400" y="127" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">na proposta comercial</text><ellipse cx="400" cy="268" rx="166" ry="44" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/><text x="400" y="265" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">Contratar serviço adicional</text><text x="400" y="279" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">do canal</text><ellipse cx="770" cy="74" rx="128" ry="38" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/><text x="770" y="71" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">Cotar SMS para</text><text x="770" y="85" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">desvio do RCS</text><ellipse cx="770" cy="200" rx="128" ry="38" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="1.2"/><text x="770" y="197" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">Apurar consumo</text><text x="770" y="211" text-anchor="middle" fill="#0D0D0D" font-size="11.5" font-family="Inter,Arial">e excedente</text><line x1="122" y1="126" x2="220" y2="120" stroke="#6B6B6B" stroke-width="1.2" marker-end="url(#ar)"/><line x1="400" y1="164" x2="400" y2="226" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/><rect x="374.4" y="186.0" width="51.2" height="16" fill="#F2F3F5"/><text x="400.0" y="198.0" text-anchor="middle" fill="#6B6B6B" font-size="9.5" font-family="Inter,Arial">«extend»</text><line x1="582" y1="122" x2="766" y2="88" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/><rect x="648.4" y="96.0" width="51.2" height="16" fill="#F2F3F5"/><text x="674.0" y="108.0" text-anchor="middle" fill="#6B6B6B" font-size="9.5" font-family="Inter,Arial">«extend»</text><line x1="566" y1="282" x2="768" y2="224" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/><rect x="638.2" y="244.0" width="57.6" height="16" fill="#F2F3F5"/><text x="667.0" y="256.0" text-anchor="middle" fill="#6B6B6B" font-size="9.5" font-family="Inter,Arial">«include»</text><circle cx="1010" cy="32" r="9" fill="none" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="41" x2="1010" y2="64" stroke="#0D0D0D" stroke-width="1.5"/><line x1="997" y1="50" x2="1023" y2="50" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="64" x2="999" y2="82" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="64" x2="1021" y2="82" stroke="#0D0D0D" stroke-width="1.5"/><text x="1010" y="100" text-anchor="middle" fill="#0D0D0D" font-size="12" font-family="Inter,Arial">Fornecedor</text><text x="1010" y="115" text-anchor="middle" fill="#6B6B6B" font-size="10" font-family="Inter,Arial">homologado</text><line x1="988" y1="72" x2="898" y2="74" stroke="#6B6B6B" stroke-width="1.2" marker-end="url(#ar)"/><circle cx="1010" cy="158" r="9" fill="none" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="167" x2="1010" y2="190" stroke="#0D0D0D" stroke-width="1.5"/><line x1="997" y1="176" x2="1023" y2="176" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="190" x2="999" y2="208" stroke="#0D0D0D" stroke-width="1.5"/><line x1="1010" y1="190" x2="1021" y2="208" stroke="#0D0D0D" stroke-width="1.5"/><text x="1010" y="226" text-anchor="middle" fill="#0D0D0D" font-size="12" font-family="Inter,Arial">Plataforma de</text><text x="1010" y="241" text-anchor="middle" fill="#6B6B6B" font-size="10" font-family="Inter,Arial">mensageria</text><line x1="988" y1="198" x2="898" y2="200" stroke="#6B6B6B" stroke-width="1.2" marker-end="url(#ar)"/></g></svg><figcaption>Diagrama de casos de uso — os serviços adicionais estendem a configuração conforme o canal; o desvio de RCS sem SMS ativo estende a venda com uma cotação de SMS, e a apuração do consumo sustenta o faturamento da franquia e do excedente.</figcaption></figure></section><section id="s3"><div class="sh"><div class="num">03</div><h2>Gatilho</h2></div><div class="call strong"><div class="cl">Gatilho</div><p>O consultor com permissão de venda adiciona o produto Message Solution à proposta comercial.</p></div></section><section id="s4"><div class="sh"><div class="num">04</div><h2>Fluxo único — escolhas, efeitos e falhas</h2></div><table><thead><tr><th>Passo</th><th>Ação — escolha e efeito</th></tr></thead><tbody><tr><td class="mono">1</td><td>O consultor identifica o cliente na proposta e seleciona o tipo de mensageria contratado — SMS, RCS, e-mail ou WhatsApp. A escolha determina quais atributos o sistema apresenta em seguida.</td></tr><tr><td class="mono">2</td><td>O consultor seleciona o fornecedor na lista de parceiros homologados.</td></tr><tr><td class="mono">2 · Fornecedor fora da lista</td><td>Se o fornecedor escolhido for Outros, o sistema abre, na mesma tela, o campo para descrever o fornecedor.</td></tr><tr><td class="mono">3 · SMS</td><td>No canal SMS, o consultor seleciona a rota de disparo — massiva, instantânea ou intermediária — e a modalidade de envio, nacional ou internacional.</td></tr><tr><td class="mono">3 · SMS com short code</td><td>Quando a rota é a instantânea, o sistema pergunta se o cliente quer o número exclusivo. Marcando sim, abre automaticamente o campo da quantidade de números; marcando não, a cotação segue sem o serviço adicional.</td></tr><tr><td class="mono">3 · RCS</td><td>No canal RCS, o consultor seleciona a modalidade de disparo — basic, single ou conversation — e informa se o cliente quer o desvio automático para SMS em caso de falha na entrega.</td></tr><tr><td class="mono">3 ✕ Desvio sem SMS ativo</td><td>Se o cliente escolher o desvio e não tiver contrato de SMS ativo, o sistema cria uma cotação de SMS. As duas ordens de serviço caminham juntas e são encerradas juntas.</td></tr><tr><td class="mono">3 · E-mail</td><td>No canal e-mail, o consultor seleciona o tipo de disparo — marketing, validation ou ambos — sem repetir a mesma opção.</td></tr><tr><td class="mono">3 · WhatsApp</td><td>No canal WhatsApp, o consultor seleciona os tipos de conversa contratados: marketing, utilidade e autenticação, até três opções.</td></tr><tr><td class="mono">4</td><td>Para o canal SMS, o consultor pode incluir a extração de relatório de uso, informando a quantidade de relatórios e o período de cada um.</td></tr><tr><td class="mono">4 ✕ Ativo com menos de noventa dias</td><td>Se o ativo do cliente tiver menos de noventa dias, o serviço não é elegível: o sistema não oferece a extração, e o cliente extrai o relatório na própria plataforma.</td></tr><tr><td class="mono">5</td><td>Antes de concluir, o sistema confere a configuração contra as regras do catálogo, verificando: (1) há tipo de mensageria e fornecedor selecionados; (2) o fornecedor Outros tem a descrição preenchida; (3) os atributos do canal escolhido estão completos; (4) o short code só foi oferecido na rota instantânea; (5) o desvio de RCS tem contrato de SMS ativo ou cotação criada; (6) a extração de relatório respeita o período de noventa dias.</td></tr><tr><td class="mono">5 ✕ Pendências</td><td>Se qualquer verificação falhar, o sistema apresenta a lista completa das pendências, indicando a informação que originou cada uma e o passo em que foi prestada. O consultor corrige e o fluxo retorna ao passo correspondente.</td></tr><tr><td class="mono">6</td><td>O sistema apresenta o resumo do item: canal, fornecedor, rota e envio, serviços adicionais, tipos de disparo ou conversa, relatórios e o valor calculado.</td></tr><tr><td class="mono">7</td><td>O consultor revisa o resumo e confirma a configuração.</td></tr><tr><td class="mono">7 ✕ Descarta</td><td>Caso o consultor descarte a configuração antes de confirmar, o sistema a abandona sem gravar o item, e a proposta permanece exatamente como estava antes do início.</td></tr><tr><td class="mono">8</td><td>O sistema grava o item na proposta comercial com o valor calculado e as condições contratadas. O faturamento dos valores recorrentes é automático; o excedente segue o tratamento manual vigente até a conclusão da automatização.</td></tr></tbody></table></section>
+<footer><span>ALGAR — Configurar Message Solution na proposta comercial</span><span>Confidencial — Uso Interno</span></footer>
+</div><style>
+.ubar{display:flex;gap:8px;align-items:center;margin:10px 0 8px}
+.ubar button{background:#0D0D0D;color:#FAFBFC;border:0;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+.ubar button+button{background:#FAFBFC;color:#0D0D0D;border:1px solid #A8A8A8}
+.uinfo{color:#6B6B6B;font-size:12px;margin-left:auto}
+.utree details{border:1px solid #D9D9D9;border-radius:8px;background:#FAFBFC;margin:6px 0}
+.utree summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:13px;color:#0D0D0D;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}
+.utree summary::-webkit-details-marker{display:none}
+.utree summary::before{content:"▸";color:#6B6B6B;margin-right:2px}
+.utree details[open]>summary::before{content:"▾"}
+.utree .ubody{padding:4px 12px 10px 22px}
+.u-fam>summary{background:#ECECEC;border-radius:8px 8px 0 0}
+.u-attr{background:#fff}
+.ulvl{background:#4A4A4A;color:#fff;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:800;letter-spacing:.5px}
+.ulvl.up{background:#0D0D0D}.ulvl.uf{background:#3A3A3A}.ulvl.ug{background:#6B6B6B}.ulvl.ur{background:#5C5C5C}
+.uc-chip{background:#ECECEC;border:1px solid #D9D9D9;border-radius:10px;padding:1px 9px;font-size:10.5px;font-weight:600;color:#3A3A3A}
+.uc-chip.cs{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.uc-chip.cn{background:#F2F3F5;color:#6B6B6B}
+.uc-chip.cp{border-color:#A8A8A8}
+.uc-chip.cc{border-style:dashed;border-color:#6B6B6B}
+.uc-chip.cd{background:#0D0D0D;color:#FAFBFC;border-style:dashed;border-color:#0D0D0D}
+.usec.uduv{border-left:3px solid #0D0D0D;background:#F2F3F5;padding:8px 10px;border-radius:0 6px 6px 0}
+.urec{margin-top:6px;color:#3A3A3A}
+.umodel{font-size:16px;font-weight:800;color:#0D0D0D;margin:18px 0 4px}
+.uchips{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.usec{font-size:12.5px;color:#3A3A3A;margin:7px 0;line-height:1.55}
+.usec b{color:#0D0D0D}
+.upills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.upill{background:#F2F3F5;border:1px solid #D9D9D9;border-radius:9px;padding:1px 9px;font-size:11px;color:#0D0D0D}
+@media print{.ubar,.cbar,.cbtn{display:none}.utree details{page-break-inside:avoid}.cbox:empty{display:none}}
+.cbtn{background:#FAFBFC;color:#0D0D0D;border:1px dashed #6B6B6B;border-radius:6px;padding:2px 10px;font-size:10.5px;cursor:pointer;margin:4px 0}
+.cbtn.on{background:#0D0D0D;color:#FAFBFC;border-style:solid}
+.cbtn.insum{margin-left:8px;font-size:10px;padding:1px 8px;vertical-align:1px}
+.cbox{display:none;border:1px dashed #6B6B6B;border-radius:6px;background:#FFFFFF;min-height:40px;padding:8px 10px;font-size:12px;color:#0D0D0D;margin:4px 0 8px}
+.cbox.show{display:block}
+.cbox:focus{outline:2px solid #0D0D0D}
+.cbox:empty::before{content:"Escreva o comentário aqui…";color:#A8A8A8}
+tr .cbtn{margin-left:8px}
+td.crow{background:#FAFBFC !important}
+.cbar{position:fixed;right:16px;bottom:16px;background:#0D0D0D;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;z-index:60;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.cbar button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer}
+.cbar button.sec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.cstat{color:#D9D9D9;font-size:11px;max-width:220px}
+</style>
+<script>
+(function(){var a=function(o){document.querySelectorAll('.utree details').forEach(function(d){d.open=o;});};
+document.getElementById('uExp').onclick=function(){a(true)};
+document.getElementById('uCol').onclick=function(){a(false);document.querySelector('.u-root').open=true;};
+window.addEventListener('beforeprint',function(){a(true)});
+
+// ================= comentários persistentes =================
+var all=function(sel){return Array.prototype.slice.call(document.querySelectorAll(sel));};
+var API='https://i9-mcp-da48589780b2.herokuapp.com';
+var LSK='ucmsg-comentarios-r1';
+function lsGet(){try{return JSON.parse(localStorage.getItem(LSK)||'{}')}catch(e){return{}}}
+function lsSet(m){try{localStorage.setItem(LSK,JSON.stringify(m))}catch(e){}}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)}
+function mkBox(key,label,mount,inline){
+ var b=document.createElement('button');b.type='button';b.className='cbtn';b.textContent='Comentar';
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ var saved=lsGet()[key];if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='Comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  box.classList.toggle('show');if(box.classList.contains('show'))box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'Comentário':'Comentar';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
+ if(inline){mount.appendChild(b);}else{mount.insertBefore(box,mount.firstChild);mount.insertBefore(b,box);}
+ return box;
+}
+// nós da modelagem — botão visível no próprio título
+all('[data-ckey]').forEach(function(d){
+ var body=d.querySelector(':scope > .ubody');
+ var sum=d.querySelector(':scope > summary');
+ if(!body||!sum)return;
+ var key=d.dataset.ckey,label=d.dataset.clabel||key;
+ var b=document.createElement('button');b.type='button';b.className='cbtn insum';b.textContent='＋ comentário';
+ sum.appendChild(b);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ body.insertBefore(box,body.firstChild);
+ var saved=lsGet()[key];
+ if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='✎ comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  d.open=true;box.classList.add('show');box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'✎ comentário':'＋ comentário';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
+});
+// linhas do fluxo único (seção 04)
+var s4=document.getElementById('s4');
+if(s4){all('#s4 tbody tr').forEach(function(tr){
+ var tds=tr.querySelectorAll('td');if(tds.length<2)return;
+ var passo=tds[0].textContent.trim();var key='fp-'+slug(passo);var label='Passo '+passo;
+ var b=document.createElement('button');b.type='button';b.className='cbtn';b.textContent='Comentar';
+ tds[1].appendChild(b);
+ var row=document.createElement('tr');var cell=document.createElement('td');
+ cell.colSpan=2;cell.className='crow';row.appendChild(cell);row.style.display='none';
+ tr.parentNode.insertBefore(row,tr.nextSibling);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;cell.appendChild(box);
+ var saved=lsGet()[key];if(saved){box.textContent=saved;box.classList.add('show');row.style.display='';b.classList.add('on');b.textContent='Comentário';}
+ b.addEventListener('click',function(){var on=row.style.display==='none';row.style.display=on?'':'none';
+  box.classList.add('show');if(on)box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'Comentário':'Comentar';});
+});}
+// labels p/ export
+var LBL={};all('.cbox').forEach(function(bx){LBL[bx.dataset.ckey]=bx.dataset.clabel;});
+function coletar(){var m=lsGet(),out={};Object.keys(m).forEach(function(k){out[k]={item:LBL[k]||k,comentario:m[k]};});return out;}
+// toolbar
+var bar=document.createElement('div');bar.className='cbar';
+bar.innerHTML='<button id="cSave">Salvar comentários no i9</button>'+
+ '<button id="cTxt" class="sec">Exportar .txt</button>'+
+ '<button id="cHtml" class="sec">Baixar HTML comentado</button>'+
+ '<span class="cstat" id="cStat"></span>';
+document.body.appendChild(bar);
+function stat(t){document.getElementById('cStat').textContent=t;}
+document.getElementById('cTxt').onclick=function(){
+ var c=coletar(),lines=['Comentários — UC-MSG-001 · '+new Date().toLocaleString('pt-BR'),''];
+ Object.keys(c).forEach(function(k){lines.push('['+c[k].item+']');lines.push(c[k].comentario);lines.push('');});
+ var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join(String.fromCharCode(10))],{type:'text/plain'}));
+ a.download='comentarios-uc-message-solution-r1.txt';a.click();};
+document.getElementById('cHtml').onclick=function(){
+ all('.cbox').forEach(function(bx){var t=bx.textContent.trim();if(t){bx.classList.add('show');
+  var tr2=bx.closest('tr');if(tr2)tr2.style.display='';}});
+ var a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob(['<!DOCTYPE html>'+document.documentElement.outerHTML],{type:'text/html'}));
+ a.download='UC-MSG-001-comentado.html';a.click();};
+document.getElementById('cSave').onclick=function(){
+ var c=coletar();
+ if(!Object.keys(c).length){stat('Nenhum comentário para salvar.');return;}
+ stat('Gravando…');
+ fetch(API+'/api/uc/UC-MSG-001/comentarios',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({rodada:1,comentarios:c})})
+ .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
+ .then(function(j){stat('Salvo ('+j.total+' comentário(s), rodada '+j.rodada+').');
+  var p=window.__UC_APLICAR__?window.__UC_APLICAR__():Promise.resolve();
+  Promise.resolve(p).then(function(){if(window.__UC_POS_SALVAR__)window.__UC_POS_SALVAR__();});})
+ .catch(function(e){stat('Falhou ('+e.message+'). Use Exportar .txt.');});
+};
+})();
+</script><style>
+.uapl{background:#0D0D0D;color:#FAFBFC;border-radius:4px;padding:10px 12px;margin:10px 0}
+.uapl b{color:#FFFFFF}
+.uc-chip.crev{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.cbar #cHub{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B;border-radius:6px;
+padding:6px 12px;font-size:11.5px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center}
+.cbar #cHub:hover{background:#2A2A2A}
+@media print{.cbar #cHub{display:none}}
+.umodal{position:fixed;inset:0;background:rgba(13,13,13,.72);z-index:80;display:flex;
+align-items:center;justify-content:center;padding:24px}
+.umbox{background:#FAFBFC;border-radius:10px;width:min(1100px,96vw);height:min(90vh,1000px);
+display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.umtop{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0D0D0D;color:#FAFBFC}
+.umtop b{font-size:13px}
+.umsub{font-size:11.5px;color:#9A9A9A}
+.umflex{flex:1}
+.umtop button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 14px;
+font-size:11.5px;font-weight:700;cursor:pointer}
+.umtop button.umsec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.umbody{flex:1;overflow:auto;background:#E8E9EC;padding:20px}
+.umload{font-size:13px;color:#3A3A3A;padding:20px}
+.umdocx-wrapper{background:transparent!important;padding:0!important}
+.umdocx-wrapper>section.umdocx{background:#FFFFFF;margin:0 auto 18px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.umpe{padding:10px 16px;background:#FFFFFF;border-top:1px solid #D9D9D9;font-size:11.5px;color:#3A3A3A}
+.umarv{display:flex;gap:8px;align-items:center;margin:0 0 14px}
+.umarv button{background:#FAFBFC;border:1px solid #D9D9D9;border-radius:6px;padding:5px 12px;
+font-size:11.5px;font-weight:700;color:#0D0D0D;cursor:pointer}
+.umdica{font-size:11.5px;color:#6B6B6B}
+#umDoc .umcom{margin-left:10px;background:#0D0D0D;color:#FAFBFC;border:0;border-radius:5px;
+padding:2px 8px;font-size:10.5px;font-weight:700;cursor:pointer;vertical-align:middle;
+font-family:Inter,system-ui,sans-serif;opacity:0;transition:opacity .12s}
+#umDoc .umtit:hover .umcom{opacity:1}
+#umDoc .umtit{position:relative;padding-left:16px}
+#umDoc .umseta{position:absolute;left:0;top:.45em;width:0;height:0;border-left:6px solid #0D0D0D;
+border-top:4px solid transparent;border-bottom:4px solid transparent;transform:rotate(90deg);
+transition:transform .12s}
+#umDoc .umtit.umfech .umseta{transform:none}
+@media print{.umodal{display:none}}
+</style>
+<script>window.__UC__={docId:"UC-MSG-001",fileBase:"UC-MSG-001-Message-Solution",rodada:1};</script>
+<script src="vendor/uc-doc.js"></script></body></html>
