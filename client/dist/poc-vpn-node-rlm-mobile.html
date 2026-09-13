@@ -55,9 +55,39 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .rel .it b{display:block;color:var(--brand)}.rel .it small{color:var(--tx2)}
 .rel .rfoot{padding:10px;text-align:center;font-size:14px}
 .rel .note{padding:10px 12px;font-size:12.5px;color:var(--mut);background:#fafaf9;line-height:1.4}
-.agent{position:fixed;left:0;right:0;bottom:64px;max-width:430px;margin:0 auto;padding:0 14px;z-index:20}
-.agent div{background:var(--gray);border-radius:26px;padding:12px 16px;display:flex;align-items:center;gap:12px;color:var(--mut);font-size:16px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.agent div span:last-child{margin-left:auto}
+.agent{position:fixed;left:0;right:0;bottom:64px;max-width:430px;margin:0 auto;padding:0 14px 6px;z-index:20}
+.agent div{background:#f3f3f3;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;color:#444;font-size:17px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.agent .afi{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:#032d60;color:#fff;font-size:14px}
+.agent .afi img{width:100%;height:100%;object-fit:cover;display:none}
+.agent .afi.has img{display:block}.agent .afi.has span{display:none}
+.agent .mic{margin-left:auto;font-size:20px;color:#444}
+.agent .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);margin-left:-6px;margin-top:-18px}
+#agp{position:fixed;inset:0;background:#fff;z-index:70;display:none;flex-direction:column;max-width:430px;margin:0 auto}
+#agp.show{display:flex}
+.agp-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
+.agp-h b{font-size:17px;flex:1;font-weight:400}
+.agp-h .ic{width:26px;height:26px;border-radius:50%;background:#ecebea;color:#706e6b;display:grid;place-items:center;font-size:12px;border:0}
+.agp-h .ic.av{background:#032d60;color:#fff;overflow:hidden}.agp-h .ic.av img{width:100%;height:100%;object-fit:cover;display:none}.agp-h .ic.av.has img{display:block}.agp-h .ic.av.has span{display:none}
+.agp-b{flex:1;overflow:auto;background:linear-gradient(180deg,#f7f5fb 0%,#f1f0fa 40%,#ffffff 100%);padding:0 0 12px}
+.agp-hero{padding:34px 24px 10px;text-align:center}
+.agp-hero .orb{width:210px;height:210px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 30% 30%,#e9e4f8,#b9b3ea 60%,#8f8fe0);display:grid;place-items:center;overflow:hidden;position:relative}
+.agp-hero .orb img{width:100%;height:100%;object-fit:cover;display:none}.agp-hero .orb.has img{display:block}.agp-hero .orb.has .ph{display:none}
+.agp-hero .orb .ph{color:#fff;font-size:13px;line-height:1.4;padding:0 26px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.agp-hero h2{margin:0 0 8px;font-size:22px;font-weight:700}
+.agp-hero p{margin:0;font-size:14.5px;color:var(--tx2);line-height:1.5}
+.msg-a,.msg-u{max-width:86%;margin:10px 14px;padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.45;white-space:pre-wrap}
+.msg-a{background:#fff;border:1px solid var(--bd);border-top-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.msg-u{background:var(--brand);color:#fff;margin-left:auto;border-top-right-radius:4px}
+.msg-a .src{display:block;font-size:11px;color:var(--mut);margin-top:6px}
+.msg-a.think{color:var(--mut);font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 14px 6px}
+.chips button{border:1px solid var(--brand);background:#fff;color:var(--brand);border-radius:18px;padding:8px 14px;font-size:14px;max-width:100%;text-align:left}
+.chips button.pri{background:var(--brand);color:#fff}
+.agp-f{border-top:1px solid var(--bd);padding:10px 14px 14px;background:#fff}
+.agp-f .box{border:1px solid var(--bd2);border-radius:8px;min-height:64px;padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between}
+.agp-f textarea{border:0;outline:0;resize:none;font-size:15px;min-height:26px;width:100%}
+.agp-f .send{align-self:flex-end;background:0;border:0;color:var(--brand);font-size:20px;padding:0}
+.agp-f .send.off{color:#c9c9c9}
 .bnav{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#fff;border-top:1px solid var(--bd);display:flex;height:64px;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
 .bnav button{flex:1;background:0;border:0;color:var(--tx2);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .bnav button i{font-style:normal;font-size:20px;line-height:1;color:#444}
@@ -246,7 +276,10 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
   <div id="view"></div>
 </div>
 <div id="overlay"></div>
-<div class="agent" id="agent" onclick="S.sheet='agent';render()"><div><span>🤖</span><span>How can I help?</span><span>🎤</span></div></div>
+<div class="agent" id="agent"><div onclick="agOpen()"><span class="afi" id="afi"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><span>Ask Agentforce</span><span class="mic" onclick="event.stopPropagation();agOpen();toast('Microfone: use o texto neste protótipo.')">🎤</span></div></div>
+<div id="agp"><div class="agp-h"><button class="ic" onclick="agClose()">‹</button><b>Algar Sales Agent</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato e pedido.')">ⓘ</button><span class="ic av" id="agav"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><button class="ic" onclick="agClose()">✕</button></div>
+  <div class="agp-b" id="agp-b"></div>
+  <div class="agp-f"><div class="box"><textarea id="agp-in" placeholder="Describe your task or ask a question..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();agSend()}" oninput="document.getElementById('agp-send').className='send'+(this.value.trim()?'':' off')"></textarea><button class="send off" id="agp-send" onclick="agSend()">➤</button></div></div></div>
 <div class="bnav" id="bnav"></div>
 <pre id="tst"></pre>
 <script>
@@ -848,6 +881,116 @@ function sheetAgent(){ const n=lines.filter(l=>l.parent).length; const sug = !S.
     ${sug.map(s=>`<div class="row" onclick="agentDo('${s.replace(/'/g,"\\'")}')"><i class="m">💡</i>${s}</div>`).join('')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function agentDo(s){ S.sheet=null; if(s.startsWith('Criar uma cotação')) go('newquote'); else if(s.startsWith('Adicionar o VPN')) browse(); else if(s.startsWith('Consultar a viab')) startViab(); else if(s.startsWith('Criar o pedido')){ S.modal='order'; render(); } else if(s.startsWith('Quais assets')){ S.tab='Assets'; go('accounts'); } else if(s.startsWith('Qual a eleg')){ const qp=qualificadoProduto(findProd('VPNNODE')); toast(qp.ok?'VPN Node elegível em '+CTX.localidade.nome+' ('+CTX.localidade.territorio+').':qp.hits[qp.hits.length-1].motivo, qp.ok?'':'warn'); render(); } else { toast('Resumo: '+(S.quote?S.quote.name+' · '+S.qStatus+' · '+lines.filter(l=>l.parent).length+' item(ns)':oppName()+' · '+S.oStage)); render(); } }
 
+/* ================= Agentforce — conversa guiada (executa as ações do app) ================= */
+const AG = { open:false, thread:[], chips:[], step:null, cfg:null, pid:null, pending:false, busy:false, equipOk:false, svaOk:false };
+function agOpen(){ AG.open=true; $('#agp').classList.add('show'); if(!AG.thread.length) agStart(); agRender(); }
+function agClose(){ AG.open=false; $('#agp').classList.remove('show'); render(); }
+function agSay(text, chips, src){ AG.thread.push({a:true,text,src}); AG.chips=chips||[]; AG.pending=!!(chips&&chips.length); agRender(); }
+function agUser(text){ AG.thread.push({u:true,text}); AG.chips=[]; agRender(); }
+function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; then(); }, ms); }
+function agRender(){
+  const b=$('#agp-b'); if(!b) return;
+  b.innerHTML = (AG.thread.length>1?'':`<div class="agp-hero"><div class="orb" id="agorb"><img src="img/agentforce-hero.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><div class="ph">imagem do mascote<br>(img/agentforce-hero.png)</div></div><h2>Let's chat!</h2><p>Hi, I'm an AI agent! I can create and configure quotes, check technical feasibility, generate contracts and orders, and more. How can I help?</p></div>`)
+    + AG.thread.map(m=>m.u?`<div class="msg-u">${esc(m.text)}</div>`:`<div class="msg-a ${m.think?'think':''}">${esc(m.text)}${m.src?`<span class="src">${esc(m.src)}</span>`:''}</div>`).join('')
+    + (AG.chips.length?`<div class="chips">${AG.chips.map((c,i)=>`<button class="${c.pri?'pri':''}" onclick="agChip(${i})">${esc(c.l)}</button>`).join('')}</div>`:'');
+  b.scrollTop = b.scrollHeight;
+  const dot=$('#agent .dot'); if(AG.pending&&!AG.open&&!dot){ const d=document.createElement('span'); d.className='dot'; $('#agent .afi').after(d); } if((!AG.pending||AG.open)&&dot) dot.remove();
+}
+function agChip(i){ const c=AG.chips[i]; if(!c) return; agUser(c.l); c.f(); }
+function agSend(){ const t=$('#agp-in').value.trim(); if(!t) return; $('#agp-in').value=''; $('#agp-send').className='send off'; agUser(t); agIntent(t); }
+function agIntent(t){
+  const s=t.toLowerCase();
+  const hit=AG.chips.find(c=>c.l.toLowerCase()===s || s.includes(c.l.toLowerCase()));
+  if(hit){ hit.f(); return; }
+  const mbps=s.match(/(\d+)\s*(mbps|gbps|mb|gb)/); if(mbps&&AG.step==='vel'){ const v=ATTRS.Velocidade.values.find(x=>x.toLowerCase().replace(' ','')===(mbps[1]+(mbps[2].startsWith('g')?'gbps':'mbps'))); if(v){ agSetVel(v); return; } }
+  if(/cota[cç][aã]o|quote|criar/.test(s)&&!S.quote){ agCreateQuote(); return; }
+  if(/vpn/.test(s)&&S.quote&&!AG.cfg){ agPickProduct('VPNNODE'); return; }
+  if(/proposta|pdf/.test(s)){ agProposta(); return; }
+  if(/contrato|assinatura/.test(s)){ agContrato(); return; }
+  if(/pedido|order/.test(s)){ agPedido(); return; }
+  if(/resum|status/.test(s)){ agSay(agResumo(), AG.chips); return; }
+  agSay('Não entendi. Você pode escolher uma das opções abaixo ou descrever o que quer fazer (por exemplo: "criar a cotação", "velocidade 200 Mbps", "gerar a proposta").', AG.chips);
+}
+function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
+/* ---- passos, na ordem do UC-VPN-001 ---- */
+function agStart(){
+  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Quer que eu crie a cotação para ela?`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),[{l:'Criar a cotação',f:agCreateQuote,pri:true}])}]);
+  else agNext();
+}
+function agCreateQuote(){ agThink('Criando a cotação a partir da oportunidade…',900,()=>{ S.quote={name:oppName(),number:'00000036',exp:'12/10/2026'}; S.tab='Details'; S.hist=['opp']; S.tela='quote'; render(); toast('Quote "'+S.quote.name+'" was created.'); agSay(`Cotação ${S.quote.number} criada para ${CTX.conta.nome}. Qual produto adicionamos?`, agProdChips(), 'Ação: New Quote (Quote Name, Account for Quote)'); }); }
+function agProdChips(){ return CATALOG.filter(p=>ACESSO.includes(p.id)).map(p=>({l:p.name,f:()=>agPickProduct(p.id),pri:p.id==='VPNNODE'})).concat([{l:'Ver o catálogo',f:()=>{ agClose(); browse(); }}]); }
+function agPickProduct(pid){ AG.pid=pid; agSay(`${findProd(pid).name}. Passo 1 do caso de uso: onde o serviço será instalado? Escolha a localidade.`, LOCALIDADES.map(l=>({l:`${l.nome} · ${l.territorio}`,f:()=>agPickLoc(l.id)}))); }
+function agPickLoc(id){ setLoc(id); const p=findProd(AG.pid); const qp=qualificadoProduto(p);
+  if(!qp.ok){ agSay(qp.hits[qp.hits.length-1].motivo+' Quer escolher outra localidade ou outro produto?', LOCALIDADES.filter(l=>l.id!==id).map(l=>({l:l.nome+' · '+l.territorio,f:()=>agPickLoc(l.id)})).concat([{l:'Outro produto',f:()=>agSay('Qual produto?',agProdChips())}])); return; }
+  agSay(`${CTX.localidade.nome} (${CTX.localidade.territorio}) — entidade faturadora ${entidadeFaturadora().valor}. Qual endereço de instalação?`, enderecosDaLocalidade(id).map(e=>({l:e.nome,f:()=>agPickEnd(e.id)}))); }
+function agPickEnd(id){ setEnd(id,true); const e=endFull(); AG.cfg=null;
+  agThink('Passo 2: consultando a viabilidade técnica do endereço (MuleSoft → base Algar)…',1400,()=>{ S.viab[e.id]=true; CTX.endereco=endEff();
+    if(e.cobertura===false||e.redeNeutra){ agSay(`${e.cobertura===false?'Sem cobertura no endereço':'Endereço atendido por rede neutra'} — atendimento inviável (desvio 2 ✕ do caso de uso). Quer tentar outro endereço?`, enderecosDaLocalidade(e.localidade).filter(x=>x.id!==e.id).map(x=>({l:x.nome,f:()=>agPickEnd(x.id)})).concat([{l:'Outra localidade',f:()=>agPickProduct(AG.pid)}])); return; }
+    agSay(`Viabilidade: rede própria · ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · entrega em anel':''}${e.dataCenter?' · endereço de Data Center (Golden Jumper)':''}.`, [], 'Ação: Consultar Viabilidade (integração do projeto)');
+    AG.cfg=novoCfg(findProd(AG.pid)); AG.equipOk=false; AG.svaOk=false; avaliar(AG.cfg); agNextCfg(); }); }
+function agSet(key,val){ const [obj,attr]=resolveRef(AG.cfg,key); obj[attr]=val; if(!key.includes('#')) AG.cfg.toque[attr]=true; avaliar(AG.cfg); }
+function agVals(key){ const R=avaliar(AG.cfg); const hv=R.hideVals[key]||{}; return ATTRS[key].values.filter(v=>!hv[v]); }
+function agNextCfg(){
+  const a=AG.cfg.a, R=avaliar(AG.cfg);
+  if(vazio(a.VPNNetwork) && !R.hidden.VPNNetwork){ AG.step='net'; const nets=CTX_DATA.networks[CTX.conta.cnpjRaiz]||[]; agSay('Passo 3: o node entra numa rede privativa existente ou em uma nova?', nets.map(n=>({l:`${n.id} · ${n.nome} (${n.protocolo})`,f:()=>{agSet('VPNNetwork',n.id);agNextCfg();}})).concat([{l:'Criar nova VPN Network (RIP)',f:()=>{agSet('VPNNetwork','NOVA');agNextCfg();}}])); return; }
+  if(vazio(a.Velocidade)){ AG.step='vel'; const vs=agVals('Velocidade'); const top=['50 Mbps','100 Mbps','200 Mbps','500 Mbps','1 Gbps'].filter(v=>vs.includes(v)); agSay('Passo 4: qual velocidade o cliente contratará?', top.map(v=>({l:v,f:()=>agSetVel(v)})).concat([{l:'Outra velocidade…',f:()=>agSay('Escolha entre os 48 valores do catálogo:', vs.map(v=>({l:v,f:()=>agSetVel(v)})))}])); return; }
+  if(vazio(a.ModalidadeInstalacao) && !R.hidden.ModalidadeInstalacao){ AG.step='mod'; agSay('Modalidade de instalação?', agVals('ModalidadeInstalacao').map(v=>({l:v,f:()=>{agSet('ModalidadeInstalacao',v);agNextCfg();}}))); return; }
+  if(a.ModalidadeInstalacao==='Virtual/Fabric'){ for(const k of ['ModeloDisponibilizacao','ProvedorCloud']){ if(vazio(a[k])){ agSay(`${ATTRS[k].name}?`, agVals(k).map(v=>({l:v,f:()=>{agSet(k,v);agNextCfg();}}))); return; } } if(vazio(a.VelocidadeConexao)){ agSay('Velocidade da conexão (Mbps)?', ['100','500','1000'].map(v=>({l:v+' Mbps',f:()=>{agSet('VelocidadeConexao',v);agNextCfg();}}))); return; } }
+  if(CTX.endereco.dataCenter && vazio(a.GoldenJumper)){ agSay('Endereço de Data Center: quem é o responsável pela conexão interna (Golden Jumper)?', agVals('GoldenJumper').map(v=>({l:v,f:()=>{agSet('GoldenJumper',v);agNextCfg();}}))); return; }
+  if(a.GoldenJumper==='Algar'){ for(const k of ['InterfaceGJ','NomeJumper']){ if(vazio(a[k])){ if(ATTRS[k].ui==='picklist') agSay(`${ATTRS[k].name}?`, agVals(k).map(v=>({l:v,f:()=>{agSet(k,v);agNextCfg();}}))); else agSay(`Informe ${ATTRS[k].name} (texto):`, [{l:'Cross Servidor BD',f:()=>{agSet(k,'Cross Servidor BD');agNextCfg();}}]); return; } } }
+  if(!AG.equipOk){ const eq=(AG.cfg.c.equip||[]).map(x=>x.TipoEquipamento);
+    if(!eq.length){ agSay(`Passo 5: a Revisão 1 não define o dimensionamento automático de equipamentos para ${a.Tecnologia}. Quais equipamentos incluir (em comodato)?`, agEquipChips()); return; }
+    agSay(`Passo 5: pela tecnologia ${a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}, os equipamentos são ${eq.join(', ')} em comodato. Confirmar?`, [{l:'Confirmar',f:()=>{AG.equipOk=true;agNextCfg();},pri:true},{l:'Alterar equipamentos',f:()=>agSay('Marque ou desmarque os equipamentos:',agEquipChips())},{l:'Ajustar no configurador',f:agOpenCfg}]); return; }
+  if(!AG.svaOk){ agSay('Passo 6: serviços de valor agregado?', [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Upgrade temporário de velocidade',f:agUpgrade},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
+  if(vazio(a.PeriodoFidelizacao)){ agSay('Passo 7: condições contratuais. Período de fidelização?', agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}}))); return; }
+  if(vazio(a.TipoReajuste)){ agSay('Tipo de reajuste?', agVals('TipoReajuste').map(v=>({l:v,f:()=>{agSet('TipoReajuste',v);agNextCfg();}}))); return; }
+  if(a.TipoReajuste!=='Sem reajuste' && vazio(a.IndiceReajuste)){ agSay('Índice de reajuste?', agVals('IndiceReajuste').map(v=>({l:v,f:()=>{agSet('IndiceReajuste',v);agNextCfg();}}))); return; }
+  if(a.TipoReajuste==='Data de assinatura do contrato' && vazio(a.DataAssinatura)){ agSay('Data de assinatura do contrato?', [{l:'Hoje',f:()=>{agSet('DataAssinatura',new Date().toISOString().slice(0,10));agNextCfg();}},{l:'01/10/2026',f:()=>{agSet('DataAssinatura','2026-10-01');agNextCfg();}}]); return; }
+  if(a.TipoReajuste==='Data base' && vazio(a.DataBase)){ agSay('Data base do reajuste?', [{l:'Hoje',f:()=>{agSet('DataBase',new Date().toISOString().slice(0,10));agNextCfg();}}]); return; }
+  if(!R.hidden.ReferenciaCliente && vazio(a.ReferenciaCliente)){ agSay('Referência do cliente (obrigatória para o segmento):', [{l:'REF-'+CTX.conta.cnpjRaiz,f:()=>{agSet('ReferenciaCliente','REF-'+CTX.conta.cnpjRaiz);agNextCfg();}}]); return; }
+  if(!R.hidden.ValorMoeda && vazio(a.ValorMoeda)){ agSay('Cliente internacional: cotação de conversão do dólar?', [{l:'5,20',f:()=>{agSet('ValorMoeda','5.20');agNextCfg();}}]); return; }
+  agValidar();
+}
+function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]); const has=t=>arr.some(x=>x.TipoEquipamento===t);
+  return EQUIP_TIPOS.map(t=>({l:(has(t)?'✓ ':'')+t,f:()=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); if(i>=0) arr.splice(i,1); else { const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.ModalidadeEquipamento='Comodato'; arr.push(o); } AG.cfg.autoSig='manual'; agSay('Equipamentos: '+(arr.map(x=>x.TipoEquipamento).join(', ')||'nenhum')+'.', agEquipChips()); }}))
+    .concat([{l:'Concluir',f:()=>{ if(!(AG.cfg.c.equip||[]).length){ agSay('O grupo exige pelo menos 1 equipamento.',agEquipChips()); return; } AG.equipOk=true; agNextCfg(); },pri:true}]); }
+function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg); agSay(`${v}. Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, [], 'Regra: matriz de formatação × viabilidade'); agNextCfg(); }
+function agUpgrade(){ const cp=findProd('SVAUPG'); const o={}; resolveAttrs(cp).forEach(x=>o[x.key]=x.def||''); AG.cfg.c.upgrade=[o]; const R=avaliar(AG.cfg); const hv=R.hideVals['upgrade#0.VelocidadeTemporaria']||{}; const vs=ATTRS.VelocidadeTemporaria.values.filter(v=>!hv[v]);
+  if(R.excl.upgrade){ AG.cfg.c.upgrade=[]; agSay(R.excl.upgrade.texto, [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
+  agSay('Velocidade temporária (somente as elegíveis para a contratada):', vs.slice(0,8).map(v=>({l:v,f:()=>{agSet('upgrade#0.VelocidadeTemporaria',v); agSay('Por quantos dias corridos (10 a 60)?', ['10','30','60'].map(d=>({l:d+' dias',f:()=>{agSet('upgrade#0.QuantidadeDias',d); agSay('Upgrade temporário incluído. Também quer monitoramento?', [{l:'Não',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Monitoramento inteligente de rede',f:agMir}]);}})));}}))); }
+function agMir(){ const cp=findProd('SVAMIR'); const o={}; resolveAttrs(cp).forEach(x=>o[x.key]=x.def||''); AG.cfg.c.mir=[o]; agSay('Plano de monitoramento?', ATTRS.PlanoMIR.values.map(v=>({l:v,f:()=>{agSet('mir#0.PlanoMIR',v); agSay('Tipo de monitoramento?', ATTRS.TipoMonitoramento.values.map(t=>({l:t,f:()=>{agSet('mir#0.TipoMonitoramento',t); AG.svaOk=true; agNextCfg();}})));}}))); }
+function agValidar(){
+  const R=avaliar(AG.cfg); const errs=R.msgs.filter(m=>m.sev==='Error');
+  if(errs.length){ const m=errs[0]; const att=Object.keys(ATTRS).find(k=>m.texto.includes(ATTRS[k].name)); 
+    if(att && ATTRS[att].ui==='picklist' && !att.includes('#')){ agSay(`Passo 8 (validação): ${m.texto}. Escolha:`, agVals(att).map(v=>({l:v,f:()=>{agSet(att,v);agValidar();}})).concat([{l:'Abrir no configurador',f:agOpenCfg}])); return; }
+    if(/equipamento/i.test(m.texto)){ agSay('Passo 8 (validação): '+m.texto, agEquipChips()); return; }
+    agSay(`Passo 8 (validação): ${errs.map(e=>e.texto).join('; ')}. Quer ajustar no configurador?`, [{l:'Abrir no configurador',f:agOpenCfg,pri:true}]); return; }
+  agSay(`Passo 8: configuração válida. Atendimento ${R.cls.v} — ${R.cls.motivos.join('; ')}. Preço: pendente (precificação não definida na Revisão 1). Adicionar à cotação?`, [{l:'Adicionar à cotação',f:agAdd,pri:true},{l:'Revisar no configurador',f:agOpenCfg}]);
+}
+function agOpenCfg(){ const p=findProd(AG.pid); cfgProduct=AG.cfg; cfgProduct.prod=p; cfgProduct.uid=null; S.msgTab=null; S.atab=null; S.grpOpen={}; S.compOpen={}; agClose(); S.hist=['quote']; go('config',true); agSay('Abri o configurador com o que já definimos. Quando salvar, volte aqui para continuar.', [{l:'Continuar',f:agNextCfg}]); }
+function agAdd(){ const p=findProd(AG.pid); const R=avaliar(AG.cfg); const l=addLine(p,AG.cfg,R); l.cfgState={a:AG.cfg.a,c:AG.cfg.c,toque:AG.cfg.toque,autoSig:AG.cfg.autoSig}; l.viabOk=true; AG.cfg=null; AG.step=null; S.tab='Lines'; S.hist=['opp']; S.tela='quote'; render(); toast(p.name+' added to quote.'); agNext(); }
+function agNext(){
+  const n=lines.filter(l=>l.parent).length;
+  if(!n){ agSay('A cotação está sem itens. Qual produto adicionamos?', agProdChips()); return; }
+  const chips=[{l:'Adicionar outro node',f:()=>agSay('Qual produto?',agProdChips())}];
+  if(!S.pdfs.length) chips.push({l:'Gerar e enviar a proposta',f:agProposta,pri:true});
+  if(!S.contract) chips.push({l:'Criar o contrato',f:agContrato,pri:!!S.pdfs.length});
+  else if(S.contract.esig==='Not sent') chips.push({l:'Gerar documento e enviar para assinatura',f:agContrato,pri:true});
+  else if(S.contract.esig==='Sent') chips.push({l:'Verificar assinatura',f:()=>agSay('Aguardando assinatura do cliente no DocuSign. (No protótipo: botão "Simular assinatura" na barra.)',AG.chips)});
+  if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') chips.push({l:'Marcar a cotação como Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;render();agSay('Cotação marcada como Accepted.',[]);agNext();},pri:true});
+  if(S.qStatus==='Accepted'&&!S.order) chips.push({l:'Criar o pedido',f:agPedido,pri:true});
+  if(S.order&&S.order.status!=='Activated') chips.push({l:'Ativar o pedido',f:()=>{orderMark();agSay(`Pedido ${S.order.number} ativado; assets criados na conta.`,[]);agNext();},pri:true});
+  if(S.order&&S.order.status==='Activated') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
+  chips.push({l:'Resumo',f:()=>agSay(agResumo(),AG.chips)});
+  agSay(`${agResumo()} O que fazemos agora?`, chips);
+}
+function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
+function agContrato(){ if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
+  agThink('Criando o contrato, gerando o documento e enviando para assinatura (DocuSign)…',1400,()=>{ if(!S.contract.docs.length) genContractDoc(); if(S.contract.esig==='Not sent'){ S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}]; S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); }
+    S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Ver o contrato',f:()=>{agClose();}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
+function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
+  agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Ativar agora?`, [{l:'Ativar o pedido',f:()=>{orderMark();agSay(`Pedido ativado; assets criados na conta.`,[]);agNext();},pri:true},{l:'Ver o pedido',f:agClose}], 'Ação: Create Order'); }); }
+
 /* ---------- roteiro (chrome do protótipo) ---------- */
 function guia(){
   const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk); let t='';
@@ -878,7 +1021,7 @@ function render(){
   const v=$('#view'); const T={local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
-  const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,agent:sheetAgent};
+  const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
   if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
   if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml();
@@ -895,7 +1038,7 @@ $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target
 $('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
 function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
 function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
-function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; render(); }
+function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false}); if(AG.open) agRender(); render(); }
 S=novo(); render();
 
 if(/selftest=1/.test(location.search)){
@@ -966,8 +1109,9 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista', S.tela==='leads' && document.querySelectorAll('.list .it').length===2);
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
-    click($('#agent')); ok('Agentforce abre sugestões contextuais', S.sheet==='agent' && document.querySelectorAll('.bsheet .row').length>=3);
-    S.sheet=null; go('search'); S.q2='vpn'; render(); ok('busca encontra cotação e oportunidade', document.querySelectorAll('.list .it').length>=2);
+    click($('#agent div')); ok('Ask Agentforce abre o painel com cabeçalho, ícones e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===5 && $('#agp-in').placeholder.startsWith('Describe your task'));
+    ok('agente propõe a próxima ação em conversa com opções', AG.thread.length>=1 && AG.chips.length>=1);
+    agClose(); go('search'); S.q2='vpn'; render(); ok('busca encontra cotação e oportunidade', document.querySelectorAll('.list .it').length>=2);
     click($('.list .it')); ok('resultado abre o registro', S.tela==='quote');
     click($('.top .bk')); ok('Back volta para a tela anterior', S.tela==='search');
     const t=document.getElementById('tst'); t.style.display='block';
