@@ -77,6 +77,8 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .sugg button{display:flex;align-items:center;gap:10px;border:1px solid #d6dbe3;background:#fff;border-radius:8px;padding:12px 14px;font-size:15px;text-align:left;color:var(--tx)}
 .sugg button.pri{border-color:var(--brand)}
 .sugg button i{color:var(--brand);font-style:normal;font-size:15px;flex:none}
+.datebox{display:flex;gap:8px;align-items:center}
+.datebox input{flex:1;border:1px solid var(--bd2);border-radius:8px;padding:11px 12px;min-height:44px;background:#fff;font-size:15px}
 .agp-hero{padding:34px 24px 10px;text-align:center}
 .agp-hero .orb{width:210px;height:210px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 30% 30%,#e9e4f8,#b9b3ea 60%,#8f8fe0);display:grid;place-items:center;overflow:hidden;position:relative}
 .agp-hero .orb img{width:100%;height:100%;object-fit:cover;display:none}.agp-hero .orb.has img{display:block}.agp-hero .orb.has .ph{display:none}
@@ -264,6 +266,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .list .it{display:flex;gap:12px;align-items:center;padding:13px 14px;border-bottom:1px solid var(--bd)}
 .list .it .oi{width:32px;height:32px;border-radius:5px;display:grid;place-items:center;color:#fff;flex:none}
 .list .it b{display:block;font-size:15px;color:var(--brand)}.list .it small{color:var(--tx2)}
+.lsec{background:var(--gray);padding:9px 14px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-top:6px}
 .feed .post{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .feed .post .who{display:flex;gap:10px;align-items:center;margin-bottom:6px}
 .feed .post .who i{width:32px;height:32px;border-radius:50%;background:#7f8de1;display:grid;place-items:center;color:#fff;font-style:normal}
@@ -489,9 +492,42 @@ const fmtMoney = () => 'Pendente';
 const QSTEPS = ['Draft','Needs Review','In Review','Approved','Rejected','Presented','Accepted','Denied'];
 const OSTAGES = ['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed Won'];
 const NV = 'documentado para Lightning Experience; exibição no app não verificada';
+/* Layouts lidos da org HOMOL em consulta somente leitura (13/09/2026):
+   Lead → Record Type "Nacional" (layout padrão do RT). Opportunity → Record Type padrão é o Master,
+   com o layout "Opportunity Layout"; não existe RT "Nacional" para Opportunity nessa org.
+   Os valores exibidos são fictícios; apenas a estrutura (seções, campos, tipos e picklists) veio da org. */
+const LAYOUTS = {"lead": [{"sec": "Lead Information", "campos": [{"api": "Rating", "label": "Rating", "type": "picklist", "req": false, "pl": ["Quente", "Morno", "Frio", "Muito quente"]}, {"api": "OwnerId", "label": "Lead Owner", "type": "reference", "req": false, "pl": []}, {"api": "Status", "label": "Lead Status", "type": "picklist", "req": true, "pl": ["Novo", "Em qualificação", "Em conversão", "Cancelado", "Convertido", "Convertido (não usar)"]}, {"api": "Website", "label": "Website", "type": "url", "req": false, "pl": []}, {"api": "CNPJ__c", "label": "CNPJ", "type": "string", "req": true, "pl": []}, {"api": "Motivo_cancelamento__c", "label": "Motivo de cancelamento", "type": "picklist", "req": false, "pl": ["Cadência do lead finalizada sem sucesso", "Cancelamento por CNPJ com situação irregular", "Compra centralizada no exterior", "Compra somente por RFP", "Duplicidade", "Empresa já sendo trabalhada por outro consultor", "Fechou com o concorrente", "Insatisfeito com a Algar", "Lead abandonou atendimento", "Lead fora do perfil", "Preço e condições comerciais não atendem", "Sem interesse", "Sem orçamento"]}, {"api": "PorteEmpresa__c", "label": "Porte da empresa", "type": "picklist", "req": false, "pl": ["Grande", "MEI", "Média", "Micro", "Pequena"]}, {"api": "Company", "label": "Company", "type": "string", "req": true, "pl": []}, {"api": "TicketPotencial__c", "label": "Ticket potencial", "type": "currency", "req": false, "pl": []}, {"api": "ProdutoInteresse__c", "label": "Produto de interesse", "type": "string", "req": false, "pl": []}, {"api": "FaixaFuncionarios__c", "label": "Faixa de funcionários", "type": "picklist", "req": false, "pl": ["1–4 funcionários", "5–9 funcionários", "10–49 funcionários", "50–99 funcionários", "100–249 funcionários", "250–499 funcionários", "500–999 funcionários", "1.000+ funcionários", "Sem funcionários"]}, {"api": "Industry", "label": "Industry", "type": "picklist", "req": false, "pl": ["Agronegócio", "Atacadista", "Construção e imobiliário", "Educação", "Energia e utilities", "Financeiro", "Governo", "Indústria", "Logística e Transporte", "Mídia e entretenimento", "Saúde", "Serviços", "Tecnologia e TI", "Telecomunicações", "Turismo e hospitalidade", "Varejo"]}, {"api": "Telefone1ComMascara__c", "label": "Telefone 1", "type": "phone", "req": false, "pl": []}, {"api": "Description", "label": "Description", "type": "textarea", "req": false, "pl": []}]}, {"sec": "Endereço", "campos": [{"api": "Address", "label": "Address", "type": "address", "req": false, "pl": []}, {"api": "Regional__c", "label": "Regional", "type": "string", "req": false, "pl": []}, {"api": "Numero__c", "label": "Número", "type": "string", "req": false, "pl": []}, {"api": "Diretoria__c", "label": "Diretoria", "type": "string", "req": false, "pl": []}, {"api": "Bairro__c", "label": "Bairro", "type": "string", "req": false, "pl": []}, {"api": "Complemento__c", "label": "Complemento", "type": "string", "req": false, "pl": []}]}, {"sec": "Endereço de visita", "campos": [{"api": "EnderecoVisitaRua__c", "label": "Endereço Visita - Rua", "type": "string", "req": false, "pl": []}, {"api": "EnderecoVisitaEstado__c", "label": "Endereço Visita - Estado", "type": "string", "req": false, "pl": []}, {"api": "EnderecoVisitaCidade__c", "label": "Endereço Visita - Cidade", "type": "string", "req": false, "pl": []}, {"api": "EnderecoVisitaCEP__c", "label": "Endereço Visita - CEP", "type": "string", "req": false, "pl": []}]}, {"sec": "Dados do contato", "campos": [{"api": "Name", "label": "Name", "type": "string", "req": true, "pl": []}, {"api": "Title", "label": "Title", "type": "string", "req": false, "pl": []}, {"api": "Email", "label": "Email", "type": "email", "req": true, "pl": []}, {"api": "LinkedIn__c", "label": "LinkedIn", "type": "url", "req": false, "pl": []}]}, {"sec": "Telefones para contato", "campos": [{"api": "Phone", "label": "Telefone 1", "type": "phone", "req": true, "pl": []}, {"api": "TelefoneBlacklist__c", "label": "Telefone 1 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "MobilePhone", "label": "Telefone 2", "type": "phone", "req": false, "pl": []}, {"api": "MobilePhoneBlacklist__c", "label": "Telefone 2 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "Telefone3__c", "label": "Telefone 3", "type": "phone", "req": false, "pl": []}, {"api": "Telefone3Blacklist__c", "label": "Telefone 3 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "Telefone4__c", "label": "Telefone 4", "type": "phone", "req": false, "pl": []}, {"api": "Telefone4Blacklist__c", "label": "Telefone 4 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "Telefone5__c", "label": "Telefone 5", "type": "phone", "req": false, "pl": []}, {"api": "Telefone5Blacklist__c", "label": "Telefone 5 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "Telefone6__c", "label": "Telefone 6", "type": "phone", "req": false, "pl": []}, {"api": "Telefone6Blacklist__c", "label": "Telefone 6 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}, {"api": "Telefone7__c", "label": "Telefone 7", "type": "phone", "req": false, "pl": []}, {"api": "Telefone7Blacklist__c", "label": "Telefone 7 blacklist", "type": "picklist", "req": false, "pl": ["Elegível", "Inelegível", "Pendente", "Erro durante a consulta"]}]}, {"sec": "Dados de marketing", "campos": [{"api": "Segmento__c", "label": "Segmento", "type": "picklist", "req": false, "pl": ["Corporativo", "Empresarial", "Operadoras"]}, {"api": "Campanha__c", "label": "Campanha", "type": "reference", "req": false, "pl": []}, {"api": "TipoLead__c", "label": "Tipo de lead", "type": "picklist", "req": false, "pl": ["Fidelização", "Indicação associado", "Indicação técnico ITECH", "Prospecção", "Rentabilização", "Retenção", "Winback"]}, {"api": "NomeAssociado__c", "label": "Nome associado", "type": "string", "req": false, "pl": []}, {"api": "OrigemCanal__c", "label": "Origem canal", "type": "picklist", "req": false, "pl": ["Landing page", "Mailing", "Manual", "Portal", "WhatsApp", "Wifeed"]}, {"api": "MatriculaAssociado__c", "label": "Matrícula associado", "type": "string", "req": false, "pl": []}, {"api": "LeadSource", "label": "Lead Source", "type": "picklist", "req": true, "pl": ["Atendimento", "Consultor", "Eventos", "Inbound", "Indicação", "Outbound", "Parceiros", "SDR"]}, {"api": "EtapaCarrinho__c", "label": "Etapa carrinho", "type": "picklist", "req": false, "pl": ["Carrinho", "Checkout", "Finalização", "Frete", "Identificação", "Pagamento", "Revisão"]}, {"api": "RelacionamentoLead__c", "label": "Relacionamento do lead", "type": "picklist", "req": false, "pl": ["Base Existente", "Novo Cliente"]}, {"api": "OrigemMidia__c", "label": "Origem mídia", "type": "picklist", "req": false, "pl": ["Carrinho Abandonado", "Me Ligue"]}, {"api": "Evento__c", "label": "Evento", "type": "string", "req": false, "pl": []}]}, {"sec": "Informações de duplicidade", "campos": [{"api": "Lead_Relacionado__c", "label": "Lead relacionado (duplicidade)", "type": "reference", "req": false, "pl": []}]}], "opp": [{"sec": "Opportunity Information", "campos": [{"api": "Name", "label": "Name", "type": "string", "req": true, "pl": [], "ro": false}, {"api": "AccountId", "label": "Account ID", "type": "reference", "req": true, "pl": [], "ro": false}, {"api": "Type", "label": "Opportunity Type", "type": "picklist", "req": false, "pl": ["Empresa existente", "Nova empresa"], "ro": false}, {"api": "CampaignId", "label": "Campaign ID", "type": "reference", "req": false, "pl": [], "ro": false}, {"api": "Budget_Confirmed__c", "label": "Budget Confirmed", "type": "boolean", "req": false, "pl": [], "ro": false}, {"api": "Discovery_Completed__c", "label": "Discovery Completed", "type": "boolean", "req": false, "pl": [], "ro": false}, {"api": "ROI_Analysis_Completed__c", "label": "ROI Analysis Completed", "type": "boolean", "req": false, "pl": [], "ro": false}, {"api": "Loss_Reason__c", "label": "Loss Reason", "type": "picklist", "req": false, "pl": ["Lost to Competitor", "No Budget / Lost Funding", "No Decision / Non-Responsive", "Price", "Other"], "ro": false}, {"api": "OwnerId", "label": "Owner ID", "type": "reference", "req": false, "pl": [], "ro": false}, {"api": "CloseDate", "label": "Close Date", "type": "date", "req": true, "pl": [], "ro": false}, {"api": "StageName", "label": "Stage", "type": "picklist", "req": true, "pl": ["Qualificação", "Análise das necessidades", "Proposal", "Negotiation", "Fechado e ganho", "Fechado e perdido"], "ro": false}, {"api": "Probability", "label": "Probability (%)", "type": "percent", "req": false, "pl": [], "ro": false}, {"api": "Amount", "label": "Amount", "type": "currency", "req": false, "pl": [], "ro": false}]}, {"sec": "Additional Information", "campos": [{"api": "NextStep", "label": "Next Step", "type": "string", "req": false, "pl": [], "ro": false}, {"api": "Description", "label": "Description", "type": "textarea", "req": false, "pl": [], "ro": false}, {"api": "LeadSource", "label": "Lead Source", "type": "picklist", "req": false, "pl": ["Atendimento", "Consultor", "Eventos", "Inbound", "Indicação", "Outbound", "Parceiros", "SDR"], "ro": false}]}, {"sec": "System Information", "campos": [{"api": "CreatedById", "label": "Created By ID", "type": "reference", "req": false, "pl": [], "ro": true}, {"api": "LastModifiedById", "label": "Last Modified By ID", "type": "reference", "req": false, "pl": [], "ro": true}]}]};
+const LEADS = [
+  { id:'00Q1', Name:'Marina Duarte', Company:'Distribuidora Nova Era', Status:'Em qualificação', Rating:'Quente', OwnerId:'Usuário com permissão de venda',
+    Website:'www.novaera.com.br', CNPJ__c:'12.345.678/0001-90', PorteEmpresa__c:'Média', TicketPotencial__c:'R$ 8.400,00',
+    ProdutoInteresse__c:'VPN Corporativa', FaixaFuncionarios__c:'50–99 funcionários', Industry:'Atacadista',
+    Telefone1ComMascara__c:'(34) 3232-1100', Description:'Cliente quer conectar matriz e dois CDs.',
+    Address:'Av. João Naves de Ávila, 1200 — Uberlândia/MG', Regional__c:'Triângulo', Numero__c:'1200', Diretoria__c:'Centro-Oeste', Bairro__c:'Santa Mônica', Complemento__c:'Sala 304',
+    EnderecoVisitaRua__c:'Av. João Naves de Ávila', EnderecoVisitaEstado__c:'MG', EnderecoVisitaCidade__c:'Uberlândia', EnderecoVisitaCEP__c:'38408-100',
+    Title:'Gerente de TI', Email:'marina.duarte@novaera.com.br', LinkedIn__c:'linkedin.com/in/marinaduarte',
+    Phone:'(34) 3232-1100', TelefoneBlacklist__c:'Elegível', MobilePhone:'(34) 99811-2233', MobilePhoneBlacklist__c:'Elegível',
+    Segmento__c:'Corporativo', TipoLead__c:'Prospecção', OrigemCanal__c:'Portal', LeadSource:'Inbound', RelacionamentoLead__c:'Novo Cliente' },
+  { id:'00Q2', Name:'Rogério Lima', Company:'Clínica Vida Plena', Status:'Novo', Rating:'Morno', OwnerId:'Usuário com permissão de venda',
+    CNPJ__c:'07.113.524/0001-45', PorteEmpresa__c:'Pequena', ProdutoInteresse__c:'Link dedicado', FaixaFuncionarios__c:'10–49 funcionários', Industry:'Saúde',
+    Telefone1ComMascara__c:'(31) 3444-8800', Address:'Rua dos Timbiras, 900 — Belo Horizonte/MG', Regional__c:'BHE', Numero__c:'900', Bairro__c:'Funcionários',
+    Title:'Diretor administrativo', Email:'rogerio.lima@vidaplena.com.br', Phone:'(31) 3444-8800', TelefoneBlacklist__c:'Pendente',
+    Segmento__c:'Empresarial', TipoLead__c:'Indicação associado', OrigemCanal__c:'WhatsApp', LeadSource:'Indicação', RelacionamentoLead__c:'Novo Cliente' }
+];
+function oppValores(){
+  return { Name:oppName(), AccountId:CTX.conta.nome, Type:'New Business', CampaignId:'', Budget_Confirmed__c:'✓', Discovery_Completed__c:'✓',
+    ROI_Analysis_Completed__c:'', Loss_Reason__c:'', OwnerId:CTX.usuario.nome, CloseDate:S.opp.close.split('-').reverse().join('/'),
+    StageName:S.oStage, Probability:S.opp.prob, Amount:S.opp.amount||'', NextStep:'Enviar proposta comercial',
+    Description:'Conectividade VPN entre as unidades do cliente.', LeadSource:'Inbound',
+    CreatedById:CTX.usuario.nome, LastModifiedById:CTX.usuario.nome };
+}
+function layoutHtml(secs, vals, nota){
+  return (nota?`<div class="nv-tag">${esc(nota)}</div>`:'') + secs.map(s=>`<div class="lsec">${esc(s.sec)}</div><div class="fl">${s.campos.map(c=>{
+    const v = vals[c.api]; const txt = (v===undefined||v==='') ? '' : v;
+    return `<div class="fr"><span>${esc(c.label)}${c.req?' <b style="color:var(--err)">*</b>':''}</span><span>${c.type==='reference'&&txt?`<a>${esc(txt)}</a>`:esc(txt)}${c.ro?' <small style="color:var(--mut)">(somente leitura)</small>':''}</span></div>`; }).join('')}</div>`).join('');
+}
 let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
-  opp:{ amount:'', close:'2026-10-30', prob:'50%' }, feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
+  opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
   form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
@@ -524,7 +560,7 @@ function telaOpp(){
   return topbar('Opportunity', S.hist.length>0) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'☑',c:'g',n:'New Task',on:"go('task')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
   <div class="rh"><div class="oi o">👑</div><div><small>Opportunity</small><b>${esc(oppName())}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Details' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Amount',esc(S.opp.amount||'')],['Close Date',esc(S.opp.close)],['Stage',esc(S.oStage)],['Probability (%)',esc(S.opp.prob)],['Opportunity Owner',`<a>${esc(CTX.usuario.nome)}</a>`]])
+  ${S.tab==='Details' ? layoutHtml(LAYOUTS.opp, oppValores(), 'Campos e seções do layout padrão de Opportunity, lidos da org HOMOL em consulta somente leitura. Não existe Record Type "Nacional" para Opportunity nessa org — o padrão é o Master.')
       + pathHtml(OSTAGES, S.oStage, S.oSel, 'Stage', 'opp')
   : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
       ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${esc(S.qStatus)} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
@@ -961,9 +997,20 @@ function telaAccount(){
   : fields([['Type','Customer - Direct'],['Segmento',esc(CTX.conta.segmento)],['Localidade',esc(CTX.localidade.nome)+' · '+esc(CTX.localidade.territorio)],['Entidade faturadora',esc(entidadeFaturadora().valor)],['Account Owner',`<a>${esc(CTX.usuario.nome)}</a>`],['Industry','—']])}`;
 }
 function sheetMoreAcc(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit account: campos padrão.','warn');render()")}${row('📍','t','Check In',"S.sheet=null;toast('Check-in registrado (Salesforce Maps).');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function telaLead(){
+  const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
+  return topbar('Lead', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'✓',c:'g',n:'Convert',on:"toast('Convert: cria conta, contato e oportunidade.','warn')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-lead';render()"}]) + `
+  <div class="rh"><div class="oi t">★</div><div><small>Lead</small><b>${esc(l.Name)} — ${esc(l.Company)}</b></div></div>
+  <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="S.tab='Chatter';render()">Chatter</a></div>
+  ${S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">☑</div><b>Activities (0)</b><a onclick="go('task')">New Task</a></div><div class="note">Sem atividades.</div></div>`
+   : layoutHtml(LAYOUTS.lead, l, 'Campos e seções do layout do Record Type Nacional, lidos da org HOMOL em consulta somente leitura. Valores de exemplo.')
+     + pathHtml(['Novo','Em qualificação','Em conversão','Convertido'], l.Status==='Novo'?'Novo':'Em qualificação', null, 'Status', 'lead')}`;
+}
+function leadSel(){ } function leadMark(){ toast('Status do lead: alteração fora do escopo do protótipo.','warn'); }
+function sheetMoreLead(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit lead: campos do layout Nacional.','warn');render()")}${row('✓','g','Convert',"S.sheet=null;toast('Convert: cria conta, contato e oportunidade.','warn');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function telaList(kind){
   const items = kind==='contacts' ? S.contacts.map(c=>({t:c.name,s:CTX.conta.nome+' · '+(c.role||''),on:"toast('Contact record: campos padrão.','warn')"}))
-    : kind==='leads' ? [{t:'Distribuidora Nova Era',s:'Lead · Corporativo · Uberlândia',on:"toast('Lead record: campos padrão.','warn')"},{t:'Clínica Vida Plena',s:'Lead · PME · Belo Horizonte',on:"toast('Lead record: campos padrão.','warn')"}]
+    : kind==='leads' ? LEADS.map(l=>({t:l.Company,s:l.Name+' · '+l.Status+' · '+(l.Segmento__c||'')+' · '+(l.Rating||''),on:`S.leadId='${l.id}';S.tab='Details';go('lead')`}))
     : kind==='quotes' ? (S.quote?[{t:S.quote.name,s:'Quote '+S.quote.number+' · '+S.qStatus,on:"go('quote')"}]:[])
     : [{t:CTX.conta.nome,s:'Account · '+CTX.conta.segmento,on:"go('accounts')"}].concat(CTX_DATA.contas.filter(c=>c.id!==CTX.conta.id).map(c=>({t:c.nome,s:'Account · '+c.segmento,on:`CTX.conta=CTX_DATA.contas.find(x=>x.id==='${c.id}');go('accounts')`})));
   const titles={contacts:'Contacts',leads:'Leads',quotes:'Quotes',accountsList:'Accounts'};
@@ -983,7 +1030,7 @@ function sheetAgent(){ const n=lines.filter(l=>l.parent).length; const sug = !S.
 function agentDo(s){ S.sheet=null; if(s.startsWith('Criar uma cotação')) go('newquote'); else if(s.startsWith('Adicionar o VPN')) browse(); else if(s.startsWith('Consultar a viab')) startViab(); else if(s.startsWith('Criar o pedido')){ S.modal='order'; render(); } else if(s.startsWith('Quais assets')){ S.tab='Assets'; go('accounts'); } else if(s.startsWith('Qual a eleg')){ const qp=qualificadoProduto(findProd('VPNNODE')); toast(qp.ok?'VPN Node elegível em '+CTX.localidade.nome+' ('+CTX.localidade.territorio+').':qp.hits[qp.hits.length-1].motivo, qp.ok?'':'warn'); render(); } else { toast('Resumo: '+(S.quote?S.quote.name+' · '+S.qStatus+' · '+lines.filter(l=>l.parent).length+' item(ns)':oppName()+' · '+S.oStage)); render(); } }
 
 /* ================= Agentforce — conversa guiada (executa as ações do app) ================= */
-const AG = { open:false, thread:[], chips:[], step:null, cfg:null, pid:null, pending:false, busy:false, equipOk:false, svaOk:false };
+const AG = { open:false, thread:[], chips:[], step:null, cfg:null, pid:null, pending:false, busy:false, equipOk:false, svaOk:false, dateAsk:null };
 function agOpen(){ AG.open=true; $('#agp').classList.add('show'); if(!AG.thread.length) agStart(); agRender(); }
 function agClose(){ AG.open=false; $('#agp').classList.remove('show'); render(); }
 function agSay(text, chips, src){ AG.thread.push({a:true,text,src}); AG.chips=chips||[]; AG.pending=!!(chips&&chips.length); agRender(); }
@@ -994,12 +1041,31 @@ function agRender(){
   const BOT='<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><rect x="12" y="18" width="40" height="32" rx="10" fill="#0b5cab"/><rect x="18" y="26" width="28" height="16" rx="8" fill="#fff"/><circle cx="27" cy="34" r="3.2" fill="#0b5cab"/><circle cx="37" cy="34" r="3.2" fill="#0b5cab"/><rect x="30" y="9" width="4" height="9" rx="2" fill="#0b5cab"/><circle cx="32" cy="8" r="3" fill="#0b5cab"/><rect x="6" y="28" width="6" height="12" rx="3" fill="#0b5cab"/><rect x="52" y="28" width="6" height="12" rx="3" fill="#0b5cab"/></svg>';
   b.innerHTML = (AG.thread.length>1?'':`<div class="welcome"><div class="bot" id="agbot"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'">${BOT}</div><p>Welcome! I'm Agentforce. I can help you create and manage quotes quickly and accurately — from feasibility to order fulfillment.</p></div>`)
     + AG.thread.map(m=>m.u?`<div class="msg-u">${esc(m.text)}</div>`:`<div class="msg-a ${m.think?'think':''}">${esc(m.text)}${m.src?`<span class="src">${esc(m.src)}</span>`:''}</div>`).join('')
+    + (AG.dateAsk?`<div class="sugg"><div class="datebox"><input type="date" id="ag-date" value="${AG.dateAsk.val}" min="${new Date().toISOString().slice(0,10)}"><button class="btn sm brand" onclick="agDataOk()">Confirmar</button></div></div>`:'')
     + (AG.chips.length?`<div class="sugg">${AG.chips.map((c,i)=>`<button class="${c.pri?'pri':''}" onclick="agChip(${i})"><i>✦</i>${esc(c.l)}</button>`).join('')}</div>`:'');
   b.scrollTop = b.scrollHeight;
   const dot=$('#agent .dot'); if(AG.pending&&!AG.open&&!dot){ const d=document.createElement('span'); d.className='dot'; $('#agent .afi').after(d); } if((!AG.pending||AG.open)&&dot) dot.remove();
 }
 function agChip(i){ const c=AG.chips[i]; if(!c) return; agUser(c.l); c.f(); }
-function agSend(){ const t=$('#agp-in').value.trim(); if(!t) return; $('#agp-in').value=''; $('#agp-send').className='send off'; agUser(t); agIntent(t); }
+function agSend(){ const t=$('#agp-in').value.trim(); if(!t) return; if(AG.dateAsk){ const m=t.match(/(\d{2})\/(\d{2})\/(\d{4})/); if(m){ $('#agp-in').value=''; const d=AG.dateAsk; AG.dateAsk=null; agUser(t); agSet(d.key,`${m[3]}-${m[2]}-${m[1]}`); agNextCfg(); return; } } $('#agp-in').value=''; $('#agp-send').className='send off'; agUser(t); agIntent(t); }
+/* opções do ponto atual da jornada — recalculadas a cada resposta, para o agente não voltar a passos antigos */
+function agAtuais(){
+  if(AG.cfg) return [{l:'Continuar a configuração',f:agNextCfg,pri:true},{l:'Abrir no configurador',f:agOpenCfg}];
+  if(!S.quote) return [{l:'Criar a cotação',f:agCreateQuote,pri:true}];
+  if(!lines.filter(l=>l.parent).length) return agProdChips();
+  const c=[];
+  if(!S.pdfs.length) c.push({l:'Gerar e enviar a proposta',f:agProposta,pri:true});
+  if(!S.contract) c.push({l:'Criar o contrato',f:agContrato,pri:!!S.pdfs.length});
+  else if(S.contract.esig==='Not sent') c.push({l:'Enviar para assinatura',f:agContrato,pri:true});
+  else if(S.contract.esig==='Completed'&&S.qStatus!=='Accepted') c.push({l:'Marcar a cotação como Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;render();agNext();},pri:true});
+  if(S.qStatus==='Accepted'&&!S.order) c.push({l:'Criar o pedido',f:agPedido,pri:true});
+  if(S.order&&S.order.status!=='Activated') c.push({l:'Ativar o pedido',f:agAtivar,pri:true});
+  if(S.order&&S.order.status==='Activated'&&!S.order.submitted) c.push({l:'Submeter o pedido',f:agSubmeter,pri:true});
+  if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') c.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
+  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') c.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
+  c.push({l:'Adicionar outro node',f:()=>agSay('Qual produto?',agProdChips())});
+  return c;
+}
 function agIntent(t){
   const s=t.toLowerCase();
   const hit=AG.chips.find(c=>c.l.toLowerCase()===s || s.includes(c.l.toLowerCase()));
@@ -1012,23 +1078,23 @@ function agIntent(t){
   if(/pedido|order/.test(s)){ agPedido(); return; }
   if(/ativ/.test(s)&&S.order&&S.order.status!=='Activated'){ agAtivar(); return; }
   if(/submet|orquestr|andamento|progresso|fulfil/.test(s)&&S.order){ S.order.submitted?agAndamento():agAtivar(); return; }
-  if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), AG.chips, 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
-  if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, AG.chips, 'Regra: matriz de formatação × situações de customização'); return; } }
-  if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', AG.chips); return; }
-  if(/fatur|entidade|quem fatura/.test(s)){ agSay(`Entidade faturadora: ${entidadeFaturadora().valor} (${entidadeFaturadora().regra}) — derivada da localidade ${CTX.localidade.nome}, território ${CTX.localidade.territorio}.`, AG.chips); return; }
-  if(/reajust|fideliz|multa|contrat/.test(s)&&!/criar/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const a=l&&l.attrs||{}; agSay(l?`Condições contratuais: fidelização ${a['Período Fidelização']||'—'} meses · reajuste ${a['Tipo de Reajuste']||'—'} (${a['Índice de Reajuste']||'—'}) · próximo reajuste ${a['Data do Próximo Reajuste']||'—'} · multa ${a['Percentual da Multa']||'não elegível'} · aviso prévio ${a['Quantidade de Dias Aviso Previo']||'—'}.`:'Ainda não há item na cotação.', AG.chips); return; }
-  if(/pre[çc]o|valor|custa|quanto/.test(s)){ agSay('Preço pendente: a tabela e o procedimento de precificação não foram definidos na Revisão 1. Assim que existirem, o Instant Pricing calcula na configuração.', AG.chips); return; }
-  if(/viab/.test(s)){ const e=endFull(); agSay(S.viab[e.id]?`Viabilidade de ${e.nome}: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · anel':''}.`:`A viabilidade de ${e.nome} ainda não foi consultada — ela é o passo 2, logo após o endereço.`, AG.chips); return; }
-  if(/eleg|territ|localidade/.test(s)){ const qp=qualificadoProduto(findProd('VPNNODE')); agSay(qp.ok?`VPN Node elegível em ${CTX.localidade.nome} (${CTX.localidade.territorio}). Elegibilidade é comercial/regulatória; viabilidade é técnica, por endereço.`:qp.hits[qp.hits.length-1].motivo, AG.chips); return; }
+  if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), agAtuais(), 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
+  if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, agAtuais(), 'Regra: matriz de formatação × situações de customização'); return; } }
+  if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', agAtuais()); return; }
+  if(/fatur|entidade|quem fatura/.test(s)){ agSay(`Entidade faturadora: ${entidadeFaturadora().valor} (${entidadeFaturadora().regra}) — derivada da localidade ${CTX.localidade.nome}, território ${CTX.localidade.territorio}.`, agAtuais()); return; }
+  if(/reajust|fideliz|multa|contrat/.test(s)&&!/criar/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const a=l&&l.attrs||{}; agSay(l?`Condições contratuais: fidelização ${a['Período Fidelização']||'—'} meses · reajuste ${a['Tipo de Reajuste']||'—'} (${a['Índice de Reajuste']||'—'}) · próximo reajuste ${a['Data do Próximo Reajuste']||'—'} · multa ${a['Percentual da Multa']||'não elegível'} · aviso prévio ${a['Quantidade de Dias Aviso Previo']||'—'}.`:'Ainda não há item na cotação.', agAtuais()); return; }
+  if(/pre[çc]o|valor|custa|quanto/.test(s)){ agSay('Preço pendente: a tabela e o procedimento de precificação não foram definidos na Revisão 1. Assim que existirem, o Instant Pricing calcula na configuração.', agAtuais()); return; }
+  if(/viab/.test(s)){ const e=endFull(); agSay(S.viab[e.id]?`Viabilidade de ${e.nome}: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · anel':''}.`:`A viabilidade de ${e.nome} ainda não foi consultada — ela é o passo 2, logo após o endereço.`, agAtuais()); return; }
+  if(/eleg|territ|localidade/.test(s)){ const qp=qualificadoProduto(findProd('VPNNODE')); agSay(qp.ok?`VPN Node elegível em ${CTX.localidade.nome} (${CTX.localidade.territorio}). Elegibilidade é comercial/regulatória; viabilidade é técnica, por endereço.`:qp.hits[qp.hits.length-1].motivo, agAtuais()); return; }
   if(/falta|pendent|pr[oó]xim/.test(s)){ agNext(); return; }
-  if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), AG.chips); return; }
-  if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', AG.chips); return; }
-  agSay('Não entendi. Posso: criar e configurar a cotação, consultar viabilidade, explicar a classificação ("por que customizado?"), listar equipamentos, condições contratuais, entidade faturadora, gerar a proposta, contrato, pedido e acompanhar a orquestração. O que prefere?', AG.chips);
+  if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), agAtuais()); return; }
+  if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', agAtuais()); return; }
+  agSay('Não entendi. Posso: criar e configurar a cotação, consultar viabilidade, explicar a classificação ("por que customizado?"), listar equipamentos, condições contratuais, entidade faturadora, gerar a proposta, contrato, pedido e acompanhar a orquestração. O que prefere?', agAtuais());
 }
 function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
 /* ---- passos, na ordem do UC-VPN-001 ---- */
 function agStart(){
-  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Quer que eu crie a cotação para ela?`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),[{l:'Criar a cotação',f:agCreateQuote,pri:true}])}]);
+  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Quer que eu crie a cotação para ela?`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
   else agNext();
 }
 function agCreateQuote(){ agThink('Criando a cotação a partir da oportunidade…',900,()=>{ S.quote={name:oppName(),number:'00000036',exp:'12/10/2026'}; S.tab='Details'; S.hist=['opp']; S.tela='quote'; render(); toast('Quote "'+S.quote.name+'" was created.'); agSay(`Cotação ${S.quote.number} criada para ${CTX.conta.nome}. Qual produto adicionamos?`, agProdChips(), 'Ação: New Quote (Quote Name, Account for Quote)'); }); }
@@ -1059,8 +1125,8 @@ function agNextCfg(){
   if(vazio(a.PeriodoFidelizacao)){ agSay('Passo 7: condições contratuais. Período de fidelização?', agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}}))); return; }
   if(vazio(a.TipoReajuste)){ agSay('Tipo de reajuste?', agVals('TipoReajuste').map(v=>({l:v,f:()=>{agSet('TipoReajuste',v);agNextCfg();}}))); return; }
   if(a.TipoReajuste!=='Sem reajuste' && vazio(a.IndiceReajuste)){ agSay('Índice de reajuste?', agVals('IndiceReajuste').map(v=>({l:v,f:()=>{agSet('IndiceReajuste',v);agNextCfg();}}))); return; }
-  if(a.TipoReajuste==='Data de assinatura do contrato' && vazio(a.DataAssinatura)){ agSay('Data de assinatura do contrato?', [{l:'Hoje',f:()=>{agSet('DataAssinatura',new Date().toISOString().slice(0,10));agNextCfg();}},{l:'01/10/2026',f:()=>{agSet('DataAssinatura','2026-10-01');agNextCfg();}}]); return; }
-  if(a.TipoReajuste==='Data base' && vazio(a.DataBase)){ agSay('Data base do reajuste?', [{l:'Hoje',f:()=>{agSet('DataBase',new Date().toISOString().slice(0,10));agNextCfg();}}]); return; }
+  if(a.TipoReajuste==='Data de assinatura do contrato' && vazio(a.DataAssinatura)){ agPedirData('DataAssinatura','Data de assinatura do contrato'); return; }
+  if(a.TipoReajuste==='Data base' && vazio(a.DataBase)){ agPedirData('DataBase','Data base do reajuste'); return; }
   if(!R.hidden.ReferenciaCliente && vazio(a.ReferenciaCliente)){ agSay('Referência do cliente (obrigatória para o segmento):', [{l:'REF-'+CTX.conta.cnpjRaiz,f:()=>{agSet('ReferenciaCliente','REF-'+CTX.conta.cnpjRaiz);agNextCfg();}}]); return; }
   if(!R.hidden.ValorMoeda && vazio(a.ValorMoeda)){ agSay('Cliente internacional: cotação de conversão do dólar?', [{l:'5,20',f:()=>{agSet('ValorMoeda','5.20');agNextCfg();}}]); return; }
   agValidar();
@@ -1068,6 +1134,8 @@ function agNextCfg(){
 function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]); const has=t=>arr.some(x=>x.TipoEquipamento===t);
   return EQUIP_TIPOS.map(t=>({l:(has(t)?'✓ ':'')+t,f:()=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); if(i>=0) arr.splice(i,1); else { const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.ModalidadeEquipamento='Comodato'; arr.push(o); } AG.cfg.autoSig='manual'; agSay('Equipamentos: '+(arr.map(x=>x.TipoEquipamento).join(', ')||'nenhum')+'.', agEquipChips()); }}))
     .concat([{l:'Concluir',f:()=>{ if(!(AG.cfg.c.equip||[]).length){ agSay('O grupo exige pelo menos 1 equipamento.',agEquipChips()); return; } AG.equipOk=true; agNextCfg(); },pri:true}]); }
+function agPedirData(key,label){ AG.dateAsk={key,label,val:new Date().toISOString().slice(0,10)}; agSay(`${label}? Escolha no calendário — começa em hoje.`,[]); }
+function agDataOk(){ const d=AG.dateAsk; const v=($('#ag-date')||{}).value||d.val; AG.dateAsk=null; agUser(v.split('-').reverse().join('/')); agSet(d.key,v); agNextCfg(); }
 function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg); agSay(`${v}. Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, [], 'Regra: matriz de formatação × viabilidade'); agNextCfg(); }
 function agUpgrade(){ const cp=findProd('SVAUPG'); const o={}; resolveAttrs(cp).forEach(x=>o[x.key]=x.def||''); AG.cfg.c.upgrade=[o]; const R=avaliar(AG.cfg); const hv=R.hideVals['upgrade#0.VelocidadeTemporaria']||{}; const vs=ATTRS.VelocidadeTemporaria.values.filter(v=>!hv[v]);
   if(R.excl.upgrade){ AG.cfg.c.upgrade=[]; agSay(R.excl.upgrade.texto, [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
@@ -1097,7 +1165,7 @@ function agNext(){
   if(S.order&&S.order.status==='Activated'&&!S.order.submitted) chips.push({l:'Submeter o pedido (orquestração)',f:agSubmeter,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') chips.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
-  chips.push({l:'Resumo',f:()=>agSay(agResumo(),AG.chips)});
+  chips.push({l:'Resumo',f:()=>agSay(agResumo(),agAtuais())});
   agSay(`${agResumo()} O que fazemos agora?`, chips);
 }
 function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
@@ -1114,7 +1182,7 @@ function agAtivar(){ const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que 
 function agSubmeter(){ const o=S.order; agThink('Ativando e submetendo o pedido (Activate › Submit Order)…',1100,()=>{ if(o.status!=='Activated'){ o.status='Activated'; o.sel=null; } if(!o.submitted){ o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); setTimeout(planoTick,500); }
   S.tab='Decomp'; S.hist=['quote']; S.tela='order'; render(); agSay(`Pedido ${o.number} ativado e submetido. ${o.fls.length} produtos técnicos gerados; o plano de orquestração começou (${o.plan.steps.length} etapas). Vou avisar quando uma tarefa manual precisar de você.`, [{l:'Andamento da orquestração',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}], 'Submit Status: Submitted'); setTimeout(agAndamento,2600); }); }
 function agAndamento(){ const o=S.order; if(!o||!o.plan){ agNext(); return; } const P=o.plan; const done=P.steps.filter(s=>s.status==='Completed').length; const man=pendentesManuais();
-  if(P.status==='Completed'){ agSay(`Plano concluído: ${P.steps.length}/${P.steps.length} etapas. Assets criados: ${S.assets.length} comercial (${S.assets.map(a=>a.name).join(', ')}) e ${(S.fassets||[]).length} de fulfillment (${(S.fassets||[]).map(f=>f.name).join('; ')}).`, [{l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);},pri:true},{l:'Resumo',f:()=>agSay(agResumo(),AG.chips)}]); return; }
+  if(P.status==='Completed'){ agSay(`Plano concluído: ${P.steps.length}/${P.steps.length} etapas. Assets criados: ${S.assets.length} comercial (${S.assets.map(a=>a.name).join(', ')}) e ${(S.fassets||[]).length} de fulfillment (${(S.fassets||[]).map(f=>f.name).join('; ')}).`, [{l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);},pri:true},{l:'Resumo',f:()=>agSay(agResumo(),agAtuais())}]); return; }
   if(man.length){ const s=man[0]; agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas. A etapa manual "${s.name}" (${s.laneName}) está aguardando conclusão. Já foi feita?`, [{l:`Concluir "${s.name}"`,f:()=>{completarManual(s.id); agSay(`"${s.name}" concluída; a orquestração continua.`,[]); setTimeout(agAndamento,2200);},pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}},{l:'Ainda não',f:agNext}]); return; }
   agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas; em execução: ${P.steps.filter(s=>s.status==='In Progress').map(s=>s.name).join(', ')||'—'}.`, [{l:'Atualizar',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}]); }
 function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
@@ -1149,15 +1217,15 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
-  const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
+  const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
   if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml();
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','quotes','accountsList'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia();
 }
@@ -1169,14 +1237,14 @@ $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target
 $('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
 function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
 function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
-function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false}); if(AG.open) agRender(); render(); }
+function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false,dateAsk:null}); if(AG.open) agRender(); render(); }
 S=novo(); render();
 
 if(/selftest=1/.test(location.search)){
   const o=[], ok=(n,c)=>o.push((c?'PASS ':'FAIL ')+n);
   const click=el=>el&&el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
   try{
-    ok('oportunidade: 4 ações, cabeçalho, 6 campos, path (5) e Stage', document.querySelectorAll('.acts .act').length===4 && document.querySelectorAll('.fr').length===6 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
+    ok('oportunidade: 4 ações, cabeçalho, campos do layout real (18), path (5) e Stage', document.querySelectorAll('.acts .act').length===4 && document.querySelectorAll('#view .fr').length===18 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Post'))); ok('Post abre a folha', S.sheet==='post');
     $('#post-txt').value='Kickoff com o cliente'; click($('.bsheet .brand')); ok('post publicado no Chatter', S.feed.length===1 && S.sheet===null);
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Log a Call'))); ok('Log a Call abre o formulário', S.tela==='call');
@@ -1248,7 +1316,12 @@ if(/selftest=1/.test(location.search)){
     ok('Assets: Managed Assets (1) e Fulfillment Assets (n)', $('.rel .h b').textContent==='Managed Assets (1)' && [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Fulfillment Assets (')));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
-    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista', S.tela==='leads' && document.querySelectorAll('.list .it').length===2);
+    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
+    click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
+    ok('seções na ordem do layout', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Lead Information|Endereço|Endereço de visita|Dados do contato|Telefones para contato|Dados de marketing|Informações de duplicidade');
+    ok('54 campos do layout, com obrigatórios marcados', document.querySelectorAll('#view .fr').length===54 && $('#view').textContent.includes('CNPJ') && $('#view').textContent.includes('Telefone 1 blacklist') && document.querySelectorAll('#view .fr b').length>=5);
+    go('opp'); S.tab='Details'; render();
+    ok('oportunidade usa o layout real: Opportunity Information, Additional Information, System Information', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Opportunity Information|Additional Information|System Information' && $('#view').textContent.includes('Budget Confirmed') && $('#view').textContent.includes('somente leitura'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
     click($('#agent div')); ok('Ask Agentforce abre o painel: pin, título Agentforce, fechar, boas-vindas com robô e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===3 && $('.welcome .bot') && $('#agp-in').placeholder.startsWith('Describe your task'));
     ok('agente propõe a próxima ação em conversa com opções', AG.thread.length>=1 && AG.chips.length>=1);
