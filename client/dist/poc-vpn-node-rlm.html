@@ -276,6 +276,9 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .ccard .r2 .qlbl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
 .ccard .r2 .qin{width:64px;border:1px solid var(--bd2);border-radius:6px;padding:6px 8px;text-align:center;font-size:14px}
 .ccard .r2 .qin.err{border-color:var(--err)}
+.ccard.blq{opacity:.55}
+.ccard .blqmsg{margin:6px 0 0;font-size:11.5px;color:var(--err);background:#fdecea;border:1px solid #f5c6c2;border-radius:6px;padding:5px 8px}
+.ccard .exig{font-size:10px;font-weight:700;color:#1d6b38;background:#ebf7e6;border-radius:10px;padding:1px 7px;margin-left:6px;white-space:nowrap}
 .ccard .ds{font-size:13px;color:var(--tx2);margin:8px 0 0 28px;line-height:1.4}
 .ccard .cbody{margin-left:16px}
 .sum{margin:18px 14px 0;border:1px solid var(--bd);border-radius:6px}
@@ -678,8 +681,11 @@ function avaliar(cfg){
   const cls = classificar(cfg); R.cls = cls; const d = { classificacao: cls.v };
   const t = { nodesNovaNetwork: lines.filter(l => l.attrs && l.attrs['VPN Network']==='NOVA').length + (cfg.a.VPNNetwork==='NOVA'?1:0) };
   REGRAS.forEach(r => r.efeitos.forEach(e => {
-    const alvos = e.componente ? (cfg.c[e.componente]||[]).map((x,i)=>({key:e.componente+'#'+i+'.'+e.alvo, x}))
-                               : [{ key:e.alvo, x:{} }];
+    const itens = e.componente ? (cfg.c[e.componente]||[]) : null;
+    const alvos = e.componente
+      ? (itens.length ? itens.map((x,i)=>({key:e.componente+'#'+i+'.'+e.alvo, x}))
+                      : (e.tipo==='exclude' ? [{ key:e.componente, x:{} }] : []))   /* exclusão vale antes de existir item */
+      : [{ key:e.alvo, x:{} }];
     alvos.forEach(({key,x}) => {
       const env = { a:cfg.a, c:cfg.c, d, x, t };
       if(!evalExpr(e.quando, env)) return;
@@ -1410,11 +1416,16 @@ function field(a,R,obj,key){
 }
 function compCards(pid,R){
   const cp=findProd(pid), key=compKey(pid), arr=cfgProduct.c[key]||[], ex=R.excl[key];
-  const card=(label,on,x,i,openKey,attrsHtml,extra)=>`<div class="ccard ${on?'sel':''}"><div class="r"><input type="checkbox" ${on?'checked':''} ${ex?'disabled':''} onchange="${pid==='EQUIP'?`togEquip('${label}',this.checked)`:`togComp('${pid}',this.checked)`}"><span class="nm">${esc(label)} <span style="color:var(--brand);font-size:11px">✎</span></span><span class="pr">${on&&x&&x.ModalidadeEquipamento==='Comodato'?'Included':fmtMoney()}</span><button class="gear" ${on?'':'disabled'} onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">⚙</button><button class="ch" onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">${S.compOpen[openKey]?'⌃':'⌄'}</button></div>
-    <div class="r2"><span class="sm">${SM[cp.sell]||cp.sell} ▾</span>${on?`<label class="qlbl">Qtd <input class="qin" type="number" min="1" value="${(x&&x.Quantidade!==undefined)?x.Quantidade:1}" onchange="setQtdComp('${pid}','${(x&&x.TipoEquipamento)||''}',this.value)"></label>`:`<span class="q"></span>`}</div>${extra||''}
+  const card=(label,on,x,i,openKey,attrsHtml,extra,bloq,selo)=>`<div class="ccard ${on?'sel':''} ${(ex||bloq)?'blq':''}" ${(ex||bloq)?`title="${esc((ex&&ex.texto)||bloq)}"`:''}><div class="r"><input type="checkbox" ${on?'checked':''} ${(ex||bloq)?'disabled':''} onchange="${pid==='EQUIP'?`togEquip('${label}',this.checked)`:`togComp('${pid}',this.checked)`}"><span class="nm">${esc(label)}${selo||''} <span style="color:var(--brand);font-size:11px">✎</span></span><span class="pr">${on&&x&&x.ModalidadeEquipamento==='Comodato'?'Included':fmtMoney()}</span><button class="gear" ${on?'':'disabled'} onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">⚙</button><button class="ch" onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">${S.compOpen[openKey]?'⌃':'⌄'}</button></div>
+    <div class="r2"><span class="sm">${SM[cp.sell]||cp.sell} ▾</span>${on?`<label class="qlbl">Qtd <input class="qin" type="number" min="1" ${(x&&x.TipoEquipamento==='Roteador')?'max="1"':''} value="${(x&&x.Quantidade!==undefined)?x.Quantidade:1}" onchange="setQtdComp('${pid}','${(x&&x.TipoEquipamento)||''}',this.value)"></label>`:`<span class="q"></span>`}</div>${extra||''}
+    ${(ex||bloq)?`<div class="blqmsg">🚫 ${esc((ex&&ex.texto)||bloq)}</div>`:''}
     ${S.compOpen[openKey]?`<div class="ds">${esc(cp.desc)}${x&&x.auto?' · Adicionado por regra.':''}</div>${on?`<div class="cbody">${attrsHtml}</div>`:''}`:''}</div>`;
   if(pid==='EQUIP') return EQUIP_TIPOS.map(tipo=>{ const i=arr.findIndex(x=>x.TipoEquipamento===tipo), on=i>=0, x=on?arr[i]:null;
-    return card(tipo,on,x,i,pid+tipo,on?resolveAttrs(cp).filter(a=>a.key!=='TipoEquipamento').map(a=>field(a,R,x,key+'#'+i+'.'+a.key)).join(''):''); }).join('');
+    const exig=F.equipamentosPorTecnologia(cfgProduct.a.Tecnologia, CTX.endereco.anel).map(q=>q.TipoEquipamento);
+    const bloq = (!on && tipo==='Roteador' && arr.some(y=>y.TipoEquipamento==='Roteador')) ? 'Roteador tem cardinalidade máxima de 1.'
+               : (on && exig.includes(tipo)) ? null : null;
+    const selo = exig.includes(tipo) ? ' <span class="exig">exigido pela tecnologia</span>' : '';
+    return card(tipo,on,x,i,pid+tipo,on?resolveAttrs(cp).filter(a=>a.key!=='TipoEquipamento').map(a=>field(a,R,x,key+'#'+i+'.'+a.key)).join(''):'','',bloq,selo); }).join('');
   const on=arr.length>0, x=on?arr[0]:null;
   return card(cp.name,on,x,0,pid,on?resolveAttrs(cp).map(a=>field(a,R,x,key+'#0.'+a.key)).join(''):'', ex?`<div class="ds" style="color:var(--err)">${esc(ex.texto)}</div>`:'');
 }
@@ -1426,8 +1437,10 @@ function setQtdComp(pid,tipo,val){
   if(tipo==='Roteador' && it.Quantidade>1) toast('Roteador tem cardinalidade máxima de 1.','warn');
   const y=window.scrollY; render(); window.scrollTo(0,y);
 }
-function togEquip(tipo,on){ const arr=cfgProduct.c.equip||(cfgProduct.c.equip=[]); const i=arr.findIndex(x=>x.TipoEquipamento===tipo); if(on&&i<0){ const o={}; resolveAttrs(findProd('EQUIP')).forEach(a=>o[a.key]=a.def||''); o.TipoEquipamento=tipo; o.Quantidade=1; arr.push(o); } if(!on&&i>=0) arr.splice(i,1); cfgProduct.autoSig='manual'; render(); }
-function togComp(pid,on){ const key=compKey(pid), cp=findProd(pid); if(on){ const o={}; resolveAttrs(cp).forEach(a=>o[a.key]=a.def||''); o.Quantidade=1; cfgProduct.c[key]=[o]; S.compOpen[pid]=true; } else cfgProduct.c[key]=[]; render(); }
+function togEquip(tipo,on){
+  if(on && tipo==='Roteador' && (cfgProduct.c.equip||[]).some(x=>x.TipoEquipamento==='Roteador')){ toast('Roteador tem cardinalidade máxima de 1.','err'); return; } const arr=cfgProduct.c.equip||(cfgProduct.c.equip=[]); const i=arr.findIndex(x=>x.TipoEquipamento===tipo); if(on&&i<0){ const o={}; resolveAttrs(findProd('EQUIP')).forEach(a=>o[a.key]=a.def||''); o.TipoEquipamento=tipo; o.Quantidade=1; arr.push(o); } if(!on&&i>=0) arr.splice(i,1); cfgProduct.autoSig='manual'; render(); }
+function togComp(pid,on){ const key=compKey(pid), cp=findProd(pid);
+  const Rx=avaliarUI(cfgProduct); if(on && Rx.excl[key]){ toast(Rx.excl[key].texto,'err'); return; } if(on){ const o={}; resolveAttrs(cp).forEach(a=>o[a.key]=a.def||''); o.Quantidade=1; cfgProduct.c[key]=[o]; S.compOpen[pid]=true; } else cfgProduct.c[key]=[]; render(); }
 function setAttr(key,val){ const [obj,attr]=resolveRef(cfgProduct,key); if(!obj) return; obj[attr]=val; if(!key.includes('#')) cfgProduct.toque[attr]=true; const y=window.scrollY; render(); window.scrollTo(0,y); }
 function cancelCfg(){ cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); }
 function saveExit(){ const doAgente = AG.cfg && cfgProduct===AG.cfg; if(doAgente){ AG.cfg=null; AG.equipOk=false; AG.svaOk=false; } const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.','warn'); return; }
@@ -1787,7 +1800,28 @@ function agPickEnd(id){ setEnd(id,true); const e=endFull(); AG.cfg=null;
     if(e.cobertura===false||e.redeNeutra){ agSay(`${e.cobertura===false?'Sem cobertura no endereço':'Endereço atendido por rede neutra'} — atendimento inviável (desvio 2 ✕ do caso de uso). Quer tentar outro endereço?`, enderecosDaLocalidade(e.localidade).filter(x=>x.id!==e.id).map(x=>({l:x.nome,f:()=>agPickEnd(x.id)})).concat([{l:'Outra localidade',f:()=>agPickProduct(AG.pid)}])); return; }
     agSay(`Viabilidade: rede própria · ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · entrega em anel':''}${e.dataCenter?' · endereço de Data Center (Golden Jumper)':''}.`, [], 'Ação: Consultar Viabilidade (integração do projeto)');
     AG.cfg=novoCfg(findProd(AG.pid)); AG.equipOk=false; AG.svaOk=false; AG.reajOk=false; AG.indOk=false; avaliar(AG.cfg); agNextCfg(); }); }
-function agSet(key,val){ const [obj,attr]=resolveRef(AG.cfg,key); obj[attr]=val; if(!key.includes('#')) AG.cfg.toque[attr]=true; avaliar(AG.cfg); }
+const PENDENCIA = /Atributo obrigatório sem valor|inclua no grupo Equipamentos de Acesso|exige no mínimo 1 equipamento|Informe a modalidade de cada equipamento/;
+function agErros(){ return avaliar(AG.cfg).msgs.filter(m=>m.sev==='Error').map(m=>m.texto); }
+function agConflitos(){ return agErros().filter(t=>!PENDENCIA.test(t)); }
+function agSet(key,val){
+  const antes = AG.cfg ? agConflitos() : [];
+  const [obj,attr]=resolveRef(AG.cfg,key); const anterior=obj[attr];
+  obj[attr]=val; if(!key.includes('#')) AG.cfg.toque[attr]=true; avaliar(AG.cfg);
+  const novos = AG.cfg ? agConflitos().filter(t=>!antes.includes(t)) : [];
+  if(novos.length) AG.conflito = { texto:novos, key, anterior };
+  return novos;
+}
+/* informa o conflito criado pela última escolha e oferece desfazer */
+function agAvisaConflito(seguir){
+  const c=AG.conflito; AG.conflito=null;
+  if(!c){ if(seguir) seguir(); return true; }
+  const nome = ATTRS[c.key.split('.').pop()] ? ATTRS[c.key.split('.').pop()].name : c.key;
+  agSay(`Atenção: essa escolha em ${nome} entra em conflito com as regras — ${c.texto.join('; ')}.`,
+    [{l:'Manter e resolver agora',f:()=>{ if(seguir) seguir(); else agNextCfg(); },pri:true},
+     {l:'Desfazer',f:()=>{ const [o,a]=resolveRef(AG.cfg,c.key); o[a]=c.anterior; avaliar(AG.cfg); agSay('Desfeito.',agAtuais()); }}],
+    'Validação do catálogo (UC-VPN-001 Revisão 1)');
+  return false;
+}
 function agVals(key){ const R=avaliar(AG.cfg); const hv=R.hideVals[key]||{}; return ATTRS[key].values.filter(v=>!hv[v]); }
 /* explica os valores que a regra tirou da lista e o que precisaria mudar para liberá-los */
 const DESTRAVA = {
@@ -1834,9 +1868,13 @@ function agNextCfg(){
     agPerg('Passo 5 · equipamentos',`A regra dimensionou ${arr.map(x=>x.TipoEquipamento+' ('+(x.Quantidade||1)+'× '+(x.ModalidadeEquipamento||'—')+')').join(', ')}. Confirma ou quer alterar?`,
       `O dimensionamento vem da tecnologia ${a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}. Você pode incluir, remover, mudar quantidade e modalidade de cada item — o Roteador tem cardinalidade máxima de 1.`,
       [{l:'Confirmar estes equipamentos',f:()=>{AG.equipOk=true;agNextCfg();},pri:true,sug:true},{l:'Alterar equipamentos',f:()=>agSay('Toque num equipamento para incluir e configurar, ou num incluído para alterar:',agEquipChips())},{l:'Ajustar no configurador',f:agOpenCfg}]); return; }
-  if(!AG.svaOk){ agPerg('Passo 6 · serviços de valor agregado','Quer incluir algum SVA?',
-      'Upgrade temporário eleva a velocidade por um período de 10 a 60 dias e não convive com Last Mile. Monitoramento inteligente acrescenta acompanhamento da rede pelo Zabbix, com plano e tipo próprios.',
-      [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();}},{l:'Upgrade temporário de velocidade',f:agUpgrade},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
+  if(!AG.svaOk){
+    const chips=[{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();}}], bloq=[];
+    if(R.excl.upgrade) bloq.push('Upgrade temporário — '+R.excl.upgrade.texto); else chips.push({l:'Upgrade temporário de velocidade',f:agUpgrade});
+    if(R.excl.mir) bloq.push('Monitoramento inteligente — '+R.excl.mir.texto); else chips.push({l:'Monitoramento inteligente de rede',f:agMir});
+    agPerg('Passo 6 · serviços de valor agregado','Quer incluir algum SVA?',
+      'Upgrade temporário eleva a velocidade por um período de 10 a 60 dias. Monitoramento inteligente acrescenta acompanhamento da rede pelo Zabbix, com plano e tipo próprios.'
+      + (bloq.length?' <b>Indisponível nesta configuração:</b> '+bloq.join('; ')+'.':''), chips); return; }
   if(vazio(a.PeriodoFidelizacao)){ agPerg('Passo 7 · condições contratuais','Qual o período de fidelização?'+agObg('PeriodoFidelizacao'),
       'O prazo define a multa por rescisão antecipada e o início da contagem do reajuste. Prazos menores costumam sair sem percentual de multa; os maiores aplicam o percentual previsto na regra.'+agBloqueados('PeriodoFidelizacao'),
       agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}})).concat(agChipBloqueio('PeriodoFidelizacao'))); return; }
@@ -1854,24 +1892,40 @@ function agNextCfg(){
 }
 function agGuardaFio(){ if(AG.open && AG.cfg && !AG.auto && !AG.busy && !AG.chips.length && !AG.dateAsk) agSafe(agNextCfg,'retomada'); }
 function agEquipResumo(){ const arr=AG.cfg.c.equip||[]; return arr.length?arr.map(x=>`${x.TipoEquipamento} — ${x.Quantidade||1}× ${x.ModalidadeEquipamento||'modalidade pendente'}`).join(' · '):'nenhum'; }
+function agEquipBloqueio(t, arr){
+  const R=avaliar(AG.cfg);
+  if(R.excl.equip) return R.excl.equip.texto;
+  const i=arr.findIndex(x=>x.TipoEquipamento===t);
+  if(t==='Roteador' && i<0 && arr.some(x=>x.TipoEquipamento==='Roteador')) return 'Roteador tem cardinalidade máxima de 1.';
+  return null;
+}
 function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
-  return EQUIP_TIPOS.map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
+  return EQUIP_TIPOS.filter(t=>!agEquipBloqueio(t,arr)).map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
     return { l:(on?'✓ ':'')+t+(on?` — ${arr[i].Quantidade||1}× ${arr[i].ModalidadeEquipamento||'pendente'}`:''),
       f:()=>{ if(on){ agSay(`${t}: o que deseja?`, [{l:'Alterar quantidade',f:()=>agEquipQtd(t)},{l:'Alterar modalidade',f:()=>agEquipMod(t)},{l:'Remover',f:()=>{ const j=arr.findIndex(x=>x.TipoEquipamento===t); if(j>=0) arr.splice(j,1); AG.cfg.autoSig='manual'; agSay('Equipamentos: '+agEquipResumo()+'.', agEquipChips()); }},{l:'Voltar',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]); return; }
         const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual'; agEquipQtd(t); } }; })
-  .concat([{l:'Concluir',f:()=>{ const a2=AG.cfg.c.equip||[]; if(!a2.length){ agSay('O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.',agEquipChips()); return; }
-    const semMod=a2.find(x=>!x.ModalidadeEquipamento); if(semMod){ agEquipMod(semMod.TipoEquipamento); return; } AG.equipOk=true; agNextCfg(); },pri:true}]); }
+  .concat([{l:'Concluir',f:()=>{ const a2=AG.cfg.c.equip||[];
+    if(!a2.length){ agSay('O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.',agEquipChips()); return; }
+    const semMod=a2.find(x=>!x.ModalidadeEquipamento); if(semMod){ agEquipMod(semMod.TipoEquipamento); return; }
+    const falta=F.equipamentosFaltando(AG.cfg.a.Tecnologia, CTX.endereco.anel, a2);
+    if(falta.length){ agSay(`A tecnologia ${AG.cfg.a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''} exige ${falta.join(' e ')}. Incluo agora?`,
+      falta.map(t=>({l:'Incluir '+t,f:()=>{ const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; a2.push(o); AG.cfg.autoSig='manual'; agEquipMod(t); },pri:true}))
+      .concat([{l:'Ver os equipamentos',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]), 'Regra de dimensionamento por tecnologia (UC-VPN-001)'); return; }
+    AG.equipOk=true; agNextCfg(); },pri:true}]); }
 function agEquipQtd(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
-  agSay(t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1.`:`${t}: quantidade?`,
+  agSay(t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1, então só ofereço essa opção.`:`${t}: quantidade?`,
     [1,2,3,4].filter(n=>!(t==='Roteador'&&n>1)).map(n=>({l:n+(n>1?' unidades':' unidade'),f:()=>{ it.Quantidade=n; agEquipMod(t); }})) ); }
 function agEquipMod(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
   const R=avaliar(AG.cfg); const podeEditar=CTX.usuario.perms.includes('complementacao')||R.cls.v==='Customizado';
   const vals=podeEditar?ATTRS.ModalidadeEquipamento.values:['Locação'];
-  agSay(`${t}: modalidade do equipamento?${agObg('ModalidadeEquipamento')}${podeEditar?'':' Padrão Locação na esteira formatada; Comodato e Do Cliente exigem atendimento customizado ou permissão de complementação técnica.'}`,
+  const fora=ATTRS.ModalidadeEquipamento.values.filter(v=>!vals.includes(v));
+  agSay(`${t}: modalidade do equipamento?${agObg('ModalidadeEquipamento')}${podeEditar?'':' Só ofereço Locação: '+fora.join(' e ')+' exigem atendimento customizado ou permissão de complementação técnica.'}`,
     vals.map(v=>({l:v,f:()=>{ it.ModalidadeEquipamento=v; agSay(`${t}: ${it.Quantidade||1}× ${v}. Equipamentos: ${agEquipResumo()}.`, agEquipChips()); }})) ); }
 function agPedirData(key,label){ AG.dateAsk={key,label,val:new Date().toISOString().slice(0,10)}; agSay(`${label}? Escolha no calendário — começa em hoje.`,[]); }
 function agDataOk(){ const d=AG.dateAsk; const v=($('#ag-date')||{}).value||d.val; AG.dateAsk=null; agUser(v.split('-').reverse().join('/')); agSet(d.key,v); agNextCfg(); }
-function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg); agSay(`${v}. Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, [], 'Regra: matriz de formatação × viabilidade'); agNextCfg(); }
+function agSetVel(v){ agSet('Velocidade',v); const R=avaliar(AG.cfg);
+  agSay(`${v}. Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, [], 'Regra: matriz de formatação × viabilidade');
+  agAvisaConflito(()=>agNextCfg()); }
 function agUpgrade(){ const cp=findProd('SVAUPG'); const o={}; resolveAttrs(cp).forEach(x=>o[x.key]=x.def||''); AG.cfg.c.upgrade=[o]; const R=avaliar(AG.cfg); const hv=R.hideVals['upgrade#0.VelocidadeTemporaria']||{}; const vs=ATTRS.VelocidadeTemporaria.values.filter(v=>!hv[v]);
   if(R.excl.upgrade){ AG.cfg.c.upgrade=[]; agSay(R.excl.upgrade.texto, [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
   agSay('Velocidade temporária (somente as elegíveis para a contratada):', vs.slice(0,8).map(v=>({l:v,f:()=>{agSet('upgrade#0.VelocidadeTemporaria',v); agSay('Por quantos dias corridos (10 a 60)?', ['10','30','60'].map(d=>({l:d+' dias',f:()=>{agSet('upgrade#0.QuantidadeDias',d); agSay('Upgrade temporário incluído. Também quer monitoramento?', [{l:'Não',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Monitoramento inteligente de rede',f:agMir}]);}})));}}))); }
@@ -2207,6 +2261,7 @@ if(/selftest=1/.test(location.search)){
     ok('com a viabilidade: tecnologia preenchida, 3 equipamentos, atendimento Formatado', cfgProduct.a.Tecnologia==='Metro' && (cfgProduct.c.equip||[]).length===3 && avaliar(cfgProduct).cls.v==='Formatado');
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
     ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
+    ok('equipamentos exigidos pela tecnologia vêm marcados na tela', document.querySelectorAll('.ccard .exig').length>=2);
     ok('cada equipamento traz campo de quantidade editável', document.querySelectorAll('.ccard.sel .qin').length===(cfgProduct.c.equip||[]).length && (cfgProduct.c.equip||[]).length>0);
     setQtdComp('EQUIP','Roteador',2); ok('quantidade acima da cardinalidade vira erro de validação', avaliarUI(cfgProduct).msgs.some(m=>m.sev==='Error'&&/cardinalidade máxima de 1/.test(m.texto)) && $('.foot .brand').disabled===true);
     setQtdComp('EQUIP','Roteador',0); ok('quantidade zero vira erro de validação', avaliarUI(cfgProduct).msgs.some(m=>m.sev==='Error'&&/maior que zero/.test(m.texto)));
