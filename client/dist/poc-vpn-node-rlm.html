@@ -2065,7 +2065,7 @@ function telaList(kind){
     : kind==='quotes' ? (S.quote?[{t:S.quote.name,s:'Quote '+S.quote.number+' · '+S.qStatus,on:"go('quote')"}]:[])
     : [{t:CTX.conta.nome,s:'Account · '+CTX.conta.segmento,on:"go('accounts')"}].concat(CTX_DATA.contas.filter(c=>c.id!==CTX.conta.id).map(c=>({t:c.nome,s:'Account · '+c.segmento,on:`CTX.conta=CTX_DATA.contas.find(x=>x.id==='${c.id}');go('accounts')`})));
   const titles={contacts:'Contacts',leads:'Leads',quotes:'Quotes',accountsList:'Accounts'};
-  return topbar(titles[kind], true) + `<div class="srch">🔍 <input placeholder="Search ${titles[kind].toLowerCase()}…"></div>${kind==='quotes'?fonte('ver','Cotações são criadas a partir da oportunidade; a home de Quotes não cria cotações no app.'):''}
+  return topbar(titles[kind], true) + `<div class="srch">🔍 <input placeholder="Search ${titles[kind].toLowerCase()}…"></div>
   <div class="list">${items.map(i=>`<div class="it" onclick="${i.on}"><div class="oi ${kind==='contacts'?'p':kind==='leads'?'t':kind==='quotes'?'g':'p'}">${kind==='contacts'?'👤':kind==='leads'?'★':kind==='quotes'?'🏷':'🏢'}</div><div><b>${esc(i.t)}</b><small>${esc(i.s)}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">Nothing here yet.</div>'}</div>`;
 }
 function telaMenu(){ return topbar('Menu', false) + `<div class="menu-list">
@@ -2809,7 +2809,7 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Procedência')));
     ok('tela de procedência lista as fontes por nível', S.tela==='procedencia' && document.querySelectorAll('.fnt').length>=4 && document.querySelectorAll('.proc').length>=20 && $('#view').textContent.includes('AssetContractRelationship'));
     go('menu');
-    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
+    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a cotação', S.tela==='quotes' && !!$('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
     ok('path do lead começa em Novo e avança pelo Mark Status as Complete', S.leadStatus==='Novo' && (()=>{ leadMark(); return S.leadStatus==='Em qualificação'; })());
