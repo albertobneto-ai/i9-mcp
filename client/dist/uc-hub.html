@@ -177,10 +177,20 @@ color:var(--tx);border-radius:6px;cursor:pointer}
 #refresh:hover{background:var(--s2)}
 #q:focus-visible,#refresh:focus-visible,.btn:focus-visible,.pt:focus-visible,.rod a:focus-visible{outline:2px solid var(--tx);outline-offset:2px}
 .hnote{font-size:12px;color:var(--mut);margin:0 0 30px}
-.fam{margin:0 0 36px}
+.fam{margin:0 0 28px}
 .famh{display:flex;align-items:baseline;gap:10px;font-size:17px;font-weight:600;color:var(--tx);
-padding-bottom:8px;border-bottom:1px solid var(--bd2)}
+padding:0 0 8px 22px;border-bottom:1px solid var(--bd2);cursor:pointer;list-style:none;position:relative}
+.famh::-webkit-details-marker{display:none}
+.famh::before{content:'';position:absolute;left:4px;top:7px;width:0;height:0;
+border-left:6px solid var(--tx);border-top:4px solid transparent;border-bottom:4px solid transparent;
+transition:transform .15s}
+.fam[open]>.famh::before{transform:rotate(90deg)}
 .famn{font-size:12px;font-weight:400;color:var(--mut)}
+.ramos{position:relative;margin-left:10px;padding-left:26px}
+.ramos::before{content:'';position:absolute;left:0;top:0;bottom:26px;width:1px;background:var(--bd2)}
+.ramos>.prod::before{content:'';position:absolute;left:-26px;top:50%;width:20px;height:1px;
+background:var(--bd2)}
+.ramos>.prod{position:relative}
 .prod{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.7fr) minmax(0,1.2fr) auto;gap:22px;
 align-items:center;padding:18px 6px;border-bottom:1px solid var(--bd)}
 .prod:hover{background:var(--s1)}
@@ -278,9 +288,10 @@ function montar(falhas){
  var h='';
  Object.keys(fams).sort(function(a,b){return a.localeCompare(b,'pt-BR');}).forEach(function(nome){
   var arr=fams[nome].sort(function(a,b){return a.p.produto.localeCompare(b.p.produto,'pt-BR');});
-  h+='<section class="fam"><h2 class="famh">'+esc(nome)+' <span class="famn">'+plural(arr.length,'produto','produtos')+'</span></h2>';
+  h+='<details class="fam" open><summary class="famh">'+esc(nome)+
+     ' <span class="famn">'+plural(arr.length,'caso de uso','casos de uso')+'</span></summary><div class="ramos">';
   arr.forEach(function(it){h+=linha(it);});
-  h+='</section>';
+  h+='</div></details>';
  });
  lista.innerHTML=h+'<p class="hmsg" id="vazio" hidden></p>'+aviso;
 }
@@ -288,6 +299,7 @@ function montar(falhas){
 function filtrar(){
  var q=norm(campo.value.trim()),vis=0;
  Array.prototype.forEach.call(lista.querySelectorAll('.fam'),function(s){
+  if(q)s.open=true;
   var n=0;
   Array.prototype.forEach.call(s.querySelectorAll('.prod'),function(a){
    var ok=!q||a.getAttribute('data-busca').indexOf(q)>=0;a.hidden=!ok;if(ok)n++;});
