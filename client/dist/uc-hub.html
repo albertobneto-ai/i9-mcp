@@ -219,7 +219,7 @@ text-decoration:none;border-radius:6px;white-space:nowrap}
 <div class="kicker">ALGAR · CRM B2B</div>
 <h1>Casos de uso de produto</h1>
 <p class="sub">Escolha o produto para abrir o caso de uso e registrar comentários de revisão.</p>
-<dl class="meta"><div><dt>Produtos</dt><dd id="mProdutos">—</dd></div><div><dt>Com comentários salvos</dt><dd id="mComent">—</dd></div><div><dt>Dúvidas nos documentos</dt><dd id="mDuv">—</dd></div></dl>
+<dl class="meta"><div><dt>Produtos</dt><dd id="mProdutos">—</dd></div><div><dt>Com comentários a aplicar</dt><dd id="mComent">—</dd></div><div><dt>Dúvidas nos documentos</dt><dd id="mDuv">—</dd></div></dl>
 </div></div>
 <div class="wrap">
 <div class="hbar"><label class="hlabel" for="q">Buscar produto</label>
@@ -325,14 +325,14 @@ function checar(it){
  lerComentarios(it.info.id).then(function(j){
   var lista=(j&&j.rodadas)||[];
   var atual=lista.filter(function(r){return r.rodada===n;})[0];
-  var atendidas=lista.filter(function(r){return r.rodada<n;}).length;
-  var atend=atendidas?' '+plural(atendidas,'rodada atendida','rodadas atendidas')+'.':'';
-  var c=atual?atual.total:0; it.salvos=c;
+  var aplicadas=lista.filter(function(r){return r.status==='APLICADA';}).length;
+  var atend=aplicadas?' '+plural(aplicadas,'rodada aplicada','rodadas aplicadas')+'.':'';
+  var pend=(atual&&atual.status!=='APLICADA')?atual.total:0; it.salvos=pend;
   var q=atual&&atual.quando?new Date(atual.quando):null;
   var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
-  el.innerHTML='<span class="st '+(c?'st-on':'st-off')+'">'+
-   (c?plural(c,'comentário salvo','comentários salvos'):'Nenhum comentário salvo')+
-   '</span><div class="rod">Rodada '+n+(c?qt:' aberta para revisão')+'.'+atend+'</div>';
+  el.innerHTML='<span class="st '+(pend?'st-on':'st-off')+'">'+
+   (pend?plural(pend,'comentário a aplicar','comentários a aplicar'):'Nenhum comentário pendente')+
+   '</span><div class="rod">Rodada '+n+(pend?qt:' aberta para revisão')+'.'+atend+'</div>';
  }).catch(function(e){it.salvos=null;
   el.innerHTML='<span class="st st-err">Status indisponível</span><div class="rod">Não foi possível ler os comentários ('+esc(e.message)+'). Use Atualizar status.</div>';
  }).then(resumo);
