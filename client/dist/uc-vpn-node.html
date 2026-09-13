@@ -317,22 +317,12 @@ document.getElementById('cHtml').onclick=function(){
 document.getElementById('cSave').onclick=function(){
  var c=coletar();
  if(!Object.keys(c).length){stat('Nenhum comentário para salvar.');return;}
- stat('Autenticando…');
- fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({email:'admin@everi9.com',password:'admin2026'})})
- .then(function(r){return r.json();})
- .then(function(j){
-  if(!j.token)throw new Error('login');
-  stat('Gravando…');
-  var payload={quando:new Date().toISOString(),documento:'UC-VPN-001',comentarios:c};
-  return fetch(API+'/api/github/repo/i9-mcp/file',{method:'POST',
-   headers:{'Content-Type':'application/json','Authorization':'Bearer '+j.token},
-   body:JSON.stringify({path:'client/dist/data/comentarios-uc-vpn-node-r3.json',
-    message:'chore(vpn): comentarios UC-VPN-001 r3',
-    content:JSON.stringify(payload,null,2)})});
- })
- .then(function(r){if(!r.ok)throw new Error('save '+r.status);
-  stat('Salvo no i9 ('+Object.keys(c).length+' comentário(s)).');})
+ stat('Gravando…');
+ fetch(API+'/api/uc/UC-VPN-001/comentarios',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({rodada:3,comentarios:c})})
+ .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
+ .then(function(j){stat('Salvo ('+j.total+' comentário(s), rodada '+j.rodada+').');
+  if(window.__UC_APLICAR__)window.__UC_APLICAR__();})
  .catch(function(e){stat('Falhou ('+e.message+'). Use Exportar .txt.');});
 };
 })();
@@ -348,35 +338,28 @@ document.getElementById('cSave').onclick=function(){
   var all = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var txt = function (el) { return (el.textContent || '').replace(/\s+/g, ' ').trim(); };
 
-  // ---------------------------------------------------------------- token do i9
-  var tk = null;
-  function token(novo) {
-    if (!tk || novo) {
-      tk = fetch(API + '/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'admin@everi9.com', password: 'admin2026' })
-      }).then(function (r) { return r.json(); }).then(function (j) {
-        if (!j.token) throw new Error('login'); return j.token;
+  // ---------------------------------------------------------------- comentários (rota pública do i9)
+  function lerSalvos() {
+    return fetch(API + '/api/uc/' + encodeURIComponent(CFG.docId) + '/comentarios?rodada=' + CFG.rodada,
+      { cache: 'no-store' })
+      .then(function (r) {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
       });
-      tk.catch(function () { tk = null; });
-    }
-    return tk;
   }
-  function lerSalvos(novo) {
-    return token(novo).then(function (t) {
-      return fetch(API + '/api/github/repo/i9-mcp/files?path=' + encodeURIComponent(CFG.jsonPath),
-        { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' });
+  function gravarSalvos(comentarios) {
+    return fetch(API + '/api/uc/' + encodeURIComponent(CFG.docId) + '/comentarios', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rodada: CFG.rodada, comentarios: comentarios })
     }).then(function (r) {
-      if (r.status === 401 && !novo) return lerSalvos(true);
-      if (r.status === 404) return null;
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json().then(function (o) {
-        var bin = atob(String(o.content || '').replace(/\s/g, '')), by = new Uint8Array(bin.length);
-        for (var i = 0; i < bin.length; i++) by[i] = bin.charCodeAt(i);
-        return JSON.parse(new TextDecoder('utf-8').decode(by));
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+        return j;
       });
     });
   }
+  window.__UC_API__ = { ler: lerSalvos, gravar: gravarSalvos };
 
   // ---------------------------------------------------------------- aplicar comentários ao documento
   function limpar() {
@@ -822,6 +805,9 @@ document.getElementById('cSave').onclick=function(){
     bW.id = 'cWord'; bW.type = 'button'; bW.textContent = 'Baixar Word';
     var alvo = document.getElementById('cStat');
     bar.insertBefore(bUp, alvo); bar.insertBefore(bW, alvo);
+    window.__UC_APLICAR__ = function () {
+      return lerSalvos().then(function (j) { return aplicar(j); }).catch(function () { return 0; });
+    };
     bUp.onclick = function () {
       stat('Lendo comentários salvos…');
       lerSalvos().then(function (j) {
