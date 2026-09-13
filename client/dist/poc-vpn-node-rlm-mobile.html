@@ -1950,17 +1950,26 @@ function agEquipBloqueio(t, arr){
   return null;
 }
 function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
-  return EQUIP_TIPOS.filter(t=>!agEquipBloqueio(t,arr)).map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
+  const pend=agEquipPendente();
+  const topo = pend ? [{l:`Configurar ${pend.TipoEquipamento}`,f:()=>agEquipFila(),pri:true},
+                       {l:'Remover '+pend.TipoEquipamento,f:()=>{ const i=arr.findIndex(x=>x.TipoEquipamento===pend.TipoEquipamento); if(i>=0) arr.splice(i,1); agSay(`${pend.TipoEquipamento} removido. Equipamentos: ${agEquipResumo()||'nenhum'}.`, agEquipChips()); }}] : [];
+  return topo.concat(EQUIP_TIPOS.filter(t=>!agEquipBloqueio(t,arr)).map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
     return { l:(on?'✓ ':'')+t+(on?` — ${arr[i].Quantidade||1}× ${arr[i].ModalidadeEquipamento||'pendente'}`:''),
       f:()=>{ if(on){ agSay(`${t}: o que deseja?`, [{l:'Alterar quantidade',f:()=>agEquipQtd(t)},{l:'Alterar modalidade',f:()=>agEquipMod(t)},{l:'Remover',f:()=>{ const j=arr.findIndex(x=>x.TipoEquipamento===t); if(j>=0) arr.splice(j,1); AG.cfg.autoSig='manual'; agSay('Equipamentos: '+agEquipResumo()+'.', agEquipChips()); }},{l:'Voltar',f:()=>agSay('Equipamentos: '+agEquipResumo()+'.',agEquipChips())}]); return; }
         const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual'; agEquipQtd(t); } }; })
-  .concat([{l:'Concluir',f:agEquipConcluir,pri:true}]); }
+  ).concat([{l:'Concluir',f:agEquipConcluir,pri:true}]); }
 /* o Concluir confere as regras e diz exatamente o que falta, com o caminho para resolver */
 function agEquipIncluir(t, depois){
   const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
   if(arr.some(x=>x.TipoEquipamento===t)) { if(depois) depois(); return; }
-  const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento=t; o.Quantidade=1; arr.push(o); AG.cfg.autoSig='manual';
-  if(depois) depois(); else agEquipMod(t);
+  const o={ TipoEquipamento:t };          /* sem quantidade e sem modalidade: quem decide é você */
+  arr.push(o); AG.cfg.autoSig='manual';
+  if(depois) depois(); else agEquipQtd(t);
+}
+/* fila de configuração: pergunta quantidade e modalidade de cada equipamento, um a um */
+function agEquipPendente(){
+  const arr=AG.cfg.c.equip||[];
+  return arr.find(x=>x.Quantidade===undefined||x.Quantidade===null||x.Quantidade==='') || arr.find(x=>!x.ModalidadeEquipamento) || null;
 }
 function agEquipConcluir(){
   const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
@@ -1973,8 +1982,8 @@ function agEquipConcluir(){
   if(falta.length){
     const jaTem = arr.length ? ` Já incluído: ${agEquipResumo()}.` : '';
     agSay(`Ainda não dá para concluir. A tecnologia ${tec}${anel?' com entrega em anel':''} exige ${exigidos.join(', ')}; falta ${falta.join(' e ')}.${jaTem}`,
-      [{l:`Incluir ${falta.join(' e ')}`,f:()=>{ falta.forEach(t=>agEquipIncluir(t, ()=>{})); agEquipFila(); },pri:true}]
-      .concat(falta.length>1 ? falta.map(t=>({l:'Incluir só o '+t,f:()=>agEquipIncluir(t)})) : [])
+      [{l:`Incluir e configurar um a um (${falta.join(', ')})`,f:()=>{ falta.forEach(t=>agEquipIncluir(t, ()=>{})); agEquipFila(); },pri:true}]
+      .concat(falta.map(t=>({l:'Só o '+t+' agora',f:()=>agEquipIncluir(t)})))
       .concat([{l:'Ver o que já está incluído',f:()=>agSay(arr.length?`Equipamentos: ${agEquipResumo()}.`:'Nenhum equipamento incluído ainda.',agEquipChips())}]), src);
     return;
   }
@@ -1998,16 +2007,19 @@ function agEquipConcluir(){
   agSay(`Equipamentos validados: ${agEquipResumo()}.`, []);
   agNextCfg();
 }
-function agEquipQtd(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
-  agSay(t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1, então só ofereço essa opção.`:`${t}: quantidade?`,
-    [1,2,3,4].filter(n=>!(t==='Roteador'&&n>1)).map(n=>({l:n+(n>1?' unidades':' unidade'),f:()=>{ it.Quantidade=n; agEquipMod(t); }})) ); }
+function agEquipQtd(t, depois, restantes){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
+  const suf = restantes>1 ? ` (${restantes} equipamento(s) a configurar)` : '';
+  agSay((t==='Roteador'?`${t}: quantidade — a regra limita o Roteador a 1, então só ofereço essa opção.`:`${t}: quantidade?${agObg('Quantidade')}`)+suf,
+    [1,2,3,4].filter(n=>!(t==='Roteador'&&n>1)).map(n=>({l:n+(n>1?' unidades':' unidade'),f:()=>{ it.Quantidade=n; agEquipMod(t, depois, restantes); }})) ); }
 function agEquipFila(){
-  const arr=AG.cfg.c.equip||[];
-  const pend=arr.find(x=>!x.ModalidadeEquipamento);
-  if(pend){ agEquipMod(pend.TipoEquipamento, agEquipFila); return; }
-  agEquipConcluir();
+  const p=agEquipPendente();
+  if(!p){ agEquipConcluir(); return; }
+  const faltaQtd = p.Quantidade===undefined||p.Quantidade===null||p.Quantidade==='';
+  const restantes=(AG.cfg.c.equip||[]).filter(x=>x.Quantidade===undefined||!x.ModalidadeEquipamento).length;
+  if(faltaQtd) agEquipQtd(p.TipoEquipamento, agEquipFila, restantes);
+  else agEquipMod(p.TipoEquipamento, agEquipFila, restantes);
 }
-function agEquipMod(t, depois){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
+function agEquipMod(t, depois, restantes){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
   const R=avaliar(AG.cfg); const podeEditar=CTX.usuario.perms.includes('complementacao')||R.cls.v==='Customizado';
   const vals=podeEditar?ATTRS.ModalidadeEquipamento.values:['Locação'];
   const fora=ATTRS.ModalidadeEquipamento.values.filter(v=>!vals.includes(v));
