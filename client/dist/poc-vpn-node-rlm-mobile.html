@@ -7,6 +7,9 @@
 <style>
 :root{--brand:#0176d3;--navy:#032d60;--bd:#e5e5e5;--bd2:#c9c9c9;--tx:#181818;--tx2:#444;--mut:#706e6b;--err:#ba0517;--warn:#fe9339;--warnt:#8c4b02;--ok:#2e844a;--gray:#f3f3f3}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[onclick],[onchange]{cursor:pointer}
+#guia{background:#fef3d7;color:#3e3e3c;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #fadfa4;line-height:1.4}
+#guia b{color:#8c4b02}
 html,body{margin:0;height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Salesforce Sans",Arial,sans-serif;font-size:15px;color:var(--tx);background:#fff}
 button,select,input{font:inherit;color:inherit}
@@ -219,6 +222,7 @@ a{color:var(--brand);text-decoration:none}
   <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
   <span class="nv" title="Linhas, Browse Products e configurador são documentados para Lightning Experience; a exibição no app Salesforce Mobile não está documentada.">RC no app: não verificado</span>
   <button onclick="reset()">Reiniciar</button></div>
+<div id="guia"></div>
 <div id="app">
   <div class="sb"><span>9:41</span><span>●●● ⌂ 100%</span></div>
   <div id="view"></div>
@@ -629,6 +633,20 @@ function saveExit(){ const R=avaliar(cfgProduct); if(S.validacao&&R.msgs.some(m=
   cfgProduct=null; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
 
 /* ---------- render ---------- */
+function guia(){
+  const n=lines.filter(l=>l.parent).length;
+  let t;
+  if(S.tela==='opp' && !S.quote) t = S.tab==='Related' ? 'Passo 1 · Em <b>Quotes</b>, toque em <b>New</b> para criar a cotação (ou use <b>More › New Quote</b>).' : 'Passo 1 · Toque na aba <b>Related</b> e, em Quotes, em <b>New</b> (ou <b>More › New Quote</b>).';
+  else if(S.tela==='newquote') t = 'Passo 2 · Confira o nome da cotação e toque em <b>Save</b>.';
+  else if(S.tela==='quote' && !n) t = 'Passo 3 · Toque em <b>Browse Catalogs</b> na barra de ações › escolha a tabela de preços › o catálogo › <b>Next</b>.';
+  else if(S.tela==='browse' && !n) t = 'Passo 4 · No VPN Node, toque em <b>⚙</b> para configurar (ou <b>Add</b> para adicionar direto).';
+  else if(S.tela==='config') t = 'Passo 5 · Preencha os atributos obrigatórios (marcados com *) em cada seção e toque em <b>Save &amp; Exit</b>.';
+  else if(S.tela==='browse' && n) t = 'Passo 6 · Toque em <b>Save Quote</b> para voltar à cotação com o item.';
+  else if(S.tela==='quote' && n) t = 'Passo 7 · Na aba <b>Lines</b>, toque no nome do item para ver detalhes e atributos, ou no ▾ para Configure / Delete.';
+  else if(S.tela==='opp' && S.quote) t = 'A cotação criada aparece em <b>Related › Quotes</b>. Toque nela para voltar.';
+  else t = '';
+  $('#guia').innerHTML = t ? 'Roteiro do protótipo — ' + t : ''; $('#guia').style.display = t ? 'block' : 'none';
+}
 function render(){
   const v=$('#view');
   if(S.tela==='opp') v.innerHTML=telaOpp(); else if(S.tela==='newquote') v.innerHTML=telaNewQuote(); else if(S.tela==='quote') v.innerHTML=telaQuote();
@@ -638,7 +656,7 @@ function render(){
   if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   $('#overlay').innerHTML=o;
   const record=(S.tela==='opp'||S.tela==='quote'); $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
-  bnav(); pinta();
+  bnav(); pinta(); guia();
 }
 function pinta(){ const f=(id,arr,cur,lab)=>{ $(id).innerHTML=arr.map(x=>`<option value="${x.id}" ${x.id===cur?'selected':''}>${esc(lab(x))}</option>`).join(''); };
   f('#p-conta',CTX_DATA.contas,CTX.conta.id,x=>x.nome); f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); f('#p-loc',LOCALIDADES,CTX.localidade.id,x=>x.nome+' · '+x.territorio); f('#p-end',enderecosDaLocalidade(CTX.localidade.id),CTX.endereco.id,x=>x.nome); }
