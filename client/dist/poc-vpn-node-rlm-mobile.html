@@ -1206,6 +1206,7 @@ function agIntent(t){
   if(/viab/.test(s)){ const e=endFull(); agSay(S.viab[e.id]?`Viabilidade de ${e.nome}: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · anel':''}.`:`A viabilidade de ${e.nome} ainda não foi consultada — ela é o passo 2, logo após o endereço.`, agAtuais()); return; }
   if(/eleg|territ|localidade/.test(s)){ const qp=qualificadoProduto(findProd('VPNNODE')); agSay(qp.ok?`VPN Node elegível em ${CTX.localidade.nome} (${CTX.localidade.territorio}). Elegibilidade é comercial/regulatória; viabilidade é técnica, por endereço.`:qp.hits[qp.hits.length-1].motivo, agAtuais()); return; }
   if(/autom[aá]tic|sozinho|faz tudo|fazer tudo/.test(s)){ agSay('Eu não decido por você: conduzo etapa a etapa, explico o que cada escolha muda e você seleciona. Vamos pelo próximo passo?', agAtuais()); return; }
+  if(/(por que|porque).*(op[cç][aã]o|s[oó] tem|uma op)|outras op|mudar (a )?op/.test(s) && AG.cfg){ const k=['TipoReajuste','IndiceReajuste','Velocidade','PeriodoFidelizacao'].find(x=>agBloqueados(x)); if(k){ const c=agChipBloqueio(k)[0]; if(c){ c.f(); return; } } }
   if(/falta|pendent|pr[oó]xim/.test(s)){ agNext(); return; }
   if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), agAtuais()); return; }
   if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', agAtuais()); return; }
@@ -1230,6 +1231,26 @@ function agPickEnd(id){ setEnd(id,true); const e=endFull(); AG.cfg=null;
     AG.cfg=novoCfg(findProd(AG.pid)); AG.equipOk=false; AG.svaOk=false; AG.reajOk=false; AG.indOk=false; avaliar(AG.cfg); agNextCfg(); }); }
 function agSet(key,val){ const [obj,attr]=resolveRef(AG.cfg,key); obj[attr]=val; if(!key.includes('#')) AG.cfg.toque[attr]=true; avaliar(AG.cfg); }
 function agVals(key){ const R=avaliar(AG.cfg); const hv=R.hideVals[key]||{}; return ATTRS[key].values.filter(v=>!hv[v]); }
+/* explica os valores que a regra tirou da lista e o que precisaria mudar para liberá-los */
+const DESTRAVA = {
+  'Sem reajuste':'exige segmento Governo',
+  'Data base':'exige permissão funcional de data base no seu perfil',
+  'Data Ativação':'exige nova venda em segmento Governo ou Operadoras-Atacado',
+  'Comodato':'exige atendimento customizado ou permissão de complementação técnica',
+  'Do Cliente':'exige atendimento customizado ou permissão de complementação técnica'
+};
+function agBloqueados(key){
+  const R=avaliar(AG.cfg); const hv=R.hideVals[key]||{};
+  const bl=ATTRS[key].values.filter(v=>hv[v]);
+  if(!bl.length) return '';
+  return ' Fora da lista nesta transação: '+bl.map(v=>v+(DESTRAVA[v]?' ('+DESTRAVA[v]+')':'')).join('; ')+'.';
+}
+function agChipBloqueio(key){
+  const R=avaliar(AG.cfg); const hv=R.hideVals[key]||{};
+  const bl=ATTRS[key].values.filter(v=>hv[v]);
+  if(!bl.length) return [];
+  return [{l:'Por que só tem essa opção?',f:()=>agSay(`${ATTRS[key].name}: a lista é filtrada por regra do catálogo, não por mim.\n\n${bl.map(v=>'• '+v+' — '+(DESTRAVA[v]||'indisponível para este cenário')).join('\n')}\n\nPara liberar, mude o cenário na barra do protótipo (conta/segmento ou usuário) ou ajuste direto no configurador.`, agAtuais().concat([{l:'Voltar ao passo',f:()=>{ if(key==='TipoReajuste') AG.reajOk=false; if(key==='IndiceReajuste') AG.indOk=false; agNextCfg(); },pri:true}]))}];
+}
 function agNextCfg(){
   const a=AG.cfg.a, R=avaliar(AG.cfg);
   if(vazio(a.VPNNetwork) && !R.hidden.VPNNetwork){ AG.step='net'; const nets=CTX_DATA.networks[CTX.conta.cnpjRaiz]||[];
@@ -1239,7 +1260,7 @@ function agNextCfg(){
   if(vazio(a.Velocidade)){ AG.step='vel'; const vs=agVals('Velocidade'); const top=['50 Mbps','100 Mbps','200 Mbps','500 Mbps','1 Gbps'].filter(v=>vs.includes(v));
     agPerg('Passo 4 · velocidade','Qual velocidade o cliente contrata?'+agObg('Velocidade'),
       `A velocidade, cruzada com a tecnologia ${CTX.endereco.tecnologia||'do endereço'} e a distância, decide se o atendimento é formatado (esteira automática) ou customizado (passa por engenharia). Também é ela que limita as opções de upgrade temporário depois.`,
-      top.map(v=>({l:v,f:()=>agSetVel(v)})).concat([{l:'Ver as 48 velocidades do catálogo',f:()=>agSay('Escolha a velocidade:', vs.map(v=>({l:v,f:()=>agSetVel(v)})))}])); return; }
+      top.map(v=>({l:v,f:()=>agSetVel(v)})).concat([{l:'Ver as 48 velocidades do catálogo',f:()=>agSay('Escolha a velocidade:', vs.map(v=>({l:v,f:()=>agSetVel(v)})))}]).concat(agChipBloqueio('Velocidade'))); return; }
   if(vazio(a.ModalidadeInstalacao) && !R.hidden.ModalidadeInstalacao){ AG.step='mod';
     agPerg('Passo 4 · entrega','Qual a modalidade de instalação?'+agObg('ModalidadeInstalacao'),
       'Físico segue com infraestrutura no endereço do cliente. Virtual/Fabric entrega por interconexão em nuvem e abre perguntas de modelo, provedor e velocidade da conexão.',
@@ -1259,14 +1280,14 @@ function agNextCfg(){
       'Upgrade temporário eleva a velocidade por um período de 10 a 60 dias e não convive com Last Mile. Monitoramento inteligente acrescenta acompanhamento da rede pelo Zabbix, com plano e tipo próprios.',
       [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();}},{l:'Upgrade temporário de velocidade',f:agUpgrade},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
   if(vazio(a.PeriodoFidelizacao)){ agPerg('Passo 7 · condições contratuais','Qual o período de fidelização?'+agObg('PeriodoFidelizacao'),
-      'O prazo define a multa por rescisão antecipada e o início da contagem do reajuste. Prazos menores costumam sair sem percentual de multa; os maiores aplicam o percentual previsto na regra.',
-      agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}}))); return; }
+      'O prazo define a multa por rescisão antecipada e o início da contagem do reajuste. Prazos menores costumam sair sem percentual de multa; os maiores aplicam o percentual previsto na regra.'+agBloqueados('PeriodoFidelizacao'),
+      agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}})).concat(agChipBloqueio('PeriodoFidelizacao'))); return; }
   if(!AG.reajOk){ AG.reajOk=true; agPerg('Passo 7 · reajuste','Como o contrato será reajustado?'+agObg('TipoReajuste'),
-      'Pela data de assinatura, a contagem começa no dia em que o cliente assina. Por data base, você informa a data de referência. Sem reajuste dispensa índice e data.',
-      agVals('TipoReajuste').map(v=>({l:v+(a.TipoReajuste===v?' (padrão do catálogo)':''),f:()=>{agSet('TipoReajuste',v);agNextCfg();},sug:a.TipoReajuste===v}))); return; }
+      'Pela data de assinatura, a contagem começa no dia em que o cliente assina. Por data base, você informa a data de referência. Sem reajuste dispensa índice e data.'+agBloqueados('TipoReajuste'),
+      agVals('TipoReajuste').map(v=>({l:v+(a.TipoReajuste===v?' (padrão do catálogo)':''),f:()=>{agSet('TipoReajuste',v);agNextCfg();},sug:a.TipoReajuste===v})).concat(agChipBloqueio('TipoReajuste'))); return; }
   if(a.TipoReajuste!=='Sem reajuste' && !AG.indOk){ AG.indOk=true; agPerg('Passo 7 · índice','Qual índice de reajuste?'+agObg('IndiceReajuste'),
-      'O índice é o que corrige o valor na data do reajuste; o protótipo calcula sozinho a data do próximo reajuste a partir da sua escolha de data.',
-      agVals('IndiceReajuste').map(v=>({l:v+(a.IndiceReajuste===v?' (padrão do catálogo)':''),f:()=>{agSet('IndiceReajuste',v);agNextCfg();},sug:a.IndiceReajuste===v}))); return; }
+      'O índice é o que corrige o valor na data do reajuste; o protótipo calcula sozinho a data do próximo reajuste a partir da sua escolha de data.'+agBloqueados('IndiceReajuste'),
+      agVals('IndiceReajuste').map(v=>({l:v+(a.IndiceReajuste===v?' (padrão do catálogo)':''),f:()=>{agSet('IndiceReajuste',v);agNextCfg();},sug:a.IndiceReajuste===v})).concat(agChipBloqueio('IndiceReajuste'))); return; }
   if(a.TipoReajuste==='Data de assinatura do contrato' && vazio(a.DataAssinatura)){ agPedirData('DataAssinatura','Data de assinatura do contrato'); return; }
   if(a.TipoReajuste==='Data base' && vazio(a.DataBase)){ agPedirData('DataBase','Data base do reajuste'); return; }
   if(!R.hidden.ReferenciaCliente && vazio(a.ReferenciaCliente)){ agSay('Referência do cliente (obrigatória para o segmento):', [{l:'REF-'+CTX.conta.cnpjRaiz,f:()=>{agSet('ReferenciaCliente','REF-'+CTX.conta.cnpjRaiz);agNextCfg();}}]); return; }
@@ -1288,7 +1309,7 @@ function agEquipQtd(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento=
 function agEquipMod(t){ const it=(AG.cfg.c.equip||[]).find(x=>x.TipoEquipamento===t); if(!it) return;
   const R=avaliar(AG.cfg); const podeEditar=CTX.usuario.perms.includes('complementacao')||R.cls.v==='Customizado';
   const vals=podeEditar?ATTRS.ModalidadeEquipamento.values:['Locação'];
-  agSay(`${t}: modalidade do equipamento?${agObg('ModalidadeEquipamento')}${podeEditar?'':' Padrão Locação na esteira formatada; alterar exige permissão de complementação técnica.'}`,
+  agSay(`${t}: modalidade do equipamento?${agObg('ModalidadeEquipamento')}${podeEditar?'':' Padrão Locação na esteira formatada; Comodato e Do Cliente exigem atendimento customizado ou permissão de complementação técnica.'}`,
     vals.map(v=>({l:v,f:()=>{ it.ModalidadeEquipamento=v; agSay(`${t}: ${it.Quantidade||1}× ${v}. Equipamentos: ${agEquipResumo()}.`, agEquipChips()); }})) ); }
 function agPedirData(key,label){ AG.dateAsk={key,label,val:new Date().toISOString().slice(0,10)}; agSay(`${label}? Escolha no calendário — começa em hoje.`,[]); }
 function agDataOk(){ const d=AG.dateAsk; const v=($('#ag-date')||{}).value||d.val; AG.dateAsk=null; agUser(v.split('-').reverse().join('/')); agSet(d.key,v); agNextCfg(); }
