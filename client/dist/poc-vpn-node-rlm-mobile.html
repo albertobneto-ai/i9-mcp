@@ -8,63 +8,53 @@
 :root{--brand:#0176d3;--navy:#032d60;--bd:#e5e5e5;--bd2:#c9c9c9;--tx:#181818;--tx2:#444;--mut:#706e6b;--err:#ba0517;--warn:#fe9339;--warnt:#8c4b02;--ok:#2e844a;--gray:#f3f3f3}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [onclick],[onchange]{cursor:pointer}
-#guia{background:#fef3d7;color:#3e3e3c;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #fadfa4;line-height:1.4}
-#guia b{color:#8c4b02}
 html,body{margin:0;height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Salesforce Sans",Arial,sans-serif;font-size:15px;color:var(--tx);background:#fff}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 a{color:var(--brand);text-decoration:none}
 #poc{background:#16325c;color:#cfe0f5;font-size:11px;padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #poc b{color:#9fc3ee;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
 #poc select{background:#fff;color:#181818;border:0;border-radius:3px;padding:2px 4px;font-size:11px;max-width:150px}
-#poc .nv{background:#8c4b02;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px}
-#poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px;margin-left:auto}
+#poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px}
+#guia{background:#fef3d7;color:#3e3e3c;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #fadfa4;line-height:1.4}
+#guia b{color:#8c4b02}
 #app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;background:#fff;padding-bottom:128px}
-/* barra de status + cabeçalho de página */
-.sb{height:22px;background:#fff;display:flex;justify-content:space-between;padding:3px 14px;font-size:11px;color:var(--tx)}
-.top{display:flex;align-items:center;padding:8px 12px;gap:8px;min-height:44px;background:#fff}
+.sb{height:22px;display:flex;justify-content:space-between;padding:3px 14px;font-size:11px}
+.top{display:flex;align-items:center;padding:8px 12px;gap:8px;min-height:44px}
 .top .bk{color:var(--brand);font-size:15px;background:0;border:0;padding:4px 0}
-.top .ttl{flex:1;text-align:center;font-weight:700;font-size:16px}
+.top .ttl{flex:1;text-align:center;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .ic{color:var(--brand);font-size:18px;background:0;border:0}
-/* barra de ações do registro (referência oficial) */
-.acts{display:flex;justify-content:space-around;padding:10px 6px 8px;border-bottom:1px solid var(--bd);background:#fff}
+.acts{display:flex;justify-content:space-around;padding:10px 6px 8px;border-bottom:1px solid var(--bd)}
 .act{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--tx2);background:0;border:0;width:78px}
 .act i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-size:17px}
-.act i.b{background:#1b96ff}.act i.t{background:#0b827c}.act i.g{background:#2e844a}.act i.m{background:#747474}.act i.o{background:#f88962}.act i.p{background:#7f8de1}
-/* cabeçalho do registro */
-.rh{background:var(--gray);padding:14px 14px;display:flex;gap:12px;align-items:flex-start}
+.b{background:#1b96ff}.t{background:#0b827c}.g{background:#2e844a}.m{background:#747474}.o{background:#f88962}.p{background:#7f8de1}.r{background:#ba0517}.y{background:#ff9e2c}
+.rh{background:var(--gray);padding:14px;display:flex;gap:12px;align-items:flex-start}
 .rh .oi{width:34px;height:34px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:17px;flex:none}
-.rh .oi.opp{background:#f88962}.rh .oi.q{background:#2e844a}.rh .oi.acc{background:#7f8de1}
 .rh small{display:block;font-size:14px;color:var(--tx2)}
 .rh b{font-size:19px;line-height:1.25;display:block}
-/* campos em lista */
 .fl{padding:0 14px}
 .fr{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--bd);font-size:15px;align-items:flex-start}
-.fr span:first-child{width:120px;flex:none;color:var(--tx)}
+.fr span:first-child{width:120px;flex:none}
 .fr span:last-child{flex:1}
-.fr .chk{width:16px;height:16px;border:1px solid var(--bd2);border-radius:3px;display:inline-block}
-/* path (referência oficial) */
+.chk{width:16px;height:16px;border:1px solid var(--bd2);border-radius:3px;display:inline-block}
 .pathw{background:var(--gray);padding:12px 0 0;margin-top:8px}
-.path{display:flex;gap:3px;overflow:hidden;padding:0 12px}
-.ps{flex:none;width:118px;background:#fff;color:var(--tx);font-size:14px;text-align:center;padding:10px 6px 10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)}
+.path{display:flex;gap:3px;overflow-x:auto;padding:0 12px}
+.ps{flex:none;width:118px;background:#fff;font-size:14px;text-align:center;padding:10px 6px 10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)}
 .ps:first-child{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);border-radius:20px 0 0 20px}
-.ps.cur{background:var(--navy);color:#fff}
-.stage{text-align:center;font-weight:700;padding:10px 0 12px;background:var(--gray);font-size:15px}
-/* seções / abas do registro */
+.ps.cur{background:var(--navy);color:#fff}.ps.done{background:var(--ok);color:#fff}.ps.sel{outline:2px solid var(--brand);outline-offset:-2px}
+.stage{text-align:center;font-weight:700;padding:10px 12px 12px;background:var(--gray);font-size:15px}
+.stage .btn{margin-top:8px;flex:none;width:100%}
 .rtabs{display:flex;border-bottom:1px solid var(--bd);margin-top:6px}
 .rtabs a{flex:1;text-align:center;padding:12px 6px;color:var(--tx);border-bottom:3px solid transparent;margin-bottom:-1px;font-size:14px}
 .rtabs a.on{border-color:var(--brand);font-weight:700;color:var(--navy)}
 .rel{margin:12px 14px;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
 .rel .h{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--bd)}
-.rel .h .oi{width:28px;height:28px;border-radius:4px;display:grid;place-items:center;color:#fff;font-size:13px}
-.rel .h b{flex:1}
-.rel .h a{font-size:14px}
+.rel .h .oi{width:28px;height:28px;border-radius:4px;display:grid;place-items:center;color:#fff;font-size:13px;flex:none}
+.rel .h b{flex:1}.rel .h a{font-size:14px}
 .rel .it{padding:11px 12px;border-bottom:1px solid var(--bd);font-size:14px}
-.rel .it b{display:block;color:var(--brand)}
-.rel .it small{color:var(--tx2)}
-.rel .it .sub{margin:6px 0 0 14px;color:var(--tx2);font-size:13px}
+.rel .it b{display:block;color:var(--brand)}.rel .it small{color:var(--tx2)}
 .rel .rfoot{padding:10px;text-align:center;font-size:14px}
-/* assistente + navegação inferior (referência oficial) */
+.rel .note{padding:10px 12px;font-size:12.5px;color:var(--mut);background:#fafaf9;line-height:1.4}
 .agent{position:fixed;left:0;right:0;bottom:64px;max-width:430px;margin:0 auto;padding:0 14px;z-index:20}
 .agent div{background:var(--gray);border-radius:26px;padding:12px 16px;display:flex;align-items:center;gap:12px;color:var(--mut);font-size:16px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .agent div span:last-child{margin-left:auto}
@@ -72,25 +62,25 @@ a{color:var(--brand);text-decoration:none}
 .bnav button{flex:1;background:0;border:0;color:var(--tx2);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .bnav button i{font-style:normal;font-size:20px;line-height:1;color:#444}
 .bnav button.on{color:var(--brand);font-weight:700}.bnav button.on i{color:var(--brand)}
-/* formulário de criação (padrão do app) */
 .form-h{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bd)}
-.form-h a{width:70px;font-size:16px}
-.form-h b{flex:1;text-align:center;font-size:16px}
-.form-h a.sv{text-align:right;font-weight:700}
+.form-h a{width:70px;font-size:16px}.form-h b{flex:1;text-align:center;font-size:16px}.form-h a.sv{text-align:right;font-weight:700}
 .ff{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .ff label{display:block;font-size:13px;color:var(--tx2);margin-bottom:6px}
 .ff label .rq{color:var(--err)}
-.ff input,.ff select{width:100%;border:1px solid var(--bd2);border-radius:6px;padding:11px 12px;min-height:44px;background:#fff;font-size:15px}
+.ff input,.ff select,.ff textarea{width:100%;border:1px solid var(--bd2);border-radius:6px;padding:11px 12px;min-height:44px;background:#fff;font-size:15px}
+.ff textarea{min-height:90px}
 .ff .pill{display:inline-flex;align-items:center;gap:6px;background:#e5f1fb;border-radius:14px;padding:4px 10px;font-size:14px}
 .ff .sec{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
 .bsheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
-.bsheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:#fff;border-radius:14px 14px 0 0;z-index:41;padding-bottom:env(safe-area-inset-bottom)}
+.bsheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:#fff;border-radius:14px 14px 0 0;z-index:41;padding-bottom:env(safe-area-inset-bottom);max-height:86vh;overflow:auto}
 .bsheet .grip{width:36px;height:4px;background:var(--bd2);border-radius:2px;margin:8px auto}
 .bsheet .row{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--bd);font-size:16px}
-.bsheet .row i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;flex:none}
+.bsheet .row i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;flex:none;font-size:15px}
+.bsheet .row.dis{color:#a8a8a8}.bsheet .row.dis i{opacity:.4}
 .bsheet .cancel{text-align:center;padding:14px;color:var(--brand);font-size:16px}
+.bsheet .nvt{font-size:11px;color:var(--warnt);background:#fef3d7;border-radius:4px;padding:1px 6px;margin-left:auto}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end}
-.modal{background:#fff;width:100%;max-width:430px;margin:0 auto;border-radius:14px 14px 0 0}
+.modal{background:#fff;width:100%;max-width:430px;margin:0 auto;border-radius:14px 14px 0 0;max-height:88vh;overflow:auto}
 .modal h3{margin:0;padding:16px;text-align:center;font-size:17px;border-bottom:1px solid var(--bd)}
 .modal .mb{padding:12px 16px}
 .modal .mf{display:flex;gap:10px;padding:12px 16px 18px;border-top:1px solid var(--bd)}
@@ -101,8 +91,8 @@ a{color:var(--brand);text-decoration:none}
 .btn[disabled]{background:#c9c9c9;border-color:#c9c9c9;color:#fff}
 .btn.sm{padding:7px 12px;min-height:36px;font-size:13px;flex:none}
 .toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#2e844a;color:#fff;padding:12px 18px;border-radius:8px;z-index:60;font-size:14px;max-width:88%}
-/* ---------- Revenue Cloud dentro do app (não verificado) ---------- */
-.nv-tag{margin:8px 14px 0;font-size:11px;color:var(--warnt);background:#fef3d7;border:1px solid #fadfa4;border-radius:6px;padding:6px 10px}
+.toast.warn{background:#8c4b02}
+.nv-tag{margin:8px 14px 0;font-size:11px;color:var(--warnt);background:#fef3d7;border:1px solid #fadfa4;border-radius:6px;padding:6px 10px;line-height:1.4}
 .tle-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
 .tle-h .oi{width:28px;height:28px;border-radius:4px;background:#f4592f;color:#fff;display:grid;place-items:center;font-size:14px}
 .tle-h b{flex:1;font-size:15px}
@@ -112,19 +102,23 @@ a{color:var(--brand);text-decoration:none}
 .tog.on .sw{background:var(--brand)}.tog.on .sw::after{left:20px}
 .tog small{display:block;font-size:10px;color:var(--mut);text-align:center}
 .line{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.line.grp{background:#fafaf9;font-weight:700}
 .line .n{display:flex;align-items:center;gap:8px;font-size:15px}
 .line .n b{color:var(--brand);flex:1}
 .line .n .act{width:26px;height:24px;border:1px solid var(--bd2);border-radius:4px;background:#fff;color:var(--brand);font-size:11px}
 .line .kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:8px;font-size:13px;color:var(--tx2)}
 .line .kv b{color:var(--tx);font-weight:400}
 .line .child{margin:8px 0 0 12px;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)}
+.badge{display:inline-block;padding:1px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#ecebea;color:var(--tx2)}
+.badge.ok{background:#ebf7e6;color:var(--ok)}.badge.warn{background:#fef3d7;color:var(--warnt)}
 .tle-tools{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bd)}
 .bp-top{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;font-size:15px}
 .bp-top b{margin-right:6px}.bp-top a{margin-left:auto;font-size:13px}
 .bp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
 .bp-head .oi{width:28px;height:28px;border-radius:4px;background:#2e844a;color:#fff;display:grid;place-items:center}
 .bp-head b{flex:1;font-size:16px}
-.srch{margin:12px 14px 0;border:1px solid var(--bd2);border-radius:8px;padding:10px 12px;color:var(--mut)}
+.srch{margin:12px 14px 0;border:1px solid var(--bd2);border-radius:8px;padding:10px 12px;display:flex;gap:8px;align-items:center}
+.srch input{border:0;flex:1;outline:0;font-size:15px}
 .cats{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px}
 .cats button{flex:none;border:1px solid var(--bd2);background:#fff;border-radius:16px;padding:7px 12px;font-size:13px;color:var(--tx)}
 .cats button.on{background:#e5f1fb;border-color:var(--brand);color:var(--navy);font-weight:600}
@@ -134,16 +128,15 @@ a{color:var(--brand);text-decoration:none}
 .prow .r1{display:flex;gap:12px;align-items:flex-start}
 .prow input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand);margin-top:2px}
 .prow .img{width:56px;height:46px;border-radius:6px;background:var(--gray);display:grid;place-items:center;font-size:24px;flex:none}
-.prow .b{flex:1}.prow .b .nm{font-size:15px}.prow .b .pr{font-weight:700;display:flex;gap:8px;align-items:center;margin:3px 0}
-.prow .b .pr .bo{width:18px;height:18px;border:1px solid var(--bd2);border-radius:4px;font-size:10px;display:grid;place-items:center;color:var(--mut)}
-.prow .b .ds{font-size:13px;color:var(--tx2);line-height:1.4}
+.prow .b2{flex:1}.prow .nm{font-size:15px}.prow .pr{font-weight:700;display:flex;gap:8px;align-items:center;margin:3px 0}
+.prow .pr .bo{width:18px;height:18px;border:1px solid var(--bd2);border-radius:4px;font-size:10px;display:grid;place-items:center;color:var(--mut)}
+.prow .ds{font-size:13px;color:var(--tx2);line-height:1.4}
 .prow .r2{display:flex;gap:8px;align-items:center;margin-top:10px}
 .prow .qty{display:flex;align-items:center;border:1px solid var(--bd2);border-radius:6px;height:36px}
 .prow .qty button{border:0;background:0;width:34px;color:var(--mut);font-size:16px}
 .prow .qty span{width:30px;text-align:center}
 .prow .r2 .sp{flex:1}
 .foot{position:fixed;bottom:64px;left:0;right:0;max-width:430px;margin:0 auto;background:var(--gray);border-top:1px solid var(--bd);padding:10px 14px;display:flex;gap:8px;z-index:21}
-/* configurador */
 .cfg-top{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .cfg-top h1{margin:0 0 10px;font-size:18px;font-weight:400}
 .cfg-top .togs{display:flex;gap:16px;flex-wrap:wrap}
@@ -160,7 +153,7 @@ a{color:var(--brand);text-decoration:none}
 .ph .ret{display:block;margin-bottom:10px;font-size:14px}
 .ph .r{display:flex;gap:12px}
 .ph .img{width:84px;height:64px;border-radius:4px;background:linear-gradient(135deg,#e5f1fb,#cfe3f7);display:grid;place-items:center;font-size:30px;flex:none}
-.ph .t b{display:block;font-size:16px;margin-bottom:4px}.ph .t p{margin:0;font-size:13px;color:var(--tx2);line-height:1.4}
+.ph .tt b{display:block;font-size:16px;margin-bottom:4px}.ph .tt p{margin:0;font-size:13px;color:var(--tx2);line-height:1.4}
 .ph .pr{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
 .ph .pr b{font-size:16px}.ph .pr small{color:var(--tx2);display:block;font-size:12px;text-align:right}
 .qty-r{display:flex;justify-content:flex-end;padding:0 14px 8px}
@@ -179,9 +172,9 @@ a{color:var(--brand);text-decoration:none}
 .fld .cbx{display:flex;align-items:center;gap:10px;min-height:44px}
 .fld .cbx input{width:18px;height:18px;accent-color:var(--brand)}
 .fld .help{font-size:11.5px;color:var(--mut);margin-top:4px;line-height:1.35}
-.grp{margin:18px 14px 0}
-.grp h3{margin:0 0 10px;font-size:18px;font-weight:400;display:flex;gap:8px;align-items:center}
-.grp h3 .c{color:var(--mut);font-size:13px}
+.grp2{margin:18px 14px 0}
+.grp2 h3{margin:0 0 10px;font-size:18px;font-weight:400;display:flex;gap:8px;align-items:center}
+.grp2 h3 .c{color:var(--mut);font-size:13px}
 .ccard{border:1px solid var(--bd2);border-radius:6px;padding:10px 12px;margin-bottom:10px}
 .ccard.sel{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
 .ccard .r{display:flex;align-items:center;gap:10px}
@@ -202,8 +195,7 @@ a{color:var(--brand);text-decoration:none}
 .sum .p{font-weight:700;font-size:15px;margin-bottom:8px}
 .sum .box{background:var(--gray);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:12.5px;gap:6px}
 .sum .box small{display:block;color:var(--tx2)}
-.sum .at{margin-top:12px}
-.sum .at b{display:block;font-size:14px;margin-bottom:6px}
+.sum .at{margin-top:12px}.sum .at b{display:block;font-size:14px;margin-bottom:6px}
 .sum .at div{padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
 .sum .at div span{font-weight:700;margin-right:6px}
 .sum .sec{margin-top:12px}.sum .sec>b{display:block;margin-bottom:6px}
@@ -214,21 +206,47 @@ a{color:var(--brand);text-decoration:none}
 .sum .tot{margin-top:14px;border-top:1px solid var(--bd);padding-top:8px}
 .sum .tot div{display:flex;justify-content:space-between;font-weight:700;padding:4px 0;font-size:15px}
 .sum .tot div span:last-child{font-weight:400}
+.fl-prog{display:flex;border-bottom:1px solid var(--bd);background:#fafaf9}
+.fl-prog span{flex:1;text-align:center;padding:8px;font-size:12px;color:var(--mut);border-bottom:3px solid transparent}
+.fl-prog span.on{color:var(--navy);font-weight:700;border-bottom-color:var(--brand)}
+.fl-row{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--bd);border-radius:6px;margin-bottom:8px;font-size:14px}
+.fl-row input{width:18px;height:18px;accent-color:var(--brand)}
+.fl-note{margin-top:10px;font-size:12px;color:var(--mut);border-left:3px solid var(--bd2);padding-left:10px;line-height:1.5}
+.fl-spin{text-align:center;padding:24px 0}
+.spinner{width:36px;height:36px;border:4px solid #e5e5e5;border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fl-res{border:1px solid var(--bd);border-radius:6px;padding:10px;margin-bottom:8px;font-size:13px}
+.fl-res table{width:100%;border-collapse:collapse;margin-top:6px}
+.fl-res th{text-align:left;color:var(--mut);font-weight:400;padding:4px 0;width:38%}
+.fl-res td{padding:4px 0}
+.menu-list .row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--bd);font-size:16px}
+.menu-list .row i{width:36px;height:36px;border-radius:6px;display:grid;place-items:center;color:#fff;font-style:normal;flex:none}
+.menu-list .row span{flex:1}.menu-list .row em{font-style:normal;color:var(--mut)}
+.menu-list .sec{background:var(--gray);padding:8px 16px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.list .it{display:flex;gap:12px;align-items:center;padding:13px 14px;border-bottom:1px solid var(--bd)}
+.list .it .oi{width:32px;height:32px;border-radius:5px;display:grid;place-items:center;color:#fff;flex:none}
+.list .it b{display:block;font-size:15px;color:var(--brand)}.list .it small{color:var(--tx2)}
+.feed .post{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.feed .post .who{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.feed .post .who i{width:32px;height:32px;border-radius:50%;background:#7f8de1;display:grid;place-items:center;color:#fff;font-style:normal}
+.feed .post .who b{font-size:14px}.feed .post .who small{display:block;color:var(--mut);font-size:12px}
+.feed .post p{margin:0;font-size:14px;line-height:1.45}
+.composer{display:flex;gap:8px;padding:12px 14px;border-bottom:1px solid var(--bd)}
+.composer input{flex:1;border:1px solid var(--bd2);border-radius:20px;padding:10px 14px;min-height:42px}
 #tst{position:fixed;inset:0;background:#111;color:#9f9;font:11px/1.45 monospace;padding:10px;overflow:auto;z-index:99;display:none;white-space:pre-wrap}
 </style>
 </head>
 <body>
 <div id="poc"><b>Protótipo · cenário</b>
   <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
-  <span class="nv" title="Linhas, Browse Products e configurador são documentados para Lightning Experience; a exibição no app Salesforce Mobile não está documentada.">RC no app: não verificado</span>
-  <button onclick="reset()">Reiniciar</button></div>
+  <button onclick="simularAssinatura()">Simular assinatura (DocuSign)</button><button onclick="reset()">Reiniciar</button></div>
 <div id="guia"></div>
 <div id="app">
   <div class="sb"><span>9:41</span><span>●●● ⌂ 100%</span></div>
   <div id="view"></div>
 </div>
 <div id="overlay"></div>
-<div class="agent" id="agent"><div><span>🤖</span><span>How can I help?</span><span>🎤</span></div></div>
+<div class="agent" id="agent" onclick="S.sheet='agent';render()"><div><span>🤖</span><span>How can I help?</span><span>🎤</span></div></div>
 <div class="bnav" id="bnav"></div>
 <pre id="tst"></pre>
 <script>
@@ -427,174 +445,220 @@ function findProd(id){ return CATALOG.find(p => p.id === id); }
 const EQUIP_TIPOS = ATTRS.TipoEquipamento.values;
 const SM = { Evergreen:'Evergreen', 'Term-defined':'Term-Defined', 'One-time':'One Time' };
 const fmtMoney = () => 'Pendente';
+const QSTEPS = ['Draft','Needs Review','In Review','Approved','Rejected','Presented','Accepted','Denied'];
+const OSTAGES = ['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed Won'];
+const NV = 'documentado para Lightning Experience; exibição no app não verificada';
 let S;
-function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{},
-  instant:false, validacao:true, compact:false, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false, form:{} }; }
-function toast(t){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
-  el.textContent='✓ '+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
-function go(t){ S.tela=t; S.sheet=null; window.scrollTo(0,0); render(); }
+function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
+  opp:{ amount:'', close:'2026-10-30', prob:'50%' }, feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
+  pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
+  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], groups:[], hist:[] }; }
+function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+  el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
+function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
+function back(){ const t = S.hist.pop(); if(t){ S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); } else go('opp',true); }
+
+/* ---------- viabilidade: endereço efetivo ---------- */
+const VIAB_FIELDS = ['cobertura','tecnologia','interface','abordagem','metragem','metragemDistancia','anel','redeNeutra'];
+function endFull(){ return CTX_DATA.enderecos.find(x=>x.id===CTX.endId) || CTX_DATA.enderecos[0]; }
+function endEff(){ const f=endFull(); if(S && S.viab[f.id]) return f; const m=Object.assign({},f); VIAB_FIELDS.forEach(k=>delete m[k]); m.consultada=false; return m; }
+CTX.endId = CTX.endereco.id;
 
 /* ---------- peças do app ---------- */
-function topbar(title, back){ return `<div class="top"><button class="bk" onclick="${back||''}" style="${back?'':'visibility:hidden'}">‹ Back</button><span class="ttl">${esc(title)}</span><button class="ic">🔍</button></div>`; }
+function topbar(title, canBack){ return `<div class="top"><button class="bk" onclick="back()" style="${canBack?'':'visibility:hidden'}">‹ Back</button><span class="ttl">${esc(title)}</span><button class="ic" onclick="go('search')">🔍</button></div>`; }
 function actions(list){ return `<div class="acts">${list.map(a=>`<button class="act" onclick="${a.on||''}"><i class="${a.c}">${a.i}</i>${a.n}</button>`).join('')}</div>`; }
-function pathHtml(steps, cur, label){ return `<div class="pathw"><div class="path">${steps.map(s=>`<div class="ps ${s===cur?'cur':''}">${esc(s)}</div>`).join('')}</div><div class="stage">${label}: ${esc(cur)}</div></div>`; }
-function bnav(){ $('#bnav').innerHTML = [['Chatter','〰'],['Accounts','🏢'],['Contacts','👤'],['Leads','★'],['Menu','☰']].map(([n,i])=>`<button class="${n==='Menu'?'on':''}"><i>${i}</i>${n}</button>`).join(''); }
+function pathHtml(steps, cur, sel, label, fn){
+  const ci=steps.indexOf(cur), diff = sel && sel!==cur;
+  return `<div class="pathw"><div class="path">${steps.map((s,i)=>`<div class="ps ${s===cur?'cur':''} ${i<ci?'done':''} ${s===sel&&diff?'sel':''}" onclick="${fn}Sel('${s}')">${i<ci?'✓':esc(s)}</div>`).join('')}</div>
+    <div class="stage">${label}: ${esc(cur)}<button class="btn sm brand" onclick="${fn}Mark()">✓ ${diff?'Mark as Current '+label:'Mark '+label+' as Complete'}</button></div></div>`;
+}
+function bnav(){ $('#bnav').innerHTML = [['Chatter','〰','chatter'],['Accounts','🏢','accounts'],['Contacts','👤','contacts'],['Leads','★','leads'],['Menu','☰','menu']]
+  .map(([n,i,t])=>`<button class="${S.tela===t||(n==='Menu'&&!['chatter','accounts','contacts','leads'].includes(S.tela))?'on':''}" onclick="go('${t}')"><i>${i}</i>${n}</button>`).join(''); }
+function fields(rows){ return `<div class="fl">${rows.map(([k,v])=>`<div class="fr"><span>${k}</span><span>${v}</span></div>`).join('')}</div>`; }
 
 /* ---------- Oportunidade ---------- */
+const oppName = () => 'VPN Corporativa — '+CTX.conta.nome;
 function telaOpp(){
   const quotes = S.quote ? [S.quote] : [];
-  return topbar('Opportunity', "go('opp')") + actions([{i:'💬',c:'b',n:'Post'},{i:'📞',c:'t',n:'Log a Call'},{i:'☑',c:'g',n:'New Task'},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
-  <div class="rh"><div class="oi opp">👑</div><div><small>Opportunity</small><b>VPN Corporativa — ${esc(CTX.conta.nome)}</b></div></div>
-  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="">Chatter</a></div>
-  ${S.tab==='Details' ? `<div class="fl">
-    <div class="fr"><span>Account Name</span><span><a>${esc(CTX.conta.nome)}</a></span></div>
-    <div class="fr"><span>Amount</span><span></span></div>
-    <div class="fr"><span>Close Date</span><span>30/10/2026</span></div>
-    <div class="fr"><span>Stage</span><span>Proposal/Price Quote</span></div>
-    <div class="fr"><span>Probability (%)</span><span>50%</span></div>
-    <div class="fr"><span>Opportunity Owner</span><span><a>${esc(CTX.usuario.nome)}</a></span></div></div>
-    ${pathHtml(['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed'],'Proposal/Price Quote','Stage')}`
-  : `<div class="rel"><div class="h"><div class="oi" style="background:#2e844a">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
-      ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${q.status} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
-      <div class="rfoot"><a>View All</a></div></div>
-     <div class="rel"><div class="h"><div class="oi" style="background:#7f8de1">👤</div><b>Contact Roles (1)</b><a>New</a></div><div class="it"><b>Contato comercial</b><small>Decision Maker</small></div></div>
-     <div class="rel"><div class="h"><div class="oi" style="background:#f4592f">📦</div><b>Products (0)</b></div><div class="it" style="color:var(--mut)">Products are added through the quote.</div></div>`}`;
+  return topbar('Opportunity', S.hist.length>0) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📞',c:'t',n:'Log a Call',on:"go('call')"},{i:'☑',c:'g',n:'New Task',on:"go('task')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
+  <div class="rh"><div class="oi o">👑</div><div><small>Opportunity</small><b>${esc(oppName())}</b></div></div>
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
+  ${S.tab==='Details' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Amount',esc(S.opp.amount||'')],['Close Date',esc(S.opp.close)],['Stage',esc(S.oStage)],['Probability (%)',esc(S.opp.prob)],['Opportunity Owner',`<a>${esc(CTX.usuario.nome)}</a>`]])
+      + pathHtml(OSTAGES, S.oStage, S.oSel, 'Stage', 'opp')
+  : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
+      ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${esc(S.qStatus)} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
+      <div class="rfoot"><a onclick="go('quotes')">View All</a></div></div>
+     <div class="rel"><div class="h"><div class="oi p">👤</div><b>Contact Roles (${S.contacts.length})</b><a onclick="go('newcontact')">New</a></div>${S.contacts.map(c=>`<div class="it" onclick="go('contacts')"><b>${esc(c.name)}</b><small>${esc(c.role)}</small></div>`).join('')}</div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#f4592f">📦</div><b>Products (0)</b></div><div class="note">Products are added through the quote.</div></div>
+     <div class="rel"><div class="h"><div class="oi g">☑</div><b>Open Activities (${S.tasks.length})</b><a onclick="go('task')">New Task</a></div>${S.tasks.map(t=>`<div class="it"><b>${esc(t.subject)}</b><small>${esc(t.kind)} · ${esc(t.due||'')}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No open activities.</div>'}</div>`
+  : feedHtml()}`;
 }
-function sheetMoreOpp(){ return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet"><div class="grip"></div>
-  ${[['🏷','#2e844a','New Quote',"go('newquote')"],['📝','#1b96ff','Edit',''],['📅','#0b827c','New Event',''],['✉','#7f8de1','Email',''],['🔗','#747474','Share','']].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i>${n}</div>`).join('')}
-  <div class="cancel" onclick="S.sheet=null;render()">Cancel</div></div>`; }
+function feedHtml(){ return `<div class="feed"><div class="composer"><input placeholder="Share an update…" id="post-inp" onkeydown="if(event.key==='Enter')postFeed(this.value)"><button class="btn sm brand" onclick="postFeed($('#post-inp').value)">Share</button></div>
+  ${S.feed.map(p=>`<div class="post"><div class="who"><i>${esc(p.who[0])}</i><div><b>${esc(p.who)}</b><small>${esc(p.when)} · ${esc(p.where)}</small></div></div><p>${esc(p.text)}</p></div>`).join('')||'<div class="post" style="color:var(--mut)">No posts yet.</div>'}</div>`; }
+function postFeed(text){ if(!text||!text.trim()) return; S.feed.unshift({ who:CTX.usuario.nome, when:new Date().toLocaleString('pt-BR'), where: S.tela==='quote'?'Quote':'Opportunity', text:text.trim() }); S.sheet=null; toast('Post shared.'); render(); }
+function oppSel(s){ S.oSel=s; render(); }
+function oppMark(){ const ci=OSTAGES.indexOf(S.oStage); S.oStage = S.oSel&&S.oSel!==S.oStage ? S.oSel : OSTAGES[Math.min(ci+1,OSTAGES.length-1)]; S.oSel=null; toast('Stage updated.'); render(); }
+function sheetPost(){ return sheet(`<div class="row" style="border:0;font-weight:700">Post</div><div style="padding:0 16px 14px"><textarea id="post-txt" placeholder="Share an update…" style="width:100%;border:1px solid var(--bd2);border-radius:8px;padding:10px;min-height:90px"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="S.sheet=null;render()">Cancel</button><button class="btn brand" onclick="postFeed($('#post-txt').value)">Share</button></div></div>`); }
+function sheet(inner){ return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet"><div class="grip"></div>${inner}</div>`; }
+function sheetMoreOpp(){ return sheet(`
+  ${row('🏷','g','New Quote',"go('newquote')")}${row('📝','b','Edit',"go('editopp')")}${row('👤','p','New Contact',"go('newcontact')")}${row('📅','t','New Event',"go('task')")}${row('🔗','m','Share',"S.sheet=null;toast('Link copied.');render()")}
+  <div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function row(i,c,n,on,extra,dis){ return `<div class="row ${dis?'dis':''}" onclick="${dis?'':on}"><i class="${c}">${i}</i>${n}${extra||''}</div>`; }
+function telaEditOpp(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>Edit Opportunity</b><a class="sv" onclick="S.opp.amount=$('#e-amt').value;S.opp.close=$('#e-close').value;S.oStage=$('#e-stage').value;toast('Opportunity saved.');back()">Save</a></div>
+  <div class="ff"><label>Opportunity Name</label><input value="${esc(oppName())}" disabled></div>
+  <div class="ff"><label>Amount</label><input id="e-amt" type="text" inputmode="decimal" value="${esc(S.opp.amount)}" placeholder="R$"></div>
+  <div class="ff"><label>Close Date</label><input id="e-close" type="date" value="${esc(S.opp.close)}"></div>
+  <div class="ff"><label>Stage</label><select id="e-stage">${OSTAGES.map(s=>`<option ${s===S.oStage?'selected':''}>${s}</option>`).join('')}</select></div>`; }
+function telaTask(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>New Task</b><a class="sv" onclick="S.tasks.push({subject:$('#t-sub').value||'Follow-up',kind:'Task',due:$('#t-due').value});toast('Task created.');back()">Save</a></div>
+  <div class="ff"><label><span class="rq">*</span>Subject</label><input id="t-sub" value="Enviar proposta VPN Corporativa"></div>
+  <div class="ff"><label>Due Date</label><input id="t-due" type="date" value="2026-09-20"></div>
+  <div class="ff"><label>Related To</label><span class="pill">👑 ${esc(oppName())}</span></div>
+  <div class="ff"><label>Status</label><select><option>Not Started</option><option>In Progress</option></select></div>`; }
+function telaCall(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>Log a Call</b><a class="sv" onclick="S.tasks.push({subject:$('#c-sub').value||'Call',kind:'Call',due:new Date().toLocaleDateString('pt-BR')});toast('Call logged.');back()">Save</a></div>
+  <div class="ff"><label><span class="rq">*</span>Subject</label><input id="c-sub" value="Call — alinhamento da VPN Corporativa"></div>
+  <div class="ff"><label>Comments</label><textarea placeholder="Notas da ligação"></textarea></div>
+  <div class="ff"><label>Related To</label><span class="pill">👑 ${esc(oppName())}</span></div>`; }
+function telaNewContact(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>New Contact</b><a class="sv" onclick="S.contacts.push({name:($('#nc-f').value+' '+$('#nc-l').value).trim(),role:'Contact',email:$('#nc-e').value});toast('Contact created.');back()">Save</a></div>
+  <div class="ff"><label>First Name</label><input id="nc-f" placeholder="First Name"></div>
+  <div class="ff"><label><span class="rq">*</span>Last Name</label><input id="nc-l" placeholder="Last Name"></div>
+  <div class="ff"><label>Email</label><input id="nc-e" type="email" placeholder="email@empresa.com.br"></div>
+  <div class="ff"><label>Account Name</label><span class="pill">🏢 ${esc(CTX.conta.nome)}</span></div>`; }
 
-/* ---------- New Quote (formulário de criação do app) ---------- */
-function telaNewQuote(){
-  const f = S.form;
-  return `<div class="form-h"><a onclick="go('opp')">Cancel</a><b>New Quote</b><a class="sv" onclick="saveQuote()">Save</a></div>
-    <div class="ff"><label><span class="rq">*</span>Quote Name</label><input id="f-name" value="${esc(f.name||'VPN Corporativa — '+CTX.conta.nome)}" placeholder="Quote Name"></div>
-    <div class="ff"><label>Opportunity Name</label><span class="pill">👑 VPN Corporativa — ${esc(CTX.conta.nome)}</span></div>
+/* ---------- New Quote ---------- */
+function telaNewQuote(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>New Quote</b><a class="sv" onclick="saveQuote()">Save</a></div>
+    <div class="ff"><label><span class="rq">*</span>Quote Name</label><input id="f-name" value="${esc(oppName())}"></div>
+    <div class="ff"><label>Opportunity Name</label><span class="pill">👑 ${esc(oppName())}</span></div>
     <div class="ff"><label><span class="rq">*</span>Account for Quote</label><span class="pill">🏢 ${esc(CTX.conta.nome)}</span></div>
     <div class="ff"><label>Expiration Date</label><input type="date" value="2026-10-12"></div>
     <div class="ff"><label>Status</label><select><option>Draft</option><option>Needs Review</option><option>In Review</option></select></div>
     <div class="ff"><label>Quote Type</label><select><option>Quote</option><option>Amendment Quote</option><option>Renewal Quote</option></select></div>
-    <div class="ff"><label class="sec">Address Information</label><label>Bill To Name</label><input value="${esc(CTX.conta.nome)}"></div>`;
-}
-function saveQuote(){
-  const nm = ($('#f-name')||{}).value || ('VPN Corporativa — '+CTX.conta.nome);
-  S.quote = { name:nm, number:'00000036', status:'Draft' };
-  toast('Quote "'+nm+'" was created.'); S.tab='Details'; go('quote');
-}
+    <div class="ff"><label class="sec">Address Information</label><label>Bill To Name</label><input value="${esc(CTX.conta.nome)}"></div>`; }
+function saveQuote(){ const nm=($('#f-name')||{}).value||oppName(); if(!nm.trim()){ toast('Quote Name is required.','warn'); return; } S.quote={ name:nm, number:'00000036', exp:'12/10/2026' }; S.tab='Details'; toast('Quote "'+nm+'" was created.'); S.hist=['opp']; go('quote',true); }
 
-/* ---------- Quote record ---------- */
+/* ---------- Quote ---------- */
 function telaQuote(){
-  const q = S.quote, roots = lines.filter(l=>l.parent);
-  return topbar('Quote', "S.tab='Related';go('opp')") + actions([{i:'💬',c:'b',n:'Post'},{i:'🗂',c:'g',n:'Browse Catalogs',on:'browse()'},{i:'👤',c:'p',n:'New Contact'},{i:'⋯',c:'m',n:'More'}]) + `
-  <div class="rh"><div class="oi q">🏷</div><div><small>Quote</small><b>${esc(q.name)}</b></div></div>
-  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
-  ${S.tab==='Details' ? `<div class="fl">
-    <div class="fr"><span>Quote Number</span><span>${q.number}</span></div>
-    <div class="fr"><span>Expiration Date</span><span>12/10/2026</span></div>
-    <div class="fr"><span>Syncing</span><span><span class="chk"></span></span></div>
-    <div class="fr"><span>Opportunity Name</span><span><a>VPN Corporativa — ${esc(CTX.conta.nome)}</a></span></div>
-    <div class="fr"><span>Account Name</span><span><a>${esc(CTX.conta.nome)}</a></span></div>
-    <div class="fr"><span>Grand Total</span><span>${fmtMoney()}</span></div></div>
-    ${pathHtml(['Draft','Needs Review','In Review','Approved','Rejected','Presented','Accepted','Denied'],'Draft','Status')}`
-  : S.tab==='Lines' ? `<div class="nv-tag">Transaction Line Editor: documentado para Lightning Experience; exibição no app não verificada.</div>
+  const q=S.quote, roots=lines.filter(l=>l.parent);
+  return topbar('Quote', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'🗂',c:'g',n:'Browse Catalogs',on:'browse()'},{i:'👤',c:'p',n:'New Contact',on:"go('newcontact')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-quote';render()"}]) + `
+  <div class="rh"><div class="oi g">🏷</div><div><small>Quote</small><b>${esc(q.name)}</b></div></div>
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
+  ${S.tab==='Details' ? fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)]])
+      + pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote')
+  : S.tab==='Lines' ? `<div class="nv-tag">Transaction Line Editor: ${NV}.</div>
     <div class="tle-h"><div class="oi">▤</div><b>Quote Line Items (${roots.length})</b><div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Active':'Inactive'}</small></div></div></div>
-    <div class="tle-tools"><button class="btn sm">Add Assets</button><button class="btn sm">Add Group</button><button class="btn sm" style="flex:1">🔍 Add Product</button></div>
+    <div class="tle-tools"><button class="btn sm" onclick="S.sheet='addassets';render()">Add Assets</button><button class="btn sm" onclick="addGroup()">Add Group</button><button class="btn sm" style="flex:1" onclick="browse(true)">🔍 Add Product</button></div>
+    ${S.groups.map(g=>`<div class="line grp">${esc(g)} <span class="badge">group</span></div>`).join('')}
     ${roots.length ? roots.map((l,i)=>{ const kids=lines.filter(x=>x.parentUid===l.uid);
-      return `<div class="line"><div class="n"><span>${i+1}</span><b onclick="S.sheet='line:${l.uid}';render()">${esc(l.name)}</b><button class="act" onclick="S.sheet='menu:${l.uid}';render()">▾</button></div>
-        <div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Selling Model <b>${SM[l.sell]||l.sell}</b></span><span>List Price <b>${fmtMoney()}</b></span><span>Net Amount <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Total Price <b>${fmtMoney()}</b></span></div>
+      return `<div class="line"><div class="n"><span>${i+1}</span><b onclick="S.sheet='line:${l.uid}';render()">${esc(l.name)}</b>${l.viabOk?'<span class="badge ok">viável</span>':(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP')?'<span class="badge warn">viabilidade pendente</span>':''}<button class="act" onclick="S.sheet='menu:${l.uid}';render()">▾</button></div>
+        <div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Selling Model <b>${SM[l.sell]||l.sell}</b></span><span>List Price <b>${fmtMoney()}</b></span><span>Net Amount <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Atendimento <b>${esc(l.classif||'—')}</b></span></div>
         ${kids.map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · ${SM[k.sell]||k.sell} · Included</div>`).join('')}</div>`; }).join('')
       : '<div class="line" style="color:var(--mut)">No quote line items. Use Browse Catalogs to add products.</div>'}`
-  : `<div class="rel"><div class="h"><div class="oi" style="background:#747474">📄</div><b>Quote PDFs (0)</b><a>Create PDF</a></div><div class="it" style="color:var(--mut)">No PDFs generated.</div></div>
-     <div class="rel"><div class="h"><div class="oi" style="background:#7f8de1">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`}`;
+  : S.tab==='Related' ? relatedQuote() : feedHtml()}`;
 }
+function quoteSel(s){ S.qSel=s; render(); }
+function quoteMark(){ const ci=QSTEPS.indexOf(S.qStatus); S.qStatus = S.qSel&&S.qSel!==S.qStatus ? S.qSel : QSTEPS[Math.min(ci+1,QSTEPS.length-1)]; S.qSel=null; toast('Status changed successfully.'); render(); }
+function relatedQuote(){
+  const c=S.contract, o=S.order;
+  return `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Quote PDFs (0)</b></div><div class="note">Creating, emailing and deleting quote PDFs isn't available in the Salesforce mobile app. PDFs created in Lightning Experience appear here but can't be viewed.</div></div>
+  <div class="rel"><div class="h"><div class="oi p">📝</div><b>Contracts (${c?1:0})</b>${c?'':'<a onclick="createContract()">New</a>'}</div>${c?`<div class="it" onclick="go('contract')"><b>${c.number}</b><small>Status ${esc(c.status)} · eSignature ${esc(c.esig)}</small></div>`:'<div class="it" style="color:var(--mut)">No contracts.</div>'}</div>
+  <div class="rel"><div class="h"><div class="oi" style="background:#769ed9">📦</div><b>Orders (${o?1:0})</b></div>${o?`<div class="it" onclick="go('order')"><b>${o.number}</b><small>Status ${esc(o.status)} · Order Amount ${fmtMoney()}</small></div>`:'<div class="it" style="color:var(--mut)">No orders. Set the quote to Accepted and use More › Create Order.</div>'}</div>
+  <div class="rel"><div class="h"><div class="oi p">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`;
+}
+function sheetMoreQuote(){
+  const nodes = lines.some(l=>l.parent && (l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP'));
+  return sheet(`
+  ${row('📝','b','Edit',"go('editquote')")}${row('🗑','r','Delete',"S.sheet=null;toast('Delete requires confirmation on the record page.','warn');render()")}
+  ${row('📝','p','Create Contract','createContract()','<span class="nvt">não verificado no app</span>', !!S.contract)}
+  ${row('📦','y','Create Order',"S.modal='order';render()",'<span class="nvt">não verificado no app</span>', S.qStatus!=='Accepted'||!!S.order)}
+  ${row('📡','t','Consultar Viabilidade','startViab()','<span class="nvt">ação do projeto</span>', !nodes)}
+  <div class="note" style="padding:10px 18px;font-size:12px;color:var(--mut)">Create PDF, Email Quote e Start Sync não estão disponíveis no app Salesforce Mobile (ajuda oficial).</div>
+  <div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function telaEditQuote(){ return `<div class="form-h"><a onclick="back()">Cancel</a><b>Edit Quote</b><a class="sv" onclick="S.quote.name=$('#eq-n').value||S.quote.name;S.quote.exp=$('#eq-e').value;toast('Quote saved.');back()">Save</a></div>
+  <div class="ff"><label><span class="rq">*</span>Quote Name</label><input id="eq-n" value="${esc(S.quote.name)}"></div>
+  <div class="ff"><label>Expiration Date</label><input id="eq-e" value="${esc(S.quote.exp)}"></div>
+  <div class="ff"><label>Status</label><select onchange="S.qStatus=this.value">${QSTEPS.map(s=>`<option ${s===S.qStatus?'selected':''}>${s}</option>`).join('')}</select></div>`; }
 function sheetLine(uid){
-  const l = lines.find(x=>x.uid===uid); const p = findProd(l.id);
-  return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet" style="max-height:80vh;overflow:auto"><div class="grip"></div>
-    <div class="row" style="border:0;font-weight:700">${esc(l.name)}<span style="margin-left:auto;font-weight:400;color:var(--mut)" onclick="S.sheet=null;render()">✕</span></div>
+  const l=lines.find(x=>x.uid===uid); const p=findProd(l.id);
+  return sheet(`<div class="row" style="border:0;font-weight:700">${esc(l.name)}<span style="margin-left:auto;font-weight:400;color:var(--mut)" onclick="S.sheet=null;render()">✕</span></div>
     <div class="rtabs"><a class="${S.stab!=='Attributes'?'on':''}" onclick="S.stab='Details';render()">Details</a><a class="${S.stab==='Attributes'?'on':''}" onclick="S.stab='Attributes';render()">Attributes</a></div>
-    <div class="fl">${S.stab==='Attributes' ? Object.entries(l.attrs||{}).map(([k,v])=>`<div class="fr"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
-      : `<div class="fr"><span>Description</span><span>${esc(p.desc)}</span></div><div class="fr"><span>Classification</span><span>${esc(classOf(p).name)}</span></div><div class="fr"><span>Selling Model</span><span>${SM[l.sell]||l.sell}</span></div><div class="fr"><span>Atendimento</span><span>${esc(l.classif||'—')}</span></div><div class="fr"><span>List Price</span><span>${fmtMoney()}</span></div>`}</div></div>`;
-}
-function sheetMenu(uid){
-  const l = lines.find(x=>x.uid===uid);
-  return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet"><div class="grip"></div>
-    <div class="row" onclick="S.sheet='line:${uid}';render()"><i style="background:#1b96ff">👁</i>View</div>
-    <div class="row" onclick="S.sheet=null;openConfig('${l.id}','${uid}')"><i style="background:#2e844a">⚙</i>Configure</div>
-    <div class="row" onclick="lines=lines.filter(x=>x.uid!=='${uid}'&&x.parentUid!=='${uid}');S.sheet=null;render()"><i style="background:#ba0517">🗑</i>Delete</div>
-    <div class="cancel" onclick="S.sheet=null;render()">Cancel</div></div>`;
-}
+    <div class="fl">${S.stab==='Attributes' ? Object.entries(l.attrs||{}).map(([k,v])=>`<div class="fr"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')||'<div class="fr">Nenhum atributo</div>'
+      : `<div class="fr"><span>Description</span><span>${esc(p.desc)}</span></div><div class="fr"><span>Classification</span><span>${esc(classOf(p).name)}</span></div><div class="fr"><span>Selling Model</span><span>${SM[l.sell]||l.sell}</span></div><div class="fr"><span>Atendimento</span><span>${esc(l.classif||'—')}</span></div><div class="fr"><span>Viabilidade</span><span>${l.viabOk?'Consultada':'Pendente'}</span></div><div class="fr"><span>List Price</span><span>${fmtMoney()}</span></div>`}</div>`); }
+function sheetMenu(uid){ const l=lines.find(x=>x.uid===uid);
+  return sheet(`${row('👁','b','View',`S.sheet='line:${uid}';render()`)}${row('⚙','g','Configure',`S.sheet=null;openConfig('${l.id}','${uid}')`)}${row('🗑','r','Delete',`lines=lines.filter(x=>x.uid!=='${uid}'&&x.parentUid!=='${uid}');S.sheet=null;toast('Line deleted.');render()`)}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function sheetAddAssets(){ return sheet(`<div class="row" style="border:0;font-weight:700">Add Assets</div>${S.assets.length?S.assets.map(a=>row('📦','y',a.name,"S.sheet=null;toast('Asset-based ordering: use Amend on the asset.','warn');render()")).join(''):'<div class="note" style="padding:0 18px 14px;color:var(--mut)">No assets on this account yet. Assets are created when an order is activated.</div>'}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function addGroup(){ S.groups.push('Group '+(S.groups.length+1)); toast('Group added.'); render(); }
 
-/* ---------- Browse Catalogs: Choose Price Book → All Catalogs → Browse Products ---------- */
-function browse(){ S.modal = S.pb ? 'catalogs' : 'pricebook'; render(); }
-function modalPB(){ return `<div class="modal-bg"><div class="modal"><h3>Choose Price Book</h3><div class="mb">
-  ${['Tabela de Preços B2B (a definir)','Standard Price Book'].map((t,i)=>`<label class="radio"><input type="radio" name="pb" value="${t}" ${i===0?'checked':''}>${t}</label>`).join('')}</div>
+/* ---------- Browse Catalogs → Choose Price Book → All Catalogs → Browse Products ---------- */
+function browse(direct){ if(direct && S.pb && S.catalogo){ go('browse'); return; } S.modal = S.pb ? 'catalogs' : 'pricebook'; render(); }
+function modalPB(){ return `<div class="modal-bg"><div class="modal"><h3>Choose Price Book</h3><div class="mb">${['Tabela de Preços B2B (a definir)','Standard Price Book'].map((t,i)=>`<label class="radio"><input type="radio" name="pb" value="${t}" ${i===0?'checked':''}>${t}</label>`).join('')}</div>
   <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.pb=$('input[name=pb]:checked').value;S.modal='catalogs';render()">Save</button></div></div></div>`; }
 function modalCatalogs(){ return `<div class="modal-bg"><div class="modal"><h3>All Catalogs</h3><div class="mb"><label class="radio"><input type="radio" name="ct" checked>Catálogo B2B Algar</label></div>
-  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.catalogo='Catálogo B2B Algar';S.modal=null;go('browse')">Next</button></div></div></div>`; }
-const CATS_BP = [['all','All Products'],['vpn','Conectividade'],['equip','Equipamentos'],['sva','Serviços de valor agregado']];
+  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.catalogo='Catálogo B2B Algar';go('browse')">Next</button></div></div></div>`; }
+const CATS_BP=[['all','All Products'],['vpn','Conectividade'],['equip','Equipamentos'],['sva','Serviços de valor agregado']];
 function telaBrowse(){
-  const elig = CATALOG.filter(p => qualificadoProduto(p).ok && (S.categoria==='all'||p.cat===S.categoria));
-  const nsel = Object.values(S.checked).filter(Boolean).length;
-  return `<div class="nv-tag">Product Discovery: documentado para Lightning Experience; exibição no app não verificada.</div>
-  <div class="bp-top"><b>Catalog:</b> ${esc(S.catalogo)}<a>🏷 New Quote Line Items (${lines.filter(l=>l.parent).length})</a></div>
+  const q=(S.q||'').toLowerCase();
+  const elig=CATALOG.filter(p=>qualificadoProduto(p).ok && (S.categoria==='all'||p.cat===S.categoria) && (!q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)));
+  const nsel=Object.values(S.checked).filter(Boolean).length;
+  return `<div class="nv-tag">Product Discovery: ${NV}.</div>
+  <div class="bp-top"><b>Catalog:</b> ${esc(S.catalogo)}<a onclick="S.tab='Lines';go('quote')">🏷 New Quote Line Items (${lines.filter(l=>l.parent).length})</a></div>
   <div class="bp-head"><div class="oi">▤</div><b>Browse Products</b></div>
-  <div class="srch">🔍 Search for products</div>
+  <div class="srch">🔍 <input placeholder="Search for products" value="${esc(S.q||'')}" oninput="S.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div>
   <div class="cats">${CATS_BP.map(([k,n])=>`<button class="${S.categoria===k?'on':''}" onclick="S.categoria='${k}';render()">${n}</button>`).join('')}</div>
-  <div class="selbar"><input type="checkbox" style="width:18px;height:18px"> All Products <span class="sp">${nsel} Product(s) Selected</span><button class="btn sm" ${nsel?'':'disabled'} onclick="addSel()">Add Selection to Quote</button></div>
+  <div class="selbar"><input type="checkbox" style="width:18px;height:18px" ${elig.length&&elig.every(p=>S.checked[p.id])?'checked':''} onchange="const on=this.checked;CATALOG.forEach(p=>{S.checked[p.id]=on});render()"> All Products <span class="sp">${nsel} Product(s) Selected</span><button class="btn sm" ${nsel?'':'disabled'} onclick="addSel()">Add Selection to Quote</button></div>
   ${elig.map(p=>`<div class="prow"><div class="r1"><input type="checkbox" ${S.checked[p.id]?'checked':''} onchange="S.checked['${p.id}']=this.checked;render()"><div class="img">${p.icon}</div>
-      <div class="b"><div class="nm">${esc(p.name)}</div><div class="pr">Preço pendente <span class="bo" onclick="S.modal='bo:${p.id}';render()">◇</span></div><div class="ds">${esc(p.desc)}</div></div></div>
+      <div class="b2"><div class="nm">${esc(p.name)}</div><div class="pr">Preço pendente <span class="bo" onclick="S.modal='bo:${p.id}';render()">◇</span></div><div class="ds">${esc(p.desc)}</div></div></div>
       <div class="r2"><div class="qty"><button onclick="qtd('${p.id}',-1)">−</button><span>${S.qtd[p.id]||1}</span><button onclick="qtd('${p.id}',1)">+</button></div><span class="sp"></span>
       <button class="btn sm" onclick="openConfig('${p.id}')">⚙</button><button class="btn sm" onclick="quickAdd('${p.id}')">Add</button></div></div>`).join('')}
-  ${elig.length?'':'<div class="line" style="color:var(--mut)">No products in this category.</div>'}
+  ${elig.length?'':'<div class="line" style="color:var(--mut)">No products match.</div>'}
   <div style="height:70px"></div>
   <div class="foot"><button class="btn" onclick="S.tab='Lines';go('quote')">‹ Back to Catalogs</button><button class="btn brand" onclick="S.tab='Lines';go('quote');toast('Quote \\'${esc(S.quote.name).replace(/'/g,"\\'")}\\' was updated.')">✓ Save Quote</button></div>`;
 }
 function qtd(id,d){ S.qtd[id]=Math.max(1,(S.qtd[id]||1)+d); render(); }
-function modalBuying(pid){ const p=findProd(pid); return `<div class="modal-bg"><div class="modal"><h3>${esc(p.name)} Buying options</h3><div class="mb"><label class="radio"><input type="radio" name="bo" checked>Preço pendente for ${SM[p.sell]||p.sell}</label>
-  <p style="font-size:12px;color:var(--mut);margin:6px 0 0">ProductSellingModel ${SM[p.sell]||p.sell}. Tabela e procedimento de preços não definidos na Revisão 1.</p></div>
+function modalBuying(pid){ const p=findProd(pid); return `<div class="modal-bg"><div class="modal"><h3>${esc(p.name)} Buying options</h3><div class="mb"><label class="radio"><input type="radio" name="bo" checked>Preço pendente for ${SM[p.sell]||p.sell}</label><p style="font-size:12px;color:var(--mut);margin:6px 0 0">ProductSellingModel ${SM[p.sell]||p.sell}. Tabela e procedimento de preços não definidos na Revisão 1.</p></div>
   <div class="mf"><button class="btn" onclick="S.modal=null;openConfig('${pid}')">Configure</button><button class="btn brand" onclick="S.modal=null;quickAdd('${pid}')">Add</button></div></div></div>`; }
 function novoCfg(p){ const cfg={prod:p,defs:resolveAttrs(p),a:{},c:{},toque:{},autoSig:null}; cfg.defs.forEach(a=>{ if(a.def) cfg.a[a.key]=a.def; if(a.ui==='checkbox') cfg.a[a.key]=false; }); (p.groups||[]).forEach(g=>g.produtos.forEach(pid=>cfg.c[compKey(pid)]=[])); return cfg; }
-function addLine(p, cfg, R){
+function addLine(p,cfg,R){
   lineSeq++; const attrs={};
-  if(cfg) cfg.defs.filter(a=>!a.hidden && !R.hidden[a.key] && !vazio(cfg.a[a.key])).forEach(a=>attrs[a.name]=cfg.a[a.key]===true?'Sim':cfg.a[a.key]);
-  attrs['Localidade']=CTX.localidade.nome+' · '+CTX.localidade.territorio; attrs['Endereço de instalação']=CTX.endereco.nome; attrs['Entidade faturadora']=entidadeFaturadora().valor;
-  const line={uid:'L'+lineSeq,id:p.id,name:p.name,sell:p.sell,qty:(S.qtd[p.id]||1),parent:true,attrs,classif:R?R.cls.v:'',loc:CTX.localidade.id};
+  if(cfg) cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]&&!vazio(cfg.a[a.key])).forEach(a=>attrs[a.name]=cfg.a[a.key]===true?'Sim':cfg.a[a.key]);
+  attrs['Localidade']=CTX.localidade.nome+' · '+CTX.localidade.territorio; attrs['Endereço de instalação']=endFull().nome; attrs['Entidade faturadora']=entidadeFaturadora().valor;
+  const line={uid:'L'+lineSeq,id:p.id,name:p.name,sell:p.sell,qty:(S.qtd[p.id]||1),parent:true,attrs,classif:R?R.cls.v:'',loc:CTX.localidade.id,end:endFull().id,viabOk:!!S.viab[endFull().id]};
   lines.push(line);
   if(cfg) (p.groups||[]).flatMap(g=>g.produtos).forEach(pid=>(cfg.c[compKey(pid)]||[]).forEach(x=>{ const cp=findProd(pid),at={}; resolveAttrs(cp).forEach(a=>{ if(!vazio(x[a.key])) at[a.name]=x[a.key]; }); lineSeq++; lines.push({uid:'L'+lineSeq,id:cp.id,name:(x.TipoEquipamento||cp.name),sell:cp.sell,qty:1,parent:false,parentUid:line.uid,attrs:at}); }));
   return line;
 }
-function quickAdd(pid){ const p=findProd(pid); if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); addLine(p,cfg,R); } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
+function quickAdd(pid){ const p=findProd(pid); if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
 function addSel(){ Object.keys(S.checked).filter(k=>S.checked[k]).forEach(pid=>quickAdd(pid)); S.checked={}; render(); }
 
 /* ---------- Product Configurator ---------- */
-function openConfig(id, uid){
-  const p=findProd(id); const qp=qualificadoProduto(p); if(!qp.ok){ toast(qp.hits[qp.hits.length-1].motivo); return; }
+function avaliarUI(cfg){ const R=avaliar(cfg); if(!S.viab[endFull().id]) R.msgs=R.msgs.filter(m=>!(m.regra==='R11'&&m.texto.indexOf('no mínimo 1 equipamento')>=0)); return R; }
+function openConfig(id,uid){
+  const p=findProd(id); const qp=qualificadoProduto(p); if(!qp.ok){ toast(qp.hits[qp.hits.length-1].motivo,'warn'); return; }
   cfgProduct=novoCfg(p); cfgProduct.uid=uid||null;
   if(uid){ const l=lines.find(x=>x.uid===uid); if(l&&l.cfgState){ cfgProduct.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfgProduct.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfgProduct.toque=Object.assign({},l.cfgState.toque); cfgProduct.autoSig=l.cfgState.autoSig; } }
   S.msgTab=null; S.atab=null; S.grpOpen={}; S.compOpen={}; S.sumOpen=false; go('config');
 }
 function telaConfig(){
-  const cfg=cfgProduct, p=cfg.prod, R=avaliar(cfg);
+  const cfg=cfgProduct, p=cfg.prod, R=avaliarUI(cfg);
   const msgs=R.msgs.slice(); msgs.push({sev:'Info',texto:'Atendimento '+R.cls.v+' — '+R.cls.motivos.join('; '),regra:'Classificação'});
+  if(!S.viab[endFull().id]) msgs.push({sev:'Info',texto:'Viabilidade técnica ainda não consultada para '+endFull().nome+'. Tecnologia, interface, abordagem e equipamentos serão preenchidos após a ação Consultar Viabilidade (More) na cotação.',regra:'Viabilidade'});
   const nE=msgs.filter(m=>m.sev==='Error').length,nW=msgs.filter(m=>m.sev==='Warning').length,nI=msgs.filter(m=>m.sev==='Info').length;
   if(!S.msgTab) S.msgTab=nE?'Error':nW?'Warning':'Info';
   const cats=[]; cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]).forEach(a=>{ if(!cats.includes(a.cat)) cats.push(a.cat); });
   if(!S.atab||!cats.includes(S.atab)) S.atab=cats[0];
-  const fields=cfg.defs.filter(a=>a.cat===S.atab&&!a.hidden&&!R.hidden[a.key]);
+  const fieldsL=cfg.defs.filter(a=>a.cat===S.atab&&!a.hidden&&!R.hidden[a.key]);
   const sumAttrs=cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]&&!vazio(cfg.a[a.key])).map(a=>`<div><span>${esc(a.name)}</span>${esc(cfg.a[a.key]===true?'Sim':cfg.a[a.key])}</div>`).join('');
-  return `<div class="nv-tag">Product Configurator: documentado para Lightning Experience; exibição no app não verificada.</div>
+  return `<div class="nv-tag">Product Configurator: ${NV}.</div>
   <div class="cfg-top"><h1>Configure ${esc(p.name)}</h1><div class="togs">
     <div class="tog ${S.validacao?'on':''}"><span>Product Validation</span><div><div class="sw" onclick="S.validacao=!S.validacao;render()"></div><small>${S.validacao?'Enabled':'Disabled'}</small></div></div>
     <div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Enabled':'Disabled'}</small></div></div></div></div>
-  ${S.instant?'':'<div class="cfg-info">Prices don\'t reflect the latest selections. To get the latest pricing, enable Instant Pricing or click Update Prices.</div>'}
+  ${S.instant?'':'<div class="cfg-info">Prices don\'t reflect the latest selections. To get the latest pricing, enable Instant Pricing or tap Update Prices.</div>'}
   ${S.validacao?`<div class="mtabs"><span class="pill e ${S.msgTab==='Error'?'on':''}" onclick="S.msgTab='Error';render()"><i>⊘</i>Errors (${nE})</span><span class="pill w ${S.msgTab==='Warning'?'on':''}" onclick="S.msgTab='Warning';render()"><i>▲</i>Warnings (${nW})</span><span class="pill i ${S.msgTab==='Info'?'on':''}" onclick="S.msgTab='Info';render()"><i>ⓘ</i>Info (${nI})</span></div>
   ${msgs.filter(m=>m.sev===S.msgTab).map(m=>`<div class="mrow ${m.sev}"><i>${m.sev==='Error'?'⊘':m.sev==='Warning'?'▲':'ⓘ'}</i><span>${esc(m.texto)}</span></div>`).join('')}`:''}
-  <div class="ph"><a class="ret" onclick="cancelCfg()">Return to Quote</a><div class="r"><div class="img">${p.icon}</div><div class="t"><b>${esc(p.name)}</b><p>${esc(p.desc)}</p></div></div>
+  <div class="ph"><a class="ret" onclick="cancelCfg()">Return to Quote</a><div class="r"><div class="img">${p.icon}</div><div class="tt"><b>${esc(p.name)}</b><p>${esc(p.desc)}</p></div></div>
     <div class="pr"><span></span><span><b>${fmtMoney()}</b><small>${SM[p.sell]||p.sell}</small></span></div></div>
   <div class="qty-r"><div><label>Quantity</label><input type="number" min="1" value="${S.qtd[p.id]||1}" onchange="S.qtd['${p.id}']=Math.max(1,Number(this.value)||1);render()"></div></div>
   <div class="atabs">${cats.map(c=>`<a class="${c===S.atab?'on':''}" onclick="S.atab='${c.replace(/'/g,"\\'")}';render()">${esc(c)}</a>`).join('')}</div>
-  ${fields.map(a=>field(a,R,cfg.a,a.key)).join('')||'<p style="padding:12px 14px;color:var(--mut)">Todos os atributos desta categoria estão ocultos pelas regras neste cenário.</p>'}
-  ${(p.groups||[]).map(g=>{ const open=S.grpOpen[g.id]!==false; return `<div class="grp"><h3 onclick="S.grpOpen['${g.id}']=${open?'false':'true'};render()"><span class="c">${open?'⌄':'›'}</span>${esc(g.name)}</h3>${open?g.produtos.map(pid=>compCards(pid,R)).join(''):''}</div>`; }).join('')}
+  ${fieldsL.map(a=>field(a,R,cfg.a,a.key)).join('')||'<p style="padding:12px 14px;color:var(--mut)">Todos os atributos desta categoria estão ocultos pelas regras neste cenário.</p>'}
+  ${(p.groups||[]).map(g=>{ const open=S.grpOpen[g.id]!==false; return `<div class="grp2"><h3 onclick="S.grpOpen['${g.id}']=${open?'false':'true'};render()"><span class="c">${open?'⌄':'›'}</span>${esc(g.name)}</h3>${open?g.produtos.map(pid=>compCards(pid,R)).join(''):''}</div>`; }).join('')}
   <div class="sum"><h2 onclick="S.sumOpen=!S.sumOpen;render()">Summary<span>${S.sumOpen?'Hide':'Show'}</span></h2>${S.sumOpen?`<div class="sb2"><div class="p">${esc(p.name)}</div>
     <div class="box"><div><small>Quantity</small>${S.qtd[p.id]||1}</div><div style="text-align:center"><small>Net Unit Price</small>${fmtMoney()}</div><div style="text-align:right"><small>Net Amount</small>${fmtMoney()}</div></div>
     <div class="at"><b>Attributes</b>${sumAttrs||'<div style="color:var(--mut)">Nenhum</div>'}</div>
@@ -602,7 +666,7 @@ function telaConfig(){
       return `<div class="card"><div class="h"><a>${esc(x.TipoEquipamento||cp.name)}</a>${chip?`<span class="chip">${esc(chip)}</span>`:''}</div><div style="display:flex;justify-content:space-between"><span>Quantity 1</span><span>Net Amount ${pid==='EQUIP'&&x.ModalidadeEquipamento==='Comodato'?'Included':fmtMoney()}</span></div></div>`; })).join('')||'<div class="card" style="color:var(--mut)">Nenhum item selecionado</div>'}</div>`).join('')}
     <div class="tot"><div><span>One Time Total</span><span>-</span></div><div><span>Monthly Total</span><span>${fmtMoney()}</span></div></div></div>`:''}</div>
   <div style="height:80px"></div>
-  <div class="foot"><button class="btn" onclick="cancelCfg()">Cancel</button><button class="btn" onclick="toast('Update Prices: precificação pendente.')">⟳ Update</button><button class="btn brand" ${S.validacao&&(nE+nW)>0?'disabled':''} onclick="saveExit()">Save &amp; Exit</button></div>`;
+  <div class="foot"><button class="btn" onclick="cancelCfg()">Cancel</button><button class="btn" onclick="toast('Update Prices: precificação pendente.','warn')">⟳ Update</button><button class="btn brand" ${S.validacao&&(nE+nW)>0?'disabled':''} onclick="saveExit()">Save &amp; Exit</button></div>`;
 }
 function field(a,R,obj,key){
   const attr=key.includes('#')?key.split('.').pop():a.key; const val=obj[attr], dis=R.disabled[key]||a.ro, req=R.required[key], er=S.validacao&&R.ferr[key]; const hv=R.hideVals[key]||{};
@@ -626,83 +690,228 @@ function compCards(pid,R){
 function togEquip(tipo,on){ const arr=cfgProduct.c.equip||(cfgProduct.c.equip=[]); const i=arr.findIndex(x=>x.TipoEquipamento===tipo); if(on&&i<0){ const o={}; resolveAttrs(findProd('EQUIP')).forEach(a=>o[a.key]=a.def||''); o.TipoEquipamento=tipo; arr.push(o); } if(!on&&i>=0) arr.splice(i,1); cfgProduct.autoSig='manual'; render(); }
 function togComp(pid,on){ const key=compKey(pid), cp=findProd(pid); if(on){ const o={}; resolveAttrs(cp).forEach(a=>o[a.key]=a.def||''); cfgProduct.c[key]=[o]; S.compOpen[pid]=true; } else cfgProduct.c[key]=[]; render(); }
 function setAttr(key,val){ const [obj,attr]=resolveRef(cfgProduct,key); if(!obj) return; obj[attr]=val; if(!key.includes('#')) cfgProduct.toque[attr]=true; const y=window.scrollY; render(); window.scrollTo(0,y); }
-function cancelCfg(){ cfgProduct=null; go(S.catalogo?'browse':'quote'); }
-function saveExit(){ const R=avaliar(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.'); return; }
+function cancelCfg(){ cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); }
+function saveExit(){ const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.','warn'); return; }
   const p=cfgProduct.prod; if(cfgProduct.uid) lines=lines.filter(l=>l.uid!==cfgProduct.uid&&l.parentUid!==cfgProduct.uid);
   const line=addLine(p,cfgProduct,R); line.cfgState={a:cfgProduct.a,c:cfgProduct.c,toque:cfgProduct.toque,autoSig:cfgProduct.autoSig};
-  cfgProduct=null; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
+  cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
+
+/* ---------- Consultar Viabilidade (Screen Flow · integração MuleSoft do projeto) ---------- */
+function startViab(){ const nodes=lines.filter(l=>l.parent&&(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP')); S.sheet=null; S.flow={step:1,sel:Object.fromEntries(nodes.map(n=>[n.uid,!S.viab[n.end]])),result:null}; go('flow'); }
+function telaFlow(){
+  const f=S.flow, nodes=lines.filter(l=>l.parent&&(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP'));
+  let body='',foot='';
+  if(f.step===1){ body=`<p style="margin:0 0 10px;font-weight:600">Selecione os itens cujo endereço de instalação será consultado.</p>
+    ${nodes.map(n=>{ const e=CTX_DATA.enderecos.find(x=>x.id===n.end); return `<label class="fl-row"><input type="checkbox" ${f.sel[n.uid]?'checked':''} onchange="S.flow.sel['${n.uid}']=this.checked"><span><b>${esc(n.name)}</b><br><small>${esc(e.nome)}</small></span>${S.viab[n.end]?'<span class="badge ok">já consultada</span>':''}</label>`; }).join('')}
+    <div class="fl-note">Integração MuleSoft (API-led) → base de viabilidade Algar, via Named Credential; retorno gravado no item da cotação. Tela inferida — não há componente nativo de viabilidade no Revenue Cloud.</div>`;
+    foot=`<button class="btn" onclick="S.flow=null;back()">Cancel</button><button class="btn brand" ${Object.values(f.sel).some(Boolean)?'':'disabled'} onclick="S.flow.step=2;render();setTimeout(runViab,1400)">Next</button>`; }
+  else if(f.step===2){ body=`<div class="fl-spin"><div class="spinner"></div><p>Consultando viabilidade técnica…</p><p style="color:var(--mut);font-size:12px">POST /api/viabilidade/consultar · MuleSoft_Viabilidade</p></div>`; foot=`<button class="btn" disabled>Next</button>`; }
+  else { body=`<p style="margin:0 0 10px;font-weight:600">Resultado da consulta</p>${f.result.map(r=>`<div class="fl-res"><b>${esc(r.name)}</b><div style="color:var(--mut)">${esc(r.end.nome)}</div>
+    <table><tr><th>Cobertura</th><td>${r.end.cobertura===false?'<span style="color:var(--err)">Sem cobertura</span>':r.end.redeNeutra?'<span style="color:var(--err)">Rede neutra</span>':'Rede própria'}</td></tr><tr><th>Tecnologia</th><td>${esc(r.end.tecnologia||'—')}</td></tr><tr><th>Interface</th><td>${esc(r.end.interface||'—')}</td></tr><tr><th>Abordagem</th><td>${esc(r.end.abordagem||'—')}${r.end.metragem?' · '+r.end.metragem+' m':''}</td></tr><tr><th>Distância</th><td>${r.end.metragemDistancia==null?'—':r.end.metragemDistancia+' m'}</td></tr><tr><th>Entrega em anel</th><td>${r.end.anel?'Sim':'Não'}</td></tr></table></div>`).join('')}`;
+    foot=`<button class="btn brand" onclick="finishViab()">Finish</button>`; }
+  return `<div class="form-h"><a onclick="S.flow=null;back()">Cancel</a><b>Consultar Viabilidade Técnica</b><a></a></div><div class="fl-prog"><span class="${f.step>=1?'on':''}">1 Itens</span><span class="${f.step>=2?'on':''}">2 Consulta</span><span class="${f.step>=3?'on':''}">3 Resultado</span></div>
+  <div style="padding:14px">${body}</div><div style="height:70px"></div><div class="foot">${foot}</div>`;
+}
+function runViab(){ if(!S.flow||S.flow.step!==2) return; const sel=lines.filter(l=>l.parent&&S.flow.sel[l.uid]); S.flow.result=sel.map(l=>({uid:l.uid,name:l.name,end:CTX_DATA.enderecos.find(x=>x.id===l.end)})); S.flow.step=3; render(); }
+function finishViab(){
+  S.flow.result.forEach(r=>{ S.viab[r.end.id]=true; const l=lines.find(x=>x.uid===r.uid); if(!l) return;
+    const p=findProd(l.id); const cfg=novoCfg(p); if(l.cfgState){ cfg.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfg.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfg.toque=Object.assign({},l.cfgState.toque); }
+    ['Tecnologia','Interface','Abordagem','Metragem'].forEach(k=>delete cfg.toque[k]); cfg.autoSig=null;
+    const keep=CTX.endId; CTX.endId=r.end.id; CTX.endereco=endEff(); const R=avaliar(cfg);
+    lines=lines.filter(x=>x.uid!==l.uid&&x.parentUid!==l.uid); const nl=addLine(p,cfg,R); nl.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; nl.viabOk=true;
+    CTX.endId=keep; CTX.endereco=endEff(); });
+  S.flow=null; S.tab='Lines'; S.hist=['opp']; go('quote',true); toast('Viabilidade técnica registrada nos itens da cotação.'); }
+
+/* ---------- Contract (Salesforce Contracts + DocuSign) ---------- */
+function createContract(){ if(S.contract){ go('contract'); return; } S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; S.sheet=null; toast('Contract 00000123 was created.'); go('contract'); }
+function telaContract(){
+  const c=S.contract, roots=lines.filter(l=>l.parent);
+  return topbar('Contract', true) + actions([{i:'📄',c:'m',n:'Generate Doc',on:c.docs.length?"toast('Document already generated.','warn')":'genContractDoc()'},{i:'✍',c:'g',n:'Send eSign',on:(c.docs.length&&c.esig==='Not sent')?"S.modal='esig';render()":"toast('Generate the document first, or already sent.','warn')"},{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-contract';render()"}]) + `
+  <div class="nv-tag">Salesforce Contracts / DocuSign: ${NV}.</div>
+  <div class="rh"><div class="oi p">📝</div><div><small>Contract</small><b>${c.number}</b></div></div>
+  <div class="rtabs"><a class="${S.tab!=='Related'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
+  ${S.tab!=='Related' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Quote',`<a onclick="go('quote')">${esc(S.quote.name)}</a>`],['Contract Term',esc(roots[0]&&roots[0].attrs&&roots[0].attrs['Período Fidelização']||'—')+' meses'],['Status',esc(c.status)],['eSignature Status',esc(c.esig)]])
+  : `<div class="rel"><div class="h"><div class="oi m">📄</div><b>Contract Documents (${c.docs.length})</b></div>${c.docs.map(d=>`<div class="it"><b>${esc(d.name)}</b><small>${esc(d.tpl)} · ${d.v} · Signature ${esc(d.sig)}</small></div>`).join('')||'<div class="note">Use Generate Document to create the contract document from the template.</div>'}</div>
+     <div class="rel"><div class="h"><div class="oi g">✍</div><b>eSignature (DocuSign)</b></div>${c.recipients.map(r=>`<div class="it"><b>${esc(r.email)}</b><small>${esc(r.role)} · ${esc(r.status)}</small></div>`).join('')||'<div class="note">Not sent. Send for eSignature creates the DocuSign envelope for the recipients.</div>'}${c.events.map(e=>`<div class="note">${esc(e)}</div>`).join('')}</div>`}`;
+}
+function sheetMoreContract(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit contract: campos padrão.','warn');render()")}${row('🏷','g','Back to Quote',"go('quote')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function genContractDoc(){ S.contract.docs.push({name:'Contrato de Prestação de Serviços — VPN Corporativa',tpl:'Contrato Conectividade Algar (DocGen)',v:'V1',sig:'Unsigned'}); toast('Document generated.'); S.tab='Related'; render(); }
+function modalEsig(){ return `<div class="modal-bg"><div class="modal"><h3>Send for eSignature</h3><div class="mb">
+  <div class="fld" style="padding:0"><label>eSignature Vendor</label><select><option>DocuSign</option></select></div><div class="fld" style="padding:12px 0 0"><label>Email Template</label><select><option>Contrato_Assinatura_Cliente</option></select></div>
+  <div class="fld" style="padding:12px 0 0"><label>Recipients</label><input id="esig-to" value="representante.legal@cliente.com.br; vendedor@algar.com.br"></div></div>
+  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="sendEsig()">Send</button></div></div></div>`; }
+function sendEsig(){ const c=S.contract; const to=($('#esig-to').value||'').split(';').map(s=>s.trim()).filter(Boolean); c.recipients=to.map((e,i)=>({email:e,role:i===0?'Signer — Cliente':'Signer — Algar',status:'Sent'})); c.esig='Sent'; c.status='In Approval Process'; c.docs.forEach(d=>d.sig='Sent'); c.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); S.modal=null; S.tab='Related'; toast('Document sent for eSignature.'); render(); }
+function simularAssinatura(){ const c=S.contract; if(!c||c.esig!=='Sent'){ toast('Envie o contrato para assinatura primeiro.','warn'); return; } c.recipients.forEach(r=>r.status='Completed'); c.docs.forEach(d=>d.sig='Completed'); c.esig='Completed'; c.status='Activated'; c.events.push(new Date().toLocaleString('pt-BR')+' — Envelope concluído: todas as partes assinaram.'); S.tab='Related'; toast('Contract signed. Set the quote status to Accepted to create the order.'); go('contract'); }
+
+/* ---------- Create Order → Order → Activated → Assets ---------- */
+function modalOrder(){ return `<div class="modal-bg"><div class="modal"><h3>Create Order</h3><div class="mb"><label class="radio"><input type="radio" name="co" checked>Create Single Order</label><label class="radio"><input type="radio" name="co">Create Multiple Orders</label></div>
+  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="createOrder()">Finish</button></div></div></div>`; }
+function createOrder(){ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.modal=null; S.sheet=null; toast('Order '+S.order.number+' was created.'); S.tab='Details'; go('order'); }
+function orderSel(s){ S.order.sel=s; render(); }
+function orderMark(){ const o=S.order; if(o.status==='Activated') return; o.status='Activated'; o.sel=null; S.assets=o.lines.filter(l=>l.parent).map(l=>({name:l.name,start:new Date().toLocaleString('pt-BR'),children:o.lines.filter(x=>x.parentUid===l.uid).map(x=>x.name),attrs:l.attrs})); toast('Status changed successfully.'); render(); }
+function telaOrder(){
+  const o=S.order, roots=o.lines.filter(l=>l.parent);
+  return topbar('Order', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'📝',c:'b',n:'Edit',on:"toast('Edit order: campos padrão.','warn')"},{i:'🏢',c:'p',n:'Account',on:"go('accounts')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-order';render()"}]) + `
+  <div class="nv-tag">Order Products (Revenue Management): ${NV}.</div>
+  <div class="rh"><div class="oi" style="background:#769ed9">📦</div><div><small>Order</small><b>${o.number}</b></div></div>
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
+  ${S.tab==='Details' ? fields([['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Contract Number',S.contract?S.contract.number:''],['Order Start Date',o.start],['Status',o.status],['Order Amount',fmtMoney()]]) + pathHtml(['Draft','Activated'], o.status, o.sel, 'Status', 'order').replace('Mark Status as Complete','Mark Status as Complete')
+  : S.tab==='Lines' ? `<div class="tle-h"><div class="oi">▤</div><b>Order Products (${roots.length})</b></div>
+    ${roots.map((l,i)=>`<div class="line"><div class="n"><span>${i+1}</span><b>${esc(l.name)}</b></div><div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Net Unit Price <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Net Total Price <b>${fmtMoney()}</b></span><span>Billing Frequency <b>Monthly</b></span></div>
+      ${o.lines.filter(x=>x.parentUid===l.uid).map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · Included · Monthly</div>`).join('')}</div>`).join('')}
+    <div class="line grp">Order Summary <span class="badge">Product Subtotal ${fmtMoney()} · Total with Tax ${fmtMoney()}</span></div>
+    ${o.status==='Activated'?'<div class="nv-tag">Order activated: line editing is locked; assets were created on the account.</div>':''}`
+  : `<div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${S.assets.length})</b></div>${S.assets.map(a=>`<div class="it" onclick="go('accounts')"><b>${esc(a.name)}</b><small>${a.children.join(' · ')}</small></div>`).join('')||'<div class="note">Assets are created when the order is activated.</div>'}</div>`}`;
+}
+function sheetMoreOrder(){ return sheet(`${row('🏷','g','Quote',"go('quote')")}${row('🏢','p','Account',"go('accounts')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+
+/* ---------- Account, listas, Chatter, menu, busca, Agentforce ---------- */
+function telaAccount(){
+  return topbar('Account', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'👤',c:'p',n:'New Contact',on:"go('newcontact')"},{i:'👑',c:'o',n:'New Opp.',on:"toast('New Opportunity: formulário padrão.','warn')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-acc';render()"}]) + `
+  <div class="rh"><div class="oi p">🏢</div><div><small>Account</small><b>${esc(CTX.conta.nome)}</b></div></div>
+  <div class="rtabs"><a class="${S.tab!=='Related'&&S.tab!=='Assets'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Assets'?'on':''}" onclick="S.tab='Assets';render()">Assets</a></div>
+  ${S.tab==='Assets' ? `<div class="rel"><div class="h"><div class="oi" style="background:#f4592f">▤</div><b>Managed Assets (${S.assets.length})</b></div>
+      <div class="tle-tools"><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Amend: cria cotação de alteração a partir do asset.','warn')">Amend</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Renew: cria cotação de renovação.','warn')">Renew</button><button class="btn sm" ${S.assets.length?'':'disabled'} onclick="toast('Cancel: cria cotação de cancelamento.','warn')">Cancel</button></div>
+      ${S.assets.map(a=>`<div class="it"><b>${esc(a.name)}</b><small>Lifecycle Start ${a.start} · Renewal Term ${esc(a.attrs&&a.attrs['Período Fidelização']||'—')} Months · Total Lifecycle Amount ${fmtMoney()}</small><div class="child" style="margin:6px 0 0 0;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)">${a.children.map(esc).join(' · ')}</div></div>`).join('')||'<div class="note">No assets yet. Activate an order to create assets.</div>'}</div>`
+  : S.tab==='Related' ? `<div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (1)</b></div><div class="it" onclick="go('opp')"><b>${esc(oppName())}</b><small>${esc(S.oStage)}</small></div></div>
+     <div class="rel"><div class="h"><div class="oi g">🏷</div><b>Quotes (${S.quote?1:0})</b></div>${S.quote?`<div class="it" onclick="go('quote')"><b>${esc(S.quote.name)}</b><small>${esc(S.qStatus)}</small></div>`:'<div class="note">No quotes.</div>'}</div>
+     <div class="rel"><div class="h"><div class="oi p">👤</div><b>Contacts (${S.contacts.length})</b><a onclick="go('newcontact')">New</a></div>${S.contacts.map(c=>`<div class="it"><b>${esc(c.name)}</b><small>${esc(c.email||'')}</small></div>`).join('')}</div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#769ed9">📦</div><b>Orders (${S.order?1:0})</b></div>${S.order?`<div class="it" onclick="go('order')"><b>${S.order.number}</b><small>${S.order.status}</small></div>`:'<div class="note">No orders.</div>'}</div>`
+  : fields([['Type','Customer - Direct'],['Segmento',esc(CTX.conta.segmento)],['Localidade',esc(CTX.localidade.nome)+' · '+esc(CTX.localidade.territorio)],['Entidade faturadora',esc(entidadeFaturadora().valor)],['Account Owner',`<a>${esc(CTX.usuario.nome)}</a>`],['Industry','—']])}`;
+}
+function sheetMoreAcc(){ return sheet(`${row('📝','b','Edit',"S.sheet=null;toast('Edit account: campos padrão.','warn');render()")}${row('📍','t','Check In',"S.sheet=null;toast('Check-in registrado (Salesforce Maps).');render()")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function telaList(kind){
+  const items = kind==='contacts' ? S.contacts.map(c=>({t:c.name,s:CTX.conta.nome+' · '+(c.role||''),on:"toast('Contact record: campos padrão.','warn')"}))
+    : kind==='leads' ? [{t:'Distribuidora Nova Era',s:'Lead · Corporativo · Uberlândia',on:"toast('Lead record: campos padrão.','warn')"},{t:'Clínica Vida Plena',s:'Lead · PME · Belo Horizonte',on:"toast('Lead record: campos padrão.','warn')"}]
+    : kind==='quotes' ? (S.quote?[{t:S.quote.name,s:'Quote '+S.quote.number+' · '+S.qStatus,on:"go('quote')"}]:[])
+    : [{t:CTX.conta.nome,s:'Account · '+CTX.conta.segmento,on:"go('accounts')"}].concat(CTX_DATA.contas.filter(c=>c.id!==CTX.conta.id).map(c=>({t:c.nome,s:'Account · '+c.segmento,on:`CTX.conta=CTX_DATA.contas.find(x=>x.id==='${c.id}');go('accounts')`})));
+  const titles={contacts:'Contacts',leads:'Leads',quotes:'Quotes',accountsList:'Accounts'};
+  return topbar(titles[kind], true) + `<div class="srch">🔍 <input placeholder="Search ${titles[kind].toLowerCase()}…"></div>${kind==='quotes'?'<div class="nv-tag">Cotações são criadas a partir da oportunidade (a home de Quotes não cria cotações no app).</div>':''}
+  <div class="list">${items.map(i=>`<div class="it" onclick="${i.on}"><div class="oi ${kind==='contacts'?'p':kind==='leads'?'t':kind==='quotes'?'g':'p'}">${kind==='contacts'?'👤':kind==='leads'?'★':kind==='quotes'?'🏷':'🏢'}</div><div><b>${esc(i.t)}</b><small>${esc(i.s)}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">Nothing here yet.</div>'}</div>`;
+}
+function telaMenu(){ return topbar('Menu', false) + `<div class="menu-list">
+  ${[['⋮⋮','#747474','App Launcher',"toast('App Launcher: Sales, Service, Revenue Management…')"],['≡','#747474','All Items',"toast('All Items: lista completa de objetos.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}
+  <div class="sec">Revenue Management <em style="float:right;color:var(--brand);font-style:normal">✎ Edit</em></div>
+  ${[['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
+function telaChatter(){ return topbar('Chatter', false) + feedHtml(); }
+function telaSearch(){ const q=(S.q2||'').toLowerCase(); const hits=[]; if(S.quote&&(!q||S.quote.name.toLowerCase().includes(q))) hits.push(['🏷','g',S.quote.name,'Quote',"go('quote')"]); if(!q||oppName().toLowerCase().includes(q)) hits.push(['👑','o',oppName(),'Opportunity',"go('opp')"]); if(!q||CTX.conta.nome.toLowerCase().includes(q)) hits.push(['🏢','p',CTX.conta.nome,'Account',"go('accounts')"]); if(S.order&&(!q||'order'.includes(q))) hits.push(['📦','y',S.order.number,'Order',"go('order')"]);
+  return topbar('Search', true) + `<div class="srch">🔍 <input autofocus placeholder="Search Salesforce" value="${esc(S.q2||'')}" oninput="S.q2=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div><div class="list">${hits.map(([i,c,t,s,on])=>`<div class="it" onclick="${on}"><div class="oi ${c}">${i}</div><div><b>${esc(t)}</b><small>${s}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">No results.</div>'}</div>`; }
+function sheetAgent(){ const n=lines.filter(l=>l.parent).length; const sug = !S.quote?['Criar uma cotação para esta oportunidade','Resumir a oportunidade']:!n?['Adicionar o VPN Node à cotação','Qual a elegibilidade deste produto aqui?']:S.qStatus!=='Accepted'?['Consultar a viabilidade dos itens','Resumir a cotação para o cliente']:['Criar o pedido a partir da cotação','Quais assets este cliente já tem?'];
+  return sheet(`<div class="row" style="border:0"><i class="b">🤖</i><b>Agentforce</b></div><div style="padding:0 18px 14px;color:var(--tx2);font-size:14px">${S.quote?'Cotação '+esc(S.quote.name)+' em '+esc(S.qStatus)+', '+n+' item(ns).':'Oportunidade '+esc(oppName())+' em '+esc(S.oStage)+'.'} O que você quer fazer?</div>
+    ${sug.map(s=>`<div class="row" onclick="agentDo('${s.replace(/'/g,"\\'")}')"><i class="m">💡</i>${s}</div>`).join('')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function agentDo(s){ S.sheet=null; if(s.startsWith('Criar uma cotação')) go('newquote'); else if(s.startsWith('Adicionar o VPN')) browse(); else if(s.startsWith('Consultar a viab')) startViab(); else if(s.startsWith('Criar o pedido')){ S.modal='order'; render(); } else if(s.startsWith('Quais assets')){ S.tab='Assets'; go('accounts'); } else if(s.startsWith('Qual a eleg')){ const qp=qualificadoProduto(findProd('VPNNODE')); toast(qp.ok?'VPN Node elegível em '+CTX.localidade.nome+' ('+CTX.localidade.territorio+').':qp.hits[qp.hits.length-1].motivo, qp.ok?'':'warn'); render(); } else { toast('Resumo: '+(S.quote?S.quote.name+' · '+S.qStatus+' · '+lines.filter(l=>l.parent).length+' item(ns)':oppName()+' · '+S.oStage)); render(); } }
+
+/* ---------- roteiro (chrome do protótipo) ---------- */
+function guia(){
+  const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk); let t='';
+  if(S.tela==='opp'&&!S.quote) t=S.tab==='Related'?'1 · Em <b>Quotes</b>, toque em <b>New</b> (ou More › New Quote).':'1 · Toque em <b>Related</b> e, em Quotes, em <b>New</b> (ou More › New Quote).';
+  else if(S.tela==='newquote') t='2 · Confira o nome e toque em <b>Save</b>.';
+  else if(S.tela==='quote'&&!n) t='3 · <b>Browse Catalogs</b> › tabela de preços › catálogo › <b>Next</b>.';
+  else if(S.tela==='browse'&&!n) t='4 · No VPN Node, toque em <b>⚙</b> para configurar.';
+  else if(S.tela==='config') t='5 · Preencha os atributos com * em cada seção e toque em <b>Save &amp; Exit</b>.';
+  else if(S.tela==='browse'&&n) t='6 · Toque em <b>Save Quote</b>.';
+  else if(S.tela==='quote'&&n&&!viab) t='7 · <b>More › Consultar Viabilidade</b> preenche tecnologia e equipamentos do item.';
+  else if(S.tela==='flow') t='7 · Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.';
+  else if(S.tela==='quote'&&viab&&!S.contract) t='8 · <b>More › Create Contract</b> para gerar o documento e enviar para assinatura.';
+  else if(S.tela==='contract'&&!S.contract.docs.length) t='9 · Toque em <b>Generate Doc</b> e depois em <b>Send eSign</b>.';
+  else if(S.tela==='contract'&&S.contract.esig==='Not sent') t='9 · Toque em <b>Send eSign</b> › Send.';
+  else if(S.tela==='contract'&&S.contract.esig==='Sent') t='10 · Use <b>Simular assinatura (DocuSign)</b> na barra do protótipo.';
+  else if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') t='11 · Na cotação (Details), toque em <b>Accepted</b> no path e em <b>Mark as Current Status</b>.';
+  else if(S.qStatus==='Accepted'&&!S.order) t='12 · <b>More › Create Order</b> › Create Single Order › <b>Finish</b>.';
+  else if(S.order&&S.order.status!=='Activated') t='13 · No pedido (Details), toque em <b>Activated</b> e em <b>Mark as Current Status</b>.';
+  else if(S.order&&S.order.status==='Activated') t='14 · Concluído: veja os assets em <b>Account › Assets</b>.';
+  $('#guia').innerHTML=t?'Roteiro — '+t:''; $('#guia').style.display=t?'block':'none';
+}
 
 /* ---------- render ---------- */
-function guia(){
-  const n=lines.filter(l=>l.parent).length;
-  let t;
-  if(S.tela==='opp' && !S.quote) t = S.tab==='Related' ? 'Passo 1 · Em <b>Quotes</b>, toque em <b>New</b> para criar a cotação (ou use <b>More › New Quote</b>).' : 'Passo 1 · Toque na aba <b>Related</b> e, em Quotes, em <b>New</b> (ou <b>More › New Quote</b>).';
-  else if(S.tela==='newquote') t = 'Passo 2 · Confira o nome da cotação e toque em <b>Save</b>.';
-  else if(S.tela==='quote' && !n) t = 'Passo 3 · Toque em <b>Browse Catalogs</b> na barra de ações › escolha a tabela de preços › o catálogo › <b>Next</b>.';
-  else if(S.tela==='browse' && !n) t = 'Passo 4 · No VPN Node, toque em <b>⚙</b> para configurar (ou <b>Add</b> para adicionar direto).';
-  else if(S.tela==='config') t = 'Passo 5 · Preencha os atributos obrigatórios (marcados com *) em cada seção e toque em <b>Save &amp; Exit</b>.';
-  else if(S.tela==='browse' && n) t = 'Passo 6 · Toque em <b>Save Quote</b> para voltar à cotação com o item.';
-  else if(S.tela==='quote' && n) t = 'Passo 7 · Na aba <b>Lines</b>, toque no nome do item para ver detalhes e atributos, ou no ▾ para Configure / Delete.';
-  else if(S.tela==='opp' && S.quote) t = 'A cotação criada aparece em <b>Related › Quotes</b>. Toque nela para voltar.';
-  else t = '';
-  $('#guia').innerHTML = t ? 'Roteiro do protótipo — ' + t : ''; $('#guia').style.display = t ? 'block' : 'none';
-}
 function render(){
-  const v=$('#view');
-  if(S.tela==='opp') v.innerHTML=telaOpp(); else if(S.tela==='newquote') v.innerHTML=telaNewQuote(); else if(S.tela==='quote') v.innerHTML=telaQuote();
-  else if(S.tela==='browse') v.innerHTML=telaBrowse(); else if(S.tela==='config') v.innerHTML=telaConfig();
+  CTX.endereco=endEff();
+  const v=$('#view'); const T={opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
-  if(S.sheet==='more-opp') o=sheetMoreOpp(); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
-  if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
+  const sh={post:sheetPost,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,agent:sheetAgent};
+  if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
+  if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   $('#overlay').innerHTML=o;
-  const record=(S.tela==='opp'||S.tela==='quote'); $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','quotes','accountsList'].includes(S.tela);
+  $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia();
 }
 function pinta(){ const f=(id,arr,cur,lab)=>{ $(id).innerHTML=arr.map(x=>`<option value="${x.id}" ${x.id===cur?'selected':''}>${esc(lab(x))}</option>`).join(''); };
-  f('#p-conta',CTX_DATA.contas,CTX.conta.id,x=>x.nome); f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); f('#p-loc',LOCALIDADES,CTX.localidade.id,x=>x.nome+' · '+x.territorio); f('#p-end',enderecosDaLocalidade(CTX.localidade.id),CTX.endereco.id,x=>x.nome); }
+  f('#p-conta',CTX_DATA.contas,CTX.conta.id,x=>x.nome); f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); f('#p-loc',LOCALIDADES,CTX.localidade.id,x=>x.nome+' · '+x.territorio); f('#p-end',enderecosDaLocalidade(CTX.localidade.id),endFull().id,x=>(S.viab[x.id]?'✓ ':'')+x.nome); }
 function resetViab(){ if(cfgProduct){ cfgProduct.autoSig=null; ['Tecnologia','Interface','Abordagem','Metragem'].forEach(k=>delete cfgProduct.toque[k]); } }
 $('#p-conta').onchange=e=>{ CTX.conta=CTX_DATA.contas.find(x=>x.id===e.target.value); render(); };
 $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target.value); render(); };
 $('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
-function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&CTX.endereco.localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
-function setEnd(id,silent){ CTX.endereco=CTX_DATA.enderecos.find(x=>x.id===id); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
+function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
+function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
 function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; render(); }
 S=novo(); render();
 
 if(/selftest=1/.test(location.search)){
   const o=[], ok=(n,c)=>o.push((c?'PASS ':'FAIL ')+n);
+  const click=el=>el&&el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
   try{
-    ok('oportunidade: barra de ações (Post, Log a Call, New Task, More), cabeçalho, campos, path e Stage', document.querySelectorAll('.acts .act').length===4 && $('.rh .oi.opp') && document.querySelectorAll('.fr').length===6 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
-    ok('assistente "How can I help?" e barra de navegação com Menu', $('#agent').style.display!=='none' && document.querySelectorAll('#bnav button').length===5);
-    S.tab='Related'; render();
-    ok('Related: lista Quotes (0) com ação New', $('.rel .h b').textContent==='Quotes (0)' && $('.rel .h a').textContent==='New');
-    $('.rel .h a').click();
-    ok('New Quote: Cancel / New Quote / Save, Quote Name obrigatório, Account for Quote pré-preenchido', S.tela==='newquote' && $('.form-h b').textContent==='New Quote' && $('#f-name') && $('.ff .pill'));
-    saveQuote();
-    ok('Save cria a cotação e abre o registro com Quote Number, Syncing, Grand Total e path Draft', S.tela==='quote' && $('.rh .oi.q') && document.querySelectorAll('.ps').length===8 && $('.stage').textContent==='Status: Draft');
-    ok('ação Browse Catalogs na barra de ações', [...document.querySelectorAll('.acts .act')].some(a=>a.textContent.includes('Browse Catalogs')));
-    browse(); ok('Choose Price Book aparece primeiro', $('.modal h3').textContent==='Choose Price Book');
-    $('.modal .brand').click(); ok('depois All Catalogs com Next', $('.modal h3').textContent==='All Catalogs' && $('.modal .brand').textContent==='Next');
-    $('.modal .brand').click(); ok('Browse Products com Catalog, categorias, linhas e Save Quote', S.tela==='browse' && document.querySelectorAll('.prow').length>=5 && $('.foot .brand').textContent.includes('Save Quote'));
-    setLoc('LOC05'); ok('Expansão: Banda Larga não aparece', ![...document.querySelectorAll('.prow .nm')].some(n=>n.textContent.includes('Banda Larga')));
-    setLoc('LOC01'); openConfig('VPNNODE');
-    ok('configurador: título, toggles, barra Errors/Warnings/Info, Return to Quote, abas', S.tela==='config' && $('.cfg-top h1').textContent==='Configure VPN Node' && document.querySelectorAll('.mtabs .pill').length===3 && $('.ph .ret') && document.querySelectorAll('.atabs a').length>=6);
+    ok('oportunidade: 4 ações, cabeçalho, 6 campos, path (5) e Stage', document.querySelectorAll('.acts .act').length===4 && document.querySelectorAll('.fr').length===6 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Post'))); ok('Post abre a folha', S.sheet==='post');
+    $('#post-txt').value='Kickoff com o cliente'; click($('.bsheet .brand')); ok('post publicado no Chatter', S.feed.length===1 && S.sheet===null);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Log a Call'))); ok('Log a Call abre o formulário', S.tela==='call');
+    click($('.form-h .sv')); ok('call gravada como atividade e volta', S.tasks.length===1 && S.tela==='opp');
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('New Task'))); click($('.form-h .sv')); ok('task criada', S.tasks.length===2);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('More lista New Quote / Edit / New Contact', $('.bsheet').textContent.includes('New Quote') && $('.bsheet').textContent.includes('Edit'));
+    click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Edit'))); $('#e-amt').value='R$ 12.000'; click($('.form-h .sv')); ok('Edit Opportunity salva o valor', S.opp.amount==='R$ 12.000' && S.tela==='opp');
+    oppSel('Negotiation'); ok('path: selecionar etapa troca o botão para Mark as Current Stage', $('.stage .btn').textContent.includes('Mark as Current Stage'));
+    oppMark(); ok('estágio atualizado', S.oStage==='Negotiation');
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quotes (0) com New, Contact Roles, Open Activities (2)', $('.rel .h b').textContent==='Quotes (0)' && $('.rel .h a').textContent==='New' && document.body.textContent.includes('Open Activities (2)'));
+    click($('.rel .h a')); ok('New Quote: Cancel / New Quote / Save', S.tela==='newquote' && $('.form-h b').textContent==='New Quote');
+    click($('.form-h .sv')); ok('cotação criada; registro com path Draft e Status', S.tela==='quote' && document.querySelectorAll('.ps').length===8 && $('.stage').textContent.startsWith('Status: Draft'));
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('More da cotação sem Create PDF / Email Quote / Start Sync (limitação oficial) e com Create Contract/Create Order/Viabilidade', ![...document.querySelectorAll('.bsheet .row')].some(r=>/Email Quote|Create PDF|Start Sync/.test(r.textContent)) && $('.bsheet').textContent.includes('Create Contract') && $('.bsheet').textContent.includes('Create Order') && $('.bsheet').textContent.includes('Consultar Viabilidade'));
+    ok('Create Order desabilitado antes de Accepted', [...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
+    S.sheet=null; render();
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs com nota oficial (não criar/visualizar no app)', $('.rel .note').textContent.includes("isn't available in the Salesforce mobile app"));
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Browse Catalogs'))); ok('Browse Catalogs → Choose Price Book', $('.modal h3').textContent==='Choose Price Book');
+    click($('.modal .brand')); ok('→ All Catalogs', $('.modal h3').textContent==='All Catalogs');
+    click($('.modal .brand')); ok('→ Browse Products com busca, categorias e Save Quote', S.tela==='browse' && $('.srch input') && document.querySelectorAll('.cats button').length===4 && $('.foot .brand').textContent.includes('Save Quote'));
+    S.q='vpn'; render(); ok('busca filtra produtos', document.querySelectorAll('.prow').length===1); S.q=''; render();
+    setLoc('LOC05'); ok('Expansão: Banda Larga oculta', ![...document.querySelectorAll('.prow .nm')].some(n=>n.textContent.includes('Banda Larga'))); setLoc('LOC01');
+    click([...document.querySelectorAll('.prow .r2 .btn')].find(b=>b.textContent.includes('⚙'))); ok('⚙ abre o configurador', S.tela==='config' && $('.cfg-top h1').textContent==='Configure VPN Node');
     setAttr('Velocidade','200 Mbps');
-    ok('equipamentos marcados pela regra (Metro + anel)', (cfgProduct.c.equip||[]).map(x=>x.TipoEquipamento).join(',')==='Roteador,Switch,Chave Ótica');
-    ok('Save & Exit desabilitado com erros', $('.foot .brand').disabled===true);
+    ok('antes da viabilidade: aviso Info de viabilidade, sem equipamentos, atendimento Pendente', /Info \(\d+\)/.test($('.mtabs').textContent) && (cfgProduct.c.equip||[]).length===0 && avaliar(cfgProduct).cls.v==='Pendente');
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
-    ok('sem erros após obrigatórios; próximo reajuste calculado', avaliar(cfgProduct).msgs.filter(m=>m.sev==='Error').length===0 && cfgProduct.a.DataProximoReajuste==='01/10/2029');
-    S.sumOpen=true; render(); ok('Summary com Quantity / Net Unit Price / Net Amount e Attributes', $('.sum .box') && $('.sum .at'));
-    const n=lines.length; saveExit();
-    ok('Save & Exit volta ao Browse Products e cria linha + 3 componentes', S.tela==='browse' && lines.length===n+4);
-    $('.foot .brand').click();
-    ok('Save Quote volta à cotação na aba Lines com a linha e os filhos', S.tela==='quote' && S.tab==='Lines' && document.querySelectorAll('.line').length===1 && document.querySelectorAll('.line .child').length===3);
-    S.sheet='menu:'+lines[n].uid; render();
-    ok('menu da linha: View / Configure / Delete', [...document.querySelectorAll('.bsheet .row')].map(r=>r.textContent.replace(/[^A-Za-z]/g,'')).join('|')==='View|Configure|Delete');
-    S.sheet='line:'+lines[n].uid; S.stab='Attributes'; render();
-    ok('painel da linha com Attributes incluindo localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade') && $('.bsheet').textContent.includes('Entidade faturadora'));
-    S.sheet=null; S.tab='Related'; go('opp');
-    ok('voltando à oportunidade, Quotes (1) lista a cotação criada', $('.rel .h b').textContent==='Quotes (1)');
+    ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
+    const n=lines.length; click($('.foot .brand')); ok('Save & Exit cria a linha e volta ao Browse Products', lines.length===n+1 && S.tela==='browse');
+    click($('.foot .brand')); ok('Save Quote → aba Lines com a linha "viabilidade pendente"', S.tela==='quote' && S.tab==='Lines' && $('.badge.warn'));
+    click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Group')); ok('Add Group cria um grupo de linhas', S.groups.length===1);
+    click([...document.querySelectorAll('.tle-tools .btn')].find(b=>b.textContent==='Add Assets')); ok('Add Assets informa que não há assets', $('.bsheet').textContent.includes('No assets')); S.sheet=null; render();
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Consultar Viabilidade')));
+    ok('Consultar Viabilidade abre o Flow em tela cheia', S.tela==='flow' && $('.fl-prog'));
+    S.flow.step=2; runViab(); ok('resultado com tecnologia Metro', S.flow.step===3 && S.flow.result[0].end.tecnologia==='Metro');
+    click($('.foot .brand')); const nv=lines.filter(l=>l.parent)[0];
+    ok('Finish: linha viável, 3 equipamentos, tecnologia preenchida', S.tela==='quote' && nv.viabOk && lines.filter(x=>x.parentUid===nv.uid).length===3 && nv.attrs['Tecnologia']==='Metro');
+    click($('.line .n b')); ok('toque no item abre Details/Attributes', S.sheet && S.sheet.startsWith('line:')); S.stab='Attributes'; render(); ok('Attributes com localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade')); S.sheet=null; render();
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Contract')));
+    ok('Create Contract abre o contrato', S.tela==='contract' && $('.rh b').textContent==='00000123');
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Generate'))); ok('Generate Doc cria o documento', S.contract.docs.length===1);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Send eSign'))); ok('Send eSign abre o modal DocuSign', S.modal==='esig');
+    click($('.modal .brand')); ok('envelope enviado', S.contract.esig==='Sent' && S.contract.recipients.length===2);
+    simularAssinatura(); ok('assinatura concluída: contrato Activated', S.contract.status==='Activated');
+    go('quote'); S.tab='Details'; render(); quoteSel('Accepted'); ok('path: Accepted selecionado → Mark as Current Status', $('.stage .btn').textContent.includes('Mark as Current Status'));
+    quoteMark(); ok('cotação Accepted, 6 etapas concluídas', S.qStatus==='Accepted' && document.querySelectorAll('.ps.done').length===6);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('Create Order habilitado', ![...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
+    click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order'))); ok('Create Order: Create Single Order + Finish', $('.modal').textContent.includes('Create Single Order') && $('.modal .brand').textContent==='Finish');
+    click($('.modal .brand')); ok('pedido criado e aberto: Details com Contract Number e path Draft/Activated', S.tela==='order' && $('.rh b').textContent==='00000037' && document.body.textContent.includes('Contract Number') && document.querySelectorAll('.ps').length===2);
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Lines')); ok('Order Products com Quantity / Net Unit Price / Discount / Net Total Price / Billing Frequency e Order Summary', ['Quantity','Net Unit Price','Discount','Net Total Price','Billing Frequency','Order Summary'].every(x=>$('#view').textContent.includes(x)));
+    S.tab='Details'; render(); orderSel('Activated'); orderMark(); ok('pedido Activated e assets criados', S.order.status==='Activated' && S.assets.length===1);
+    click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Account'))); ok('Account abre', S.tela==='accounts');
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Assets')); ok('Assets: Managed Assets (1) com Amend/Renew/Cancel e o VPN Node', $('.rel .h b').textContent==='Managed Assets (1)' && $('.tle-tools').textContent.includes('Amend') && $('.rel').textContent.includes('VPN Node'));
+    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
+    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com nota oficial e a cotação', S.tela==='quotes' && $('.nv-tag') && $('.list .it'));
+    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista', S.tela==='leads' && document.querySelectorAll('.list .it').length===2);
+    click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
+    click($('#agent')); ok('Agentforce abre sugestões contextuais', S.sheet==='agent' && document.querySelectorAll('.bsheet .row').length>=3);
+    S.sheet=null; go('search'); S.q2='vpn'; render(); ok('busca encontra cotação e oportunidade', document.querySelectorAll('.list .it').length>=2);
+    click($('.list .it')); ok('resultado abre o registro', S.tela==='quote');
+    click($('.top .bk')); ok('Back volta para a tela anterior', S.tela==='search');
     const t=document.getElementById('tst'); t.style.display='block';
     t.textContent=o.join('\n')+'\n\nRESUMO: '+o.filter(x=>x[0]==='P').length+' PASS / '+o.filter(x=>x[0]==='F').length+' FAIL';
   }catch(err){ const t=document.getElementById('tst'); t.style.display='block'; t.textContent=o.join('\n')+'\n\nERRO: '+err.message+'\n'+err.stack; }
