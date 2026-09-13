@@ -9,6 +9,11 @@
    "produto": "Locação de Equipamentos",
    "familia": "TIC",
    "pagina": "uc-locacao-equipamentos.html"
+  },
+  {
+   "produto": "Inteligência Artificial",
+   "familia": "Digitais",
+   "pagina": "uc-inteligencia-artificial.html"
   }
  ]
 }
