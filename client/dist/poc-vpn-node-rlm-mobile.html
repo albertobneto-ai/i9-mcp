@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Salesforce · VPN Node · mobile</title>
+<style>
+:root{--brand:#0176d3;--navy:#032d60;--bd:#e5e5e5;--bd2:#c9c9c9;--tx:#181818;--tx2:#444;--mut:#706e6b;--err:#ba0517;--warn:#fe9339;--warnt:#8c4b02;--ok:#2e844a;--gray:#f3f3f3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Salesforce Sans",Arial,sans-serif;font-size:15px;color:var(--tx);background:#fff}
+button,select,input{font:inherit;color:inherit}
+a{color:var(--brand);text-decoration:none}
+#poc{background:#16325c;color:#cfe0f5;font-size:11px;padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#poc b{color:#9fc3ee;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
+#poc select{background:#fff;color:#181818;border:0;border-radius:3px;padding:2px 4px;font-size:11px;max-width:150px}
+#poc .nv{background:#8c4b02;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px}
+#poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px;margin-left:auto}
+#app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;background:#fff;padding-bottom:128px}
+/* barra de status + cabeçalho de página */
+.sb{height:22px;background:#fff;display:flex;justify-content:space-between;padding:3px 14px;font-size:11px;color:var(--tx)}
+.top{display:flex;align-items:center;padding:8px 12px;gap:8px;min-height:44px;background:#fff}
+.top .bk{color:var(--brand);font-size:15px;background:0;border:0;padding:4px 0}
+.top .ttl{flex:1;text-align:center;font-weight:700;font-size:16px}
+.top .ic{color:var(--brand);font-size:18px;background:0;border:0}
+/* barra de ações do registro (referência oficial) */
+.acts{display:flex;justify-content:space-around;padding:10px 6px 8px;border-bottom:1px solid var(--bd);background:#fff}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--tx2);background:0;border:0;width:78px}
+.act i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-size:17px}
+.act i.b{background:#1b96ff}.act i.t{background:#0b827c}.act i.g{background:#2e844a}.act i.m{background:#747474}.act i.o{background:#f88962}.act i.p{background:#7f8de1}
+/* cabeçalho do registro */
+.rh{background:var(--gray);padding:14px 14px;display:flex;gap:12px;align-items:flex-start}
+.rh .oi{width:34px;height:34px;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:17px;flex:none}
+.rh .oi.opp{background:#f88962}.rh .oi.q{background:#2e844a}.rh .oi.acc{background:#7f8de1}
+.rh small{display:block;font-size:14px;color:var(--tx2)}
+.rh b{font-size:19px;line-height:1.25;display:block}
+/* campos em lista */
+.fl{padding:0 14px}
+.fr{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--bd);font-size:15px;align-items:flex-start}
+.fr span:first-child{width:120px;flex:none;color:var(--tx)}
+.fr span:last-child{flex:1}
+.fr .chk{width:16px;height:16px;border:1px solid var(--bd2);border-radius:3px;display:inline-block}
+/* path (referência oficial) */
+.pathw{background:var(--gray);padding:12px 0 0;margin-top:8px}
+.path{display:flex;gap:3px;overflow:hidden;padding:0 12px}
+.ps{flex:none;width:118px;background:#fff;color:var(--tx);font-size:14px;text-align:center;padding:10px 6px 10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)}
+.ps:first-child{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);border-radius:20px 0 0 20px}
+.ps.cur{background:var(--navy);color:#fff}
+.stage{text-align:center;font-weight:700;padding:10px 0 12px;background:var(--gray);font-size:15px}
+/* seções / abas do registro */
+.rtabs{display:flex;border-bottom:1px solid var(--bd);margin-top:6px}
+.rtabs a{flex:1;text-align:center;padding:12px 6px;color:var(--tx);border-bottom:3px solid transparent;margin-bottom:-1px;font-size:14px}
+.rtabs a.on{border-color:var(--brand);font-weight:700;color:var(--navy)}
+.rel{margin:12px 14px;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+.rel .h{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--bd)}
+.rel .h .oi{width:28px;height:28px;border-radius:4px;display:grid;place-items:center;color:#fff;font-size:13px}
+.rel .h b{flex:1}
+.rel .h a{font-size:14px}
+.rel .it{padding:11px 12px;border-bottom:1px solid var(--bd);font-size:14px}
+.rel .it b{display:block;color:var(--brand)}
+.rel .it small{color:var(--tx2)}
+.rel .it .sub{margin:6px 0 0 14px;color:var(--tx2);font-size:13px}
+.rel .rfoot{padding:10px;text-align:center;font-size:14px}
+/* assistente + navegação inferior (referência oficial) */
+.agent{position:fixed;left:0;right:0;bottom:64px;max-width:430px;margin:0 auto;padding:0 14px;z-index:20}
+.agent div{background:var(--gray);border-radius:26px;padding:12px 16px;display:flex;align-items:center;gap:12px;color:var(--mut);font-size:16px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.agent div span:last-child{margin-left:auto}
+.bnav{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#fff;border-top:1px solid var(--bd);display:flex;height:64px;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.bnav button{flex:1;background:0;border:0;color:var(--tx2);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.bnav button i{font-style:normal;font-size:20px;line-height:1;color:#444}
+.bnav button.on{color:var(--brand);font-weight:700}.bnav button.on i{color:var(--brand)}
+/* formulário de criação (padrão do app) */
+.form-h{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bd)}
+.form-h a{width:70px;font-size:16px}
+.form-h b{flex:1;text-align:center;font-size:16px}
+.form-h a.sv{text-align:right;font-weight:700}
+.ff{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.ff label{display:block;font-size:13px;color:var(--tx2);margin-bottom:6px}
+.ff label .rq{color:var(--err)}
+.ff input,.ff select{width:100%;border:1px solid var(--bd2);border-radius:6px;padding:11px 12px;min-height:44px;background:#fff;font-size:15px}
+.ff .pill{display:inline-flex;align-items:center;gap:6px;background:#e5f1fb;border-radius:14px;padding:4px 10px;font-size:14px}
+.ff .sec{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.bsheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
+.bsheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:#fff;border-radius:14px 14px 0 0;z-index:41;padding-bottom:env(safe-area-inset-bottom)}
+.bsheet .grip{width:36px;height:4px;background:var(--bd2);border-radius:2px;margin:8px auto}
+.bsheet .row{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--bd);font-size:16px}
+.bsheet .row i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;flex:none}
+.bsheet .cancel{text-align:center;padding:14px;color:var(--brand);font-size:16px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end}
+.modal{background:#fff;width:100%;max-width:430px;margin:0 auto;border-radius:14px 14px 0 0}
+.modal h3{margin:0;padding:16px;text-align:center;font-size:17px;border-bottom:1px solid var(--bd)}
+.modal .mb{padding:12px 16px}
+.modal .mf{display:flex;gap:10px;padding:12px 16px 18px;border-top:1px solid var(--bd)}
+.radio{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--bd);border-radius:8px;margin-bottom:8px}
+.radio input{width:18px;height:18px;accent-color:var(--brand)}
+.btn{border:1px solid var(--bd2);background:#fff;color:var(--brand);border-radius:8px;padding:11px 16px;font-size:15px;min-height:44px;flex:1}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn[disabled]{background:#c9c9c9;border-color:#c9c9c9;color:#fff}
+.btn.sm{padding:7px 12px;min-height:36px;font-size:13px;flex:none}
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#2e844a;color:#fff;padding:12px 18px;border-radius:8px;z-index:60;font-size:14px;max-width:88%}
+/* ---------- Revenue Cloud dentro do app (não verificado) ---------- */
+.nv-tag{margin:8px 14px 0;font-size:11px;color:var(--warnt);background:#fef3d7;border:1px solid #fadfa4;border-radius:6px;padding:6px 10px}
+.tle-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
+.tle-h .oi{width:28px;height:28px;border-radius:4px;background:#f4592f;color:#fff;display:grid;place-items:center;font-size:14px}
+.tle-h b{flex:1;font-size:15px}
+.tog{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2)}
+.tog .sw{width:40px;height:22px;border-radius:11px;background:#8c8c8c;position:relative}
+.tog .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.tog.on .sw{background:var(--brand)}.tog.on .sw::after{left:20px}
+.tog small{display:block;font-size:10px;color:var(--mut);text-align:center}
+.line{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.line .n{display:flex;align-items:center;gap:8px;font-size:15px}
+.line .n b{color:var(--brand);flex:1}
+.line .n .act{width:26px;height:24px;border:1px solid var(--bd2);border-radius:4px;background:#fff;color:var(--brand);font-size:11px}
+.line .kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:8px;font-size:13px;color:var(--tx2)}
+.line .kv b{color:var(--tx);font-weight:400}
+.line .child{margin:8px 0 0 12px;padding-left:10px;border-left:2px solid var(--bd);font-size:13px;color:var(--tx2)}
+.tle-tools{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bd)}
+.bp-top{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;font-size:15px}
+.bp-top b{margin-right:6px}.bp-top a{margin-left:auto;font-size:13px}
+.bp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
+.bp-head .oi{width:28px;height:28px;border-radius:4px;background:#2e844a;color:#fff;display:grid;place-items:center}
+.bp-head b{flex:1;font-size:16px}
+.srch{margin:12px 14px 0;border:1px solid var(--bd2);border-radius:8px;padding:10px 12px;color:var(--mut)}
+.cats{display:flex;gap:8px;overflow-x:auto;padding:12px 14px 4px}
+.cats button{flex:none;border:1px solid var(--bd2);background:#fff;border-radius:16px;padding:7px 12px;font-size:13px;color:var(--tx)}
+.cats button.on{background:#e5f1fb;border-color:var(--brand);color:var(--navy);font-weight:600}
+.selbar{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px}
+.selbar .sp{flex:1;color:var(--tx2)}
+.prow{margin:0 14px 12px;border:1px solid var(--bd);border-radius:8px;padding:12px}
+.prow .r1{display:flex;gap:12px;align-items:flex-start}
+.prow input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand);margin-top:2px}
+.prow .img{width:56px;height:46px;border-radius:6px;background:var(--gray);display:grid;place-items:center;font-size:24px;flex:none}
+.prow .b{flex:1}.prow .b .nm{font-size:15px}.prow .b .pr{font-weight:700;display:flex;gap:8px;align-items:center;margin:3px 0}
+.prow .b .pr .bo{width:18px;height:18px;border:1px solid var(--bd2);border-radius:4px;font-size:10px;display:grid;place-items:center;color:var(--mut)}
+.prow .b .ds{font-size:13px;color:var(--tx2);line-height:1.4}
+.prow .r2{display:flex;gap:8px;align-items:center;margin-top:10px}
+.prow .qty{display:flex;align-items:center;border:1px solid var(--bd2);border-radius:6px;height:36px}
+.prow .qty button{border:0;background:0;width:34px;color:var(--mut);font-size:16px}
+.prow .qty span{width:30px;text-align:center}
+.prow .r2 .sp{flex:1}
+.foot{position:fixed;bottom:64px;left:0;right:0;max-width:430px;margin:0 auto;background:var(--gray);border-top:1px solid var(--bd);padding:10px 14px;display:flex;gap:8px;z-index:21}
+/* configurador */
+.cfg-top{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.cfg-top h1{margin:0 0 10px;font-size:18px;font-weight:400}
+.cfg-top .togs{display:flex;gap:16px;flex-wrap:wrap}
+.cfg-info{background:var(--gray);padding:10px 14px;font-size:13px;line-height:1.4}
+.mtabs{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--bd);overflow-x:auto}
+.mtabs .pill{flex:none;display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:6px;font-size:13px}
+.mtabs .pill.on{border-color:var(--brand);font-weight:700;color:var(--navy)}
+.mtabs .pill i{font-style:normal;font-weight:700}
+.mtabs .e i{color:var(--err)}.mtabs .w i{color:var(--warn)}.mtabs .i i{color:var(--brand)}
+.mrow{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd);font-size:13px;align-items:flex-start;line-height:1.4}
+.mrow i{font-style:normal;font-weight:700;flex:none}
+.mrow.Error i{color:var(--err)}.mrow.Warning i{color:var(--warn)}.mrow.Info i{color:var(--brand)}
+.ph{padding:12px 14px}
+.ph .ret{display:block;margin-bottom:10px;font-size:14px}
+.ph .r{display:flex;gap:12px}
+.ph .img{width:84px;height:64px;border-radius:4px;background:linear-gradient(135deg,#e5f1fb,#cfe3f7);display:grid;place-items:center;font-size:30px;flex:none}
+.ph .t b{display:block;font-size:16px;margin-bottom:4px}.ph .t p{margin:0;font-size:13px;color:var(--tx2);line-height:1.4}
+.ph .pr{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.ph .pr b{font-size:16px}.ph .pr small{color:var(--tx2);display:block;font-size:12px;text-align:right}
+.qty-r{display:flex;justify-content:flex-end;padding:0 14px 8px}
+.qty-r label{display:block;font-size:12px;color:var(--tx2);margin-bottom:4px}
+.qty-r input{width:90px;border:1px solid var(--bd2);border-radius:6px;padding:9px 10px;min-height:40px}
+.atabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--bd);padding:0 14px}
+.atabs a{flex:none;padding:10px 12px;color:var(--tx);border-bottom:3px solid transparent;margin-bottom:-1px;font-size:14px}
+.atabs a.on{border-color:var(--brand);font-weight:700}
+.fld{padding:12px 14px 0}
+.fld label{display:block;font-size:13px;color:var(--tx2);margin-bottom:5px}
+.fld .rq{color:var(--err)}
+.fld select,.fld input{width:100%;border:1px solid var(--bd2);border-radius:6px;padding:10px 12px;min-height:44px;background:#fff;font-size:15px;appearance:auto}
+.fld select:disabled,.fld input:disabled{background:var(--gray);color:var(--mut)}
+.fld.err select,.fld.err input{border-color:var(--err)}
+.fld .ferr{color:var(--err);font-size:12px;margin-top:4px}
+.fld .cbx{display:flex;align-items:center;gap:10px;min-height:44px}
+.fld .cbx input{width:18px;height:18px;accent-color:var(--brand)}
+.fld .help{font-size:11.5px;color:var(--mut);margin-top:4px;line-height:1.35}
+.grp{margin:18px 14px 0}
+.grp h3{margin:0 0 10px;font-size:18px;font-weight:400;display:flex;gap:8px;align-items:center}
+.grp h3 .c{color:var(--mut);font-size:13px}
+.ccard{border:1px solid var(--bd2);border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.ccard.sel{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
+.ccard .r{display:flex;align-items:center;gap:10px}
+.ccard .r input{width:18px;height:18px;accent-color:var(--brand)}
+.ccard .r .nm{font-weight:700;flex:1;font-size:15px}
+.ccard .r .pr{font-size:13px;color:var(--tx2)}
+.ccard .r .gear,.ccard .r .ch{width:32px;height:32px;border:1px solid var(--bd2);border-radius:6px;background:#fff;color:var(--brand)}
+.ccard .r .ch{border:0}
+.ccard .r2{display:flex;gap:8px;margin:8px 0 0 28px;align-items:center;font-size:13px}
+.ccard .r2 .sm{border:1px solid var(--bd2);border-radius:6px;padding:6px 8px;background:#fff;min-width:100px}
+.ccard .r2 .q{border:1px solid var(--bd2);border-radius:6px;padding:6px 8px;background:var(--gray);width:48px;text-align:center;color:var(--mut)}
+.ccard .ds{font-size:13px;color:var(--tx2);margin:8px 0 0 28px;line-height:1.4}
+.ccard .cbody{margin-left:16px}
+.sum{margin:18px 14px 0;border:1px solid var(--bd);border-radius:6px}
+.sum h2{margin:0;padding:12px 14px;font-size:18px;font-weight:400;border-bottom:1px solid var(--bd);display:flex;align-items:center}
+.sum h2 span{margin-left:auto;color:var(--brand);font-size:14px}
+.sum .sb2{padding:12px 14px}
+.sum .p{font-weight:700;font-size:15px;margin-bottom:8px}
+.sum .box{background:var(--gray);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:12.5px;gap:6px}
+.sum .box small{display:block;color:var(--tx2)}
+.sum .at{margin-top:12px}
+.sum .at b{display:block;font-size:14px;margin-bottom:6px}
+.sum .at div{padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.sum .at div span{font-weight:700;margin-right:6px}
+.sum .sec{margin-top:12px}.sum .sec>b{display:block;margin-bottom:6px}
+.sum .card{border:1px solid var(--bd);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:13px}
+.sum .card .h{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+.sum .card .h a{font-weight:700}
+.sum .card .chip{background:#e5f1fb;color:var(--navy);border-radius:12px;padding:1px 10px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.sum .tot{margin-top:14px;border-top:1px solid var(--bd);padding-top:8px}
+.sum .tot div{display:flex;justify-content:space-between;font-weight:700;padding:4px 0;font-size:15px}
+.sum .tot div span:last-child{font-weight:400}
+#tst{position:fixed;inset:0;background:#111;color:#9f9;font:11px/1.45 monospace;padding:10px;overflow:auto;z-index:99;display:none;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div id="poc"><b>Protótipo · cenário</b>
+  <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
+  <span class="nv" title="Linhas, Browse Products e configurador são documentados para Lightning Experience; a exibição no app Salesforce Mobile não está documentada.">RC no app: não verificado</span>
+  <button onclick="reset()">Reiniciar</button></div>
+<div id="app">
+  <div class="sb"><span>9:41</span><span>●●● ⌂ 100%</span></div>
+  <div id="view"></div>
+</div>
+<div id="overlay"></div>
+<div class="agent" id="agent"><div><span>🤖</span><span>How can I help?</span><span>🎤</span></div></div>
+<div class="bnav" id="bnav"></div>
+<pre id="tst"></pre>
+<script>
+/* ============================================================================
+   CATÁLOGO MODELADO — VPN Node · UC-VPN-001 (Revisão 1)
+   AttributeDefinition ....... 46 atributos da Revisão 1, criados uma única vez
+   AttributeCategory ......... 10 categorias: transversais (B2B), de família (conectividade)
+                               e específicas do produto
+   ProductClassification ..... template que os produtos herdam
+   Product2 .................. VPN Node (bundle) + componentes e SVAs
+   Regras .................... efeitos da Revisão 1 no configurador
+   ============================================================================ */
+const ATTRS = {"Velocidade": {"code": "ATTR001", "name": "Velocidade", "type": "Picklist", "ui": "picklist", "values": ["10 Mbps", "20 Mbps", "30 Mbps", "50 Mbps", "100 Mbps", "200 Mbps", "300 Mbps", "400 Mbps", "500 Mbps", "700 Mbps", "900 Mbps", "1 Gbps", "1.2 Gbps", "1.5 Gbps", "2 Gbps", "2.5 Gbps", "3 Gbps", "3.5 Gbps", "4 Gbps", "4.5 Gbps", "5 Gbps", "5.5 Gbps", "6 Gbps", "6.5 Gbps", "7 Gbps", "7.5 Gbps", "8 Gbps", "8.5 Gbps", "9 Gbps", "9.5 Gbps", "10 Gbps", "15 Gbps", "20 Gbps", "25 Gbps", "30 Gbps", "40 Gbps", "50 Gbps", "60 Gbps", "70 Gbps", "80 Gbps", "90 Gbps", "100 Gbps", "200Gbps", "300Gbps", "400Gbps", "500Gbps", "600Gbps", "700Gbps"], "def": null, "unit": null, "help": "A velocidade não pode ser alterada enquanto o cliente possuir o SVA de aumento temporário ativo.", "duvida": "", "pend": "", "ro": false, "uc": 2}, "Tecnologia": {"code": "ATTR002", "name": "Tecnologia", "type": "Picklist", "ui": "picklist", "values": ["Metro", "GPON", "XGSPON", "Rádio"], "def": null, "unit": null, "help": "O campo não é solicitado ao usuário: é preenchido automaticamente com o retorno da análise de viabilidade e, em esteira formatada, não é editado. Passa a ser editável — pelo usuário com permissão de complementação técnica — quando o retorno da viabilidade é manual ou quando a configuração segue fluxo de processo customizável.", "duvida": "", "pend": "", "ro": false, "uc": 5}, "Interface": {"code": "ATTR003", "name": "Interface", "type": "Picklist", "ui": "picklist", "values": ["Óptica", "Elétrica"], "def": "Elétrica (esteira formatada)", "unit": null, "help": "O campo não é solicitado ao usuário: é preenchido automaticamente com o retorno da análise de viabilidade e, em esteira formatada, não é editado. Passa a ser editável — pelo usuário com permissão de complementação técnica — quando o retorno da viabilidade é manual ou quando a configuração segue fluxo de processo customizável.", "duvida": "", "pend": "", "ro": false, "uc": 6}, "Abordagem": {"code": "ATTR004", "name": "Abordagem", "type": "Picklist", "ui": "picklist", "values": ["Pronta", "Construir"], "def": null, "unit": null, "help": "Preenchido com o retorno da análise de viabilidade. — A edição é restrita ao usuário com permissão de complementação técnica, ou aos casos em que a configuração atende aos critérios de produto não formatado. Se o retorno indicar rede neutra, o atendimento é inviável.", "duvida": "", "pend": "", "ro": false, "uc": 7}, "Metragem": {"code": "ATTR005", "name": "Metragem", "type": "Number", "ui": "number", "values": [], "def": null, "unit": "m", "help": "Preenchido com o retorno da análise de viabilidade. — No preenchimento automático com abordagem Construir, a própria análise de viabilidade retorna a metragem. No preenchimento manual, o valor deve ser maior que zero e é obrigatório somente quando a abordagem é Construir. Em projetos customizados, o campo é editável pelo usuário com permissão de complementação técnica.", "duvida": "", "pend": "", "ro": false, "uc": 8}, "VPNNetwork": {"code": "ATTR006", "name": "VPN Network", "type": "Lookup", "ui": "network", "values": [], "def": null, "unit": null, "help": "Ao preencher este campo, o usuário escolhe entre selecionar uma network existente — o sistema apresenta a lista das networks ativas vinculadas ao CNPJ raiz — ou criar uma nova no mesmo fluxo, quando não existe network ativa ou quando os nodes contratados serão associados a uma rede nova. Na criação, o protocolo de roteamento é informado obrigatoriamente e, concluída a criação, o sistema gera o ide", "duvida": "", "pend": "", "ro": false, "uc": 3}, "ProtocoloRoteamento": {"code": "ATTR007", "name": "Protocolo de Roteamento", "type": "Picklist", "ui": "picklist", "values": ["RIP", "STATIC", "BGP", "eBGP"], "def": "RIP", "unit": null, "help": "Valor padrão: RIP. — O atributo pertence à VPN Network: é definido no nível da rede e herdado pelos nodes. Só é visível e obrigatório quando a network está sendo criada; quando o usuário seleciona uma network existente, o valor é derivado automaticamente dela.", "duvida": "", "pend": "", "ro": false, "uc": 4}, "GoldenJumper": {"code": "ATTR008", "name": "Golden Jumper", "type": "Picklist", "ui": "picklist", "values": ["Algar", "Cliente"], "def": null, "unit": null, "help": "A elegibilidade do bloco é dada pelo endereço: o endereço de instalação deve estar previamente cadastrado com a marcação de necessidade de Golden Jumper — tipicamente um Data Center, podendo também ser necessidade específica de um cliente que não é Data Center. Se o endereço é elegível, o grupo traz seus atributos para preenchimento, e eles se tornam obrigatórios. Mapeamentos definidos em revisão:", "duvida": "", "pend": "", "ro": false, "uc": 9}, "NomeDataCenter": {"code": "ATTR009", "name": "Nome do Data Center", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "Identifica o Data Center do endereço — por exemplo, Equinix SP4; um mesmo endereço pode abrigar mais de um Data Center. Obrigatório quando o Golden Jumper está marcado como Sim.", "duvida": "", "pend": "", "ro": false, "uc": 10}, "InterfaceGJ": {"code": "ATTR010", "name": "Interface", "type": "Picklist", "ui": "picklist", "values": ["Elétrico", "Óptico"], "def": null, "unit": null, "help": "Obrigatório quando o Golden Jumper está marcado como Sim.", "duvida": "", "pend": "", "ro": false, "uc": 11}, "NomeJumper": {"code": "ATTR011", "name": "Nome do jumper", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "Identifica a conexão — por exemplo, Cross Servidor BD. Obrigatório quando o Golden Jumper está marcado como Sim.", "duvida": "", "pend": "", "ro": false, "uc": 12}, "AlterarFornecedorGJ": {"code": "ATTR012", "name": "Alterar Fornecedor Golden Jumper", "type": "Picklist", "ui": "picklist", "values": ["Não", "Sim"], "def": null, "unit": null, "help": "Elegível e editável somente em processos que envolvem mudança de endereço. Quando marcado como Sim, obriga o preenchimento da interface e do nome do jumper.", "duvida": "", "pend": "", "ro": false, "uc": 17}, "ModalidadeInstalacao": {"code": "ATTR013", "name": "Modalidade de Instalação", "type": "Picklist", "ui": "picklist", "values": ["Físico", "Virtual/Fabric"], "def": null, "unit": null, "help": "A obrigatoriedade deste atributo é condicional aos atributos do bloco de nuvem: quando preenchido com Virtual/Fabric, tornam-se obrigatórios Modelo de Disponibilização, Velocidade de Conexão e Provedor e Serviço Cloud.", "duvida": "", "pend": "", "ro": false, "uc": 13}, "ModeloDisponibilizacao": {"code": "ATTR014", "name": "Modelo de Disponibilização", "type": "Picklist", "ui": "picklist", "values": ["Dedicado", "Hospedado"], "def": null, "unit": null, "help": "Obrigatório quando a Modalidade de Instalação é Virtual/Fabric.", "duvida": "", "pend": "", "ro": false, "uc": 14}, "VelocidadeConexao": {"code": "ATTR015", "name": "Velocidade de Conexão", "type": "Text", "ui": "text", "values": [], "def": null, "unit": "Mbps", "help": "Expressa em Mbps. — Obrigatório quando a Modalidade de Instalação é Virtual/Fabric. Todas as velocidades devem ser expressas em Mbps — primeira opção, definida pela complexidade de implementação; formas alternativas de apresentação estão em avaliação com o time técnico.", "duvida": "", "pend": "", "ro": false, "uc": 15}, "ProvedorCloud": {"code": "ATTR016", "name": "Provedor e Serviço Cloud", "type": "Picklist", "ui": "picklist", "values": ["AWS - Direct Connect", "Azure - ExpressRoute", "Oracle Cloud (OCI) - Fast Connect", "Google Cloud (GCP) - Cloud Interconnect", "IBM - Cloud Direct Link"], "def": null, "unit": null, "help": "Obrigatório quando a Modalidade de Instalação é Virtual/Fabric.", "duvida": "", "pend": "", "ro": false, "uc": 16}, "Condominio": {"code": "ATTR017", "name": "Condomínio", "type": "Picklist", "ui": "picklist", "values": ["Sim", "Não"], "def": null, "unit": null, "help": "Marcado automaticamente quando o endereço está previamente cadastrado e sinalizado como endereço de condomínio — condição que pode ou não gerar custos extras de implantação. — O indicador não pode ser alterado diretamente no processo de venda: é marcado e desmarcado automaticamente conforme o cadastro prévio do endereço na base de endereços de Data Center e Condomínio.", "duvida": "", "pend": "", "ro": true, "uc": 18}, "AcessoTerceiroLastMile": {"code": "ATTR018", "name": "Acesso Terceiro Last Mile", "type": "Checkbox", "ui": "checkbox", "values": ["Last Mile"], "def": null, "unit": null, "help": "Regra condicional exclusiva do produto VPN, aplicável apenas a projetos customizados, com envolvimento do usuário com permissão de complementação técnica.", "duvida": "", "pend": "", "ro": false, "uc": 21}, "ParceiroLastMile": {"code": "ATTR019", "name": "Parceiro LastMile", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o Acesso Terceiro Last Mile está marcado. O preenchimento é em texto livre — não há padrão corporativo para o nome do parceiro. O processo relacionado à contratação do Last Mile ainda precisa ser definido.", "duvida": "", "pend": "", "ro": false, "uc": 22}, "ProprietarioRoteador": {"code": "ATTR020", "name": "Proprietário do Roteador", "type": "Picklist", "ui": "picklist", "values": ["Algar", "Parceiro"], "def": "Algar", "unit": null, "help": "Valor padrão: Algar. — Obrigatório quando o Acesso Terceiro Last Mile está marcado.", "duvida": "", "pend": "", "ro": false, "uc": 23}, "NumeroViabilidadeGLM": {"code": "ATTR021", "name": "Número Viabilidade GLM", "type": "Number", "ui": "number", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o Acesso Terceiro Last Mile está marcado.", "duvida": "", "pend": "", "ro": false, "uc": 24}, "VigenciaLastMile": {"code": "ATTR022", "name": "Vigência LastMile", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o Acesso Terceiro Last Mile está marcado.", "duvida": "", "pend": "", "ro": false, "uc": 25}, "ValorInstalacaoLastMile": {"code": "ATTR023", "name": "Valor Instalação LastMile s/ Impostos", "type": "Currency", "ui": "currency", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o Acesso Terceiro Last Mile está marcado.", "duvida": "", "pend": "", "ro": false, "uc": 26}, "ValorMensalLastMile": {"code": "ATTR024", "name": "Valor Mensal LastMile s/ Impostos", "type": "Currency", "ui": "currency", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o Acesso Terceiro Last Mile está marcado.", "duvida": "", "pend": "", "ro": false, "uc": 27}, "TipoEquipamento": {"code": "ATTR025", "name": "Tipo de Equipamento", "type": "Picklist", "ui": "picklist", "values": ["Roteador", "Switch", "Conversor", "Transceiver", "Rádio", "ONT", "Chave Ótica"], "def": null, "unit": null, "help": "A seleção só ocorre após o retorno da viabilidade. O usuário visualiza a lista de tipos de equipamento com seleção múltipla; para cada equipamento selecionado informa a quantidade — sempre maior que zero — e a modalidade, na relação de 1 para 1 entre equipamento e modalidade. Em esteira formatada o sistema define automaticamente, em comodato: GPON ⇒ 1 Roteador e 1 ONT; Metro ⇒ 1 Roteador e 1 Switc", "duvida": "", "pend": "", "ro": false, "uc": 19}, "ModalidadeEquipamento": {"code": "ATTR026", "name": "Modalidade Equipamento", "type": "Picklist", "ui": "picklist", "values": ["Comodato", "Do Cliente", "Locação"], "def": "Locação", "unit": null, "help": "Valor padrão: Locação em esteira formatada. Em projetos customizados o campo é editável pelo usuário com permissão de complementação técnica. — Cada equipamento selecionado carrega exatamente uma modalidade. Quando a modalidade é Comodato, o equipamento não é cobrado. É necessário definir o processo de alteração da modalidade Do Cliente para Comodato ou Locação, garantindo a recolha do equipamento", "duvida": "", "pend": "", "ro": false, "uc": 20}, "VelocidadeTemporaria": {"code": "ATTR027", "name": "Velocidade Temporária", "type": "Picklist", "ui": "picklist", "values": ["10 Mbps", "20 Mbps", "30 Mbps", "50 Mbps", "100 Mbps", "200 Mbps", "300 Mbps", "400 Mbps", "500 Mbps", "700 Mbps", "900 Mbps", "1 Gbps", "1.2 Gbps", "1.5 Gbps", "2 Gbps", "2.5 Gbps", "3 Gbps", "3.5 Gbps", "4 Gbps", "4.5 Gbps", "5 Gbps", "5.5 Gbps", "6 Gbps", "6.5 Gbps", "7 Gbps", "7.5 Gbps", "8 Gbps", "8.5 Gbps", "9 Gbps", "9.5 Gbps", "10 Gbps", "15 Gbps", "20 Gbps", "25 Gbps", "30 Gbps", "40 Gbps", "50 Gbps", "60 Gbps", "70 Gbps", "80 Gbps", "90 Gbps", "100 Gbps"], "def": null, "unit": null, "help": "O campo é obrigatório quando o SVA de aumento temporário é selecionado, e o sistema apresenta somente as opções de velocidade elegíveis para a configuração. A velocidade temporária deve ser maior que a contratada para o VPN Node — caracterizando um upgrade real — e respeita o teto da sua faixa: contratada abaixo de 100 Mbps, teto de 100 Mbps; contratada acima de 100 Mbps e até 1 Gbps, teto de 1 Gb", "duvida": "", "pend": "", "ro": false, "uc": 28}, "QuantidadeDias": {"code": "ATTR028", "name": "Quantidade de Dias (corridos)", "type": "Number", "ui": "number", "values": [], "def": null, "unit": null, "help": "Obrigatório quando o SVA de aumento temporário é selecionado. A quantidade de dias fica entre 10 e 60. A data final de desativação é calculada automaticamente somando a quantidade contratada à data de ativação da nova velocidade; ao término do período, a velocidade é restabelecida ao padrão originalmente contratado e o SVA é cancelado na sequência (modo operante em avaliação).", "duvida": "", "pend": "", "ro": false, "uc": 29}, "ReferenciaCliente": {"code": "ATTR029", "name": "Referência do Cliente", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "Preenchido apenas para os segmentos Operadoras-Atacado e Governo. — Registra uma referência do cliente para correlação — a identificação na planta da Algar. O atributo pode ser alterado. Para os segmentos elegíveis (Operadoras-Atacado e Governo), o preenchimento é sempre obrigatório.", "duvida": "", "pend": "", "ro": false, "uc": 32}, "TipoMoeda": {"code": "ATTR030", "name": "Tipo Moeda", "type": "Picklist", "ui": "picklist", "values": ["Dólar"], "def": "Dólar", "unit": null, "help": "Padrão: Dólar. — Elegível somente para cliente internacional, para fins de faturamento.", "duvida": "", "pend": "", "ro": false, "uc": 33}, "ValorMoeda": {"code": "ATTR031", "name": "Valor Moeda", "type": "Number", "ui": "number", "values": [], "def": null, "unit": null, "help": "Obrigatório apenas quando o tipo de moeda está preenchido. — Elegível somente para cliente internacional, para fins de faturamento. Refere-se à cotação de conversão da moeda — o cálculo da conversão é realizado pelo usuário, não pelo sistema.", "duvida": "", "pend": "", "ro": false, "uc": 34}, "ProdutoAServico": {"code": "ATTR032", "name": "Produto a Serviço", "type": "Text", "ui": "text", "values": [], "def": null, "unit": null, "help": "", "duvida": "", "pend": "", "ro": false, "uc": 47}, "PeriodoFidelizacao": {"code": "ATTR033", "name": "Período Fidelização", "type": "Picklist", "ui": "picklist", "values": ["0", "12", "24", "36", "48", "60"], "def": null, "unit": null, "help": "Opção sem fidelidade (valor 0) válida apenas para os segmentos Governo e Atacado. Toda informação contratual é apresentada ao final da cotação e novamente antes da assinatura do contrato.", "duvida": "", "pend": "", "ro": false, "uc": 35}, "TipoReajuste": {"code": "ATTR034", "name": "Tipo de Reajuste", "type": "Picklist", "ui": "picklist", "values": ["Data Ativação", "Data de assinatura do contrato", "Data base", "Sem reajuste"], "def": "Data de assinatura do contrato", "unit": null, "help": "Padrão: Data de Assinatura do Contrato. A permissão de selecionar a data base é funcional, governada pelo módulo de perfis e permissionamento — não é fixada por lista de perfis. Regras de exceção: Sem reajuste é válido apenas para o segmento Governo; Data de Ativação é válida para nova venda e para os segmentos Governo e Atacado.", "duvida": "", "pend": "", "ro": false, "uc": 36}, "DataBase": {"code": "ATTR035", "name": "Data Base", "type": "Date", "ui": "date", "values": [], "def": null, "unit": null, "help": "Elegível apenas quando o tipo de reajuste é Data Base.", "duvida": "", "pend": "", "ro": false, "uc": 37}, "DataAssinatura": {"code": "ATTR036", "name": "Data de Assinatura do Contrato", "type": "Date", "ui": "date", "values": [], "def": null, "unit": null, "help": "Formato DD/MM/AAAA. — Elegível apenas quando o tipo de reajuste é Data de Assinatura do Contrato — é a data-âncora desse tipo de reajuste.", "duvida": "", "pend": "", "ro": false, "uc": 38}, "IndiceReajuste": {"code": "ATTR037", "name": "Índice de Reajuste", "type": "Picklist", "ui": "picklist", "values": ["IPCA", "IGP-M", "IGP-DI", "IST"], "def": "IPCA", "unit": null, "help": "Padrão: IPCA.", "duvida": "", "pend": "", "ro": false, "uc": 39}, "ReajustarAntes12Meses": {"code": "ATTR038", "name": "Reajustar Antes de 12 Meses", "type": "Picklist", "ui": "picklist", "values": ["Não", "Sim"], "def": "Não", "unit": null, "help": "Padrão = Não — Padrão: Não. A permissão de reajustar antes de 12 meses é funcional, governada pelo módulo de perfis e permissionamento — não é fixada por lista de perfis.", "duvida": "", "pend": "", "ro": false, "uc": 40}, "DataProximoReajuste": {"code": "ATTR039", "name": "Data do Próximo Reajuste", "type": "Date", "ui": "date", "values": [], "def": null, "unit": null, "help": "Preenchida automaticamente pelo sistema. — Calculada a partir do tipo de reajuste e do período de fidelização (data-âncora + meses de fidelização). Se a data calculada resultar em período inferior a 12 meses e Reajustar Antes de 12 Meses = Não, somam-se 12 meses ao resultado — regra válida para os tipos Data de Assinatura e Data Base.", "duvida": "", "pend": "", "ro": true, "uc": 41}, "PercentualMulta": {"code": "ATTR040", "name": "Percentual da Multa", "type": "Picklist", "ui": "picklist", "values": ["30%"], "def": "30%", "unit": null, "help": "Valor fixo: 30%, sobre o valor remanescente do contrato. Não é elegível para o segmento Governo. O atributo permanece como picklist em razão da elegibilidade de outros valores em outros produtos do catálogo.", "duvida": "", "pend": "", "ro": false, "uc": 42}, "DataInicioContrato": {"code": "ATTR041", "name": "Data de Início do Contrato", "type": "Date", "ui": "date", "values": [], "def": null, "unit": null, "help": "Preenchida automaticamente com a data de ativação do asset.", "duvida": "", "pend": "", "ro": true, "uc": 43}, "DataTerminoContrato": {"code": "ATTR042", "name": "Data de Término do Contrato", "type": "Date", "ui": "date", "values": [], "def": null, "unit": null, "help": "Em nova venda, considera a data de ativação do asset e o período de fidelização; em alteração, considera o recálculo do período do contrato e o período de fidelização.", "duvida": "", "pend": "", "ro": true, "uc": 44}, "RecalculoPeriodoContrato": {"code": "ATTR043", "name": "Recálculo Período do Contrato", "type": "Picklist", "ui": "picklist", "values": ["Data Atual", "Início do Contrato", "Manter Vigência", "Término do Contrato"], "def": null, "unit": null, "help": "Elegível apenas em pedido de alteração.", "duvida": "", "pend": "", "ro": false, "uc": 45}, "DiasAvisoPrevio": {"code": "ATTR044", "name": "Quantidade de Dias Aviso Previo", "type": "Picklist", "ui": "picklist", "values": ["30 dias"], "def": "30 dias", "unit": null, "help": "O padrão é de 30 dias.", "duvida": "", "pend": "", "ro": false, "uc": 46}, "PlanoMIR": {"code": "ATTR045", "name": "Plano", "type": "Picklist", "ui": "picklist", "values": ["MIR - SMART", "MIR - PRO"], "def": null, "unit": null, "help": "O plano não pode ser adquirido quando a VPN possui abordagem por parceiros ou Last Mile com equipamento de parceiro.", "duvida": "A condição de bloqueio menciona “abordagem = Parceiros”, valor que não existe no atributo de abordagem (Pronta/Construir). A que informação a condição se refere — ao acesso por parceiro ou ao proprietário do roteador ser o parceiro?", "pend": "", "ro": false, "uc": 30}, "TipoMonitoramento": {"code": "ATTR046", "name": "Tipo de Monitoramento", "type": "Picklist", "ui": "picklist", "values": ["ICMP/SNMP", "PROBE"], "def": null, "unit": null, "help": "Obrigatório quando um plano é escolhido. — Quando o tipo selecionado é PROBE, o fluxo segue em alta complexidade para desenho do escopo, considerando equipamento específico no projeto.", "duvida": "", "pend": "", "ro": false, "uc": 31}};
+const ATTR_CATS = [{"code": "ACAT001", "name": "Informações contratuais", "camada": "transversal", "attrs": ["PeriodoFidelizacao", "TipoReajuste", "DataBase", "DataAssinatura", "IndiceReajuste", "ReajustarAntes12Meses", "DataProximoReajuste", "PercentualMulta", "DataInicioContrato", "DataTerminoContrato", "RecalculoPeriodoContrato", "DiasAvisoPrevio"]}, {"code": "ACAT002", "name": "Regras de negócio", "camada": "transversal", "attrs": ["ReferenciaCliente", "TipoMoeda", "ValorMoeda", "ProdutoAServico"]}, {"code": "ACAT003", "name": "Acesso", "camada": "familia", "attrs": ["Velocidade", "Tecnologia", "Interface", "Abordagem", "Metragem"]}, {"code": "ACAT004", "name": "Infraestrutura de acesso", "camada": "familia", "attrs": ["ModalidadeInstalacao", "ModeloDisponibilizacao", "VelocidadeConexao", "ProvedorCloud", "Condominio"]}, {"code": "ACAT005", "name": "Acesso terceiro (Last Mile)", "camada": "transversal", "attrs": ["AcessoTerceiroLastMile", "ParceiroLastMile", "ProprietarioRoteador", "NumeroViabilidadeGLM", "VigenciaLastMile", "ValorInstalacaoLastMile", "ValorMensalLastMile"]}, {"code": "ACAT006", "name": "Rede privativa (VPN)", "camada": "produto", "attrs": ["VPNNetwork", "ProtocoloRoteamento"]}, {"code": "ACAT007", "name": "Golden Jumper", "camada": "produto", "attrs": ["GoldenJumper", "NomeDataCenter", "InterfaceGJ", "NomeJumper", "AlterarFornecedorGJ"]}, {"code": "ACAT008", "name": "Equipamento", "camada": "familia", "attrs": ["TipoEquipamento", "ModalidadeEquipamento"]}, {"code": "ACAT009", "name": "Upgrade temporário", "camada": "produto", "attrs": ["VelocidadeTemporaria", "QuantidadeDias"]}, {"code": "ACAT010", "name": "Monitoramento", "camada": "produto", "attrs": ["PlanoMIR", "TipoMonitoramento"]}];
+const CLASSES = [{"code": "CLASS001", "name": "VPN Node (acesso dedicado)", "cats": ["ACAT003", "ACAT004", "ACAT006", "ACAT007", "ACAT005", "ACAT002", "ACAT001"], "over": {}}, {"code": "CLASS002", "name": "Link de internet dedicado", "cats": ["ACAT003", "ACAT004", "ACAT005", "ACAT002", "ACAT001"], "over": {"ModalidadeInstalacao": {"hidden": true}}}, {"code": "CLASS003", "name": "Equipamento de acesso", "cats": ["ACAT008"], "over": {}}, {"code": "CLASS004", "name": "SVA de velocidade", "cats": ["ACAT009", "ACAT001"], "over": {"PeriodoFidelizacao": {"hidden": true}}}, {"code": "CLASS005", "name": "SVA de monitoramento", "cats": ["ACAT010", "ACAT001"], "over": {}}];
+const REGRAS = [{"id": "R01", "nome": "Endereço sem cobertura", "escopo": "Produto", "motor": "message", "efeitos": [{"tipo": "message", "severidade": "Error", "quando": "ctx.endereco.cobertura === false", "texto": "Viabilidade: sem cobertura para o endereço. Atendimento inviável — segue para estudo dedicado."}], "cml": "message(Cobertura == false, \"Sem cobertura para o endereço. Atendimento inviável.\", \"Error\");"}, {"id": "R02", "nome": "Rede neutra = inviável", "escopo": "Produto", "motor": "message", "efeitos": [{"tipo": "message", "severidade": "Error", "quando": "ctx.endereco.redeNeutra === true", "texto": "Viabilidade: endereço atendido por rede neutra. Atendimento inviável."}], "cml": "message(RedeNeutra == true, \"Endereço atendido por rede neutra: atendimento inviável.\", \"Error\");"}, {"id": "R03", "nome": "Tecnologia, interface, abordagem e metragem vêm da viabilidade", "escopo": "Produto", "motor": "setdefault + rule(disable)", "efeitos": [{"tipo": "setValue", "alvo": "Tecnologia", "valor": "ctx.endereco.tecnologia", "quando": "ctx.endereco.tecnologia"}, {"tipo": "setValue", "alvo": "Interface", "valor": "ctx.endereco.interface || 'Elétrica'", "quando": "ctx.endereco.cobertura !== false"}, {"tipo": "setValue", "alvo": "Abordagem", "valor": "ctx.endereco.abordagem", "quando": "ctx.endereco.abordagem"}, {"tipo": "setValue", "alvo": "Metragem", "valor": "ctx.endereco.metragem", "quando": "ctx.endereco.abordagem === 'Construir'"}, {"tipo": "disable", "alvo": "Tecnologia", "quando": "!(ctx.endereco.retornoManual || (d.classificacao === 'Customizado' && ctx.usuario.perms.includes('complementacao')))"}, {"tipo": "disable", "alvo": "Interface", "quando": "!(ctx.endereco.retornoManual || (d.classificacao === 'Customizado' && ctx.usuario.perms.includes('complementacao')))"}, {"tipo": "disable", "alvo": "Abordagem", "quando": "!(ctx.endereco.retornoManual || (d.classificacao === 'Customizado' && ctx.usuario.perms.includes('complementacao')))"}, {"tipo": "disable", "alvo": "Metragem", "quando": "!(ctx.endereco.retornoManual || (d.classificacao === 'Customizado' && ctx.usuario.perms.includes('complementacao')))"}], "cml": "@(contextPath = \"SalesTransaction.TecnologiaViabilidade__c\")\nextern string TecnologiaViab;\nsetdefault(true, Tecnologia == TecnologiaViab, \"Tecnologia definida pela viabilidade.\");\nrule(!EdicaoTecnicaPermitida, \"disable\", \"attribute\", \"Tecnologia\");"}, {"id": "R04", "nome": "Metragem obrigatória e maior que zero na abordagem Construir", "escopo": "Produto", "motor": "rule(hide) + constraint", "efeitos": [{"tipo": "hide", "alvo": "Metragem", "quando": "a.Abordagem !== 'Construir'"}, {"tipo": "require", "alvo": "Metragem", "quando": "a.Abordagem === 'Construir'"}, {"tipo": "constraint", "alvo": "Metragem", "severidade": "Error", "quando": "a.Abordagem === 'Construir' && a.Metragem !== '' && a.Metragem != null && Number(a.Metragem) <= 0", "texto": "Metragem deve ser maior que zero na abordagem Construir."}], "cml": "rule(Abordagem != \"Construir\", \"hide\", \"attribute\", \"Metragem\");\nconstraint(Abordagem == \"Construir\" -> Metragem > 0, \"Metragem deve ser maior que zero na abordagem Construir.\");"}, {"id": "R05", "nome": "VPN Network: existente herda protocolo; nova exige protocolo", "escopo": "Produto", "motor": "rule(hide/disable) + setdefault", "efeitos": [{"tipo": "require", "alvo": "VPNNetwork", "quando": "true"}, {"tipo": "hide", "alvo": "ProtocoloRoteamento", "quando": "!a.VPNNetwork"}, {"tipo": "setValue", "alvo": "ProtocoloRoteamento", "valor": "f.networkProtocolo(a.VPNNetwork)", "quando": "a.VPNNetwork && a.VPNNetwork !== 'NOVA'"}, {"tipo": "disable", "alvo": "ProtocoloRoteamento", "quando": "a.VPNNetwork && a.VPNNetwork !== 'NOVA'"}, {"tipo": "require", "alvo": "ProtocoloRoteamento", "quando": "a.VPNNetwork === 'NOVA'"}, {"tipo": "message", "severidade": "Info", "quando": "a.VPNNetwork === 'NOVA'", "texto": "Nova VPN Network: o identificador é gerado na criação e a rede exige no mínimo dois VPN Nodes vinculados."}], "cml": "rule(VPNNetwork != \"NOVA\", \"disable\", \"attribute\", \"ProtocoloRoteamento\");\nsetdefault(VPNNetwork == \"NOVA\", ProtocoloRoteamento == \"RIP\");"}, {"id": "R06", "nome": "Golden Jumper só em endereço elegível; Algar exige dados da conexão", "escopo": "Produto", "motor": "rule(hide) + constraint", "efeitos": [{"tipo": "hide", "alvo": "GoldenJumper", "quando": "!ctx.endereco.dataCenter"}, {"tipo": "require", "alvo": "GoldenJumper", "quando": "ctx.endereco.dataCenter"}, {"tipo": "hide", "alvo": "NomeDataCenter", "quando": "a.GoldenJumper !== 'Algar'"}, {"tipo": "hide", "alvo": "InterfaceGJ", "quando": "a.GoldenJumper !== 'Algar'"}, {"tipo": "hide", "alvo": "NomeJumper", "quando": "a.GoldenJumper !== 'Algar'"}, {"tipo": "require", "alvo": "NomeDataCenter", "quando": "a.GoldenJumper === 'Algar'"}, {"tipo": "require", "alvo": "InterfaceGJ", "quando": "a.GoldenJumper === 'Algar'"}, {"tipo": "require", "alvo": "NomeJumper", "quando": "a.GoldenJumper === 'Algar'"}, {"tipo": "setValue", "alvo": "NomeDataCenter", "valor": "ctx.endereco.nomeDataCenter", "quando": "a.GoldenJumper === 'Algar' && ctx.endereco.nomeDataCenter", "soVazio": true}, {"tipo": "hide", "alvo": "AlterarFornecedorGJ", "quando": "ctx.transacao.novaVenda"}], "cml": "rule(!EnderecoDataCenter, \"hide\", \"attribute\", \"GoldenJumper\");\nconstraint(GoldenJumper == \"Algar\" -> NomeDataCenter != \"\" && NomeJumper != \"\", \"Golden Jumper Algar exige Data Center, interface e nome do jumper.\");"}, {"id": "R07", "nome": "Virtual/Fabric torna obrigatório o bloco de nuvem", "escopo": "Produto", "motor": "rule(hide) + constraint", "efeitos": [{"tipo": "require", "alvo": "ModalidadeInstalacao", "quando": "true"}, {"tipo": "hide", "alvo": "ModeloDisponibilizacao", "quando": "a.ModalidadeInstalacao !== 'Virtual/Fabric'"}, {"tipo": "hide", "alvo": "VelocidadeConexao", "quando": "a.ModalidadeInstalacao !== 'Virtual/Fabric'"}, {"tipo": "hide", "alvo": "ProvedorCloud", "quando": "a.ModalidadeInstalacao !== 'Virtual/Fabric'"}, {"tipo": "require", "alvo": "ModeloDisponibilizacao", "quando": "a.ModalidadeInstalacao === 'Virtual/Fabric'"}, {"tipo": "require", "alvo": "VelocidadeConexao", "quando": "a.ModalidadeInstalacao === 'Virtual/Fabric'"}, {"tipo": "require", "alvo": "ProvedorCloud", "quando": "a.ModalidadeInstalacao === 'Virtual/Fabric'"}], "cml": "rule(ModalidadeInstalacao != \"Virtual/Fabric\", \"hide\", \"attribute\", \"ProvedorCloud\");\nconstraint(ModalidadeInstalacao == \"Virtual/Fabric\" -> ProvedorCloud != \"\", \"Virtual/Fabric exige modelo, velocidade (Mbps) e provedor.\");"}, {"id": "R08", "nome": "Condomínio vem do cadastro do endereço", "escopo": "Produto", "motor": "setdefault + rule(disable)", "efeitos": [{"tipo": "setValue", "alvo": "Condominio", "valor": "ctx.endereco.condominio ? 'Sim' : 'Não'", "quando": "true"}, {"tipo": "disable", "alvo": "Condominio", "quando": "true"}], "cml": "@(contextPath = \"SalesTransaction.EnderecoCondominio__c\")\nextern boolean EnderecoCondominio;\nrule(true, \"disable\", \"attribute\", \"Condominio\");"}, {"id": "R09", "nome": "Acesso Terceiro Last Mile: só com complementação técnica; exige dados do parceiro", "escopo": "Bundle", "motor": "rule(disable/hide) + constraint + exclude", "efeitos": [{"tipo": "disable", "alvo": "AcessoTerceiroLastMile", "quando": "!ctx.usuario.perms.includes('complementacao')"}, {"tipo": "hide", "alvo": "ParceiroLastMile", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "hide", "alvo": "ProprietarioRoteador", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "hide", "alvo": "NumeroViabilidadeGLM", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "hide", "alvo": "VigenciaLastMile", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "hide", "alvo": "ValorInstalacaoLastMile", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "hide", "alvo": "ValorMensalLastMile", "quando": "!a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "ParceiroLastMile", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "ProprietarioRoteador", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "NumeroViabilidadeGLM", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "VigenciaLastMile", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "ValorInstalacaoLastMile", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "require", "alvo": "ValorMensalLastMile", "quando": "a.AcessoTerceiroLastMile"}, {"tipo": "exclude", "componente": "upgrade", "quando": "a.AcessoTerceiroLastMile", "texto": "Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile."}], "cml": "exclude(AcessoTerceiroLastMile == true, svas[UpgradeTemporario], \"Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.\");\nrule(!AcessoTerceiroLastMile, \"hide\", \"attribute\", \"ParceiroLastMile\");"}, {"id": "R10", "nome": "Equipamentos dimensionados pela tecnologia (comodato)", "escopo": "Bundle", "motor": "require", "efeitos": [{"tipo": "autoAdd", "componente": "equip", "quando": "d.classificacao === 'Formatado'", "itens": "f.equipamentosPorTecnologia(a.Tecnologia, ctx.endereco.anel)"}, {"tipo": "message", "severidade": "Warning", "quando": "a.Tecnologia === 'XGSPON'", "texto": "Dimensionamento automático de equipamentos para XGSPON não está definido na Revisão 1 — incluir manualmente."}], "cml": "require(Tecnologia == \"GPON\", equipamentos[Roteador]{Modalidade = \"Comodato\"} == 1, \"GPON: Roteador em comodato.\");\nrequire(Tecnologia == \"GPON\", equipamentos[ONT]{Modalidade = \"Comodato\"} == 1, \"GPON: ONT em comodato.\");\nrequire(Tecnologia == \"Metro\" && EntregaAnel, equipamentos[ChaveOtica]{Modalidade = \"Comodato\"} == 1);"}, {"id": "R11", "nome": "Roteador no máximo 1; Rádio exige equipamento Rádio", "escopo": "Bundle", "motor": "constraint", "efeitos": [{"tipo": "message", "severidade": "Error", "quando": "c.equip.filter(e => e.TipoEquipamento === 'Roteador').reduce((s,e)=>s+Number(e.qtd||1),0) > 1", "texto": "Roteador tem cardinalidade máxima de 1."}, {"tipo": "message", "severidade": "Error", "quando": "a.Tecnologia === 'Rádio' && !c.equip.some(e => e.TipoEquipamento === 'Rádio')", "texto": "Tecnologia Rádio exige o equipamento Rádio."}, {"tipo": "message", "severidade": "Error", "quando": "c.equip.length === 0 && ctx.endereco.cobertura !== false && !ctx.endereco.redeNeutra", "texto": "O grupo Equipamentos de Acesso exige no mínimo 1 equipamento."}], "cml": "constraint(equipamentos[Roteador] <= 1, \"Roteador tem cardinalidade máxima de 1.\");\nconstraint(Tecnologia == \"Rádio\" -> equipamentos[Radio] >= 1, \"Tecnologia Rádio exige o equipamento Rádio.\");"}, {"id": "R12", "nome": "Upgrade Temporário: opções elegíveis, tetos por faixa e 10 a 60 dias", "escopo": "Bundle", "motor": "rule(hide value) + constraint", "efeitos": [{"tipo": "require", "alvo": "VelocidadeTemporaria", "componente": "upgrade", "quando": "true"}, {"tipo": "require", "alvo": "QuantidadeDias", "componente": "upgrade", "quando": "true"}, {"tipo": "hideValues", "alvo": "VelocidadeTemporaria", "componente": "upgrade", "quando": "true", "filtro": "!f.upgradeElegivel(v, a.Velocidade, a.Tecnologia)"}, {"tipo": "constraint", "alvo": "QuantidadeDias", "componente": "upgrade", "severidade": "Error", "quando": "x.QuantidadeDias !== '' && x.QuantidadeDias != null && (Number(x.QuantidadeDias) < 10 || Number(x.QuantidadeDias) > 60)", "texto": "Quantidade de dias do upgrade deve ficar entre 10 e 60."}, {"tipo": "message", "severidade": "Warning", "componente": "upgrade", "quando": "f.mbps(a.Velocidade) === 100", "texto": "Pendência em revisão: enquadramento da velocidade contratada igual a 100 Mbps nas faixas de limite (time Algar)."}, {"tipo": "message", "severidade": "Info", "componente": "upgrade", "quando": "f.mbps(a.Velocidade) > 1000", "texto": "Contratada acima de 1 Gbps: upgrade temporário segue em esteira customizada."}], "cml": "rule(VelocidadeTemporaria <= Velocidade, \"hide\", \"attribute\", \"VelocidadeTemporaria\", \"value\", \"...\");\nconstraint(QuantidadeDias >= 10 && QuantidadeDias <= 60, \"Quantidade de dias entre 10 e 60.\");"}, {"id": "R13", "nome": "Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade", "escopo": "Bundle", "motor": "constraint + message", "efeitos": [{"tipo": "require", "alvo": "PlanoMIR", "componente": "mir", "quando": "true"}, {"tipo": "require", "alvo": "TipoMonitoramento", "componente": "mir", "quando": "x.PlanoMIR"}, {"tipo": "message", "severidade": "Info", "componente": "mir", "quando": "x.TipoMonitoramento === 'PROBE'", "texto": "PROBE: fluxo segue em alta complexidade para desenho do escopo, com equipamento específico."}, {"tipo": "message", "severidade": "Warning", "componente": "mir", "quando": "a.AcessoTerceiroLastMile && a.ProprietarioRoteador === 'Parceiro'", "texto": "Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parceiro."}], "cml": "message(TipoMonitoramento == \"PROBE\", \"PROBE: alta complexidade para desenho do escopo.\", \"Info\");"}, {"id": "R14", "nome": "Referência do Cliente obrigatória para Operadoras-Atacado e Governo", "escopo": "Produto", "motor": "extern + rule(hide) + constraint", "efeitos": [{"tipo": "hide", "alvo": "ReferenciaCliente", "quando": "!['Governo','Operadoras-Atacado'].includes(ctx.conta.segmento)"}, {"tipo": "require", "alvo": "ReferenciaCliente", "quando": "['Governo','Operadoras-Atacado'].includes(ctx.conta.segmento)"}], "cml": "@(contextPath = \"SalesTransaction.Segmento__c\")\nextern string Segmento;\nrule(Segmento != \"Governo\" && Segmento != \"Operadoras-Atacado\", \"hide\", \"attribute\", \"ReferenciaCliente\");"}, {"id": "R15", "nome": "Moeda e cotação só para cliente internacional", "escopo": "Produto", "motor": "rule(hide) + constraint", "efeitos": [{"tipo": "hide", "alvo": "TipoMoeda", "quando": "!ctx.conta.internacional"}, {"tipo": "hide", "alvo": "ValorMoeda", "quando": "!ctx.conta.internacional"}, {"tipo": "require", "alvo": "ValorMoeda", "quando": "ctx.conta.internacional && a.TipoMoeda"}, {"tipo": "message", "severidade": "Info", "quando": "ctx.conta.internacional", "texto": "Cliente internacional: a cotação de conversão é calculada pelo usuário, não pelo sistema."}], "cml": "rule(!ClienteInternacional, \"hide\", \"attribute\", \"TipoMoeda\");\nconstraint(TipoMoeda != \"\" -> ValorMoeda > 0, \"Informe a cotação de conversão.\");"}, {"id": "R16", "nome": "Produto a Serviço sem definição", "escopo": "Produto", "motor": "rule(disable)", "efeitos": [{"tipo": "disable", "alvo": "ProdutoAServico", "quando": "true"}], "cml": "rule(true, \"disable\", \"attribute\", \"ProdutoAServico\"); // pendente de definição"}, {"id": "R17", "nome": "Fidelização 0 e \"Sem reajuste\" só para segmentos permitidos", "escopo": "Produto", "motor": "rule(hide value)", "efeitos": [{"tipo": "require", "alvo": "PeriodoFidelizacao", "quando": "true"}, {"tipo": "hideValues", "alvo": "PeriodoFidelizacao", "quando": "!['Governo','Operadoras-Atacado'].includes(ctx.conta.segmento)", "filtro": "v === '0'"}, {"tipo": "require", "alvo": "TipoReajuste", "quando": "true"}, {"tipo": "hideValues", "alvo": "TipoReajuste", "quando": "ctx.conta.segmento !== 'Governo'", "filtro": "v === 'Sem reajuste'"}, {"tipo": "hideValues", "alvo": "TipoReajuste", "quando": "!ctx.usuario.perms.includes('dataBase')", "filtro": "v === 'Data base'"}, {"tipo": "hideValues", "alvo": "TipoReajuste", "quando": "!(ctx.transacao.novaVenda && ['Governo','Operadoras-Atacado'].includes(ctx.conta.segmento))", "filtro": "v === 'Data Ativação'"}], "cml": "rule(Segmento != \"Governo\", \"hide\", \"attribute\", \"TipoReajuste\", \"value\", \"Sem reajuste\");\nrule(!PermissaoDataBase, \"hide\", \"attribute\", \"TipoReajuste\", \"value\", \"Data base\");"}, {"id": "R18", "nome": "Datas-âncora conforme o tipo de reajuste", "escopo": "Produto", "motor": "rule(hide) + constraint", "efeitos": [{"tipo": "hide", "alvo": "DataBase", "quando": "a.TipoReajuste !== 'Data base'"}, {"tipo": "require", "alvo": "DataBase", "quando": "a.TipoReajuste === 'Data base'"}, {"tipo": "hide", "alvo": "DataAssinatura", "quando": "a.TipoReajuste !== 'Data de assinatura do contrato'"}, {"tipo": "require", "alvo": "DataAssinatura", "quando": "a.TipoReajuste === 'Data de assinatura do contrato'"}, {"tipo": "require", "alvo": "IndiceReajuste", "quando": "a.TipoReajuste !== 'Sem reajuste'"}, {"tipo": "disable", "alvo": "ReajustarAntes12Meses", "quando": "!ctx.usuario.perms.includes('reajusteAntes12')"}], "cml": "rule(TipoReajuste != \"Data base\", \"hide\", \"attribute\", \"DataBase\");\nrule(!PermissaoReajusteAntes12, \"disable\", \"attribute\", \"ReajustarAntes12Meses\");"}, {"id": "R19", "nome": "Data do próximo reajuste calculada", "escopo": "Produto", "motor": "constraint (derivação)", "efeitos": [{"tipo": "setValue", "alvo": "DataProximoReajuste", "valor": "f.proximoReajuste(a)", "quando": "true", "forcar": true}, {"tipo": "setValue", "alvo": "DataInicioContrato", "valor": "'Definida na ativação do asset'", "quando": "true", "forcar": true}, {"tipo": "setValue", "alvo": "DataTerminoContrato", "valor": "'Ativação + período de fidelização'", "quando": "true", "forcar": true}], "cml": "constraint(DataProximoReajuste == addMonths(DataAncora, PeriodoFidelizacao < 12 && ReajustarAntes12Meses == \"Não\" ? PeriodoFidelizacao + 12 : PeriodoFidelizacao));"}, {"id": "R20", "nome": "Multa fixa em 30% e não elegível para Governo", "escopo": "Produto", "motor": "setdefault + rule(hide)", "efeitos": [{"tipo": "hide", "alvo": "PercentualMulta", "quando": "ctx.conta.segmento === 'Governo'"}, {"tipo": "setValue", "alvo": "PercentualMulta", "valor": "'30%'", "quando": "ctx.conta.segmento !== 'Governo'", "forcar": true}, {"tipo": "disable", "alvo": "PercentualMulta", "quando": "true"}], "cml": "rule(Segmento == \"Governo\", \"hide\", \"attribute\", \"PercentualMulta\");\nsetdefault(Segmento != \"Governo\", PercentualMulta == \"30%\");"}, {"id": "R21", "nome": "Recálculo do período só em alteração; aviso prévio de 30 dias", "escopo": "Produto", "motor": "rule(hide) + setdefault", "efeitos": [{"tipo": "hide", "alvo": "RecalculoPeriodoContrato", "quando": "ctx.transacao.novaVenda"}, {"tipo": "setValue", "alvo": "DiasAvisoPrevio", "valor": "'30 dias'", "quando": "true", "soVazio": true}], "cml": "rule(TipoTransacao == \"NovaVenda\", \"hide\", \"attribute\", \"RecalculoPeriodoContrato\");\nsetdefault(true, DiasAvisoPrevio == \"30 dias\");"}, {"id": "R22", "nome": "Nova network exige no mínimo 2 VPN Nodes na cotação", "escopo": "Transação", "motor": "constraint (transaction)", "efeitos": [{"tipo": "transacao", "severidade": "Warning", "quando": "t.nodesNovaNetwork === 1", "texto": "A nova VPN Network exige no mínimo dois VPN Nodes vinculados — adicione outro VPN Node à cotação."}], "cml": "constraint(count(nodes, VPNNetwork == \"NOVA\") != 1, \"Nova VPN Network exige no mínimo dois VPN Nodes.\");"}];
+const QUALIF = [{"id": "Q2", "objeto": "ProductDisqualification", "quando": "ctx.conta.segmento === 'Governo' && !['Consultor Corporativo','Administração de Vendas Centralizada'].includes(ctx.usuario.canal)", "motivo": "Clientes Governo: vendas somente pelos canais Consultor Corporativo e Administração de Vendas Centralizada."}];
+const CLASSIF = {"descricao": "Formatado quando a matriz de formatação é atendida e nenhuma situação de customização está presente (UC-VPN-001, fluxo passo 4).", "customizacao": [["ctx.endereco.subterranea", "Rede subterrânea sem prédio abordado"], ["a.Tecnologia === 'Rádio'", "Acesso por Rádio"], ["ctx.conta.internacional", "Cliente internacional"], ["['Governo','Operadoras-Atacado'].includes(ctx.conta.segmento)", "Segmento Governo ou Operadoras"], ["ctx.endereco.dataCenter", "Endereço classificado como Golden Jumper"], ["a.AcessoTerceiroLastMile", "Acesso Terceiro Last Mile"], ["ctx.endereco.condominio", "Condomínio empresarial"], ["ctx.endereco.arq5", "Localidade ARQ5 (dúvida aberta)"], ["c.mir.length && c.mir[0].TipoMonitoramento === 'PROBE'", "Monitoramento PROBE (alta complexidade)"]], "matriz": [["f.mbps(a.Velocidade) <= 500 && a.Tecnologia === 'Metro' && ctx.endereco.metragemDistancia <= 400", "Até 500 Mb: Metro a até 400 m"], ["f.mbps(a.Velocidade) <= 500 && a.Tecnologia === 'GPON' && a.Abordagem === 'Pronta'", "Até 500 Mb: GPON pronto"], ["f.mbps(a.Velocidade) <= 500 && a.Tecnologia === 'GPON' && a.Abordagem === 'Construir' && ctx.endereco.metragemDistancia <= 2200", "Até 500 Mb: GPON a construir a até 2.200 m"], ["f.mbps(a.Velocidade) > 500 && f.mbps(a.Velocidade) <= 1000 && a.Tecnologia === 'XGSPON' && ctx.endereco.metragemDistancia <= 400", "500 Mb a 1 Gb: XGSPON a até 400 m da CTO"], ["f.mbps(a.Velocidade) > 500 && f.mbps(a.Velocidade) <= 900 && a.Tecnologia === 'Metro' && ctx.endereco.metragemDistancia <= 400 && ctx.endereco.anel", "500 a 900 Mb: Metro a até 400 m com entrega em anel"]]};
+const CTX_DATA = {"contas": [{"id": "c1", "nome": "Metalúrgica Horizonte S.A.", "segmento": "Corporativo", "tipoPessoa": "PJ", "internacional": false, "cnpjRaiz": "12.345.678"}, {"id": "c2", "nome": "Prefeitura Municipal (exemplo)", "segmento": "Governo", "tipoPessoa": "PJ", "internacional": false, "cnpjRaiz": "18.457.216"}, {"id": "c3", "nome": "Conecta Telecom Atacado", "segmento": "Operadoras-Atacado", "tipoPessoa": "PJ", "internacional": false, "cnpjRaiz": "07.113.524"}, {"id": "c4", "nome": "Andes Mining Ltda. (Chile)", "segmento": "Corporativo", "tipoPessoa": "PJ", "internacional": true, "cnpjRaiz": "—"}], "usuarios": [{"id": "u1", "nome": "Usuário com permissão de venda", "canal": "Consultor Corporativo", "perms": ["venda"]}, {"id": "u2", "nome": "Usuário com permissão de venda + complementação técnica", "canal": "Consultor Corporativo", "perms": ["venda", "complementacao"]}, {"id": "u3", "nome": "Usuário com permissão de venda + Data Base + reajuste antes de 12 meses", "canal": "Administração de Vendas Centralizada", "perms": ["venda", "dataBase", "reajusteAntes12"]}, {"id": "u4", "nome": "Usuário com permissão de venda (canal parceiro)", "canal": "Parceiro", "perms": ["venda"]}], "enderecos": [{"id": "e1", "nome": "Av. Afonso Pena, 1000 — Belo Horizonte/MG", "cobertura": true, "tecnologia": "GPON", "interface": "Elétrica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 180}, {"id": "e2", "nome": "Rua Tiradentes, 55 — Uberlândia/MG", "cobertura": true, "tecnologia": "Metro", "interface": "Óptica", "abordagem": "Construir", "metragem": 350, "metragemDistancia": 350, "anel": true}, {"id": "e3", "nome": "Av. Paulista, 2000 — São Paulo/SP", "cobertura": true, "tecnologia": "XGSPON", "interface": "Óptica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 300}, {"id": "e4", "nome": "Data Center Campinas — Rod. SP-101", "cobertura": true, "tecnologia": "Metro", "interface": "Óptica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 120, "dataCenter": true, "nomeDataCenter": "DC Campinas 01"}, {"id": "e5", "nome": "Condomínio Empresarial Vila Olímpia — São Paulo/SP", "cobertura": true, "tecnologia": "GPON", "interface": "Elétrica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 90, "condominio": true}, {"id": "e6", "nome": "Zona rural — Patos de Minas/MG", "cobertura": true, "tecnologia": "Rádio", "interface": "Elétrica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 0}, {"id": "e7", "nome": "Rua das Flores, 10 — Ribeirão Preto/SP", "cobertura": true, "tecnologia": "GPON", "interface": "Elétrica", "abordagem": "Pronta", "metragem": null, "metragemDistancia": 60, "redeNeutra": true}, {"id": "e8", "nome": "Distrito Industrial — Araguari/MG", "cobertura": false, "tecnologia": null, "interface": null, "abordagem": null, "metragem": null, "metragemDistancia": null}], "networks": {"12.345.678": [{"id": "VPN-000124", "nome": "Rede Matriz", "protocolo": "BGP"}, {"id": "VPN-000317", "nome": "Rede Filiais", "protocolo": "STATIC"}], "07.113.524": [{"id": "VPN-000902", "nome": "Backbone Atacado", "protocolo": "eBGP"}]}, "transacao": {"novaVenda": true}};
+/* Localidade = grupo de cidades (denominação da base Algar). Território define a elegibilidade
+   comercial/regulatória do produto (RN-ELG-01/03/04/05) e deriva a entidade faturadora (RN-FAT-01). */
+const LOCALIDADES = [
+  { id:'LOC01', nome:'Uberlândia e região', territorio:'Concessão ANATEL', regional:'Triângulo', entidade:'Algar Telecom S/A' },
+  { id:'LOC02', nome:'Araguari', territorio:'Concessão ANATEL', regional:'Triângulo', entidade:'Algar Telecom S/A' },
+  { id:'LOC03', nome:'Patos de Minas', territorio:'Concessão ANATEL', regional:'Alto Paranaíba', entidade:'Algar Telecom S/A', arq5:true },
+  { id:'LOC04', nome:'Belo Horizonte', territorio:'Expansão', regional:'BHE', entidade:'Algar Multimídia S/A' },
+  { id:'LOC05', nome:'São Paulo capital', territorio:'Expansão', regional:'SPO', entidade:'Algar Multimídia S/A' },
+  { id:'LOC06', nome:'Campinas', territorio:'Expansão', regional:'SPO', entidade:'Algar Multimídia S/A' },
+  { id:'LOC07', nome:'Ribeirão Preto', territorio:'Personalizado', regional:'SPO', entidade:'Algar Multimídia S/A' }
+];
+const END_LOC = { e1:'LOC04', e2:'LOC01', e3:'LOC05', e4:'LOC06', e5:'LOC05', e6:'LOC03', e7:'LOC07', e8:'LOC02' };
+CTX_DATA.enderecos.forEach(e => e.localidade = END_LOC[e.id]);
+const TERRITORIOS_PRODUTO = {
+  VPNNODE:['Concessão ANATEL','Expansão'], LINKDED:['Concessão ANATEL','Expansão'],
+  BLEMP:['Concessão ANATEL'], EQUIP:null, SVAUPG:null, SVAMIR:null   // null = nacional, sem restrição
+};
+const REGRAS_GERAIS = [{"titulo": "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Admini", "texto": "clientes do segmento Governo somente podem ter vendas feitas pelos canais Consultor Corporativo e Administração de Vendas Centralizada — restrição de canal de venda.", "duvida": ""}, {"titulo": "O Produto não pode ser vendido em rede neutra.", "texto": "O Produto não pode ser vendido em rede neutra.", "duvida": "A regra proíbe a venda em rede neutra, mas não define como um endereço é identificado como rede neutra nem onde essa informação vive. Definir a origem da marcação e o momento da verificação."}, {"titulo": "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou", "texto": "Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou um \"território\" para excluir algumas localidades.", "duvida": "A planilha enuncia a necessidade, mas não define o modelo: a parametrização lista as localidades onde se pode vender (inclusão) ou as localidades onde não se pode (exclusão)? E qual a granularidade — cidade, CEP ou localidade de rede? Recomendação: tratar a elegibilidade de localidades com as regras de qualificação e desqualificação de produto do próprio catálogo da Salesforce, que controlam onde e para quem cada produto pode ser vendido, com a lista administrada pelo negócio. Capacidade confirmada na documentação oficial da Salesforce; o detalhe técnico fica para a especificação."}, {"titulo": "O produto poderá ser vendido no modelo FORMATADO ou CUSTOMIZADO mediante algumas regras", "texto": "O produto poderá ser vendido no modelo FORMATADO ou CUSTOMIZADO mediante algumas regras de complexidade.", "duvida": ""}, {"titulo": "Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.", "texto": "Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.", "duvida": ""}, {"titulo": "Não é permitido realizar a alteração do endereço internacional.", "texto": "Não é permitido realizar a alteração do endereço internacional.", "duvida": ""}, {"titulo": "Não é permitido realizar a alteração do endereço nacional para um internacional.", "texto": "Não é permitido realizar a alteração do endereço nacional para um internacional.", "duvida": "A regra veda transformar cliente nacional em internacional. O caminho inverso — internacional tornar-se nacional — também é vedado? Confirmar a intenção."}, {"titulo": "Não é permitida a alteração do estado do endereço de instalação.", "texto": "Não é permitida a alteração do estado do endereço de instalação.", "duvida": "Definir o tratamento operacional quando o cliente muda de estado: cancelamento seguido de nova venda, ou migração assistida?"}, {"titulo": "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.", "texto": "Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.", "duvida": "A rede exige no mínimo dois pontos. No ciclo de vida, cancelar um ponto de uma rede que tem exatamente dois deve ser bloqueado, ou cancela a rede inteira?"}, {"titulo": "É necessário identificar se o endereço de instalação é de um local, com necessidade de G", "texto": "É necessário identificar se o endereço de instalação é de um local, com necessidade de Golden Jumper (data center ou pode ser necessidade especifica de um cliente que não é data center). Para a marcação do flag \"Condomínio\", o endereço de instalação deverá estar previamente cadastrado de forma similar ao que ocorre com os endereços de Data Centers. É necessário identificar se o endereço de instalação é de um condomínio empresarial (para consideração dos custos relativos ao condomínio que impactam no custo da solução para o cliente). Ex. cobrança pelo condomínio da visita, aluguel do espaço para instalação do equipamento ...) Um endereço pré-cadastrado poderá definir se é Data Center (uso de Golden Jumper) ou Condomínio (Impacta em Custos Extras) ou ambos.", "duvida": "O texto descreve a necessidade, mas não define a regra operacional: quem classifica o endereço como Data Center (Golden Jumper) ou condomínio empresarial, em que momento e com base em quê? Definir também o dono e o processo de manutenção dessa base de endereços pré-cadastrados — e onde ela vive: dentro do CRM ou em sistema externo. Recomendação: manter a base de endereços classificados dentro do próprio CRM, com processo de atualização de responsabilidade do negócio, e aplicá-la pelas mesmas regras de qualificação do catálogo. Capacidade confirmada na documentação oficial da Salesforce; o detalhe técnico fica para a especificação."}, {"titulo": "Produto Formatado quando (levando em consideração as respostas retornadas pela viabilida", "texto": "Produto Formatado quando (levando em consideração as respostas retornadas pela viabilidade técnica-capacidade): - Velocidade até 500 Mb: Tecnologia Metro: Viabilidade física até 400 metros (pronto ou construir) ou GPON pronto; Tecnologia GPON: Viabilidade física até 2200 metros abordagem construir; - Velocidade de 500Mb até 1Gb: Tecnologia XGSPON: Viabilidade física até 400 metros da CTO (Caixa de terminação óptica) que esteja conectada à uma OLT com placa apta ao XGSPON; - Velocidade a partir de 500Mb até 900Mb: Tecnologia Metro: Viabilidade física até 400 metros (pronto ou construir); e Foi feita viabilidade lógica com retorno viável para a capacidade solicitada em Anel metro/cliente Produto Não Formatado (projeto customizado) quando: - Não atende os critérios de formatação citados acima - Se a viabilidade retornar que o Tipo de Rede é Subterrânea e Abordagem diferente de Prédio Abordado e Prédio Multi Abordado - Acesso Radio - Cliente do tipo Internacional (não possui CNPJ), faturado por invoice em moeda e cotação definida por contrato - Cliente com segmento Governo e Operadoras - Se endereço for classificado como Golden Jumper - Se Last Mile - Se endereço é de um condomínio empresarial - Endereços na localidade ARQ5", "duvida": "Três definições pendentes nos critérios de formatação: as faixas de 500 Mb a 1 Gb e de 500 a 900 Mb se sobrepõem — com 700 Mb e as duas tecnologias viáveis, qual prevalece? Os limites são inclusivos ou exclusivos (500 Mb exatos)? E o que é a localidade “ARQ5” — é o mesmo conceito do “Arquétipo 5” citado na regra de alta complexidade?"}, {"titulo": "SLA de implantação:", "texto": "SLA de implantação: - MTTR (Incidente): 4hrs - Implantação: formatado 9 dias? - Customizado de 25 - 85d", "duvida": "O ponto de interrogação está no próprio arquivo: confirmar o prazo de implantação do atendimento formatado — e se conta em dias úteis ou corridos."}, {"titulo": "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação", "texto": "O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação contratual (dados de contrato e preço), exceto nas seguintes situações: a) se estiver com algum tipo de bloqueio (inadimplencia, suspensão provisória, fraude, ...) ativo b) se estiver com um protocolo de mudança de endereço, transferencia de titularidade e cancelamento em aberto", "duvida": "A lista de bloqueios termina em reticências. Enumerar o conjunto fechado de tipos de bloqueio que impedem operações sobre o serviço."}, {"titulo": "SS de Retenção/TT/Cancelamento em aberto", "texto": "SS de Retenção/TT/Cancelamento em aberto Quando Há Solicitação de Serviço (Retenção, Troca de Titularidade ou Cancelamento) em aberto sobre o mesmo asset. Resultado \"Existe uma SS [] de em aberto para o Asset selecionado.\" Nota Evita operações concorrentes sobre o mesmo asset.", "duvida": "Regras diferentes citam protocolos bloqueantes diferentes — mudança de endereço numa; retenção, troca de titularidade e cancelamento noutra. O conjunto que trava o serviço é a união das duas listas? Fechar a lista."}, {"titulo": "Auto-quantificação de equipamento por Tecnologia", "texto": "Auto-quantificação de equipamento por Tecnologia Quando Escolher a Tecnologia no Acesso (cotações simplificadas). Resultado Preenche Quantidade=1: Metro→Roteador+Switch (ou +Transceiver em MiniPop/Pronta); GPON→Roteador+ONT;", "duvida": "A regra antiga prevê um Transceiver adicional em instalações MiniPop com abordagem pronta, e a regra nova não o menciona. Incorporar ao novo modelo? E o que caracteriza “MiniPop” daqui em diante?"}, {"titulo": "Modalidade do equipamento travada por tecnologia", "texto": "Modalidade do equipamento travada por tecnologia Quando Tecnologia × abordagem × segmento. Resultado Metro→Comodato; GPON→Venda (Nova Venda) ou Comodato (troca); sem equipamento Algar→Do Cliente.", "duvida": "A regra antiga trava a modalidade do equipamento por tecnologia (Metro em Comodato; GPON em Venda ou Comodato) e diverge da regra nova, cujo padrão é Locação. Qual vale? A modalidade Venda deixa de existir?"}, {"titulo": "Alta Complexidade por velocidade/tecnologia", "texto": "Alta Complexidade por velocidade/tecnologia Quando METRO ≥307.200 kbps (sem análise) / ≥921.600 (com análise); GPON ≥512.000 kbps; ETHoTDM; Arquétipo 5; >20 itens. Resultado Escala a cotação para alçada manual (aprovação adicional).", "duvida": "Os limites antigos de alta complexidade, por velocidade e tecnologia, continuam valendo ou são substituídos pelos critérios de formatação? “Arquétipo 5” é o mesmo que a localidade “ARQ5”? E o que é exatamente a condição ETHoTDM neste produto?"}, {"titulo": "Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART > MIR PRO e vice-versa", "texto": "Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART > MIR PRO e vice-versa", "duvida": "Trocar o plano de monitoramento — para mais ou para menos — inicia um novo ciclo contratual com nova fidelização, ou preserva o ciclo vigente?"}, {"titulo": "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser", "texto": "Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser cancelado automaticamente", "duvida": ""}, {"titulo": "Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o cir", "texto": "Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o circuito de MIR pode ser ativado", "duvida": ""}, {"titulo": "Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO", "texto": "Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO", "duvida": "Se o monitoramento é transversal a vários produtos, será modelado uma única vez no catálogo e compartilhado, ou replicado dentro de cada produto? Recomendação: modelar o monitoramento uma única vez no catálogo e associá-lo como componente aos produtos que o utilizam — o catálogo da Salesforce permite que um mesmo produto seja componente de mais de um pacote, evitando manutenção duplicada. Capacidade confirmada na documentação oficial da Salesforce; o detalhe técnico fica para a especificação."}, {"titulo": "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta", "texto": "Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via \"PROBE\", deve seguir Alta complexidade para desenho da solução considerando um equipamento específico, não estocável", "duvida": ""}, {"titulo": "Automação e integrações SVA: Existem hoje muitas regras de automação e integração com si", "texto": "Automação e integrações SVA: Existem hoje muitas regras de automação e integração com sistemas internos, Zabbix, NAVA que precisa ser olhada a arquitetura atual e replicar para Sales Force. Essas regras devem ser mapeadas para realizar o DE/PARA.", "duvida": "O levantamento de correspondências com o sistema de monitoramento ainda não começou: quem executa e em que prazo? Sem essa definição, o desenho da integração do serviço fica bloqueado."}, {"titulo": "Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix par", "texto": "Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix para ativação de acordo com o plano escolhido.", "duvida": "A criação do monitoramento no sistema de rede será disparada diretamente pelo CRM, por integração, ou permanece em um sistema intermediário?"}];
+
+const CATALOG = [
+  { id:'VPNNODE', name:'VPN Node', cat:'vpn', icon:'🔗', cls:'CLASS001', list:null, sell:'Evergreen', bundle:true,
+     desc:'Conexão privada de um site do cliente à VPN corporativa: acesso, equipamentos e serviços de valor agregado.',
+     groups:[
+       { id:'g-equip', name:'Equipamentos de acesso', min:1, max:null, produtos:['EQUIP'] },
+       { id:'g-sva',  name:'Serviços de valor agregado', min:0, max:2, produtos:['SVAUPG','SVAMIR'] }
+     ] },
+  { id:'LINKDED', name:'Link de Internet Dedicado', cat:'vpn', icon:'🌐', cls:'CLASS002', list:null, sell:'Evergreen',
+     desc:'Acesso dedicado à internet — reutiliza as mesmas categorias de acesso, Last Mile e contrato.' },
+  { id:'BLEMP', name:'Banda Larga Empresarial', cat:'vpn', icon:'📶', cls:'CLASS002', list:null, sell:'Evergreen',
+     desc:'Acesso banda larga empresarial — produto regulado, comercializável apenas na área de concessão ANATEL.' },
+  { id:'EQUIP', name:'Equipamento de Acesso', cat:'equip', icon:'📡', cls:'CLASS003', list:null, sell:'Evergreen',
+     desc:'Roteador, switch, ONT, chave ótica ou rádio, conforme a tecnologia retornada pela viabilidade.' },
+  { id:'SVAUPG', name:'Upgrade Temporário de Velocidade', cat:'sva', icon:'⏫', cls:'CLASS004', list:null, sell:'Term-defined',
+     desc:'Aumento temporário da velocidade contratada, de 10 a 60 dias corridos, com reversão automática.' },
+  { id:'SVAMIR', name:'Monitoramento Inteligente de Rede', cat:'sva', icon:'📈', cls:'CLASS005', list:null, sell:'Evergreen',
+     desc:'Monitoramento proativo do circuito, nos planos MIR-SMART e MIR-PRO.' }
+];
+
+/* contexto da transação: conta, usuário (permissões) e retorno da viabilidade */
+let CTX = { conta: CTX_DATA.contas[0], usuario: CTX_DATA.usuarios[0], endereco: CTX_DATA.enderecos[0],
+             localidade: LOCALIDADES.find(l=>l.id===END_LOC['e1']), transacao: CTX_DATA.transacao };
+function enderecosDaLocalidade(locId){ return CTX_DATA.enderecos.filter(e => e.localidade===locId); }
+function entidadeFaturadora(){
+  if(CTX.conta.segmento==='Governo') return { valor:'Seleção manual do vendedor', regra:'RN-FAT-03' };
+  return { valor: CTX.localidade ? CTX.localidade.entidade : '—', regra:'RN-FAT-01' };
+}
+
+const F = {
+  mbps(v){ if(!v) return 0; const m = String(v).replace(',','.').match(/([\d.]+)\s*(M|G)bps/i); return m ? parseFloat(m[1]) * (m[2].toUpperCase()==='G'?1000:1) : 0; },
+  upgradeElegivel(v, contratada, tec){ const t=F.mbps(v), c=F.mbps(contratada); if(!c||t<=c) return false;
+    if(c<100) return t<=100; if(c<=1000) return t<=(tec==='GPON'?500:1000); return t<10000; },
+  equipamentosPorTecnologia(tec, anel){ const L=[], add=t=>L.push({TipoEquipamento:t, ModalidadeEquipamento:'Comodato', auto:true});
+    if(tec==='GPON'){ add('Roteador'); add('ONT'); } else if(tec==='Metro'){ add('Roteador'); add('Switch'); if(anel) add('Chave Ótica'); }
+    else if(tec==='Rádio'){ add('Rádio'); } return L; },
+  networkProtocolo(id){ const n=(CTX_DATA.networks[CTX.conta.cnpjRaiz]||[]).find(x=>x.id===id); return n?n.protocolo:''; },
+  proximoReajuste(a){
+    if(a.TipoReajuste==='Sem reajuste') return 'Sem reajuste';
+    if(a.TipoReajuste==='Data Ativação') return 'Calculada na ativação do asset';
+    const anc = a.TipoReajuste==='Data base' ? a.DataBase : a.TipoReajuste==='Data de assinatura do contrato' ? a.DataAssinatura : null;
+    if(!anc || a.PeriodoFidelizacao==='' || a.PeriodoFidelizacao==null) return 'Aguardando tipo, data-âncora e fidelização';
+    let m = Number(a.PeriodoFidelizacao); if(m<12 && a.ReajustarAntes12Meses!=='Sim') m += 12;
+    const d = new Date(anc+'T12:00:00'); d.setMonth(d.getMonth()+m); return d.toLocaleDateString('pt-BR'); }
+};
+const _FN = {};
+function evalExpr(expr, env){
+  if(expr===true || expr===undefined) return true;
+  try{ const f = _FN[expr] || (_FN[expr] = new Function('a','c','ctx','d','f','x','v','t','return ('+expr+');'));
+        return f(env.a||{}, env.c||{}, CTX, env.d||{}, F, env.x||{}, env.v, env.t||{}); }
+  catch(e){ return undefined; }
+}
+const vazio = v => v===undefined || v===null || v==='' || v===false;
+
+/* resolve os atributos que o produto herda da classificação, com as sobrescritas */
+function resolveAttrs(prod){
+  const cls = CLASSES.find(c => c.code===prod.cls); if(!cls) return [];
+  const out=[], seen=new Set();
+  cls.cats.forEach(cc => {
+    const cat = ATTR_CATS.find(x=>x.code===cc); if(!cat) return;
+    cat.attrs.forEach(code => {
+      if(seen.has(code) || !ATTRS[code]) return; seen.add(code);
+      const d = ATTRS[code], o = (cls.over||{})[code] || {};
+      out.push(Object.assign({}, d, o, { key:code, cat:cat.name, catCode:cat.code, camada:cat.camada, hidden:!!o.hidden }));
+    });
+  });
+  return out;
+}
+function visibleAttrs(prod){ return resolveAttrs(prod).filter(a=>!a.hidden); }
+function isConfigurable(prod){ return visibleAttrs(prod).length>0; }
+function usoDoAtributo(code){ return CLASSES.filter(c => c.cats.some(cc => (ATTR_CATS.find(x=>x.code===cc)||{attrs:[]}).attrs.includes(code))); }
+function classOf(prod){ return CLASSES.find(c=>c.code===prod.cls); }
+function qualificado(){ const hits = QUALIF.filter(q => evalExpr(q.quando, {})); return { ok:hits.length===0, hits }; }
+/* Elegibilidade comercial do produto: regras de conta + território da localidade.
+   Avaliada por item (por node), não pela cotação — RN-ELG-02. */
+function qualificadoProduto(prod, loc){
+  const hits = QUALIF.filter(q => evalExpr(q.quando, {})).slice();
+  const ter = TERRITORIOS_PRODUTO[prod.id];
+  const L = loc || CTX.localidade;
+  if(ter && L && ter.indexOf(L.territorio) === -1)
+    hits.push({ id:'RN-ELG-01', objeto:'ProductQualification (território)',
+      motivo: prod.name+' não é elegível em '+L.nome+' — território '+L.territorio+'. Elegível em: '+ter.join(' e ')+'.' });
+  return { ok:hits.length===0, hits };
+}
+
+
+let lines = [];
+let lineSeq = 0;
+let cfgProduct = null;
+/* ---------------- motor de regras da Revisão 1 ---------------- */
+function classificar(cfg){
+  const e = CTX.endereco, env = { a:cfg.a, c:cfg.c };
+  if(e.cobertura===false || e.redeNeutra) return { v:'Inviável', motivos:[e.cobertura===false?'Sem cobertura no endereço':'Rede neutra'] };
+  const mot = CLASSIF.customizacao.filter(([x]) => evalExpr(x, env)).map(x=>x[1]);
+  if(mot.length) return { v:'Customizado', motivos:mot };
+  if(!cfg.a.Velocidade || !cfg.a.Tecnologia) return { v:'Pendente', motivos:['Informe a velocidade para classificar o atendimento'] };
+  const m = CLASSIF.matriz.find(([x]) => evalExpr(x, env));
+  return m ? { v:'Formatado', motivos:[m[1]] } : { v:'Customizado', motivos:['Nenhum critério da matriz de formatação atendido'] };
+}
+function resolveRef(cfg, key){
+  if(key.includes('#')){ const [cp, rest] = key.split('#'); const [i, attr] = rest.split('.'); return [(cfg.c[cp]||[])[Number(i)], attr]; }
+  return [cfg.a, key];
+}
+function avaliar(cfg){
+  const R = { hidden:{}, disabled:{}, required:{}, hideVals:{}, msgs:[], excl:{}, ferr:{} };
+  for(let pass=0; pass<2; pass++){
+    const d = { classificacao: classificar(cfg).v };
+    REGRAS.forEach(r => r.efeitos.forEach(e => {
+      if(e.tipo==='setValue' && !e.componente && evalExpr(e.quando, {a:cfg.a,c:cfg.c,d})){
+        const val = evalExpr(e.valor, {a:cfg.a,c:cfg.c,d}); if(val===undefined||val===null) return;
+        if(e.forcar || (e.soVazio ? vazio(cfg.a[e.alvo]) : !cfg.toque[e.alvo])) cfg.a[e.alvo] = val;
+      }
+      if(e.tipo==='autoAdd' && evalExpr(e.quando, {a:cfg.a,c:cfg.c,d})){
+        const sig = (cfg.a.Tecnologia||'')+'|'+(CTX.endereco.anel?1:0);
+        if(cfg.autoSig !== sig){ const itens = evalExpr(e.itens, {a:cfg.a,c:cfg.c,d}) || [];
+          cfg.c[e.componente] = (cfg.c[e.componente]||[]).filter(i=>!i.auto).concat(itens); cfg.autoSig = sig; }
+      }
+    }));
+  }
+  const cls = classificar(cfg); R.cls = cls; const d = { classificacao: cls.v };
+  const t = { nodesNovaNetwork: lines.filter(l => l.attrs && l.attrs['VPN Network']==='NOVA').length + (cfg.a.VPNNetwork==='NOVA'?1:0) };
+  REGRAS.forEach(r => r.efeitos.forEach(e => {
+    const alvos = e.componente ? (cfg.c[e.componente]||[]).map((x,i)=>({key:e.componente+'#'+i+'.'+e.alvo, x}))
+                               : [{ key:e.alvo, x:{} }];
+    alvos.forEach(({key,x}) => {
+      const env = { a:cfg.a, c:cfg.c, d, x, t };
+      if(!evalExpr(e.quando, env)) return;
+      if(e.tipo==='hide') R.hidden[key]=r.id;
+      else if(e.tipo==='disable') R.disabled[key]=r.id;
+      else if(e.tipo==='require') R.required[key]=r.id;
+      else if(e.tipo==='hideValues'){ const at=ATTRS[e.alvo]; (at? at.values:[]||[]).forEach(v => {
+          if(evalExpr(e.filtro, Object.assign({}, env, {v}))) (R.hideVals[key]=R.hideVals[key]||{})[v]=r.id; }); }
+      else if(e.tipo==='message'){ if(!e.componente || (cfg.c[e.componente]||[]).length) R.msgs.push({sev:e.severidade, texto:e.texto, regra:r.id}); }
+      else if(e.tipo==='constraint'){ R.ferr[key]=e.texto; R.msgs.push({sev:e.severidade||'Error', texto:e.texto, regra:r.id}); }
+      else if(e.tipo==='exclude'){ R.excl[e.componente]={texto:e.texto, regra:r.id};
+        if((cfg.c[e.componente]||[]).length) R.msgs.push({sev:'Error', texto:e.texto, regra:r.id}); }
+      else if(e.tipo==='transacao') R.msgs.push({sev:e.severidade, texto:e.texto, regra:r.id});
+    });
+  }));
+  Object.entries(R.hideVals).forEach(([key,vals]) => { const [obj,attr]=resolveRef(cfg,key); if(obj && vals[obj[attr]]) obj[attr]=''; });
+  Object.keys(R.required).forEach(key => {
+    if(R.hidden[key]) return; const [obj,attr]=resolveRef(cfg,key); if(!obj) return;
+    if(vazio(obj[attr])){ R.ferr[key]=R.ferr[key]||'Preencha este campo.';
+      R.msgs.push({sev:'Error', texto:'Atributo obrigatório sem valor: '+(ATTRS[attr]?ATTRS[attr].name:attr), regra:R.required[key]}); }
+  });
+  const seen=new Set(); R.msgs = R.msgs.filter(m => { const k=m.sev+m.texto; if(seen.has(k)) return false; seen.add(k); return true; });
+  const ord={Error:0,Warning:1,Info:2}; R.msgs.sort((a,b)=>ord[a.sev]-ord[b.sev]);
+  return R;
+}
+
+
+
+/* ================= app Salesforce Mobile ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COMP_KEY = { EQUIP:'equip', SVAUPG:'upgrade', SVAMIR:'mir' };
+function compKey(pid){ return COMP_KEY[pid] || pid.toLowerCase(); }
+function findProd(id){ return CATALOG.find(p => p.id === id); }
+const EQUIP_TIPOS = ATTRS.TipoEquipamento.values;
+const SM = { Evergreen:'Evergreen', 'Term-defined':'Term-Defined', 'One-time':'One Time' };
+const fmtMoney = () => 'Pendente';
+let S;
+function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{},
+  instant:false, validacao:true, compact:false, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false, form:{} }; }
+function toast(t){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+  el.textContent='✓ '+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
+function go(t){ S.tela=t; S.sheet=null; window.scrollTo(0,0); render(); }
+
+/* ---------- peças do app ---------- */
+function topbar(title, back){ return `<div class="top"><button class="bk" onclick="${back||''}" style="${back?'':'visibility:hidden'}">‹ Back</button><span class="ttl">${esc(title)}</span><button class="ic">🔍</button></div>`; }
+function actions(list){ return `<div class="acts">${list.map(a=>`<button class="act" onclick="${a.on||''}"><i class="${a.c}">${a.i}</i>${a.n}</button>`).join('')}</div>`; }
+function pathHtml(steps, cur, label){ return `<div class="pathw"><div class="path">${steps.map(s=>`<div class="ps ${s===cur?'cur':''}">${esc(s)}</div>`).join('')}</div><div class="stage">${label}: ${esc(cur)}</div></div>`; }
+function bnav(){ $('#bnav').innerHTML = [['Chatter','〰'],['Accounts','🏢'],['Contacts','👤'],['Leads','★'],['Menu','☰']].map(([n,i])=>`<button class="${n==='Menu'?'on':''}"><i>${i}</i>${n}</button>`).join(''); }
+
+/* ---------- Oportunidade ---------- */
+function telaOpp(){
+  const quotes = S.quote ? [S.quote] : [];
+  return topbar('Opportunity', "go('opp')") + actions([{i:'💬',c:'b',n:'Post'},{i:'📞',c:'t',n:'Log a Call'},{i:'☑',c:'g',n:'New Task'},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-opp';render()"}]) + `
+  <div class="rh"><div class="oi opp">👑</div><div><small>Opportunity</small><b>VPN Corporativa — ${esc(CTX.conta.nome)}</b></div></div>
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a onclick="">Chatter</a></div>
+  ${S.tab==='Details' ? `<div class="fl">
+    <div class="fr"><span>Account Name</span><span><a>${esc(CTX.conta.nome)}</a></span></div>
+    <div class="fr"><span>Amount</span><span></span></div>
+    <div class="fr"><span>Close Date</span><span>30/10/2026</span></div>
+    <div class="fr"><span>Stage</span><span>Proposal/Price Quote</span></div>
+    <div class="fr"><span>Probability (%)</span><span>50%</span></div>
+    <div class="fr"><span>Opportunity Owner</span><span><a>${esc(CTX.usuario.nome)}</a></span></div></div>
+    ${pathHtml(['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed'],'Proposal/Price Quote','Stage')}`
+  : `<div class="rel"><div class="h"><div class="oi" style="background:#2e844a">🏷</div><b>Quotes (${quotes.length})</b><a onclick="go('newquote')">New</a></div>
+      ${quotes.map(q=>`<div class="it" onclick="go('quote')"><b>${esc(q.name)}</b><small>Quote Number ${q.number} · Status ${q.status} · Grand Total ${fmtMoney()}</small></div>`).join('')||'<div class="it" style="color:var(--mut)">No quotes yet.</div>'}
+      <div class="rfoot"><a>View All</a></div></div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#7f8de1">👤</div><b>Contact Roles (1)</b><a>New</a></div><div class="it"><b>Contato comercial</b><small>Decision Maker</small></div></div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#f4592f">📦</div><b>Products (0)</b></div><div class="it" style="color:var(--mut)">Products are added through the quote.</div></div>`}`;
+}
+function sheetMoreOpp(){ return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet"><div class="grip"></div>
+  ${[['🏷','#2e844a','New Quote',"go('newquote')"],['📝','#1b96ff','Edit',''],['📅','#0b827c','New Event',''],['✉','#7f8de1','Email',''],['🔗','#747474','Share','']].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i>${n}</div>`).join('')}
+  <div class="cancel" onclick="S.sheet=null;render()">Cancel</div></div>`; }
+
+/* ---------- New Quote (formulário de criação do app) ---------- */
+function telaNewQuote(){
+  const f = S.form;
+  return `<div class="form-h"><a onclick="go('opp')">Cancel</a><b>New Quote</b><a class="sv" onclick="saveQuote()">Save</a></div>
+    <div class="ff"><label><span class="rq">*</span>Quote Name</label><input id="f-name" value="${esc(f.name||'VPN Corporativa — '+CTX.conta.nome)}" placeholder="Quote Name"></div>
+    <div class="ff"><label>Opportunity Name</label><span class="pill">👑 VPN Corporativa — ${esc(CTX.conta.nome)}</span></div>
+    <div class="ff"><label><span class="rq">*</span>Account for Quote</label><span class="pill">🏢 ${esc(CTX.conta.nome)}</span></div>
+    <div class="ff"><label>Expiration Date</label><input type="date" value="2026-10-12"></div>
+    <div class="ff"><label>Status</label><select><option>Draft</option><option>Needs Review</option><option>In Review</option></select></div>
+    <div class="ff"><label>Quote Type</label><select><option>Quote</option><option>Amendment Quote</option><option>Renewal Quote</option></select></div>
+    <div class="ff"><label class="sec">Address Information</label><label>Bill To Name</label><input value="${esc(CTX.conta.nome)}"></div>`;
+}
+function saveQuote(){
+  const nm = ($('#f-name')||{}).value || ('VPN Corporativa — '+CTX.conta.nome);
+  S.quote = { name:nm, number:'00000036', status:'Draft' };
+  toast('Quote "'+nm+'" was created.'); S.tab='Details'; go('quote');
+}
+
+/* ---------- Quote record ---------- */
+function telaQuote(){
+  const q = S.quote, roots = lines.filter(l=>l.parent);
+  return topbar('Quote', "S.tab='Related';go('opp')") + actions([{i:'💬',c:'b',n:'Post'},{i:'🗂',c:'g',n:'Browse Catalogs',on:'browse()'},{i:'👤',c:'p',n:'New Contact'},{i:'⋯',c:'m',n:'More'}]) + `
+  <div class="rh"><div class="oi q">🏷</div><div><small>Quote</small><b>${esc(q.name)}</b></div></div>
+  <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a></div>
+  ${S.tab==='Details' ? `<div class="fl">
+    <div class="fr"><span>Quote Number</span><span>${q.number}</span></div>
+    <div class="fr"><span>Expiration Date</span><span>12/10/2026</span></div>
+    <div class="fr"><span>Syncing</span><span><span class="chk"></span></span></div>
+    <div class="fr"><span>Opportunity Name</span><span><a>VPN Corporativa — ${esc(CTX.conta.nome)}</a></span></div>
+    <div class="fr"><span>Account Name</span><span><a>${esc(CTX.conta.nome)}</a></span></div>
+    <div class="fr"><span>Grand Total</span><span>${fmtMoney()}</span></div></div>
+    ${pathHtml(['Draft','Needs Review','In Review','Approved','Rejected','Presented','Accepted','Denied'],'Draft','Status')}`
+  : S.tab==='Lines' ? `<div class="nv-tag">Transaction Line Editor: documentado para Lightning Experience; exibição no app não verificada.</div>
+    <div class="tle-h"><div class="oi">▤</div><b>Quote Line Items (${roots.length})</b><div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Active':'Inactive'}</small></div></div></div>
+    <div class="tle-tools"><button class="btn sm">Add Assets</button><button class="btn sm">Add Group</button><button class="btn sm" style="flex:1">🔍 Add Product</button></div>
+    ${roots.length ? roots.map((l,i)=>{ const kids=lines.filter(x=>x.parentUid===l.uid);
+      return `<div class="line"><div class="n"><span>${i+1}</span><b onclick="S.sheet='line:${l.uid}';render()">${esc(l.name)}</b><button class="act" onclick="S.sheet='menu:${l.uid}';render()">▾</button></div>
+        <div class="kv"><span>Quantity <b>${l.qty}.00</b></span><span>Selling Model <b>${SM[l.sell]||l.sell}</b></span><span>List Price <b>${fmtMoney()}</b></span><span>Net Amount <b>${fmtMoney()}</b></span><span>Discount <b>0.00%</b></span><span>Total Price <b>${fmtMoney()}</b></span></div>
+        ${kids.map(k=>`<div class="child">${esc(k.name)} · Qty 1.00 · ${SM[k.sell]||k.sell} · Included</div>`).join('')}</div>`; }).join('')
+      : '<div class="line" style="color:var(--mut)">No quote line items. Use Browse Catalogs to add products.</div>'}`
+  : `<div class="rel"><div class="h"><div class="oi" style="background:#747474">📄</div><b>Quote PDFs (0)</b><a>Create PDF</a></div><div class="it" style="color:var(--mut)">No PDFs generated.</div></div>
+     <div class="rel"><div class="h"><div class="oi" style="background:#7f8de1">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`}`;
+}
+function sheetLine(uid){
+  const l = lines.find(x=>x.uid===uid); const p = findProd(l.id);
+  return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet" style="max-height:80vh;overflow:auto"><div class="grip"></div>
+    <div class="row" style="border:0;font-weight:700">${esc(l.name)}<span style="margin-left:auto;font-weight:400;color:var(--mut)" onclick="S.sheet=null;render()">✕</span></div>
+    <div class="rtabs"><a class="${S.stab!=='Attributes'?'on':''}" onclick="S.stab='Details';render()">Details</a><a class="${S.stab==='Attributes'?'on':''}" onclick="S.stab='Attributes';render()">Attributes</a></div>
+    <div class="fl">${S.stab==='Attributes' ? Object.entries(l.attrs||{}).map(([k,v])=>`<div class="fr"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')
+      : `<div class="fr"><span>Description</span><span>${esc(p.desc)}</span></div><div class="fr"><span>Classification</span><span>${esc(classOf(p).name)}</span></div><div class="fr"><span>Selling Model</span><span>${SM[l.sell]||l.sell}</span></div><div class="fr"><span>Atendimento</span><span>${esc(l.classif||'—')}</span></div><div class="fr"><span>List Price</span><span>${fmtMoney()}</span></div>`}</div></div>`;
+}
+function sheetMenu(uid){
+  const l = lines.find(x=>x.uid===uid);
+  return `<div class="bsheet-bg" onclick="S.sheet=null;render()"></div><div class="bsheet"><div class="grip"></div>
+    <div class="row" onclick="S.sheet='line:${uid}';render()"><i style="background:#1b96ff">👁</i>View</div>
+    <div class="row" onclick="S.sheet=null;openConfig('${l.id}','${uid}')"><i style="background:#2e844a">⚙</i>Configure</div>
+    <div class="row" onclick="lines=lines.filter(x=>x.uid!=='${uid}'&&x.parentUid!=='${uid}');S.sheet=null;render()"><i style="background:#ba0517">🗑</i>Delete</div>
+    <div class="cancel" onclick="S.sheet=null;render()">Cancel</div></div>`;
+}
+
+/* ---------- Browse Catalogs: Choose Price Book → All Catalogs → Browse Products ---------- */
+function browse(){ S.modal = S.pb ? 'catalogs' : 'pricebook'; render(); }
+function modalPB(){ return `<div class="modal-bg"><div class="modal"><h3>Choose Price Book</h3><div class="mb">
+  ${['Tabela de Preços B2B (a definir)','Standard Price Book'].map((t,i)=>`<label class="radio"><input type="radio" name="pb" value="${t}" ${i===0?'checked':''}>${t}</label>`).join('')}</div>
+  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.pb=$('input[name=pb]:checked').value;S.modal='catalogs';render()">Save</button></div></div></div>`; }
+function modalCatalogs(){ return `<div class="modal-bg"><div class="modal"><h3>All Catalogs</h3><div class="mb"><label class="radio"><input type="radio" name="ct" checked>Catálogo B2B Algar</label></div>
+  <div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.catalogo='Catálogo B2B Algar';S.modal=null;go('browse')">Next</button></div></div></div>`; }
+const CATS_BP = [['all','All Products'],['vpn','Conectividade'],['equip','Equipamentos'],['sva','Serviços de valor agregado']];
+function telaBrowse(){
+  const elig = CATALOG.filter(p => qualificadoProduto(p).ok && (S.categoria==='all'||p.cat===S.categoria));
+  const nsel = Object.values(S.checked).filter(Boolean).length;
+  return `<div class="nv-tag">Product Discovery: documentado para Lightning Experience; exibição no app não verificada.</div>
+  <div class="bp-top"><b>Catalog:</b> ${esc(S.catalogo)}<a>🏷 New Quote Line Items (${lines.filter(l=>l.parent).length})</a></div>
+  <div class="bp-head"><div class="oi">▤</div><b>Browse Products</b></div>
+  <div class="srch">🔍 Search for products</div>
+  <div class="cats">${CATS_BP.map(([k,n])=>`<button class="${S.categoria===k?'on':''}" onclick="S.categoria='${k}';render()">${n}</button>`).join('')}</div>
+  <div class="selbar"><input type="checkbox" style="width:18px;height:18px"> All Products <span class="sp">${nsel} Product(s) Selected</span><button class="btn sm" ${nsel?'':'disabled'} onclick="addSel()">Add Selection to Quote</button></div>
+  ${elig.map(p=>`<div class="prow"><div class="r1"><input type="checkbox" ${S.checked[p.id]?'checked':''} onchange="S.checked['${p.id}']=this.checked;render()"><div class="img">${p.icon}</div>
+      <div class="b"><div class="nm">${esc(p.name)}</div><div class="pr">Preço pendente <span class="bo" onclick="S.modal='bo:${p.id}';render()">◇</span></div><div class="ds">${esc(p.desc)}</div></div></div>
+      <div class="r2"><div class="qty"><button onclick="qtd('${p.id}',-1)">−</button><span>${S.qtd[p.id]||1}</span><button onclick="qtd('${p.id}',1)">+</button></div><span class="sp"></span>
+      <button class="btn sm" onclick="openConfig('${p.id}')">⚙</button><button class="btn sm" onclick="quickAdd('${p.id}')">Add</button></div></div>`).join('')}
+  ${elig.length?'':'<div class="line" style="color:var(--mut)">No products in this category.</div>'}
+  <div style="height:70px"></div>
+  <div class="foot"><button class="btn" onclick="S.tab='Lines';go('quote')">‹ Back to Catalogs</button><button class="btn brand" onclick="S.tab='Lines';go('quote');toast('Quote \\'${esc(S.quote.name).replace(/'/g,"\\'")}\\' was updated.')">✓ Save Quote</button></div>`;
+}
+function qtd(id,d){ S.qtd[id]=Math.max(1,(S.qtd[id]||1)+d); render(); }
+function modalBuying(pid){ const p=findProd(pid); return `<div class="modal-bg"><div class="modal"><h3>${esc(p.name)} Buying options</h3><div class="mb"><label class="radio"><input type="radio" name="bo" checked>Preço pendente for ${SM[p.sell]||p.sell}</label>
+  <p style="font-size:12px;color:var(--mut);margin:6px 0 0">ProductSellingModel ${SM[p.sell]||p.sell}. Tabela e procedimento de preços não definidos na Revisão 1.</p></div>
+  <div class="mf"><button class="btn" onclick="S.modal=null;openConfig('${pid}')">Configure</button><button class="btn brand" onclick="S.modal=null;quickAdd('${pid}')">Add</button></div></div></div>`; }
+function novoCfg(p){ const cfg={prod:p,defs:resolveAttrs(p),a:{},c:{},toque:{},autoSig:null}; cfg.defs.forEach(a=>{ if(a.def) cfg.a[a.key]=a.def; if(a.ui==='checkbox') cfg.a[a.key]=false; }); (p.groups||[]).forEach(g=>g.produtos.forEach(pid=>cfg.c[compKey(pid)]=[])); return cfg; }
+function addLine(p, cfg, R){
+  lineSeq++; const attrs={};
+  if(cfg) cfg.defs.filter(a=>!a.hidden && !R.hidden[a.key] && !vazio(cfg.a[a.key])).forEach(a=>attrs[a.name]=cfg.a[a.key]===true?'Sim':cfg.a[a.key]);
+  attrs['Localidade']=CTX.localidade.nome+' · '+CTX.localidade.territorio; attrs['Endereço de instalação']=CTX.endereco.nome; attrs['Entidade faturadora']=entidadeFaturadora().valor;
+  const line={uid:'L'+lineSeq,id:p.id,name:p.name,sell:p.sell,qty:(S.qtd[p.id]||1),parent:true,attrs,classif:R?R.cls.v:'',loc:CTX.localidade.id};
+  lines.push(line);
+  if(cfg) (p.groups||[]).flatMap(g=>g.produtos).forEach(pid=>(cfg.c[compKey(pid)]||[]).forEach(x=>{ const cp=findProd(pid),at={}; resolveAttrs(cp).forEach(a=>{ if(!vazio(x[a.key])) at[a.name]=x[a.key]; }); lineSeq++; lines.push({uid:'L'+lineSeq,id:cp.id,name:(x.TipoEquipamento||cp.name),sell:cp.sell,qty:1,parent:false,parentUid:line.uid,attrs:at}); }));
+  return line;
+}
+function quickAdd(pid){ const p=findProd(pid); if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); addLine(p,cfg,R); } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
+function addSel(){ Object.keys(S.checked).filter(k=>S.checked[k]).forEach(pid=>quickAdd(pid)); S.checked={}; render(); }
+
+/* ---------- Product Configurator ---------- */
+function openConfig(id, uid){
+  const p=findProd(id); const qp=qualificadoProduto(p); if(!qp.ok){ toast(qp.hits[qp.hits.length-1].motivo); return; }
+  cfgProduct=novoCfg(p); cfgProduct.uid=uid||null;
+  if(uid){ const l=lines.find(x=>x.uid===uid); if(l&&l.cfgState){ cfgProduct.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfgProduct.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfgProduct.toque=Object.assign({},l.cfgState.toque); cfgProduct.autoSig=l.cfgState.autoSig; } }
+  S.msgTab=null; S.atab=null; S.grpOpen={}; S.compOpen={}; S.sumOpen=false; go('config');
+}
+function telaConfig(){
+  const cfg=cfgProduct, p=cfg.prod, R=avaliar(cfg);
+  const msgs=R.msgs.slice(); msgs.push({sev:'Info',texto:'Atendimento '+R.cls.v+' — '+R.cls.motivos.join('; '),regra:'Classificação'});
+  const nE=msgs.filter(m=>m.sev==='Error').length,nW=msgs.filter(m=>m.sev==='Warning').length,nI=msgs.filter(m=>m.sev==='Info').length;
+  if(!S.msgTab) S.msgTab=nE?'Error':nW?'Warning':'Info';
+  const cats=[]; cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]).forEach(a=>{ if(!cats.includes(a.cat)) cats.push(a.cat); });
+  if(!S.atab||!cats.includes(S.atab)) S.atab=cats[0];
+  const fields=cfg.defs.filter(a=>a.cat===S.atab&&!a.hidden&&!R.hidden[a.key]);
+  const sumAttrs=cfg.defs.filter(a=>!a.hidden&&!R.hidden[a.key]&&!vazio(cfg.a[a.key])).map(a=>`<div><span>${esc(a.name)}</span>${esc(cfg.a[a.key]===true?'Sim':cfg.a[a.key])}</div>`).join('');
+  return `<div class="nv-tag">Product Configurator: documentado para Lightning Experience; exibição no app não verificada.</div>
+  <div class="cfg-top"><h1>Configure ${esc(p.name)}</h1><div class="togs">
+    <div class="tog ${S.validacao?'on':''}"><span>Product Validation</span><div><div class="sw" onclick="S.validacao=!S.validacao;render()"></div><small>${S.validacao?'Enabled':'Disabled'}</small></div></div>
+    <div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Enabled':'Disabled'}</small></div></div></div></div>
+  ${S.instant?'':'<div class="cfg-info">Prices don\'t reflect the latest selections. To get the latest pricing, enable Instant Pricing or click Update Prices.</div>'}
+  ${S.validacao?`<div class="mtabs"><span class="pill e ${S.msgTab==='Error'?'on':''}" onclick="S.msgTab='Error';render()"><i>⊘</i>Errors (${nE})</span><span class="pill w ${S.msgTab==='Warning'?'on':''}" onclick="S.msgTab='Warning';render()"><i>▲</i>Warnings (${nW})</span><span class="pill i ${S.msgTab==='Info'?'on':''}" onclick="S.msgTab='Info';render()"><i>ⓘ</i>Info (${nI})</span></div>
+  ${msgs.filter(m=>m.sev===S.msgTab).map(m=>`<div class="mrow ${m.sev}"><i>${m.sev==='Error'?'⊘':m.sev==='Warning'?'▲':'ⓘ'}</i><span>${esc(m.texto)}</span></div>`).join('')}`:''}
+  <div class="ph"><a class="ret" onclick="cancelCfg()">Return to Quote</a><div class="r"><div class="img">${p.icon}</div><div class="t"><b>${esc(p.name)}</b><p>${esc(p.desc)}</p></div></div>
+    <div class="pr"><span></span><span><b>${fmtMoney()}</b><small>${SM[p.sell]||p.sell}</small></span></div></div>
+  <div class="qty-r"><div><label>Quantity</label><input type="number" min="1" value="${S.qtd[p.id]||1}" onchange="S.qtd['${p.id}']=Math.max(1,Number(this.value)||1);render()"></div></div>
+  <div class="atabs">${cats.map(c=>`<a class="${c===S.atab?'on':''}" onclick="S.atab='${c.replace(/'/g,"\\'")}';render()">${esc(c)}</a>`).join('')}</div>
+  ${fields.map(a=>field(a,R,cfg.a,a.key)).join('')||'<p style="padding:12px 14px;color:var(--mut)">Todos os atributos desta categoria estão ocultos pelas regras neste cenário.</p>'}
+  ${(p.groups||[]).map(g=>{ const open=S.grpOpen[g.id]!==false; return `<div class="grp"><h3 onclick="S.grpOpen['${g.id}']=${open?'false':'true'};render()"><span class="c">${open?'⌄':'›'}</span>${esc(g.name)}</h3>${open?g.produtos.map(pid=>compCards(pid,R)).join(''):''}</div>`; }).join('')}
+  <div class="sum"><h2 onclick="S.sumOpen=!S.sumOpen;render()">Summary<span>${S.sumOpen?'Hide':'Show'}</span></h2>${S.sumOpen?`<div class="sb2"><div class="p">${esc(p.name)}</div>
+    <div class="box"><div><small>Quantity</small>${S.qtd[p.id]||1}</div><div style="text-align:center"><small>Net Unit Price</small>${fmtMoney()}</div><div style="text-align:right"><small>Net Amount</small>${fmtMoney()}</div></div>
+    <div class="at"><b>Attributes</b>${sumAttrs||'<div style="color:var(--mut)">Nenhum</div>'}</div>
+    ${(p.groups||[]).map(g=>`<div class="sec"><b>${esc(g.name)}</b>${g.produtos.flatMap(pid=>(cfg.c[compKey(pid)]||[]).map(x=>{ const cp=findProd(pid); const chip=pid==='EQUIP'?(x.ModalidadeEquipamento||''):pid==='SVAUPG'?[x.VelocidadeTemporaria,x.QuantidadeDias?x.QuantidadeDias+' dias':''].filter(Boolean).join(', '):[x.PlanoMIR,x.TipoMonitoramento].filter(Boolean).join(', ');
+      return `<div class="card"><div class="h"><a>${esc(x.TipoEquipamento||cp.name)}</a>${chip?`<span class="chip">${esc(chip)}</span>`:''}</div><div style="display:flex;justify-content:space-between"><span>Quantity 1</span><span>Net Amount ${pid==='EQUIP'&&x.ModalidadeEquipamento==='Comodato'?'Included':fmtMoney()}</span></div></div>`; })).join('')||'<div class="card" style="color:var(--mut)">Nenhum item selecionado</div>'}</div>`).join('')}
+    <div class="tot"><div><span>One Time Total</span><span>-</span></div><div><span>Monthly Total</span><span>${fmtMoney()}</span></div></div></div>`:''}</div>
+  <div style="height:80px"></div>
+  <div class="foot"><button class="btn" onclick="cancelCfg()">Cancel</button><button class="btn" onclick="toast('Update Prices: precificação pendente.')">⟳ Update</button><button class="btn brand" ${S.validacao&&(nE+nW)>0?'disabled':''} onclick="saveExit()">Save &amp; Exit</button></div>`;
+}
+function field(a,R,obj,key){
+  const attr=key.includes('#')?key.split('.').pop():a.key; const val=obj[attr], dis=R.disabled[key]||a.ro, req=R.required[key], er=S.validacao&&R.ferr[key]; const hv=R.hideVals[key]||{};
+  let ctl;
+  if(a.ui==='picklist') ctl=`<select ${dis?'disabled':''} onchange="setAttr('${key}',this.value)"><option value="">--None--</option>${a.values.filter(v=>!hv[v]).map(v=>`<option ${val===v?'selected':''}>${esc(v)}</option>`).join('')}</select>`;
+  else if(a.ui==='checkbox') ctl=`<div class="cbx"><input type="checkbox" ${val?'checked':''} ${dis?'disabled':''} onchange="setAttr('${key}',this.checked)"><span>${esc(a.values[0]||'Sim')}</span></div>`;
+  else if(a.ui==='network'){ const nets=CTX_DATA.networks[CTX.conta.cnpjRaiz]||[]; ctl=`<select onchange="setAttr('${key}',this.value)"><option value="">--None--</option>${nets.map(n=>`<option value="${n.id}" ${val===n.id?'selected':''}>${esc(n.id+' · '+n.nome)}</option>`).join('')}<option value="NOVA" ${val==='NOVA'?'selected':''}>+ Criar nova VPN Network</option></select>`; }
+  else { const type=(a.ui==='number'||a.ui==='currency')?'number':(a.ui==='date'&&!dis)?'date':'text'; ctl=`<input type="${type}" value="${val==null?'':esc(val)}" ${dis?'disabled':''} onchange="setAttr('${key}',this.value)">`; }
+  return `<div class="fld ${er?'err':''}"><label>${req?'<span class="rq">*</span>':''}${esc(a.name)}${a.unit?' ('+esc(a.unit)+')':''}</label>${ctl}${er?`<div class="ferr">${esc(R.ferr[key])}</div>`:''}${(a.duvida||a.pend)?`<div class="help">${esc(a.duvida||a.pend)}</div>`:''}</div>`;
+}
+function compCards(pid,R){
+  const cp=findProd(pid), key=compKey(pid), arr=cfgProduct.c[key]||[], ex=R.excl[key];
+  const card=(label,on,x,i,openKey,attrsHtml,extra)=>`<div class="ccard ${on?'sel':''}"><div class="r"><input type="checkbox" ${on?'checked':''} ${ex?'disabled':''} onchange="${pid==='EQUIP'?`togEquip('${label}',this.checked)`:`togComp('${pid}',this.checked)`}"><span class="nm">${esc(label)} <span style="color:var(--brand);font-size:11px">✎</span></span><span class="pr">${on&&x&&x.ModalidadeEquipamento==='Comodato'?'Included':fmtMoney()}</span><button class="gear" ${on?'':'disabled'} onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">⚙</button><button class="ch" onclick="S.compOpen['${openKey}']=!S.compOpen['${openKey}'];render()">${S.compOpen[openKey]?'⌃':'⌄'}</button></div>
+    <div class="r2"><span class="sm">${SM[cp.sell]||cp.sell} ▾</span><span class="q">${on?1:''}</span></div>${extra||''}
+    ${S.compOpen[openKey]?`<div class="ds">${esc(cp.desc)}${x&&x.auto?' · Adicionado por regra.':''}</div>${on?`<div class="cbody">${attrsHtml}</div>`:''}`:''}</div>`;
+  if(pid==='EQUIP') return EQUIP_TIPOS.map(tipo=>{ const i=arr.findIndex(x=>x.TipoEquipamento===tipo), on=i>=0, x=on?arr[i]:null;
+    return card(tipo,on,x,i,pid+tipo,on?resolveAttrs(cp).filter(a=>a.key!=='TipoEquipamento').map(a=>field(a,R,x,key+'#'+i+'.'+a.key)).join(''):''); }).join('');
+  const on=arr.length>0, x=on?arr[0]:null;
+  return card(cp.name,on,x,0,pid,on?resolveAttrs(cp).map(a=>field(a,R,x,key+'#0.'+a.key)).join(''):'', ex?`<div class="ds" style="color:var(--err)">${esc(ex.texto)}</div>`:'');
+}
+function togEquip(tipo,on){ const arr=cfgProduct.c.equip||(cfgProduct.c.equip=[]); const i=arr.findIndex(x=>x.TipoEquipamento===tipo); if(on&&i<0){ const o={}; resolveAttrs(findProd('EQUIP')).forEach(a=>o[a.key]=a.def||''); o.TipoEquipamento=tipo; arr.push(o); } if(!on&&i>=0) arr.splice(i,1); cfgProduct.autoSig='manual'; render(); }
+function togComp(pid,on){ const key=compKey(pid), cp=findProd(pid); if(on){ const o={}; resolveAttrs(cp).forEach(a=>o[a.key]=a.def||''); cfgProduct.c[key]=[o]; S.compOpen[pid]=true; } else cfgProduct.c[key]=[]; render(); }
+function setAttr(key,val){ const [obj,attr]=resolveRef(cfgProduct,key); if(!obj) return; obj[attr]=val; if(!key.includes('#')) cfgProduct.toque[attr]=true; const y=window.scrollY; render(); window.scrollTo(0,y); }
+function cancelCfg(){ cfgProduct=null; go(S.catalogo?'browse':'quote'); }
+function saveExit(){ const R=avaliar(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.'); return; }
+  const p=cfgProduct.prod; if(cfgProduct.uid) lines=lines.filter(l=>l.uid!==cfgProduct.uid&&l.parentUid!==cfgProduct.uid);
+  const line=addLine(p,cfgProduct,R); line.cfgState={a:cfgProduct.a,c:cfgProduct.c,toque:cfgProduct.toque,autoSig:cfgProduct.autoSig};
+  cfgProduct=null; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.'); }
+
+/* ---------- render ---------- */
+function render(){
+  const v=$('#view');
+  if(S.tela==='opp') v.innerHTML=telaOpp(); else if(S.tela==='newquote') v.innerHTML=telaNewQuote(); else if(S.tela==='quote') v.innerHTML=telaQuote();
+  else if(S.tela==='browse') v.innerHTML=telaBrowse(); else if(S.tela==='config') v.innerHTML=telaConfig();
+  let o='';
+  if(S.sheet==='more-opp') o=sheetMoreOpp(); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
+  if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
+  $('#overlay').innerHTML=o;
+  const record=(S.tela==='opp'||S.tela==='quote'); $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
+  bnav(); pinta();
+}
+function pinta(){ const f=(id,arr,cur,lab)=>{ $(id).innerHTML=arr.map(x=>`<option value="${x.id}" ${x.id===cur?'selected':''}>${esc(lab(x))}</option>`).join(''); };
+  f('#p-conta',CTX_DATA.contas,CTX.conta.id,x=>x.nome); f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); f('#p-loc',LOCALIDADES,CTX.localidade.id,x=>x.nome+' · '+x.territorio); f('#p-end',enderecosDaLocalidade(CTX.localidade.id),CTX.endereco.id,x=>x.nome); }
+function resetViab(){ if(cfgProduct){ cfgProduct.autoSig=null; ['Tecnologia','Interface','Abordagem','Metragem'].forEach(k=>delete cfgProduct.toque[k]); } }
+$('#p-conta').onchange=e=>{ CTX.conta=CTX_DATA.contas.find(x=>x.id===e.target.value); render(); };
+$('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target.value); render(); };
+$('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
+function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&CTX.endereco.localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
+function setEnd(id,silent){ CTX.endereco=CTX_DATA.enderecos.find(x=>x.id===id); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
+function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; render(); }
+S=novo(); render();
+
+if(/selftest=1/.test(location.search)){
+  const o=[], ok=(n,c)=>o.push((c?'PASS ':'FAIL ')+n);
+  try{
+    ok('oportunidade: barra de ações (Post, Log a Call, New Task, More), cabeçalho, campos, path e Stage', document.querySelectorAll('.acts .act').length===4 && $('.rh .oi.opp') && document.querySelectorAll('.fr').length===6 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
+    ok('assistente "How can I help?" e barra de navegação com Menu', $('#agent').style.display!=='none' && document.querySelectorAll('#bnav button').length===5);
+    S.tab='Related'; render();
+    ok('Related: lista Quotes (0) com ação New', $('.rel .h b').textContent==='Quotes (0)' && $('.rel .h a').textContent==='New');
+    $('.rel .h a').click();
+    ok('New Quote: Cancel / New Quote / Save, Quote Name obrigatório, Account for Quote pré-preenchido', S.tela==='newquote' && $('.form-h b').textContent==='New Quote' && $('#f-name') && $('.ff .pill'));
+    saveQuote();
+    ok('Save cria a cotação e abre o registro com Quote Number, Syncing, Grand Total e path Draft', S.tela==='quote' && $('.rh .oi.q') && document.querySelectorAll('.ps').length===8 && $('.stage').textContent==='Status: Draft');
+    ok('ação Browse Catalogs na barra de ações', [...document.querySelectorAll('.acts .act')].some(a=>a.textContent.includes('Browse Catalogs')));
+    browse(); ok('Choose Price Book aparece primeiro', $('.modal h3').textContent==='Choose Price Book');
+    $('.modal .brand').click(); ok('depois All Catalogs com Next', $('.modal h3').textContent==='All Catalogs' && $('.modal .brand').textContent==='Next');
+    $('.modal .brand').click(); ok('Browse Products com Catalog, categorias, linhas e Save Quote', S.tela==='browse' && document.querySelectorAll('.prow').length>=5 && $('.foot .brand').textContent.includes('Save Quote'));
+    setLoc('LOC05'); ok('Expansão: Banda Larga não aparece', ![...document.querySelectorAll('.prow .nm')].some(n=>n.textContent.includes('Banda Larga')));
+    setLoc('LOC01'); openConfig('VPNNODE');
+    ok('configurador: título, toggles, barra Errors/Warnings/Info, Return to Quote, abas', S.tela==='config' && $('.cfg-top h1').textContent==='Configure VPN Node' && document.querySelectorAll('.mtabs .pill').length===3 && $('.ph .ret') && document.querySelectorAll('.atabs a').length>=6);
+    setAttr('Velocidade','200 Mbps');
+    ok('equipamentos marcados pela regra (Metro + anel)', (cfgProduct.c.equip||[]).map(x=>x.TipoEquipamento).join(',')==='Roteador,Switch,Chave Ótica');
+    ok('Save & Exit desabilitado com erros', $('.foot .brand').disabled===true);
+    setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
+    ok('sem erros após obrigatórios; próximo reajuste calculado', avaliar(cfgProduct).msgs.filter(m=>m.sev==='Error').length===0 && cfgProduct.a.DataProximoReajuste==='01/10/2029');
+    S.sumOpen=true; render(); ok('Summary com Quantity / Net Unit Price / Net Amount e Attributes', $('.sum .box') && $('.sum .at'));
+    const n=lines.length; saveExit();
+    ok('Save & Exit volta ao Browse Products e cria linha + 3 componentes', S.tela==='browse' && lines.length===n+4);
+    $('.foot .brand').click();
+    ok('Save Quote volta à cotação na aba Lines com a linha e os filhos', S.tela==='quote' && S.tab==='Lines' && document.querySelectorAll('.line').length===1 && document.querySelectorAll('.line .child').length===3);
+    S.sheet='menu:'+lines[n].uid; render();
+    ok('menu da linha: View / Configure / Delete', [...document.querySelectorAll('.bsheet .row')].map(r=>r.textContent.replace(/[^A-Za-z]/g,'')).join('|')==='View|Configure|Delete');
+    S.sheet='line:'+lines[n].uid; S.stab='Attributes'; render();
+    ok('painel da linha com Attributes incluindo localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade') && $('.bsheet').textContent.includes('Entidade faturadora'));
+    S.sheet=null; S.tab='Related'; go('opp');
+    ok('voltando à oportunidade, Quotes (1) lista a cotação criada', $('.rel .h b').textContent==='Quotes (1)');
+    const t=document.getElementById('tst'); t.style.display='block';
+    t.textContent=o.join('\n')+'\n\nRESUMO: '+o.filter(x=>x[0]==='P').length+' PASS / '+o.filter(x=>x[0]==='F').length+' FAIL';
+  }catch(err){ const t=document.getElementById('tst'); t.style.display='block'; t.textContent=o.join('\n')+'\n\nERRO: '+err.message+'\n'+err.stack; }
+}
+
+</script>
+</body>
+</html>
