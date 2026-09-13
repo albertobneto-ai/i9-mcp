@@ -515,6 +515,61 @@
     a.click();
   }
 
+  // ---- recolher/expandir na pré-visualização, como o documento abre no Word
+  function montarArvorePreview(raiz) {
+    var NIVEL = { umdocx_heading2: 2, umdocx_heading3: 3, umdocx_heading4: 4, umdocx_heading5: 5 };
+    var itens = all('article > *', raiz).length ? all('article > *', raiz) : all('section > *', raiz);
+    // a pré-visualização quebra em páginas: junta tudo numa sequência só
+    var seq = [];
+    all('section', raiz).forEach(function (sec) {
+      all(':scope > article > *, :scope > *', sec).forEach(function (x) {
+        if (x.tagName === 'ARTICLE') { all(':scope > *', x).forEach(function (y) { seq.push(y); }); }
+        else if (seq.indexOf(x) < 0) seq.push(x);
+      });
+    });
+    var titulos = [];
+    seq.forEach(function (el, i) {
+      var n = NIVEL[el.className];
+      if (n) titulos.push({ el: el, nivel: n, i: i });
+    });
+    if (!titulos.length) return;
+    titulos.forEach(function (t, k) {
+      var fim = seq.length;
+      for (var j = k + 1; j < titulos.length; j++) {
+        if (titulos[j].nivel <= t.nivel) { fim = titulos[j].i; break; }
+      }
+      t.filhos = seq.slice(t.i + 1, fim);
+      if (!t.filhos.length) return;
+      t.el.classList.add('umtit');
+      var seta = document.createElement('span');
+      seta.className = 'umseta';
+      t.el.insertBefore(seta, t.el.firstChild);
+      var fechado = t.nivel >= 4;            // grupos e atributos começam recolhidos
+      var aplicar = function () {
+        t.el.classList.toggle('umfech', fechado);
+        t.filhos.forEach(function (f) { f.style.display = fechado ? 'none' : ''; });
+      };
+      t.el.style.cursor = 'pointer';
+      t.el.addEventListener('click', function () { fechado = !fechado; aplicar(); });
+      aplicar();
+    });
+    var barra = document.createElement('div');
+    barra.className = 'umarv';
+    barra.innerHTML = '<button type="button" id="umExp">Expandir tudo</button>'
+      + '<button type="button" id="umCol">Recolher tudo</button>'
+      + '<span class="umdica">A árvore abre recolhida, como no Word. Clique nos títulos para expandir.</span>';
+    raiz.parentNode.insertBefore(barra, raiz);
+    var todos = function (abrir) {
+      titulos.forEach(function (t) {
+        if (!t.filhos || !t.filhos.length) return;
+        t.el.classList.toggle('umfech', !abrir);
+        t.filhos.forEach(function (f) { f.style.display = abrir ? '' : 'none'; });
+      });
+    };
+    barra.querySelector('#umExp').onclick = function () { todos(true); };
+    barra.querySelector('#umCol').onclick = function () { todos(false); };
+  }
+
   // ---------------------------------------------------------------- pré-visualização
   // a biblioteca de leitura usa o mesmo nome global da de escrita: guardamos e devolvemos
   var PV = null;
@@ -548,7 +603,10 @@
       + '<button type="button" class="umsec" id="umFechar">Fechar</button>'
       + '<button type="button" id="umBaixar">Baixar</button></div>'
       + '<div class="umbody"><div class="umload">Montando a pré-visualização…</div>'
-      + '<div id="umDoc"></div></div></div>';
+      + '<div id="umDoc"></div></div>'
+      + '<div class="umpe">Para alterar o conteúdo, comente no item e salve: o documento se atualiza e o '
+      + 'Word sai com a decisão aplicada. Ajustes de redação também podem ser feitos no Word depois de baixar.'
+      + '</div></div>';
     document.body.appendChild(fundoM);
     var fechar = function () { fundoM.remove(); document.removeEventListener('keydown', esc); };
     var esc = function (e) { if (e.key === 'Escape') fechar(); };
@@ -568,6 +626,7 @@
       });
     }).then(function () {
       var l = fundoM.querySelector('.umload'); if (l) l.remove();
+      montarArvorePreview(fundoM.querySelector('#umDoc'));
       stat('Pré-visualização pronta. Revise e clique em Baixar.');
     }).catch(function (e) {
       var l = fundoM.querySelector('.umload');
