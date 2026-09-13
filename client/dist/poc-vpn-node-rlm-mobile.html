@@ -185,6 +185,15 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .fnt.proto{background:#f3f3f3;border:1px solid var(--bd2);color:#444}
 .fnt.proto .tg{background:#706e6b;color:#fff}
 .proc small{display:block;margin-top:2px}
+.mapg{background:var(--gray);padding:8px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);border-top:1px solid var(--bd)}
+.mapr{padding:9px 14px;border-top:1px solid #eef1f5;font-size:12.5px}
+.mapr .p{font-weight:600}
+.mapr .o{margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mapr .o code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--brand);background:#eef2fb;border-radius:4px;padding:2px 6px}
+.mapr .n{margin-top:3px;color:var(--tx2);font-size:12px}
+.mapr .nv{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 7px}
+.mapr .nv.ver{background:#ebf7e6;color:#1d6b38}
+.mapr .nv.inf{background:#eef2fb;color:#2b4a80}
 .hgrid{display:grid;grid-template-columns:1fr;gap:0}
 .rpt{background:#fff;border:1px solid var(--bd);border-radius:6px;margin:12px 14px 0;overflow:hidden}
 .rpt .rh2{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bd)}
@@ -974,6 +983,50 @@ function telaRpt(){
     </tbody></table>` : '<div class="vazio">Sem registros para este relatório ainda. Avance a jornada para preenchê-lo.</div>'}
   </div>`;
 }
+
+/* Mapa de componentes: peça do protótipo → objeto/componente do Salesforce.
+   nível: ver = nome de API conferido na Referência de Objetos; inf = correspondência
+   proposta pelo projeto (o objeto existe, o uso para o VPN Node é que precisa de validação). */
+const MAPA_SF = [
+  ['Jornada comercial', [
+    ['Lead e conversão','Lead · Account · Contact · Opportunity','ver','A conversão padrão do Sales Cloud cria conta, contato e, opcionalmente, oportunidade.'],
+    ['Oportunidade','Opportunity · OpportunityLineItem','ver','Os produtos só chegam à oportunidade com o Start Sync da cotação.'],
+    ['Cotação','Quote · QuoteLineItem · QuoteLineGroup','ver','QuoteLineGroup responde pelos grupos criados no Transaction Line Editor.'],
+    ['Relação entre linhas da cotação','QuoteLineRelationship','ver','Liga a linha do bundle às linhas dos componentes.'],
+    ['Proposta em PDF','QuoteDocument','ver','Gerada no Lightning; o app mobile só lista.'],
+    ['Contrato e assinatura','Contract · ContractDocument (Salesforce Contracts) + DocuSign','ver','Geração por template e envio do envelope.']
+  ]],
+  ['Catálogo e configuração', [
+    ['Produto VPN Node e componentes','Product2','ver','Bundle e componentes são Product2; o papel muda pelo tipo e pelas relações.'],
+    ['Estrutura do bundle','ProductRelatedComponent','ver','Representa o produto incluído no bundle, no conjunto ou como add-on.'],
+    ['Grupos de componentes (equipamentos, SVAs)','ProductComponentGroup','ver','Agrupa os componentes do bundle e define a política de arranjo.'],
+    ['Categorias do catálogo','ProductCategory · ProductCategoryProduct','ver','Organização do catálogo e a associação produto ↔ categoria.'],
+    ['Modelo de venda (Evergreen, Term, One-time)','ProductSellingModel','ver','Define como o produto é vendido.'],
+    ['Os 46 atributos','AttributeDefinition · AttributePicklist · AttributePicklistValue','ver','Definição do atributo e suas listas de valores.'],
+    ['Conjuntos de atributos por produto','ProductAttributeSet · ProductAttributeSetItem · ProductAttributeSetProduct','ver','Agrupam os atributos e os ligam ao produto.'],
+    ['As 22 regras de configuração','ExpressionSetConstraintObj','inf','O objeto associa o produto às marcas do modelo de restrição; a tradução exata de cada regra do UC ainda precisa ser desenhada.'],
+    ['Elegibilidade por território','ProductQualification (qualificação de produto)','inf','O conceito é do Revenue Cloud; a regra por território da Algar é do projeto.'],
+    ['Tabela de preços','Pricebook2 · PricebookEntry','ver','Escolhida no Browse Catalogs; a precificação do VPN Node não está definida na Revisão 1.']
+  ]],
+  ['Pedido, orquestração e pós-venda', [
+    ['Pedido e itens','Order · OrderItem','ver','Criados a partir da cotação aceita.'],
+    ['Tipo da transação do pedido','OrderAction','ver','Indica nova venda, alteração ou cancelamento.'],
+    ['Relação entre itens do pedido','OrderItemRelationship','ver','Descreve a relação entre os order products.'],
+    ['Agrupamento por entrega','OrderDeliveryGroup','ver','Itens que compartilham método e endereço de entrega — é onde o endereço por node se encaixa.'],
+    ['Decomposição em produtos técnicos','FulfillmentOrder · FulfillmentOrderLineItem','inf','O mecanismo é do Dynamic Revenue Orchestrator; quais produtos técnicos o VPN Node gera é proposta do projeto.'],
+    ['Plano de orquestração (raias e etapas)','Orchestration plan (DRO)','inf','Estrutura oficial — Manual Task, Callout, Auto Task, Milestone; as etapas do VPN Node são do projeto.'],
+    ['Assets comerciais','Asset · AssetAttribute','ver','Criados por Flow na ativação do pedido.'],
+    ['Ciclo de vida do asset','AssetAction · AssetActionSource · AssetStatePeriod · AssetStatePeriodAttribute','ver','Mudanças do asset e os períodos com mesma quantidade, valor e MRR — é o que alimenta os cartões da página do asset.'],
+    ['Vínculo asset ↔ contrato','AssetContractRelationship','ver','AssetId, ContractId, StartDate e EndDate (API 60.0+).'],
+    ['Amend / Renew / Cancel','Asset lifecycle (Transaction Management)','ver','Ações oficiais sobre o asset; o fluxo do VPN Node não está descrito na Revisão 1.']
+  ]],
+  ['Integrações e apoio', [
+    ['Consulta de viabilidade','MuleSoft (API do projeto)','inf','Não existe componente nativo de viabilidade no Revenue Cloud.'],
+    ['Agentforce','Agentforce (Einstein Copilot) no app e no Lightning','ver','A interface segue o painel oficial; as ações e o roteiro são do projeto.'],
+    ['Relatórios e dashboards','Report · Dashboard','inf','A estrutura foi reproduzida; o construtor, os tipos de relatório e as permissões por pasta não.'],
+    ['Sessão do protótipo','—','inf','Não existe no Salesforce: é persistência própria deste protótipo, em Postgres.']
+  ]]
+];
 function telaProcedencia(){
   const g=n=>FONTES.filter(f=>f[1]===n);
   const modo = S.fonteModo||'atencao';
@@ -993,7 +1046,16 @@ function telaProcedencia(){
   <div class="fnt inf"><span class="tg">Inferido</span><span>Proposta do projeto: o mecanismo é oficial, o conteúdo específico do VPN Node ainda precisa de validação.</span></div>
   <div class="fnt nv"><span class="tg">Não verificado</span><span>Existe na documentação, mas descrito para Lightning Experience; a exibição no app Salesforce Mobile não foi verificada.</span></div>
   <div class="fnt proto"><span class="tg">Protótipo</span><span>Elemento do protótipo, fora da interface Salesforce.</span></div>
-  ${bloco('Verificado','ver')}${bloco('Inferido — precisa de validação','inf')}${bloco('Não verificado no app','nv')}${bloco('Chrome do protótipo','proto')}`;
+  ${bloco('Verificado','ver')}${bloco('Inferido — precisa de validação','inf')}${bloco('Não verificado no app','nv')}${bloco('Chrome do protótipo','proto')}
+  <div class="rel"><div class="h"><div class="oi b">🗺</div><b>Mapa de componentes — protótipo × Salesforce</b></div>
+    <div class="note">Nome de API conferido na Referência de Objetos do Salesforce. <b>inferido</b> marca a correspondência proposta pelo projeto: o objeto existe, o uso para o VPN Node é que precisa de validação.</div>
+    ${MAPA_SF.map(([grupo,linhas])=>`
+      <div class="mapg">${esc(grupo)}</div>
+      ${linhas.map(([peca,obj,niv,nota])=>`<div class="mapr">
+        <div class="p">${esc(peca)}</div>
+        <div class="o"><code>${esc(obj)}</code> <span class="nv ${niv}">${niv==='ver'?'verificado':'inferido'}</span></div>
+        <div class="n">${esc(nota)}</div></div>`).join('')}`).join('')}
+  </div>`;
 }
 /* Layouts lidos da org HOMOL em consulta somente leitura (13/09/2026):
    Lead → Record Type "Nacional" (layout padrão do RT). Opportunity → Record Type padrão é o Master,
@@ -1844,6 +1906,9 @@ function agIntent(t){
   if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), agAtuais(), 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
   if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, agAtuais(), 'Regra: matriz de formatação × situações de customização'); return; } }
   if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', agAtuais()); return; }
+  if(/qual objeto|objeto padr|api name|nome de api|mapea|equival|no salesforce (isso|seria)/.test(s)){
+    agSay('O mapa completo está em Menu › Procedência: cada peça do protótipo ligada ao objeto do Salesforce, com o nome de API conferido na Referência de Objetos. Por exemplo: as linhas da cotação são QuoteLineItem com QuoteLineRelationship; os equipamentos, ProductRelatedComponent dentro de ProductComponentGroup; o vínculo do asset com o contrato, AssetContractRelationship.', agAtuais().concat([{l:'Abrir o mapa de componentes',f:()=>{agClose();go('procedencia');}}]), 'Referência de Objetos do Salesforce');
+    return; }
   if(/proced|fonte|de onde|oficial|document|verificad|inferid/.test(s)){ agSay('Cada tela traz uma faixa de procedência: verde para o que está confirmado em documentação oficial, no UC-VPN-001 ou na leitura da org HOMOL; azul para proposta do projeto; âmbar para o que existe na doc mas só para Lightning; cinza para chrome do protótipo. A lista completa está em Menu › Procedência das telas.', agAtuais().concat([{l:'Abrir a lista de procedência',f:()=>{agClose();go('procedencia');}}])); return; }
   if(/acr|contrato.*(asset|ativo)|asset.*contrato|vincul/.test(s)){
     if((S.acrs||[]).length) agSay(`Vínculo asset ↔ contrato: ${S.acrs.map(x=>x.assetName+' ↔ contrato '+x.contract+' ('+x.name+', vigência '+x.start+(x.end?' a '+x.end:'')+')').join('; ')}. No Salesforce isso é o objeto AssetContractRelationship, criado quando os assets nascem do pedido ligado ao contrato.`, agAtuais(),'AssetContractRelationship (API 60.0+)');
@@ -2536,6 +2601,8 @@ if(/selftest=1/.test(location.search)){
     ok('o contrato tem a lista relacionada de assets', [...document.querySelectorAll('.rel .h b')].some(b=>/^Assets \(1\)$/.test(b.textContent)));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Procedência')));
+    ok('mapa de componentes liga cada peça a um objeto do Salesforce', document.querySelectorAll('.mapr').length>=25 && $('#view').textContent.includes('ProductRelatedComponent') && $('#view').textContent.includes('QuoteLineItem') && $('#view').textContent.includes('AssetContractRelationship'));
+    ok('o mapa distingue conferido de proposto', document.querySelectorAll('.mapr .nv.ver').length>=15 && document.querySelectorAll('.mapr .nv.inf').length>=5);
     ok('tela de procedência lista as fontes por nível', S.tela==='procedencia' && document.querySelectorAll('.fnt').length>=4 && document.querySelectorAll('.proc').length>=20 && $('#view').textContent.includes('AssetContractRelationship'));
     go('menu');
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a cotação', S.tela==='quotes' && !!$('.list .it'));
