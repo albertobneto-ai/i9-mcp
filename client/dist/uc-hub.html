@@ -203,6 +203,7 @@ border:1px solid var(--bd2);color:var(--tx2);background:var(--s2);line-height:1.
 .st-on{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
 .st-off{background:transparent;border-style:dashed;color:var(--mut)}
 .st-err{background:#FFFFFF;border-color:var(--tx);color:var(--tx)}
+.st-ok{background:var(--s2);border-color:var(--bd2);color:var(--tx);font-weight:600}
 .st-load{background:transparent;color:var(--mut);border-color:var(--bd)}
 .rod{margin-top:6px;font-size:12.5px;color:var(--tx2);line-height:1.5}
 .rod a{color:var(--tx)}
@@ -330,9 +331,15 @@ function checar(it){
   var pend=(atual&&atual.status!=='APLICADA')?atual.total:0; it.salvos=pend;
   var q=atual&&atual.quando?new Date(atual.quando):null;
   var qt=(q&&!isNaN(q.getTime()))?', salvos em '+q.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
-  el.innerHTML='<span class="st '+(pend?'st-on':'st-off')+'">'+
-   (pend?plural(pend,'comentário a aplicar','comentários a aplicar'):'Nenhum comentário pendente')+
-   '</span><div class="rod">Rodada '+n+(pend?qt:' aberta para revisão')+'.'+atend+'</div>';
+  var aplicada=atual&&atual.status==='APLICADA';
+  var quandoAp=aplicada&&atual.aplicada_em?new Date(atual.aplicada_em):null;
+  var ap=(quandoAp&&!isNaN(quandoAp.getTime()))?' em '+quandoAp.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+  el.innerHTML='<span class="st '+(pend?'st-on':aplicada?'st-ok':'st-off')+'">'+
+   (pend?plural(pend,'comentário a aplicar','comentários a aplicar')
+        :aplicada?'Rodada aplicada':'Nenhum comentário pendente')+
+   '</span><div class="rod">'+(aplicada
+     ?'Rodada '+atual.rodada+' aplicada'+ap+' com '+plural(atual.total,'definição','definições')+'. A próxima rodada abre com um novo comentário.'
+     :'Rodada '+n+(pend?qt:' aberta para revisão')+'.'+atend)+'</div>';
  }).catch(function(e){it.salvos=null;
   el.innerHTML='<span class="st st-err">Status indisponível</span><div class="rod">Não foi possível ler os comentários ('+esc(e.message)+'). Use Atualizar status.</div>';
  }).then(resumo);
