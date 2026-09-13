@@ -213,6 +213,17 @@ border:1px solid var(--bd2);color:var(--tx2);background:var(--s2);line-height:1.
 text-decoration:none;border-radius:6px;white-space:nowrap}
 .btn:hover{background:#3A3A3A}
 .hmsg{font-size:14px;color:var(--tx2);padding:18px 0}
+/* protótipo navegável */
+.pocb{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;background:var(--s1);
+border:1px solid var(--bd);padding:22px 26px;margin-bottom:32px}
+.pocb h2{font-size:15px;font-weight:600;margin-bottom:6px}
+.pocb p{font-size:13.5px;color:var(--tx2);max-width:700px}
+.pocb-a{display:flex;gap:10px;flex-wrap:wrap}
+.btn2{display:inline-block;font-size:13px;font-weight:600;padding:9px 16px;background:transparent;
+color:var(--tx);border:1px solid var(--bd2);text-decoration:none;border-radius:6px;white-space:nowrap}
+.btn2:hover{background:var(--s2)}
+@media (max-width:760px){.pocb{grid-template-columns:1fr}}
+
 @media (max-width:760px){.prod{grid-template-columns:1fr;gap:10px}.wrap{padding:0 18px 60px}}
 @media print{.hbar,.hnote{display:none}.prod{page-break-inside:avoid}}
 </style></head><body>
@@ -226,6 +237,14 @@ text-decoration:none;border-radius:6px;white-space:nowrap}
 <div class="hbar"><label class="hlabel" for="q">Buscar produto</label>
 <input id="q" type="search" placeholder="Nome do produto, família ou ID" autocomplete="off">
 <button id="refresh" type="button">Atualizar status</button></div>
+<section id="poc-bloco" class="pocb">
+  <div class="pocb-t"><h2>Protótipo navegável</h2>
+    <p>A jornada completa em tela, sobre os casos de uso publicados aqui: lead, conversão, cotação, configuração do produto com as regras, proposta, contrato, pedido, orquestração e assets. O Agentforce conduz passo a passo.</p></div>
+  <div class="pocb-a">
+    <a class="btn" href="/poc">Abrir no Lightning</a>
+    <a class="btn2" href="/poc/mobile">Versão app mobile</a>
+  </div>
+</section>
 <div id="lista" aria-live="polite"><p class="hmsg">Carregando produtos…</p></div>
 <footer><span>ALGAR — Casos de uso de produto</span><span>Confidencial — Uso Interno</span></footer>
 </div>
