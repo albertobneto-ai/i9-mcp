@@ -593,21 +593,21 @@ document.getElementById('cSave').onclick=function(){
       return new P({ alignment: o.align, spacing: { before: o.before || 0,
           after: o.after === undefined ? 100 : o.after },
         indent: o.indent, border: o.border, keepNext: o.keepNext,
-        shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
         children: [new T({ text: t, font: FONT, size: o.size || 20, bold: !!o.bold,
           color: o.color || TX, allCaps: !!o.caps, characterSpacing: o.track })] });
     }
     function rotulado(r, c, o) {
       o = o || {};
       return new P({ spacing: { after: o.after === undefined ? 100 : o.after }, indent: o.indent,
-        border: o.border, shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        border: o.border, shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
         children: [new T({ text: r + ' ', font: FONT, size: o.size || 20, bold: true, color: o.color || TX }),
                    new T({ text: c, font: FONT, size: o.size || 20, color: o.color || TX })] });
     }
     function cel(conteudo, o) {
       o = o || {};
       return new D.TableCell({ width: { size: o.w, type: WT.DXA },
-        shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
         margins: { top: 90, bottom: 90, left: 130, right: 130 },
         columnSpan: o.span, verticalAlign: o.vAlign, borders: o.borders,
         children: Array.isArray(conteudo) ? conteudo : [conteudo] });
@@ -618,7 +618,7 @@ document.getElementById('cSave').onclick=function(){
       layout: TL.FIXED, borders: nada,
       rows: [new D.TableRow({ height: { value: 4200, rule: 'atLeast' }, children: [
         new D.TableCell({ width: { size: LARG, type: WT.DXA }, borders: nada,
-          shading: { type: SH.CLEAR, fill: TX }, verticalAlign: VA.CENTER,
+          shading: { type: SH.CLEAR, color: 'auto', fill: TX }, verticalAlign: VA.CENTER,
           margins: { top: 500, bottom: 500, left: 520, right: 400 },
           children: [
             tx(dados.kicker, { size: 16, color: 'FFFFFF', caps: true, track: 30, after: 260 }),
@@ -664,7 +664,7 @@ document.getElementById('cSave').onclick=function(){
         filhos.push(new P({ spacing: { after: 90 }, children: n.chips.map(function (c, i) {
           return new T({ text: (i ? '    ' : '') + ' ' + c.t + ' ', font: FONT, size: 16,
             bold: c.forte, color: c.forte ? TX : TX2,
-            shading: { type: SH.CLEAR, fill: c.forte ? S2 : 'F7F8F9' } });
+            shading: { type: SH.CLEAR, color: 'auto', fill: c.forte ? S2 : 'F7F8F9' } });
         }) }));
       }
       n.blocos.forEach(function (b) {
