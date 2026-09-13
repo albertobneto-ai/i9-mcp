@@ -43,18 +43,19 @@ function rodada(v) {
   return Number.isInteger(n) && n > 0 && n < 1000 ? n : null;
 }
 // Mantém só o que a página precisa gravar, no tamanho que cabe.
+// Comentário vazio significa remover aquele item da rodada.
 function limpar(bruto) {
-  const out = {};
+  const out = {}, remover = [];
   const chaves = Object.keys(bruto || {}).slice(0, MAX_ITENS);
   for (const k of chaves) {
     const chave = String(k).slice(0, 80);
     if (!/^[a-z0-9-]+$/i.test(chave)) continue;
     const v = bruto[k] || {};
     const texto = String(v.comentario == null ? v : v.comentario).trim().slice(0, MAX_TEXTO);
-    if (!texto) continue;
+    if (!texto) { remover.push(chave); continue; }
     out[chave] = { item: String(v.item || chave).slice(0, MAX_ROTULO), comentario: texto };
   }
-  return out;
+  return { manter: out, remover };
 }
 
 // GET /api/uc/:documento/comentarios[?rodada=N] → rodada pedida, ou a mais recente
@@ -90,15 +91,20 @@ router.post('/:documento/comentarios', async (req, res) => {
   try {
     const r = rodada((req.body || {}).rodada);
     if (!r) return res.status(400).json({ error: 'rodada inválida' });
-    const c = limpar((req.body || {}).comentarios);
-    if (!Object.keys(c).length) return res.status(400).json({ error: 'nenhum comentário' });
+    const { manter, remover } = limpar((req.body || {}).comentarios);
+    if (!Object.keys(manter).length && !remover.length)
+      return res.status(400).json({ error: 'nenhum comentário' });
+    // merge por item: quem comenta um atributo não apaga o comentário de outro revisor
     const q = await pool.query(`INSERT INTO uc_comentarios (documento, rodada, comentarios)
       VALUES ($1,$2,$3)
       ON CONFLICT (documento, rodada) DO UPDATE
-      SET comentarios = EXCLUDED.comentarios, atualizado_em = now()
-      RETURNING rodada, atualizado_em`, [id, r, JSON.stringify(c)]);
+      SET comentarios = (uc_comentarios.comentarios || EXCLUDED.comentarios) - $4::text[],
+          atualizado_em = now()
+      RETURNING rodada, atualizado_em, comentarios`,
+      [id, r, JSON.stringify(manter), remover]);
     res.json({ ok: true, documento: id, rodada: q.rows[0].rodada,
-      quando: q.rows[0].atualizado_em, total: Object.keys(c).length });
+      quando: q.rows[0].atualizado_em,
+      total: Object.keys(q.rows[0].comentarios || {}).length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
