@@ -515,6 +515,67 @@
     a.click();
   }
 
+  // ---- do trecho na pré-visualização direto para o comentário do item na página
+  function nomeLimpo(el) {
+    var c = el.cloneNode(true);
+    all('.umseta, .umcom', c).forEach(function (x) { x.remove(); });
+    return txt(c);
+  }
+  function acharNo(nome) {
+    var alvo = null;
+    all('details[data-clabel]').forEach(function (d) {
+      if (alvo) return;
+      var r = d.getAttribute('data-clabel');
+      if (r && (nome === r || nome.indexOf(r) === 0 || r.indexOf(nome) === 0)) alvo = d;
+    });
+    return alvo;
+  }
+  function ligarComentario(titulo) {
+    var det = acharNo(nomeLimpo(titulo));
+    if (!det) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'umcom'; b.textContent = '✎ comentar';
+    b.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var trecho = String(window.getSelection ? window.getSelection().toString() : '').trim();
+      abrirComentario(det, trecho);
+    });
+    titulo.appendChild(b);
+  }
+  function abrirComentario(det, trecho) {
+    var modal = document.querySelector('.umodal');
+    if (modal) modal.remove();
+    var pai = det.parentNode;
+    while (pai) {                                   // abre a árvore até o item
+      if (pai.tagName === 'DETAILS') pai.open = true;
+      pai = pai.parentNode;
+    }
+    det.open = true;
+    var box = det.querySelector(':scope > .ubody > .cbox');
+    var botao = det.querySelector(':scope > summary > .cbtn');
+    if (botao) botao.click();
+    if (box) {
+      if (trecho && !box.textContent.trim()) {
+        box.textContent = trecho;
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      box.classList.add('show');
+      det.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function () { box.focus(); }, 400);
+    }
+    voltarAoPreview = true;
+    var st = document.getElementById('cStat');
+    if (st) st.textContent = 'Edite o comentário e clique em Salvar: o documento e o Word são refeitos.';
+  }
+  var voltarAoPreview = false;
+  // chamado pelo botão Salvar da página assim que a gravação termina
+  window.__UC_POS_SALVAR__ = function () {
+    if (!voltarAoPreview) return;
+    voltarAoPreview = false;
+    var stat = function (t) { var s = document.getElementById('cStat'); if (s) s.textContent = t; };
+    setTimeout(function () { preverWord(stat); }, 400);
+  };
+
   // ---- recolher/expandir na pré-visualização, como o documento abre no Word
   function montarArvorePreview(raiz) {
     var NIVEL = { umdocx_heading2: 2, umdocx_heading3: 3, umdocx_heading4: 4, umdocx_heading5: 5 };
@@ -552,6 +613,7 @@
       t.el.style.cursor = 'pointer';
       t.el.addEventListener('click', function () { fechado = !fechado; aplicar(); });
       aplicar();
+      ligarComentario(t.el);
     });
     var barra = document.createElement('div');
     barra.className = 'umarv';
