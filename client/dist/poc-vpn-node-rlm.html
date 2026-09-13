@@ -172,6 +172,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .btn.sm{padding:7px 12px;min-height:36px;font-size:13px;flex:none}
 .toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#2e844a;color:#fff;padding:12px 18px;border-radius:8px;z-index:60;font-size:14px;max-width:88%}
 .toast.warn{background:#8c4b02}
+.toast.err{background:#c23934}
 .nv-tag{margin:8px 14px 0;font-size:11px;color:var(--warnt);background:#fef3d7;border:1px solid #fadfa4;border-radius:6px;padding:6px 10px;line-height:1.4}
 .fnt{margin:8px 14px 0;font-size:11px;line-height:1.45;border-radius:6px;padding:6px 10px;display:flex;gap:7px;align-items:flex-start}
 .fnt .tg{flex:none;font-weight:700;letter-spacing:.03em;font-size:9.5px;text-transform:uppercase;border-radius:3px;padding:1px 5px;margin-top:1px}
@@ -253,6 +254,14 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .cfg-top h1{margin:0 0 10px;font-size:18px;font-weight:400}
 .cfg-top .togs{display:flex;gap:16px;flex-wrap:wrap}
 .cfg-info{background:var(--gray);padding:10px 14px;font-size:13px;line-height:1.4}
+.mbar{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--bd);background:#fff;font-size:12.5px}
+.mbar .pill{display:flex;align-items:center;gap:5px;border:1px solid var(--bd2);border-radius:12px;padding:2px 9px;color:var(--mut);font-size:12px}
+.mbar .pill i{font-style:normal;font-weight:700}
+.mbar .pill.e.has{border-color:#f5c6c2;background:#fdecea;color:var(--err)}
+.mbar .pill.w.has{border-color:#fadfa4;background:#fef3d7;color:var(--warnt)}
+.mbar .pill.i.has{border-color:#c9d6ef;background:#eef2fb;color:var(--brand)}
+.mbar .resumo{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx2)}
+.mbar .tgl{border:0;background:0;color:var(--brand);font-size:12px;white-space:nowrap}
 .mtabs{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--bd);overflow-x:auto}
 .mtabs .pill{flex:none;display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:6px;font-size:13px}
 .mtabs .pill.on{border-color:var(--brand);font-weight:700;color:var(--navy)}
@@ -1197,9 +1206,9 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], msgOpen:false, assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
-  el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
+  el.className='toast'+(k==='warn'?' warn':k==='err'?' err':''); el.textContent=(k==='warn'?'⚠ ':k==='err'?'⊘ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
 function back(){ const t = S.hist.pop(); if(t){ S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); } else go('opp',true); }
 
@@ -1733,8 +1742,14 @@ function telaConfig(){
     <div class="tog ${S.validacao?'on':''}"><span>Product Validation</span><div><div class="sw" onclick="S.validacao=!S.validacao;render()"></div><small>${S.validacao?'Enabled':'Disabled'}</small></div></div>
     <div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Enabled':'Disabled'}</small></div></div></div></div>
   ${S.instant?'':'<div class="cfg-info">Prices don\'t reflect the latest selections. To get the latest pricing, enable Instant Pricing or tap Update Prices.</div>'}
-  ${S.validacao?`<div class="mtabs"><span class="pill e ${S.msgTab==='Error'?'on':''}" onclick="S.msgTab='Error';render()"><i>⊘</i>Errors (${nE})</span><span class="pill w ${S.msgTab==='Warning'?'on':''}" onclick="S.msgTab='Warning';render()"><i>▲</i>Warnings (${nW})</span><span class="pill i ${S.msgTab==='Info'?'on':''}" onclick="S.msgTab='Info';render()"><i>ⓘ</i>Info (${nI})</span></div>
-  ${msgs.filter(m=>m.sev===S.msgTab).map(m=>`<div class="mrow ${m.sev}"><i>${m.sev==='Error'?'⊘':m.sev==='Warning'?'▲':'ⓘ'}</i><span>${esc(m.texto)}</span></div>`).join('')}`:''}
+  ${S.validacao?`<div class="mbar ${S.msgOpen?'aberta':''}">
+    <span class="pill e ${nE?'has':''}" onclick="msgAbrir('Error')"><i>⊘</i>${nE}</span>
+    <span class="pill w ${nW?'has':''}" onclick="msgAbrir('Warning')"><i>▲</i>${nW}</span>
+    <span class="pill i ${nI?'has':''}" onclick="msgAbrir('Info')"><i>ⓘ</i>${nI}</span>
+    <span class="resumo" onclick="msgAbrir(${nE?"'Error'":nW?"'Warning'":"'Info'"})">${nE?esc(msgs.find(m=>m.sev==='Error').texto):(nW?esc(msgs.find(m=>m.sev==='Warning').texto):'Sem erros de validação.')}</span>
+    <button class="tgl" onclick="S.msgOpen=!S.msgOpen;render()">${S.msgOpen?'ocultar':'ver tudo'}</button></div>
+  ${S.msgOpen?`<div class="mtabs"><span class="pill e ${S.msgTab==='Error'?'on':''}" onclick="S.msgTab='Error';render()"><i>⊘</i>Errors (${nE})</span><span class="pill w ${S.msgTab==='Warning'?'on':''}" onclick="S.msgTab='Warning';render()"><i>▲</i>Warnings (${nW})</span><span class="pill i ${S.msgTab==='Info'?'on':''}" onclick="S.msgTab='Info';render()"><i>ⓘ</i>Info (${nI})</span></div>
+  ${msgs.filter(m=>m.sev===S.msgTab).map(m=>`<div class="mrow ${m.sev}"><i>${m.sev==='Error'?'⊘':m.sev==='Warning'?'▲':'ⓘ'}</i><span>${esc(m.texto)}</span></div>`).join('')}`:''}`:''}
   <div class="ph"><a class="ret" onclick="cancelCfg()">Return to Quote</a><div class="r"><div class="img">${p.icon}</div><div class="tt"><b>${esc(p.name)}</b><p>${esc(p.desc)}</p></div></div>
     <div class="pr"><span></span><span><b>${fmtMoney()}</b><small>${SM[p.sell]||p.sell}</small></span></div></div>
   <div class="qty-r"><div><label>Quantity</label><input type="number" min="1" value="${S.qtd[p.id]||1}" onchange="S.qtd['${p.id}']=Math.max(1,Number(this.value)||1);render()"></div></div>
@@ -1790,7 +1805,10 @@ function togComp(pid,on){ const key=compKey(pid), cp=findProd(pid);
   const Rx=avaliarUI(cfgProduct); if(on && Rx.excl[key]){ toast(Rx.excl[key].texto,'err'); return; } if(on){ const o={}; resolveAttrs(cp).forEach(a=>o[a.key]=a.def||''); o.Quantidade=1; cfgProduct.c[key]=[o]; S.compOpen[pid]=true; } else cfgProduct.c[key]=[]; render(); }
 function setAttr(key,val){ const [obj,attr]=resolveRef(cfgProduct,key); if(!obj) return; obj[attr]=val; if(!key.includes('#')) cfgProduct.toque[attr]=true; const y=window.scrollY; render(); window.scrollTo(0,y); }
 function cancelCfg(){ cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); }
-function saveExit(){ const doAgente = AG.cfg && cfgProduct===AG.cfg; if(doAgente){ AG.cfg=null; AG.equipOk=false; AG.svaOk=false; } const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.','warn'); return; }
+function msgAbrir(sev){ S.msgTab=sev; S.msgOpen=true; render(); }
+function saveExit(){ const Rv=avaliarUI(cfgProduct); const errs=Rv.msgs.filter(m=>m.sev==='Error');
+  if(errs.length){ msgAbrir('Error'); toast(errs[0].texto + (errs.length>1?` (+${errs.length-1})`:''), 'err'); return; }
+  const doAgente = AG.cfg && cfgProduct===AG.cfg; if(doAgente){ AG.cfg=null; AG.equipOk=false; AG.svaOk=false; } const R=avaliarUI(cfgProduct); if(S.validacao&&R.msgs.some(m=>m.sev==='Error')){ toast('Resolve the errors before saving.','warn'); return; }
   const p=cfgProduct.prod; if(cfgProduct.uid) lines=lines.filter(l=>l.uid!==cfgProduct.uid&&l.parentUid!==cfgProduct.uid);
   const line=addLine(p,cfgProduct,R); line.cfgState={a:cfgProduct.a,c:cfgProduct.c,toque:cfgProduct.toque,autoSig:cfgProduct.autoSig};
   cfgProduct=null; S.tab='Lines'; go(S.catalogo?'browse':'quote'); toast(p.name+' was configured and added to the quote.');
@@ -2700,7 +2718,8 @@ async function sessaoSalvar(manual){
     history.replaceState(null,'', location.pathname + '?s=' + encodeURIComponent(sessaoCodigo));
     sessaoSync('salvo ' + new Date().toLocaleTimeString('pt-BR').slice(0,5));
     if(manual) toast('Sessão salva: '+sessaoCodigo);
-  }catch(e){ sessaoSync('falhou', true); if(manual) toast('Não consegui salvar: '+e.message,'warn'); }
+  }catch(e){ const off = e instanceof TypeError; sessaoSync(off?'sem servidor':'falhou', true);
+    if(manual) toast(off?'Sem servidor: a sessão só é salva na versão publicada.':'Não consegui salvar: '+e.message,'warn'); }
 }
 function sessaoAuto(){
   if(S.semPersistencia) return;
@@ -2844,6 +2863,9 @@ if(/selftest=1/.test(location.search)){
     setAttr('Velocidade','200 Mbps');
     ok('com a viabilidade: tecnologia preenchida, 3 equipamentos, atendimento Formatado', cfgProduct.a.Tecnologia==='Metro' && (cfgProduct.c.equip||[]).length===3 && avaliar(cfgProduct).cls.v==='Formatado');
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
+    ok('barra de validação recolhida, com contadores e resumo', !!$('.mbar') && !$('.mtabs') && $('.mbar .pill.e').textContent.trim()!=='');
+    msgAbrir('Error'); ok('tocar no contador abre a lista completa', !!$('.mtabs') && S.msgOpen===true);
+    S.msgOpen=false; render();
     ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
     ok('equipamentos exigidos pela tecnologia vêm marcados na tela', document.querySelectorAll('.ccard .exig').length>=2);
     ok('cada equipamento traz campo de quantidade editável', document.querySelectorAll('.ccard.sel .qin').length===(cfgProduct.c.equip||[]).length && (cfgProduct.c.equip||[]).length>0);
