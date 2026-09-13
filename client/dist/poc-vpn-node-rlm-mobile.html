@@ -1047,8 +1047,8 @@ function agClose(){ AG.open=false; $('#agp').classList.remove('show'); render();
 function agObg(key){ return ATTRS[key]&&ATTRS[key].obg?' *':''; }
 function agSay(text, chips, src){ AG.thread.push({a:true,text,src}); AG.chips=chips||[]; AG.pending=!!(chips&&chips.length); agRender(); }
 function agUser(text){ AG.thread.push({u:true,text}); AG.chips=[]; agRender(); }
-function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; then(); }, ms); }
-function agRender(){
+function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; agSafe(then,'processamento'); }, ms); }
+function agRender(){ if(AG.open && !AG.busy && !AG.chips.length && !AG.dateAsk && AG.cfg && AG.thread.length) setTimeout(agGuardaFio,60);
   const b=$('#agp-b'); if(!b) return;
   const BOT='<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><rect x="12" y="18" width="40" height="32" rx="10" fill="#0b5cab"/><rect x="18" y="26" width="28" height="16" rx="8" fill="#fff"/><circle cx="27" cy="34" r="3.2" fill="#0b5cab"/><circle cx="37" cy="34" r="3.2" fill="#0b5cab"/><rect x="30" y="9" width="4" height="9" rx="2" fill="#0b5cab"/><circle cx="32" cy="8" r="3" fill="#0b5cab"/><rect x="6" y="28" width="6" height="12" rx="3" fill="#0b5cab"/><rect x="52" y="28" width="6" height="12" rx="3" fill="#0b5cab"/></svg>';
   b.innerHTML = (AG.thread.length>1?'':`<div class="welcome"><div class="bot" id="agbot"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'">${BOT}</div><p>Welcome! I'm Agentforce. I can help you create and manage quotes quickly and accurately — from feasibility to order fulfillment.</p></div>`)
@@ -1058,8 +1058,9 @@ function agRender(){
   b.scrollTop = b.scrollHeight;
   const dot=$('#agent .dot'); if(AG.pending&&!AG.open&&!dot){ const d=document.createElement('span'); d.className='dot'; $('#agent .afi').after(d); } if((!AG.pending||AG.open)&&dot) dot.remove();
 }
-function agChip(i){ const c=AG.chips[i]; if(!c) return; agUser(c.l); c.f(); }
-function agSend(){ const t=$('#agp-in').value.trim(); if(!t) return; if(AG.dateAsk){ const m=t.match(/(\d{2})\/(\d{2})\/(\d{4})/); if(m){ $('#agp-in').value=''; const d=AG.dateAsk; AG.dateAsk=null; agUser(t); agSet(d.key,`${m[3]}-${m[2]}-${m[1]}`); agNextCfg(); return; } } $('#agp-in').value=''; $('#agp-send').className='send off'; agUser(t); agIntent(t); }
+function agSafe(fn, ctx){ try{ fn(); }catch(e){ console.error(e); agSay('Tive um problema ao continuar'+(ctx?' ('+ctx+')':'')+': '+e.message+'. Podemos seguir por estas opções:', agAtuais()); } }
+function agChip(i){ const c=AG.chips[i]; if(!c) return; agUser(c.l); agSafe(c.f,'opção "'+c.l+'"'); }
+function agSend(){ const t=$('#agp-in').value.trim(); if(!t) return; if(AG.dateAsk){ const m=t.match(/(\d{2})\/(\d{2})\/(\d{4})/); if(m){ $('#agp-in').value=''; const d=AG.dateAsk; AG.dateAsk=null; agUser(t); agSet(d.key,`${m[3]}-${m[2]}-${m[1]}`); agNextCfg(); return; } } $('#agp-in').value=''; $('#agp-send').className='send off'; agUser(t); agSafe(()=>agIntent(t),'mensagem'); }
 /* opções do ponto atual da jornada — recalculadas a cada resposta, para o agente não voltar a passos antigos */
 function agAtuais(){
   if(AG.cfg) return [{l:'Continuar a configuração',f:agNextCfg,pri:true},{l:'Abrir no configurador',f:agOpenCfg}];
@@ -1134,7 +1135,7 @@ function agNextCfg(){
     if(!arr.length){ const semRegra=!['GPON','Metro','Rádio'].includes(a.Tecnologia);
       agSay(semRegra
         ? `Passo 5: a Revisão 1 não define o dimensionamento automático para ${a.Tecnologia}. Escolha os equipamentos — a cada um eu pergunto a quantidade e a modalidade.`
-        : `Passo 5: o dimensionamento automático vale na esteira formatada; aqui o atendimento é ${String(d.classificacao).toLowerCase()}, então os equipamentos são definidos manualmente. Escolha os equipamentos — a cada um pergunto quantidade e modalidade.`, agEquipChips()); return; }
+        : `Passo 5: o dimensionamento automático vale na esteira formatada; aqui o atendimento é ${String(R.cls.v).toLowerCase()}, então os equipamentos são definidos manualmente. Escolha os equipamentos — a cada um pergunto quantidade e modalidade.`, agEquipChips()); return; }
     agSay(`Passo 5: pela tecnologia ${a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}, ficaram estes equipamentos: ${arr.map(x=>x.TipoEquipamento+' ('+(x.Quantidade||1)+'× '+(x.ModalidadeEquipamento||'—')+')').join(', ')}. Confirmar?`, [{l:'Confirmar',f:()=>{AG.equipOk=true;agNextCfg();},pri:true},{l:'Alterar equipamentos',f:()=>agSay('Toque num equipamento para incluir e configurar, ou num incluído para alterar:',agEquipChips())},{l:'Ajustar no configurador',f:agOpenCfg}]); return; }
   if(!AG.svaOk){ agSay('Passo 6: serviços de valor agregado?', [{l:'Nenhum',f:()=>{AG.svaOk=true;agNextCfg();},pri:true},{l:'Upgrade temporário de velocidade',f:agUpgrade},{l:'Monitoramento inteligente de rede',f:agMir}]); return; }
   if(vazio(a.PeriodoFidelizacao)){ agSay('Passo 7: condições contratuais. Período de fidelização?'+agObg('PeriodoFidelizacao'), agVals('PeriodoFidelizacao').map(v=>({l:v+' meses',f:()=>{agSet('PeriodoFidelizacao',v);agNextCfg();}}))); return; }
@@ -1146,6 +1147,7 @@ function agNextCfg(){
   if(!R.hidden.ValorMoeda && vazio(a.ValorMoeda)){ agSay('Cliente internacional: cotação de conversão do dólar?', [{l:'5,20',f:()=>{agSet('ValorMoeda','5.20');agNextCfg();}}]); return; }
   agValidar();
 }
+function agGuardaFio(){ if(AG.open && AG.cfg && !AG.busy && !AG.chips.length && !AG.dateAsk) agSafe(agNextCfg,'retomada'); }
 function agEquipResumo(){ const arr=AG.cfg.c.equip||[]; return arr.length?arr.map(x=>`${x.TipoEquipamento} — ${x.Quantidade||1}× ${x.ModalidadeEquipamento||'modalidade pendente'}`).join(' · '):'nenhum'; }
 function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
   return EQUIP_TIPOS.map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
