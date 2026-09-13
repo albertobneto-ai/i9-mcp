@@ -426,27 +426,23 @@ document.getElementById('cSave').onclick=function(){
   }
 
   // ---------------------------------------------------------------- Word
-  var D = null;
-  function libDocx() {
-    if (D) return D;
-    D = new Promise(function (res, rej) {
-      if (window.docx) return res(window.docx);
-      var fontes = ['vendor/docx.umd.js', 'https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.umd.cjs'];
-      (function tenta(i) {
-        if (i >= fontes.length) return rej(new Error('biblioteca indisponível'));
-        fetch(fontes[i]).then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status); return r.text();
-        }).then(function (codigo) {
-          var s = document.createElement('script');
-          s.src = URL.createObjectURL(new Blob([codigo], { type: 'application/javascript' }));
-          s.onload = function () { window.docx ? res(window.docx) : tenta(i + 1); };
-          s.onerror = function () { tenta(i + 1); };
-          document.head.appendChild(s);
-        }).catch(function () { tenta(i + 1); });
-      })(0);
+  var LIBS = {};
+  function lib(nome, url, global) {
+    if (LIBS[nome]) return LIBS[nome];
+    LIBS[nome] = new Promise(function (res, rej) {
+      if (window[global]) return res(window[global]);
+      fetch(url).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status); return r.text();
+      }).then(function (codigo) {
+        var s = document.createElement('script');
+        s.src = URL.createObjectURL(new Blob([codigo], { type: 'application/javascript' }));
+        s.onload = function () { window[global] ? res(window[global]) : rej(new Error(nome)); };
+        s.onerror = function () { rej(new Error(nome)); };
+        document.head.appendChild(s);
+      }).catch(rej);
     });
-    D.catch(function () { D = null; });
-    return D;
+    LIBS[nome].catch(function () { LIBS[nome] = null; });
+    return LIBS[nome];
   }
   function svgPng(svg) {
     return new Promise(function (res) {
@@ -456,10 +452,12 @@ document.getElementById('cSave').onclick=function(){
         if (s.indexOf('xmlns=') < 0) s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
         var img = new Image();
         img.onload = function () {
-          var c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+          var c = document.createElement('canvas'); c.width = w * 3; c.height = h * 3;
           var x = c.getContext('2d'); x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, c.width, c.height);
           x.drawImage(img, 0, 0, c.width, c.height);
-          c.toBlob(function (b) { b ? b.arrayBuffer().then(function (ab) { res({ data: ab, w: w, h: h }); }) : res(null); }, 'image/png');
+          c.toBlob(function (b) {
+            b ? b.arrayBuffer().then(function (ab) { res({ data: ab, w: w, h: h }); }) : res(null);
+          }, 'image/png');
         };
         img.onerror = function () { res(null); };
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
@@ -467,213 +465,348 @@ document.getElementById('cSave').onclick=function(){
     });
   }
 
-  function wordDoc(d) {
-    var P = d.Paragraph, T = d.TextRun, H = d.HeadingLevel, AL = d.AlignmentType;
-    var FONT = 'Calibri', TX = '1A1A1A', MUT = '6B6B6B';
-    var out = [];
-    function par(runs, opt) {
-      var o = opt || {}; o.children = runs; return new P(o);
-    }
-    function texto(t, o) {
-      o = o || {};
-      return par([new T({ text: t, bold: !!o.bold, italics: !!o.italic, size: o.size || 20,
-        color: o.color || TX, font: FONT })],
-        { spacing: { before: o.before || 0, after: o.after === undefined ? 80 : o.after },
-          alignment: o.align, shading: o.shading, indent: o.indent, border: o.border });
-    }
-    function rotulado(rot, corpo, sombreado) {
-      return par([new T({ text: rot + ' ', bold: true, size: 20, color: TX, font: FONT }),
-                  new T({ text: corpo, size: 20, color: TX, font: FONT })],
-        { spacing: { after: 100 }, shading: sombreado ? { fill: 'F2F3F5' } : undefined,
-          indent: sombreado ? { left: 180, right: 180 } : undefined });
-    }
-    function tabela(el) {
-      var linhas = all('tr', el), rows = [];
-      linhas.forEach(function (tr, i) {
-        var cels = all('th,td', tr);
-        if (!cels.length) return;
-        var crow = tr.querySelector('td.crow');
-        if (crow) {
-          var apl = crow.querySelector('.uapl');
-          if (!apl) return;
-          rows.push(new d.TableRow({ children: [new d.TableCell({
-            columnSpan: 2, shading: { fill: '0D0D0D' },
-            margins: { top: 80, bottom: 80, left: 120, right: 120 },
-            children: [par([new T({ text: txt(apl), size: 19, color: 'FFFFFF', font: FONT })],
-              { spacing: { after: 0 } })] })] }));
-          return;
-        }
-        rows.push(new d.TableRow({
-          children: cels.map(function (c) {
-            var cab = c.tagName === 'TH';
-            return new d.TableCell({
-              shading: cab ? { fill: '0D0D0D' } : undefined,
-              margins: { top: 80, bottom: 80, left: 120, right: 120 },
-              children: [par([new T({ text: txt(c), bold: cab, size: 19,
-                color: cab ? 'FFFFFF' : TX, font: FONT })], { spacing: { after: 0 } })]
-            });
-          })
-        }));
+  // ---- leitura do documento em memória (espelha o HTML, já com as decisões aplicadas)
+  function visivel(el) { return el.style.display !== 'none'; }
+  function lerChips(sum) {
+    return all('.uc-chip', sum).filter(visivel).map(function (c) {
+      var cls = c.className;
+      return { t: txt(c), forte: /\bcs\b|\bcd\b|\bcp\b|\bcrev\b/.test(cls) };
+    });
+  }
+  function lerBlocos(det) {
+    var body = det.querySelector(':scope > .ubody'), res = [];
+    if (!body) return res;
+    all(':scope > *', body).forEach(function (el) {
+      if (el.tagName === 'DETAILS' || el.classList.contains('cbox') || !el.classList.contains('usec')) return;
+      if (!visivel(el)) return;
+      var rec = el.querySelector('.urec');
+      if (rec) {
+        var br = rec.querySelector('b');
+        res.push({ tipo: 'rec', rotulo: txt(br), texto: txt(rec).replace(txt(br), '').trim() });
+        return;
+      }
+      var b = el.querySelector('b'), rotulo = b ? txt(b) : '';
+      var pills = all('.upill', el).map(function (p) { return txt(p); });
+      var corpo = pills.length ? pills.join(' · ') : txt(el).replace(rotulo, '').trim();
+      var tipo = el.classList.contains('uapl') ? 'decisao'
+        : el.classList.contains('uduv') ? 'duvida' : 'texto';
+      res.push({ tipo: tipo, rotulo: rotulo, texto: corpo });
+    });
+    return res;
+  }
+  function lerNo(det) {
+    var sum = det.querySelector(':scope > summary');
+    var cls = det.className;
+    var tipo = /u-root/.test(cls) ? 'root' : /u-fam/.test(cls) ? 'fam'
+      : /u-grp/.test(cls) ? 'grp' : 'attr';
+    var lvl = sum.querySelector('.ulvl');
+    var limpo = sum.cloneNode(true);
+    all('.uc-chip, .cbtn, .uchips, .ulvl', limpo).forEach(function (x) { x.remove(); });
+    var body = det.querySelector(':scope > .ubody');
+    return { tipo: tipo, lvl: lvl ? txt(lvl) : '', nome: txt(limpo), chips: lerChips(sum),
+      blocos: lerBlocos(det),
+      filhos: body ? all(':scope > details', body).map(lerNo) : [] };
+  }
+  function lerTabela(t) {
+    var head = all('thead th', t).map(function (th) { return txt(th); });
+    var rows = [];
+    all('tbody tr', t).forEach(function (tr) {
+      var crow = tr.querySelector('td.crow');
+      if (crow) {
+        var apl = crow.querySelector('.uapl');
+        if (apl) rows.push({ decisao: txt(apl).replace(/^Decisão da revisão:\s*/, '') });
+        return;
+      }
+      var cels = all(':scope > td', tr);
+      if (!cels.length) return;
+      var c2 = cels.map(function (c) {
+        var k = c.cloneNode(true);
+        all('.cbtn, .cbox', k).forEach(function (x) { x.remove(); });
+        return txt(k);
       });
-      return new d.Table({ rows: rows, width: { size: 100, type: d.WidthType.PERCENTAGE } });
-    }
-    function secoes(no) {
-      var res = [];
-      all(':scope > *', no).forEach(function (el) {
-        if (el.classList.contains('cbox') || el.classList.contains('cbtn') || el.classList.contains('crow')) return;
-        if (el.tagName === 'TABLE') { res.push(tabela(el)); res.push(texto('', { after: 120 })); }
-      });
-      return res;
-    }
-    // ---- árvore de modelagem
-    function chips(sum) {
-      var cs = all('.uc-chip', sum).filter(function (c) { return c.style.display !== 'none'; })
-        .map(function (c) { return txt(c); });
-      return cs.length ? cs.join(' · ') : '';
-    }
-    function corpo(det, nivel) {
-      var body = det.querySelector(':scope > .ubody'), res = [];
-      if (!body) return res;
-      all(':scope > *', body).forEach(function (el) {
-        if (el.classList.contains('cbox')) return;
-        if (el.tagName === 'DETAILS') { res = res.concat(no(el, nivel + 1)); return; }
-        if (el.style.display === 'none') return;
-        var b = el.querySelector('b');
-        var rot = b ? txt(b) : '';
-        var pills = all('.upill', el).map(function (p) { return txt(p); });
-        var corpoTxt = txt(el).replace(rot, '').trim();
-        if (pills.length) corpoTxt = pills.join(' · ');
-        if (el.classList.contains('uapl')) {
-          res.push(par([new T({ text: rot + ' ', bold: true, size: 20, color: 'FFFFFF', font: FONT }),
-                        new T({ text: corpoTxt, size: 20, color: 'FFFFFF', font: FONT })],
-            { spacing: { after: 100 }, shading: { fill: '0D0D0D' },
-              indent: { left: 180, right: 180 } }));
-          return;
-        }
-        var sombra = el.classList.contains('uduv') || el.querySelector('.urec');
-        if (el.querySelector('.urec')) {
-          var rec = el.querySelector('.urec');
-          res.push(rotulado(txt(rec.querySelector('b')), txt(rec).replace(txt(rec.querySelector('b')), '').trim(), true));
-          return;
-        }
-        res.push(rot ? rotulado(rot, corpoTxt, sombra) : texto(corpoTxt));
-      });
-      return res;
-    }
-    function no(det, nivel) {
-      var sum = det.querySelector(':scope > summary');
-      var lvl = det.querySelector(':scope > summary > .ulvl');
-      var limpo = sum.cloneNode(true);
-      all('.uc-chip, .cbtn, .uchips, .ulvl', limpo).forEach(function (c) { c.remove(); });
-      var nome = txt(limpo);
-      var heads = [H.HEADING_2, H.HEADING_3, H.HEADING_4, H.HEADING_5, H.HEADING_6];
-      var res = [new P({ heading: heads[Math.min(nivel, 4)], spacing: { before: 200, after: 60 },
-        children: [new T({ text: (lvl ? txt(lvl) + ' · ' : '') + nome, font: FONT, color: TX, bold: true,
-          size: nivel <= 1 ? 24 : 21 })] })];
-      var ch = chips(sum);
-      if (ch) res.push(texto(ch, { size: 17, color: MUT, after: 60 }));
-      return res.concat(corpo(det, nivel));
-    }
-
-    var filhos = [];
-    // capa
+      rows.push({ cells: c2 });
+    });
+    return { tipo: 'tabela', cols: head.length || 2, head: head, rows: rows,
+      mono: !!t.querySelector('td.mono') };
+  }
+  function lerDocumento() {
     var cap = document.querySelector('.cover');
-    filhos.push(texto(txt(cap.querySelector('.kicker')), { size: 18, color: MUT, after: 120 }));
-    filhos.push(new P({ heading: H.TITLE, spacing: { after: 100 },
-      children: [new T({ text: txt(cap.querySelector('h1')), font: FONT, bold: true, size: 40, color: TX })] }));
-    filhos.push(texto(txt(cap.querySelector('.sub')), { size: 22, color: MUT, after: 200 }));
-    var metas = all('.cover .meta div').map(function (m) {
-      return txt(m.querySelector('dt')) + ': ' + txt(m.querySelector('dd'));
-    });
-    filhos.push(texto(metas.join('   |   '), { size: 18, color: MUT, after: 300 }));
-    // indicadores
-    var kpi = all('.kpi').map(function (k) { return txt(k.querySelector('.l')) + ': ' + txt(k.querySelector('.v')); });
-    if (kpi.length) filhos.push(texto(kpi.join('   |   '), { size: 18, color: MUT, after: 200 }));
-    // sumário
-    filhos.push(new P({ heading: H.HEADING_1, spacing: { before: 200, after: 80 },
-      children: [new T({ text: 'Conteúdo', font: FONT, bold: true, size: 26, color: TX })] }));
-    all('.toc a').forEach(function (a) {
-      var n = a.querySelector('.n'), t = a.cloneNode(true);
-      all('.n', t).forEach(function (x) { x.remove(); });
-      filhos.push(texto((n ? txt(n) + '. ' : '') + txt(t), { size: 19, after: 40 }));
-    });
-
-    var pend = [];
-    all('main section, body > section, .wrap section').forEach(function () {});
+    var d = {
+      kicker: txt(cap.querySelector('.kicker')),
+      titulo: txt(cap.querySelector('h1')),
+      sub: txt(cap.querySelector('.sub')),
+      meta: all('.cover .meta div').map(function (m) {
+        return [txt(m.querySelector('dt')), txt(m.querySelector('dd'))]; }),
+      kpis: all('.kpi').map(function (k) {
+        return [txt(k.querySelector('.l')), txt(k.querySelector('.v'))]; }),
+      toc: all('.toc a').map(function (a) {
+        var n = a.querySelector('.n'), t = a.cloneNode(true);
+        all('.n', t).forEach(function (x) { x.remove(); });
+        return [n ? txt(n) : '', txt(t)];
+      }),
+      rodape: all('footer span').map(function (x) { return txt(x); }).join('  ·  '),
+      secoes: []
+    };
     all('section[id^="s"]').forEach(function (sec) {
-      var sh = sec.querySelector('.sh'), h2 = sec.querySelector('h2');
-      var num = sh && sh.querySelector('.num') ? txt(sh.querySelector('.num')) + '. ' : '';
-      filhos.push(new P({ pageBreakBefore: true, heading: H.HEADING_1, spacing: { after: 120 },
-        children: [new T({ text: num + txt(h2), font: FONT, bold: true, size: 28, color: TX })] }));
+      var itens = [];
       all(':scope > *', sec).forEach(function (el) {
-        if (el === h2 || el === sh) return;
-        if (el.tagName === 'TABLE') { filhos.push(tabela(el)); filhos.push(texto('', { after: 120 })); return; }
+        if (el.classList.contains('sh')) return;
+        if (el.tagName === 'TABLE') { itens.push(lerTabela(el)); return; }
         if (el.tagName === 'H3' && el.classList.contains('umodel')) {
-          filhos.push(new P({ heading: H.HEADING_2, spacing: { before: 200, after: 80 },
-            children: [new T({ text: txt(el), font: FONT, bold: true, size: 24, color: TX })] }));
-          return;
-        }
+          itens.push({ tipo: 'titulo', texto: txt(el) }); return; }
         if (el.classList.contains('ubar')) {
-          var info = el.querySelector('.uinfo');
-          if (info) filhos.push(texto(txt(info), { size: 18, color: MUT, after: 120 }));
+          var i = el.querySelector('.uinfo');
+          if (i) itens.push({ tipo: 'info', texto: txt(i) });
           return;
         }
         if (el.classList.contains('utree')) {
-          all(':scope > details', el).forEach(function (d0) { filhos = filhos.concat(no(d0, 0)); });
-          return;
-        }
-        if (el.tagName === 'FIGURE') { pend.push({ tipo: 'fig', el: el, pos: filhos.length }); filhos.push(null); return; }
+          itens.push({ tipo: 'arvore', nos: all(':scope > details', el).map(lerNo) }); return; }
+        if (el.tagName === 'FIGURE') {
+          itens.push({ tipo: 'figura', svg: el.querySelector('svg'),
+            legenda: txt(el.querySelector('figcaption')) }); return; }
         if (el.classList.contains('call')) {
-          var rot = el.querySelector('.cl'), corpo = el.querySelector('p');
-          filhos.push(rotulado((rot ? txt(rot) : 'Nota') + ':', corpo ? txt(corpo) : txt(el), true));
+          itens.push({ tipo: 'call', rotulo: txt(el.querySelector('.cl')),
+            texto: txt(el.querySelector('p')) }); return; }
+        var t = txt(el);
+        if (t) itens.push({ tipo: 'texto', texto: t });
+      });
+      var sh = sec.querySelector('.sh');
+      d.secoes.push({ num: sh ? txt(sh.querySelector('.num')) : '',
+        titulo: txt(sec.querySelector('h2')), itens: itens });
+    });
+    return d;
+  }
+
+  // ---- montagem do Word (mesmo visual do HTML)
+  function montarWord(D, dados, figuras) {
+    var P = D.Paragraph, T = D.TextRun, H = D.HeadingLevel, AL = D.AlignmentType,
+        WT = D.WidthType, SH = D.ShadingType, BS = D.BorderStyle, VA = D.VerticalAlign,
+        TL = D.TableLayoutType;
+    var FONT = 'Calibri', TX = '0D0D0D', TX2 = '3A3A3A', MUT = '6B6B6B',
+        BD = 'D9D9D9', S1 = 'F2F3F5', S2 = 'E8E9EC';
+    var PAGE_W = 11906, MG = 1134, LARG = PAGE_W - MG * 2;
+    var nada = { top: { style: BS.NONE }, bottom: { style: BS.NONE },
+                 left: { style: BS.NONE }, right: { style: BS.NONE } };
+    var li = function (c) { return { style: BS.SINGLE, size: 4, color: c || BD }; };
+    function tx(t, o) {
+      o = o || {};
+      return new P({ alignment: o.align, spacing: { before: o.before || 0,
+          after: o.after === undefined ? 100 : o.after },
+        indent: o.indent, border: o.border, keepNext: o.keepNext,
+        shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        children: [new T({ text: t, font: FONT, size: o.size || 20, bold: !!o.bold,
+          color: o.color || TX, allCaps: !!o.caps, characterSpacing: o.track })] });
+    }
+    function rotulado(r, c, o) {
+      o = o || {};
+      return new P({ spacing: { after: o.after === undefined ? 100 : o.after }, indent: o.indent,
+        border: o.border, shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        children: [new T({ text: r + ' ', font: FONT, size: o.size || 20, bold: true, color: o.color || TX }),
+                   new T({ text: c, font: FONT, size: o.size || 20, color: o.color || TX })] });
+    }
+    function cel(conteudo, o) {
+      o = o || {};
+      return new D.TableCell({ width: { size: o.w, type: WT.DXA },
+        shading: o.fill ? { type: SH.CLEAR, fill: o.fill } : undefined,
+        margins: { top: 90, bottom: 90, left: 130, right: 130 },
+        columnSpan: o.span, verticalAlign: o.vAlign, borders: o.borders,
+        children: Array.isArray(conteudo) ? conteudo : [conteudo] });
+    }
+    var filhos = [];
+    // capa
+    filhos.push(new D.Table({ width: { size: LARG, type: WT.DXA }, columnWidths: [LARG],
+      layout: TL.FIXED, borders: nada,
+      rows: [new D.TableRow({ height: { value: 4200, rule: 'atLeast' }, children: [
+        new D.TableCell({ width: { size: LARG, type: WT.DXA }, borders: nada,
+          shading: { type: SH.CLEAR, fill: TX }, verticalAlign: VA.CENTER,
+          margins: { top: 500, bottom: 500, left: 520, right: 400 },
+          children: [
+            tx(dados.kicker, { size: 16, color: 'FFFFFF', caps: true, track: 30, after: 260 }),
+            tx(dados.titulo, { size: 44, bold: true, color: 'FFFFFF', after: 160 }),
+            tx(dados.sub, { size: 22, color: 'C9C9C9', after: 320 }),
+            new P({ spacing: { after: 0 }, children: dados.meta.reduce(function (acc, m, i) {
+              return acc.concat([
+                new T({ text: (i ? '      ' : '') + m[0].toUpperCase() + '  ', font: FONT, size: 15,
+                  color: '9A9A9A', characterSpacing: 20 }),
+                new T({ text: m[1], font: FONT, size: 19, color: 'FFFFFF' })]);
+            }, []) })
+          ] })] })] }));
+    filhos.push(tx('', { after: 240 }));
+    // indicadores
+    if (dados.kpis.length) {
+      var w = Math.floor(LARG / dados.kpis.length);
+      filhos.push(new D.Table({ width: { size: LARG, type: WT.DXA },
+        columnWidths: dados.kpis.map(function () { return w; }), layout: TL.FIXED,
+        rows: [new D.TableRow({ children: dados.kpis.map(function (k) {
+          return cel([tx(k[0], { size: 14, color: MUT, caps: true, track: 20, after: 60 }),
+                      tx(k[1], { size: 34, bold: true, after: 0 })],
+            { w: w, fill: S1, borders: { top: li(), bottom: li(), left: li(), right: li() } });
+        }) })] }));
+      filhos.push(tx('', { after: 240 }));
+    }
+    // sumário
+    filhos.push(tx('Conteúdo', { size: 15, color: MUT, caps: true, track: 30, after: 120 }));
+    dados.toc.forEach(function (t) {
+      filhos.push(new P({ spacing: { after: 60 }, border: { bottom: li(S2) },
+        children: [new T({ text: t[0] + '   ', font: FONT, size: 17, color: MUT }),
+                   new T({ text: t[1], font: FONT, size: 20, color: TX })] }));
+    });
+    // árvore
+    var NIV = { root: H.HEADING_2, fam: H.HEADING_3, grp: H.HEADING_4, attr: H.HEADING_5 };
+    var TAM = { root: 26, fam: 23, grp: 21, attr: 20 };
+    function no(n) {
+      filhos.push(new P({ heading: NIV[n.tipo], keepNext: true,
+        spacing: { before: n.tipo === 'attr' ? 200 : 260, after: 60 },
+        children: [new T({ text: (n.lvl ? n.lvl + ' · ' : '') + n.nome, font: FONT,
+          size: TAM[n.tipo], bold: true, color: TX })] }));
+      if (n.chips.length) {
+        filhos.push(new P({ spacing: { after: 90 }, children: n.chips.map(function (c, i) {
+          return new T({ text: (i ? '   ' : '') + ' ' + c.t + ' ', font: FONT, size: 15,
+            bold: c.forte, color: c.forte ? 'FFFFFF' : TX2,
+            shading: { type: SH.CLEAR, fill: c.forte ? TX : S2 } });
+        }) }));
+      }
+      n.blocos.forEach(function (b) {
+        var ind = { left: 220 };
+        if (b.tipo === 'decisao') {
+          filhos.push(rotulado(b.rotulo || 'Decisão da revisão:', b.texto,
+            { fill: TX, color: 'FFFFFF', indent: ind }));
+        } else if (b.tipo === 'duvida') {
+          filhos.push(rotulado(b.rotulo, b.texto, { fill: S2, indent: ind,
+            border: { left: { style: BS.SINGLE, size: 12, color: TX, space: 6 } } }));
+        } else if (b.tipo === 'rec') {
+          filhos.push(rotulado(b.rotulo, b.texto, { fill: S1, indent: ind,
+            border: { left: { style: BS.SINGLE, size: 12, color: MUT, space: 6 } } }));
+        } else if (b.rotulo) {
+          filhos.push(rotulado(b.rotulo, b.texto, {}));
+        } else {
+          filhos.push(tx(b.texto));
+        }
+      });
+      n.filhos.forEach(no);
+    }
+    function tabela(t) {
+      var larguras = t.cols === 2
+        ? [Math.round(LARG * 0.28), LARG - Math.round(LARG * 0.28)]
+        : t.head.map(function () { return Math.floor(LARG / t.cols); });
+      larguras[larguras.length - 1] = LARG - larguras.slice(0, -1).reduce(function (a, b) { return a + b; }, 0);
+      var rows = [];
+      if (t.head.length) {
+        rows.push(new D.TableRow({ tableHeader: true, children: t.head.map(function (c, i) {
+          return cel(tx(c, { size: 18, bold: true, color: 'FFFFFF', caps: true, track: 10, after: 0 }),
+            { w: larguras[i], fill: TX });
+        }) }));
+      }
+      t.rows.forEach(function (r, ri) {
+        if (r.decisao) {
+          rows.push(new D.TableRow({ children: [cel(
+            rotulado('Decisão da revisão:', r.decisao, { size: 18, color: 'FFFFFF', after: 0 }),
+            { w: LARG, span: t.cols, fill: TX })] }));
           return;
         }
-        var t = txt(el);
-        if (t) filhos.push(texto(t));
+        rows.push(new D.TableRow({ children: r.cells.map(function (c, i) {
+          return cel(tx(c, { size: 19, after: 0, bold: i === 0 && t.cols === 2 && t.mono }),
+            { w: larguras[i], fill: ri % 2 ? S1 : undefined });
+        }) }));
+      });
+      return new D.Table({ width: { size: LARG, type: WT.DXA }, columnWidths: larguras,
+        layout: TL.FIXED, rows: rows,
+        borders: { top: li(), bottom: li(), left: li(), right: li(),
+          insideHorizontal: li(), insideVertical: li() } });
+    }
+    dados.secoes.forEach(function (sec) {
+      filhos.push(new P({ children: [new D.PageBreak()] }));
+      filhos.push(new D.Table({ width: { size: LARG, type: WT.DXA },
+        columnWidths: [700, LARG - 700], layout: TL.FIXED, borders: nada,
+        rows: [new D.TableRow({ children: [
+          cel(tx(sec.num, { size: 24, bold: true, color: 'FFFFFF', align: AL.CENTER, after: 0 }),
+            { w: 700, fill: TX, vAlign: VA.CENTER }),
+          cel(new P({ heading: H.HEADING_1, spacing: { after: 0 },
+            children: [new T({ text: sec.titulo, font: FONT, size: 28, bold: true, color: TX })] }),
+            { w: LARG - 700, vAlign: VA.CENTER })] })] }));
+      filhos.push(tx('', { after: 200 }));
+      sec.itens.forEach(function (it) {
+        if (it.tipo === 'tabela') { filhos.push(tabela(it)); filhos.push(tx('', { after: 200 })); }
+        else if (it.tipo === 'titulo') {
+          filhos.push(new P({ heading: H.HEADING_2, spacing: { before: 240, after: 100 },
+            children: [new T({ text: it.texto, font: FONT, size: 24, bold: true, color: TX })] }));
+        } else if (it.tipo === 'info') { filhos.push(tx(it.texto, { size: 17, color: MUT, after: 160 })); }
+        else if (it.tipo === 'arvore') { it.nos.forEach(no); }
+        else if (it.tipo === 'call') {
+          filhos.push(tx(it.rotulo, { size: 14, color: MUT, caps: true, track: 30, after: 60,
+            indent: { left: 220 }, fill: S1 }));
+          filhos.push(tx(it.texto, { fill: S1, indent: { left: 220 }, after: 200,
+            border: { left: { style: BS.SINGLE, size: 18, color: TX, space: 8 } } }));
+        } else if (it.tipo === 'figura') {
+          var png = figuras.shift();
+          if (png) {
+            var lw = 620, lh = Math.round(lw * png.h / png.w);
+            filhos.push(new P({ alignment: AL.CENTER, spacing: { before: 120, after: 80 },
+              children: [new D.ImageRun({ data: png.data, type: 'png',
+                transformation: { width: lw, height: lh } })] }));
+          }
+          if (it.legenda) filhos.push(tx(it.legenda, { size: 17, color: MUT, align: AL.CENTER, after: 200 }));
+        } else if (it.texto) { filhos.push(tx(it.texto)); }
       });
     });
+    return new D.Document({
+      creator: 'Ever i9', title: CFG.docId, description: dados.titulo,
+      styles: { default: { document: { run: { font: FONT, size: 20, color: TX } },
+        heading1: { run: { font: FONT, size: 28, bold: true, color: TX } },
+        heading2: { run: { font: FONT, size: 24, bold: true, color: TX } },
+        heading3: { run: { font: FONT, size: 22, bold: true, color: TX } },
+        heading4: { run: { font: FONT, size: 21, bold: true, color: TX } },
+        heading5: { run: { font: FONT, size: 20, bold: true, color: TX } } } },
+      sections: [{ properties: { page: { size: { width: PAGE_W, height: 16838 },
+          margin: { top: MG, bottom: MG, left: MG, right: MG } } },
+        footers: { default: new D.Footer({ children: [new P({ border: { top: li(S2) },
+          spacing: { before: 80 },
+          children: [new T({ text: dados.rodape, font: FONT, size: 15, color: MUT }),
+                     new T({ text: '    ·    página ', font: FONT, size: 15, color: MUT }),
+                     new T({ children: [D.PageNumber.CURRENT], font: FONT, size: 15, color: MUT })] })] }) },
+        children: filhos }]
+    });
+  }
 
-    return Promise.all(pend.map(function (p) {
-      var svg = p.el.querySelector('svg');
-      return (svg ? svgPng(svg) : Promise.resolve(null)).then(function (png) {
-        var cap = p.el.querySelector('figcaption');
-        var blocos = [];
-        if (png) {
-          var larg = 620, alt = Math.round(larg * png.h / png.w);
-          blocos.push(new P({ alignment: AL.CENTER, spacing: { before: 120, after: 60 },
-            children: [new d.ImageRun({ data: png.data, transformation: { width: larg, height: alt },
-              type: 'png' })] }));
-        }
-        if (cap) blocos.push(texto(txt(cap), { size: 17, color: MUT, align: AL.CENTER, after: 160 }));
-        filhos[p.pos] = blocos;
+  // ---- árvore recolhível: marca os títulos da modelagem como recolhidos no Word
+  function recolher(blob) {
+    return lib('jszip', 'vendor/jszip.min.js', 'JSZip').then(function (JSZip) {
+      return JSZip.loadAsync(blob).then(function (zip) {
+        return zip.file('word/document.xml').async('string').then(function (xml) {
+          var n = 0;
+          xml = xml.replace(/<w:pPr><w:pStyle w:val="Heading[345]"\/>[\s\S]*?<\/w:pPr>/g, function (b) {
+            if (b.indexOf('w15:collapsed') >= 0) return b;
+            n++; return b.replace('</w:pPr>', '<w15:collapsed/></w:pPr>');
+          });
+          zip.file('word/document.xml', xml);
+          return zip.generateAsync({ type: 'blob', compression: 'DEFLATE',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        });
       });
-    })).then(function () {
-      var finais = [];
-      filhos.forEach(function (f) {
-        if (f === null) return;
-        if (Array.isArray(f)) finais = finais.concat(f); else finais.push(f);
-      });
-      return new d.Document({
-        creator: 'Ever i9', title: CFG.docId,
-        styles: { default: { document: { run: { font: FONT, size: 20, color: TX } } } },
-        sections: [{ properties: { page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } } },
-          children: finais }]
-      });
-    });
+    }).catch(function () { return blob; });   // sem recolhimento, o documento continua válido
   }
 
   function baixarWord(stat) {
     stat('Montando o documento…');
-    return libDocx().then(function (d) {
-      return wordDoc(d).then(function (doc) {
-        return d.Packer.toBlob(doc).then(function (blob) {
-          var a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = CFG.fileBase + '.docx';
-          a.click();
-          stat('Word gerado (' + CFG.fileBase + '.docx).');
-        });
+    var dados = lerDocumento();
+    var svgs = [];
+    dados.secoes.forEach(function (s) {
+      s.itens.forEach(function (i) { if (i.tipo === 'figura' && i.svg) svgs.push(i.svg); });
+    });
+    return lib('docx', 'vendor/docx.umd.js', 'docx').then(function (D) {
+      return Promise.all(svgs.map(svgPng)).then(function (figuras) {
+        var doc = montarWord(D, dados, figuras.filter(Boolean));
+        return D.Packer.toBlob(doc);
       });
+    }).then(function (blob) {
+      stat('Preparando a árvore recolhível…');
+      return recolher(blob);
+    }).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = CFG.fileBase + '.docx';
+      a.click();
+      stat('Word gerado (' + CFG.fileBase + '.docx).');
     }).catch(function (e) { stat('Não foi possível gerar o Word (' + e.message + ').'); });
   }
 
