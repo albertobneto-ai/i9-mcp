@@ -238,8 +238,8 @@
                  left: { style: BS.NONE }, right: { style: BS.NONE } };
     var caixa = function (cor) {
       var l = { style: BS.SINGLE, size: 6, color: cor || BD, space: 8 };
-      return { top: l, bottom: l, left: { style: BS.SINGLE, size: 6, color: cor || BD, space: 12 },
-               right: { style: BS.SINGLE, size: 6, color: cor || BD, space: 12 } };
+      var v = { style: BS.SINGLE, size: 6, color: cor || BD, space: 12 };
+      return { top: l, left: v, bottom: l, right: v };   // a ordem importa no XML do Word
     };
     var IND = { root: 0, fam: 0, grp: 140, attr: 300 };
     var li = function (c) { return { style: BS.SINGLE, size: 4, color: c || BD }; };
@@ -441,17 +441,49 @@
     });
   }
 
+  // ---- tema e estilo próprios: sem eles o Word resolve cores pelo tema de quem abre
+  var TEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"Ever i9\"><a:themeElements><a:clrScheme name=\"Ever i9\"><a:dk1><a:sysClr val=\"windowText\" lastClr=\"000000\"/></a:dk1><a:lt1><a:sysClr val=\"window\" lastClr=\"FFFFFF\"/></a:lt1><a:dk2><a:srgbClr val=\"0D0D0D\"/></a:dk2><a:lt2><a:srgbClr val=\"F2F3F5\"/></a:lt2><a:accent1><a:srgbClr val=\"0D0D0D\"/></a:accent1><a:accent2><a:srgbClr val=\"3A3A3A\"/></a:accent2><a:accent3><a:srgbClr val=\"6B6B6B\"/></a:accent3><a:accent4><a:srgbClr val=\"9A9A9A\"/></a:accent4><a:accent5><a:srgbClr val=\"C9C9C9\"/></a:accent5><a:accent6><a:srgbClr val=\"E8E9EC\"/></a:accent6><a:hlink><a:srgbClr val=\"0D0D0D\"/></a:hlink><a:folHlink><a:srgbClr val=\"6B6B6B\"/></a:folHlink></a:clrScheme><a:fontScheme name=\"Ever i9\"><a:majorFont><a:latin typeface=\"Aptos\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:majorFont><a:minorFont><a:latin typeface=\"Aptos\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:minorFont></a:fontScheme><a:fmtScheme name=\"Ever i9\"><a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w=\"6350\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln><a:ln w=\"12700\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln><a:ln w=\"19050\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>";
+  var ESTILO_TABELA = "<w:style w:type=\"table\" w:styleId=\"EverI9Tabela\"><w:name w:val=\"Ever i9 Tabela\"/><w:uiPriority w:val=\"99\"/><w:qFormat/><w:tblPr><w:tblCellMar><w:top w:w=\"0\" w:type=\"dxa\"/><w:left w:w=\"0\" w:type=\"dxa\"/><w:bottom w:w=\"0\" w:type=\"dxa\"/><w:right w:w=\"0\" w:type=\"dxa\"/></w:tblCellMar></w:tblPr></w:style>";
+
   // ---- árvore recolhível: marca os títulos da modelagem como recolhidos no Word
   function recolher(blob) {
     return lib('jszip', 'vendor/jszip.min.js', 'JSZip').then(function (JSZip) {
       return JSZip.loadAsync(blob).then(function (zip) {
-        return zip.file('word/document.xml').async('string').then(function (xml) {
-          var n = 0;
+        return Promise.all([
+          zip.file('word/document.xml').async('string'),
+          zip.file('word/styles.xml').async('string'),
+          zip.file('[Content_Types].xml').async('string'),
+          zip.file('word/_rels/document.xml.rels').async('string')
+        ]).then(function (partes) {
+          var xml = partes[0], estilos = partes[1], tipos = partes[2], rels = partes[3];
           xml = xml.replace(/<w:pPr><w:pStyle w:val="Heading[45]"\/>[\s\S]*?<\/w:pPr>/g, function (b) {
             if (b.indexOf('w15:collapsed') >= 0) return b;
-            n++; return b.replace('</w:pPr>', '<w15:collapsed/></w:pPr>');
+            return b.replace('</w:pPr>', '<w15:collapsed/></w:pPr>');
           });
+          // a biblioteca escreve a borda de parágrafo fora da ordem que o Word exige
+          xml = xml.replace(/<w:pBdr>([\s\S]*?)<\/w:pBdr>/g, function (todo, dentro) {
+            var ordem = ['top', 'left', 'bottom', 'right', 'between', 'bar'], saida = '';
+            ordem.forEach(function (lado) {
+              var m = dentro.match(new RegExp('<w:' + lado + '\\b[^>]*/>'));
+              if (m) saida += m[0];
+            });
+            return '<w:pBdr>' + (saida || dentro) + '</w:pBdr>';
+          });
+          // cada tabela declara o próprio estilo: sem isso o Word usa o estilo padrão de quem abre
+          xml = xml.replace(/<w:tblPr>/g, '<w:tblPr><w:tblStyle w:val="EverI9Tabela"/>');
           zip.file('word/document.xml', xml);
+          if (estilos.indexOf('EverI9Tabela') < 0) {
+            zip.file('word/styles.xml', estilos.replace('</w:styles>', ESTILO_TABELA + '</w:styles>'));
+          }
+          zip.file('word/theme/theme1.xml', TEMA);
+          if (tipos.indexOf('theme1.xml') < 0) {
+            zip.file('[Content_Types].xml', tipos.replace('</Types>',
+              '<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/></Types>'));
+          }
+          if (rels.indexOf('theme/theme1.xml') < 0) {
+            zip.file('word/_rels/document.xml.rels', rels.replace('</Relationships>',
+              '<Relationship Id="rIdTema" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/></Relationships>'));
+          }
           return zip.generateAsync({ type: 'blob', compression: 'DEFLATE',
             mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         });
