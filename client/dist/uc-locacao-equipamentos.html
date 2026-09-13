@@ -570,6 +570,12 @@ document.getElementById('cSave').onclick=function(){
     var PAGE_W = 11906, MG = 1134, LARG = PAGE_W - MG * 2;
     var nada = { top: { style: BS.NONE }, bottom: { style: BS.NONE },
                  left: { style: BS.NONE }, right: { style: BS.NONE } };
+    var caixa = function (cor) {
+      var l = { style: BS.SINGLE, size: 6, color: cor || BD, space: 8 };
+      return { top: l, bottom: l, left: { style: BS.SINGLE, size: 6, color: cor || BD, space: 12 },
+               right: { style: BS.SINGLE, size: 6, color: cor || BD, space: 12 } };
+    };
+    var IND = { root: 0, fam: 0, grp: 140, attr: 300 };
     var li = function (c) { return { style: BS.SINGLE, size: 4, color: c || BD }; };
     function tx(t, o) {
       o = o || {};
@@ -582,7 +588,9 @@ document.getElementById('cSave').onclick=function(){
     }
     function rotulado(r, c, o) {
       o = o || {};
-      return new P({ spacing: { after: o.after === undefined ? 100 : o.after }, indent: o.indent,
+      return new P({ spacing: { before: o.before || 0, after: o.after === undefined ? 100 : o.after,
+          line: 260 },
+        indent: o.indent,
         border: o.border, shading: o.fill ? { type: SH.CLEAR, color: 'auto', fill: o.fill } : undefined,
         children: [new T({ text: r + ' ', font: FONT, size: o.size || 20, bold: true, color: o.color || TX }),
                    new T({ text: c, font: FONT, size: o.size || 20, color: o.color || TX })] });
@@ -639,36 +647,45 @@ document.getElementById('cSave').onclick=function(){
     var NVL = { root: 1, fam: 2, grp: 3, attr: 4 };
     var TAM = { root: 26, fam: 23, grp: 21, attr: 20 };
     function no(n) {
-      filhos.push(new P({ heading: NIV[n.tipo], keepNext: true, outlineLevel: NVL[n.tipo],
-        spacing: { before: n.tipo === 'attr' ? 200 : 260, after: 60 },
-        children: [new T({ text: (n.lvl ? n.lvl + ' · ' : '') + n.nome, font: FONT,
-          size: TAM[n.tipo], bold: true, color: TX })] }));
-      if (n.chips.length) {
-        filhos.push(new P({ spacing: { after: 90 }, children: n.chips.map(function (c, i) {
-          return new T({ text: (i ? '    ' : '') + ' ' + c.t + ' ', font: FONT, size: 16,
-            bold: c.forte, color: c.forte ? TX : TX2,
-            shading: { type: SH.CLEAR, color: 'auto', fill: c.forte ? S2 : 'F7F8F9' } });
-        }) }));
+      var ind = IND[n.tipo];
+      var fundo = n.tipo === 'root' ? TX : n.tipo === 'fam' ? S2 : n.tipo === 'grp' ? S1 : 'FFFFFF';
+      var cor = n.tipo === 'root' ? 'FFFFFF' : TX;
+      var borda = caixa(n.tipo === 'root' ? TX : BD);
+      var runs = [];
+      if (n.lvl) {
+        runs.push(new T({ text: ' ' + n.lvl + ' ', font: FONT, size: 14, bold: true,
+          color: n.tipo === 'root' ? TX : 'FFFFFF', allCaps: true, characterSpacing: 20,
+          shading: { type: SH.CLEAR, color: 'auto', fill: n.tipo === 'root' ? 'FFFFFF' : TX } }));
+        runs.push(new T({ text: '  ', font: FONT }));
       }
+      runs.push(new T({ text: n.nome, font: FONT, size: TAM[n.tipo], bold: true, color: cor }));
+      if (n.chips.length) {
+        runs.push(new T({ text: '\t', font: FONT }));
+        n.chips.forEach(function (c, i) {
+          runs.push(new T({ text: ' ' + c.t + ' ', font: FONT, size: 15, bold: c.forte,
+            color: c.forte ? TX : TX2,
+            shading: { type: SH.CLEAR, color: 'auto', fill: c.forte ? S2 : 'F7F8F9' } }));
+          if (i < n.chips.length - 1) runs.push(new T({ text: '  ', font: FONT, size: 15 }));
+        });
+      }
+      filhos.push(new P({ heading: NIV[n.tipo], keepNext: true, outlineLevel: NVL[n.tipo],
+        border: borda, shading: { type: SH.CLEAR, color: 'auto', fill: fundo },
+        indent: { left: ind }, tabStops: [{ type: D.TabStopType.RIGHT, position: LARG - ind - 220 }],
+        spacing: { before: n.tipo === 'attr' ? 180 : 240, after: 120, line: 260 },
+        children: runs }));
       n.blocos.forEach(function (b) {
-        var ind = { left: 220 };
-        if (b.tipo === 'decisao') {
-          filhos.push(rotulado(b.rotulo || 'Decisão da revisão:', b.texto,
-            { fill: TX, color: 'FFFFFF', indent: ind }));
-        } else if (b.tipo === 'duvida') {
-          filhos.push(rotulado(b.rotulo, b.texto, { fill: S2, indent: ind,
-            border: { left: { style: BS.SINGLE, size: 12, color: TX, space: 6 } } }));
-        } else if (b.tipo === 'rec') {
-          filhos.push(rotulado(b.rotulo, b.texto, { fill: S1, indent: ind,
-            border: { left: { style: BS.SINGLE, size: 12, color: MUT, space: 6 } } }));
-        } else if (b.rotulo) {
-          filhos.push(rotulado(b.rotulo, b.texto, {}));
-        } else {
-          filhos.push(tx(b.texto));
-        }
+        var opts = { indent: { left: ind }, border: borda, before: 80,
+          fill: b.tipo === 'duvida' ? S2 : b.tipo === 'rec' ? S1 : b.tipo === 'decisao' ? TX : fundo,
+          color: b.tipo === 'decisao' ? 'FFFFFF' : TX, after: 60 };
+        filhos.push(b.rotulo
+          ? rotulado(b.rotulo || 'Decisão da revisão:', b.texto, opts)
+          : tx(b.texto, opts));
       });
+      // separa um cartão do seguinte: sem esta linha sem borda, o Word funde as caixas
+      filhos.push(new P({ spacing: { after: 0, line: 120 }, children: [] }));
       n.filhos.forEach(no);
     }
+
     function tabela(t) {
       var larguras = t.cols === 2
         ? [Math.round(LARG * 0.28), LARG - Math.round(LARG * 0.28)]
