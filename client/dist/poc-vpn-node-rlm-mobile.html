@@ -1133,14 +1133,14 @@ function sheetAgent(){ const n=lines.filter(l=>l.parent).length; const sug = !S.
 function agentDo(s){ S.sheet=null; if(s.startsWith('Criar uma cotação')) go('newquote'); else if(s.startsWith('Adicionar o VPN')) browse(); else if(s.startsWith('Consultar a viab')) startViab(); else if(s.startsWith('Criar o pedido')){ S.modal='order'; render(); } else if(s.startsWith('Quais assets')){ S.tab='Assets'; go('accounts'); } else if(s.startsWith('Qual a eleg')){ const qp=qualificadoProduto(findProd('VPNNODE')); toast(qp.ok?'VPN Node elegível em '+CTX.localidade.nome+' ('+CTX.localidade.territorio+').':qp.hits[qp.hits.length-1].motivo, qp.ok?'':'warn'); render(); } else { toast('Resumo: '+(S.quote?S.quote.name+' · '+S.qStatus+' · '+lines.filter(l=>l.parent).length+' item(ns)':oppName()+' · '+S.oStage)); render(); } }
 
 /* ================= Agentforce — conversa guiada (executa as ações do app) ================= */
-const AG = { open:false, thread:[], chips:[], step:null, cfg:null, pid:null, pending:false, busy:false, equipOk:false, svaOk:false, dateAsk:null };
+const AG = { open:false, thread:[], chips:[], step:null, cfg:null, pid:null, pending:false, busy:false, equipOk:false, svaOk:false, dateAsk:null, auto:false };
 function agOpen(){ AG.open=true; $('#agp').classList.add('show'); if(!AG.thread.length) agStart(); agRender(); }
 function agClose(){ AG.open=false; $('#agp').classList.remove('show'); render(); }
 function agObg(key){ return ATTRS[key]&&ATTRS[key].obg?' *':''; }
 function agSay(text, chips, src){ AG.thread.push({a:true,text,src}); AG.chips=chips||[]; AG.pending=!!(chips&&chips.length); agRender(); }
 function agUser(text){ AG.thread.push({u:true,text}); AG.chips=[]; agRender(); }
 function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; agSafe(then,'processamento'); }, ms); }
-function agRender(){ if(AG.open && !AG.busy && !AG.chips.length && !AG.dateAsk && AG.cfg && AG.thread.length) setTimeout(agGuardaFio,60);
+function agRender(){ if(AG.open && !AG.auto && !AG.busy && !AG.chips.length && !AG.dateAsk && AG.cfg && AG.thread.length) setTimeout(agGuardaFio,60);
   const b=$('#agp-b'); if(!b) return;
   const BOT='<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><rect x="12" y="18" width="40" height="32" rx="10" fill="#0b5cab"/><rect x="18" y="26" width="28" height="16" rx="8" fill="#fff"/><circle cx="27" cy="34" r="3.2" fill="#0b5cab"/><circle cx="37" cy="34" r="3.2" fill="#0b5cab"/><rect x="30" y="9" width="4" height="9" rx="2" fill="#0b5cab"/><circle cx="32" cy="8" r="3" fill="#0b5cab"/><rect x="6" y="28" width="6" height="12" rx="3" fill="#0b5cab"/><rect x="52" y="28" width="6" height="12" rx="3" fill="#0b5cab"/></svg>';
   b.innerHTML = (AG.thread.length>1?'':`<div class="welcome"><div class="bot" id="agbot"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'">${BOT}</div><p>Welcome! I'm Agentforce. I can help you create and manage quotes quickly and accurately — from feasibility to order fulfillment.</p></div>`)
@@ -1191,6 +1191,8 @@ function agIntent(t){
   if(/pre[çc]o|valor|custa|quanto/.test(s)){ agSay('Preço pendente: a tabela e o procedimento de precificação não foram definidos na Revisão 1. Assim que existirem, o Instant Pricing calcula na configuração.', agAtuais()); return; }
   if(/viab/.test(s)){ const e=endFull(); agSay(S.viab[e.id]?`Viabilidade de ${e.nome}: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · distância ${e.metragemDistancia} m${e.anel?' · anel':''}.`:`A viabilidade de ${e.nome} ainda não foi consultada — ela é o passo 2, logo após o endereço.`, agAtuais()); return; }
   if(/eleg|territ|localidade/.test(s)){ const qp=qualificadoProduto(findProd('VPNNODE')); agSay(qp.ok?`VPN Node elegível em ${CTX.localidade.nome} (${CTX.localidade.territorio}). Elegibilidade é comercial/regulatória; viabilidade é técnica, por endereço.`:qp.hits[qp.hits.length-1].motivo, agAtuais()); return; }
+  if(/autom[aá]tic|sozinho|demo|faz tudo|fazer tudo/.test(s)){ agAuto(); return; }
+  if(/parar|pare|stop/.test(s)&&AG.auto){ AG.auto=false; agSay('Automação interrompida.',agAtuais()); return; }
   if(/falta|pendent|pr[oó]xim/.test(s)){ agNext(); return; }
   if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), agAtuais()); return; }
   if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', agAtuais()); return; }
@@ -1199,7 +1201,7 @@ function agIntent(t){
 function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
 /* ---- passos, na ordem do UC-VPN-001 ---- */
 function agStart(){
-  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Quer que eu crie a cotação para ela?`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
+  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Posso conduzir passo a passo ou executar a jornada inteira sozinho, explicando cada decisão.`, [{l:'Fazer tudo automaticamente',f:agAuto,pri:true},{l:'Criar a cotação',f:agCreateQuote},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
   else agNext();
 }
 function agCreateQuote(){ agThink('Criando a cotação a partir da oportunidade…',900,()=>{ S.quote={name:oppName(),number:'00000036',exp:'12/10/2026'}; S.tab='Details'; S.hist=['opp']; S.tela='quote'; render(); toast('Quote "'+S.quote.name+'" was created.'); agSay(`Cotação ${S.quote.number} criada para ${CTX.conta.nome}. Qual produto adicionamos?`, agProdChips(), 'Ação: New Quote (Quote Name, Account for Quote)'); }); }
@@ -1239,7 +1241,7 @@ function agNextCfg(){
   if(!R.hidden.ValorMoeda && vazio(a.ValorMoeda)){ agSay('Cliente internacional: cotação de conversão do dólar?', [{l:'5,20',f:()=>{agSet('ValorMoeda','5.20');agNextCfg();}}]); return; }
   agValidar();
 }
-function agGuardaFio(){ if(AG.open && AG.cfg && !AG.busy && !AG.chips.length && !AG.dateAsk) agSafe(agNextCfg,'retomada'); }
+function agGuardaFio(){ if(AG.open && AG.cfg && !AG.auto && !AG.busy && !AG.chips.length && !AG.dateAsk) agSafe(agNextCfg,'retomada'); }
 function agEquipResumo(){ const arr=AG.cfg.c.equip||[]; return arr.length?arr.map(x=>`${x.TipoEquipamento} — ${x.Quantidade||1}× ${x.ModalidadeEquipamento||'modalidade pendente'}`).join(' · '):'nenhum'; }
 function agEquipChips(){ const arr=AG.cfg.c.equip||(AG.cfg.c.equip=[]);
   return EQUIP_TIPOS.map(t=>{ const i=arr.findIndex(x=>x.TipoEquipamento===t); const on=i>=0;
@@ -1287,6 +1289,7 @@ function agNext(){
   if(S.order&&S.order.status==='Activated'&&!S.order.submitted) chips.push({l:'Submeter o pedido (orquestração)',f:agSubmeter,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') chips.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets da conta.',agAtuais());}});
+  if(!(S.order&&S.order.plan&&S.order.plan.status==='Completed')) chips.push({l:'Seguir automaticamente daqui',f:agAuto});
   chips.push({l:'Ver a cotação',f:()=>{agClose();S.docView='quote';render();agSay('Abri o resumo da cotação. Quando fechar, seguimos daqui.',agAtuais());}});
   if(S.order) chips.push({l:'Ver o pedido',f:()=>{agClose();S.docView='order';render();agSay('Abri o resumo do pedido.',agAtuais());}});
   chips.push({l:'Resumo',f:()=>agSay(agResumo(),agAtuais())});
@@ -1312,6 +1315,99 @@ function agAndamento(){ const o=S.order; if(!o||!o.plan){ agNext(); return; } co
 function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
   agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Quer ver o fluxo de ativação antes de ativar?`, [{l:'Ativar o pedido',f:agAtivar,pri:true},{l:'Ver o pedido',f:()=>{agClose();agSay('Abri o pedido.',agAtuais());}}], 'Ação: Create Order'); }); }
 
+/* ================= modo automático: roda a jornada explicando cada decisão ================= */
+const agEspera = ms => new Promise(r=>setTimeout(r,ms));
+function agPasso(txt, src){ if(!AG.auto) return; AG.thread.push({a:true,text:txt,src}); AG.chips=[{l:'Parar a automação',f:()=>{AG.auto=false;agSay('Automação interrompida. Seguimos manualmente daqui.',agAtuais());}}]; agRender(); }
+async function agAuto(){
+  if(AG.auto) return;
+  AG.auto=true; AG.cfg=null; AG.equipOk=false; AG.svaOk=false;
+  const P=async(t,src,ms)=>{ agPasso(t,src); await agEspera(ms||1100); return AG.auto; };
+  try{
+    if(!await P('Modo automático ligado. Vou executar a jornada inteira e explicar cada escolha; toque em Parar quando quiser assumir.','Decisões seguem a Revisão 1 do UC-VPN-001',900)) return;
+    /* 1 · cotação */
+    if(!S.quote){ S.quote={name:oppName(),number:'00000036',exp:'12/10/2026'}; S.tab='Details'; S.hist=['opp']; S.tela='quote'; render();
+      if(!await P(`Criei a cotação ${S.quote.number} para ${CTX.conta.nome}. Por quê: no app a cotação só nasce a partir da oportunidade — é a única entrada documentada.`,'Ação: Related › Quotes › New')) return; }
+    /* 2 · produto + endereço */
+    AG.pid='VPNNODE';
+    if(!qualificadoProduto(findProd('VPNNODE')).ok){ const alt=LOCALIDADES.find(l=>{ const k=CTX.localidade; CTX.localidade=l; const ok=qualificadoProduto(findProd('VPNNODE')).ok; CTX.localidade=k; return ok; }); if(alt) setLoc(alt.id); }
+    if(!await P(`Produto: VPN Node. Localidade ${CTX.localidade.nome} (${CTX.localidade.territorio}) — elegível, e a entidade faturadora sai daí: ${entidadeFaturadora().valor}.`,'UC passo 1 · elegibilidade por território')) return;
+    const e=endFull();
+    if(!await P(`Endereço de instalação: ${e.nome}. Consultando a viabilidade…`,'UC passo 2 · integração MuleSoft')) return;
+    S.viab[e.id]=true; CTX.endereco=endEff(); render();
+    if(e.cobertura===false||e.redeNeutra){ agSay(`${e.cobertura===false?'Sem cobertura':'Rede neutra'} neste endereço: atendimento inviável, a jornada encerra aqui (desvio 2 ✕ do caso de uso).`, agAtuais()); AG.auto=false; return; }
+    if(!await P(`Viabilidade: ${e.tecnologia} · ${e.interface} · ${e.abordagem}${e.metragem?' '+e.metragem+' m':''} · ${e.metragemDistancia} m${e.anel?' · entrega em anel':''}. Esses dados definem equipamentos e classificação.`)) return;
+    /* 3 · configuração */
+    AG.cfg=novoCfg(findProd('VPNNODE'));
+    const nets=CTX_DATA.networks[CTX.conta.cnpjRaiz]||[];
+    if(nets.length){ agSet('VPNNetwork',nets[0].id); if(!await P(`Rede privativa: ${nets[0].id} — ${nets[0].nome}. Por quê: o cliente já tem network, então reaproveito em vez de criar outra; o protocolo ${nets[0].protocolo} vem dela.`,'UC passo 3')) return; }
+    else { agSet('VPNNetwork','NOVA'); if(!await P('Rede privativa: nova VPN Network, pois o cliente ainda não tem nenhuma.','UC passo 3')) return; }
+    const vs=agVals('Velocidade'); const vel=['200 Mbps','100 Mbps','500 Mbps','1 Gbps'].find(v=>vs.includes(v))||vs[0];
+    agSet('Velocidade',vel); let R=avaliar(AG.cfg);
+    if(!await P(`Velocidade: ${vel}. Atendimento ${R.cls.v} — ${R.cls.motivos.join('; ')}.`,'UC passo 4 · matriz de formatação × viabilidade')) return;
+    const mods=agVals('ModalidadeInstalacao'); const mod=mods.includes('Físico')?'Físico':mods[0];
+    agSet('ModalidadeInstalacao',mod);
+    if(!await P(`Modalidade de instalação: ${mod}. Escolhi a entrega física por ser o caminho padrão; Virtual/Fabric abriria perguntas de cloud.`)) return;
+    if(CTX.endereco.dataCenter){ agSet('GoldenJumper','Algar'); if(!await P('Endereço em Data Center: Golden Jumper por conta da Algar, então informo interface e nome do jumper.','Regra do Golden Jumper')) return; agSet('InterfaceGJ',agVals('InterfaceGJ')[0]); agSet('NomeJumper','Cross Servidor BD'); }
+    const eq=(AG.cfg.c.equip||[]);
+    if(eq.length){ eq.forEach(x=>{ x.Quantidade=x.Quantidade||1; x.ModalidadeEquipamento=x.ModalidadeEquipamento||'Comodato'; });
+      if(!await P(`Equipamentos: ${eq.map(x=>x.TipoEquipamento+' ('+x.Quantidade+'× '+x.ModalidadeEquipamento+')').join(', ')}. Vieram da regra de dimensionamento por ${AG.cfg.a.Tecnologia}${CTX.endereco.anel?' com entrega em anel':''}.`,'UC passo 5')) return; }
+    else { const o={}; resolveAttrs(findProd('EQUIP')).forEach(x=>o[x.key]=x.def||''); o.TipoEquipamento='Roteador'; o.Quantidade=1; o.ModalidadeEquipamento='Locação'; AG.cfg.c.equip=[o]; AG.cfg.autoSig='manual';
+      if(!await P(`Equipamentos: Roteador (1× Locação), escolhido manualmente — ${['GPON','Metro','Rádio'].includes(AG.cfg.a.Tecnologia)?'o dimensionamento automático só roda na esteira formatada':'a Revisão 1 não define dimensionamento para '+AG.cfg.a.Tecnologia}.`,'UC passo 5')) return; }
+    AG.equipOk=true; AG.svaOk=true;
+    if(!await P('Serviços de valor agregado: nenhum. Upgrade temporário e monitoramento são opcionais e ficam de fora nesta simulação.','UC passo 6')) return;
+    agSet('PeriodoFidelizacao','36'); agSet('TipoReajuste','Data de assinatura do contrato'); agSet('IndiceReajuste','IPCA'); agSet('DataAssinatura', new Date().toISOString().slice(0,10));
+    R=avaliar(AG.cfg);
+    if(!await P(`Condições contratuais: 36 meses, reajuste pela data de assinatura com IPCA, assinatura hoje. O próximo reajuste sai calculado: ${AG.cfg.a.DataProximoReajuste||'—'}${AG.cfg.a.PercentualMulta?' · multa '+AG.cfg.a.PercentualMulta:''}.`,'UC passo 7')) return;
+    /* preencher o que a validação ainda exigir */
+    let guard=0;
+    while(guard++<12){ R=avaliar(AG.cfg); const err=R.msgs.find(m=>m.sev==='Error'); if(!err) break;
+      const k=Object.keys(ATTRS).find(x=>err.texto.includes(ATTRS[x].name) && ATTRS[x].ui==='picklist');
+      if(k){ const v=agVals(k)[0]; agSet(k,v); if(!await P(`Validação pediu ${ATTRS[k].name}: preenchi com ${v}.`,'UC passo 8',700)) return; } else break; }
+    R=avaliar(AG.cfg);
+    const nl=addLine(findProd('VPNNODE'),AG.cfg,R); nl.cfgState={a:AG.cfg.a,c:AG.cfg.c,toque:AG.cfg.toque,autoSig:AG.cfg.autoSig}; nl.viabOk=true;
+    AG.cfg=null; S.tab='Lines'; S.hist=['opp']; S.tela='quote'; render();
+    if(!await P(`Item adicionado à cotação com ${lines.filter(x=>x.parentUid===nl.uid).length} componente(s). Preço fica Pendente: a Revisão 1 não define precificação.`,'UC passo 8 · validação concluída')) return;
+    /* 4 · proposta */
+    if(!S.pdfs.length){ S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus='Presented'; S.tab='Related'; render();
+      if(!await P('Proposta gerada e enviada, cotação em Presented. Por quê no Lightning: o app não cria nem abre PDF de cotação — é limitação oficial.','Create PDF › Save to Quote › Email Quote')) return; }
+    /* 5 · contrato */
+    if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; genContractDoc();
+      S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}];
+      S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.');
+      S.tela='contract'; S.tab='Related'; S.hist=['quote']; render();
+      if(!await P('Contrato criado, documento gerado pelo template e enviado para assinatura dos dois signatários via DocuSign.','Create Contract › Generate Document › Send for eSignature')) return; }
+    if(S.contract.esig==='Sent'){ S.contract.recipients.forEach(r=>r.status='Completed'); S.contract.docs.forEach(d=>d.sig='Completed'); S.contract.esig='Completed'; S.contract.status='Activated'; S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope concluído.'); render();
+      if(!await P('Assinaturas concluídas (aqui simuladas): contrato Activated.','Retorno do DocuSign')) return; }
+    /* 6 · pedido */
+    if(S.qStatus!=='Accepted'){ S.qStatus='Accepted'; S.qSel=null; S.tela='quote'; S.tab='Details'; render();
+      if(!await P('Cotação marcada como Accepted. Por quê: só nesse status o Create Order fica disponível.')) return; }
+    if(!S.order){ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tela='order'; S.tab='Details'; S.hist=['quote']; render();
+      if(!await P(`Pedido ${S.order.number} criado em Draft com os itens da cotação.`,'Create Order › Create Single Order')) return; }
+    if(S.order.status!=='Activated'){ ativarPedido();
+      if(!await P('Pedido ativado: a edição dos itens fica travada.','Activate')) return; }
+    if(!S.order.submitted){ S.order.submitted=true; S.order.submitStatus='Submitted'; S.order.fls=decompor(S.order); S.order.plan=montarPlano(S.order.fls); S.tab='Decomp'; render();
+      if(!await P(`Submetido. A decomposição gerou ${S.order.fls.length} produtos técnicos: ${S.order.fls.map(f=>f.name).join(', ')}. O plano tem ${S.order.plan.steps.length} etapas em ${S.order.fls.length} raias.`,'Submit Order › DRO')) return;
+      setTimeout(planoTick,400); }
+    /* 7 · orquestração */
+    let ciclos=0;
+    while(AG.auto && S.order.plan.status!=='Completed' && ciclos++<40){
+      await agEspera(900); planoTick();
+      const man=pendentesManuais();
+      if(man.length){ const s=man[0];
+        if(!await P(`Etapa manual "${s.name}" (${s.laneName}) aguardando — em campo seria o técnico. Concluindo para a orquestração seguir.`,'Manual Task',800)) return;
+        completarManual(s.id); }
+    }
+    if(!AG.auto) return;
+    if(!await P(`Plano concluído: ${S.order.plan.steps.length} etapas. Assets criados — ${S.assets.length} comercial e ${(S.fassets||[]).length} de fulfillment.`,'Managed Assets + Fulfillment Assets')) return;
+    AG.auto=false;
+    agSay('Jornada completa: oportunidade → cotação → viabilidade → configuração → proposta → contrato assinado → pedido ativado e orquestrado → assets. O que quer ver?',
+      [{l:'Ver a cotação',f:()=>{agClose();S.docView='quote';render();agSay('Abri o resumo da cotação.',agAtuais());},pri:true},
+       {l:'Ver o pedido',f:()=>{agClose();S.docView='order';render();agSay('Abri o resumo do pedido.',agAtuais());}},
+       {l:'Ver o contrato',f:()=>{agClose();S.docView='contract';render();agSay('Abri o documento do contrato.',agAtuais());}},
+       {l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets.',agAtuais());}},
+       {l:'Recomeçar do zero',f:()=>{reset();agOpen();agStart();}}]);
+  }catch(err){ AG.auto=false; agSay('Parei a automação por um erro: '+err.message+'. Podemos seguir manualmente.',agAtuais()); }
+}
 /* ---------- roteiro (chrome do protótipo) ---------- */
 function atdAtual(){
   if(cfgProduct) return { cls:avaliar(cfgProduct).cls };
@@ -1439,7 +1535,7 @@ $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target
 $('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
 function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
 function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
-function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false,dateAsk:null}); if(AG.open) agRender(); render(); }
+function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false,dateAsk:null,auto:false}); if(AG.open) agRender(); render(); }
 S=novo(); render();
 
 if(/selftest=1/.test(location.search)){
