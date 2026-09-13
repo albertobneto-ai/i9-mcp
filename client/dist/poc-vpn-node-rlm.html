@@ -14,6 +14,8 @@ button,select,input,textarea{font:inherit;color:inherit}
 a{color:var(--brand);text-decoration:none}
 #poc{background:#16325c;color:#cfe0f5;font-size:11px;padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #poc b{color:#9fc3ee;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
+#poc .sim{color:#9fc3ee;margin-left:6px;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px}
+#poc button:disabled{border-color:#3f5b8a;color:#8aa5cc}
 #poc select{background:#fff;color:#181818;border:0;border-radius:3px;padding:2px 4px;font-size:11px;max-width:150px}
 #poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px}
 #guia{position:fixed;left:0;right:0;bottom:118px;max-width:430px;margin:0 auto;padding:0 12px;z-index:26;display:none}
@@ -180,6 +182,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .fnt.proto{background:#f3f3f3;border:1px solid var(--bd2);color:#444}
 .fnt.proto .tg{background:#706e6b;color:#fff}
 .proc small{display:block;margin-top:2px}
+.hgrid{display:grid;grid-template-columns:1fr;gap:0}
 .tle-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--bd)}
 .tle-h .oi{width:28px;height:28px;border-radius:4px;background:#f4592f;color:#fff;display:grid;place-items:center;font-size:14px}
 .tle-h b{flex:1;font-size:15px}
@@ -394,6 +397,9 @@ body.agp-open #app{margin-right:400px}
 #lx .tabs a{padding:10px 14px;font-size:14px;color:var(--tx);border-bottom:3px solid transparent;white-space:nowrap}
 #lx .tabs a.on{color:var(--navy);font-weight:700;border-bottom-color:var(--brand)}
 #lx .tabs a:hover{background:#f4f6f9}
+/* Home em duas colunas, como no Lightning */
+.hgrid{grid-template-columns:1fr 380px;gap:0 16px}
+.hgrid>div{min-width:0}
 /* página do Customer Asset em duas colunas, como na captura oficial */
 .acols{grid-template-columns:1fr 380px}
 .ahl{margin:0;border-radius:6px 6px 0 0}
@@ -498,9 +504,14 @@ body.agp-open #guia-abrir{right:416px}
 </style>
 </head>
 <body>
-<div id="poc"><b>Protótipo · cenário</b>
-  <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
-  <button onclick="gerarProposta()">Gerar proposta (Lightning)</button><button onclick="simularAssinatura()">Simular assinatura (DocuSign)</button><button onclick="reset()">Reiniciar</button></div>
+<div id="poc"><b>Protótipo</b>
+  <select id="p-user" title="Perfil do usuário"></select>
+  <span class="sim">Simular:</span>
+  <button id="s-prop" onclick="gerarProposta()">proposta no Lightning</button>
+  <button id="s-assin" onclick="simularAssinatura()">assinatura do contrato</button>
+  <button id="s-ativar" onclick="simAtivar()">ativação do pedido</button>
+  <button id="s-submit" onclick="simSubmeter()">submissão do pedido</button>
+  <button onclick="reset()">Reiniciar</button></div>
 
 <div id="lx">
   <div class="g1"><button class="launcher" title="App Launcher" onclick="toast('App Launcher: Sales, Service, Revenue Cloud…')"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></button><img class="sflogo" src="img/salesforce-logo.png" alt="Salesforce" onerror="this.style.display='none'">
@@ -868,6 +879,82 @@ function sheetAssetMore(){ return sheet(`
   ${row('📦','y','Ver o pedido de origem',"S.sheet=null;S.tab='Details';go('order')",'',!S.order)}
   ${row('🏢','b','Abrir a conta',"S.sheet=null;S.tab='Assets';go('accounts')")}
 `,'Asset'); }
+function homeDados(){
+  const etapas = OSTAGES.map(s=>({ nome:s, qtd: (S.conv||S.quote) && S.oStage===s ? 1 : 0 }));
+  const tarefas = [];
+  if(!S.conv) tarefas.push({t:'Qualificar e converter o lead', s:(LEADS[0].Company), on:"S.leadId='00Q1';S.tab='Details';go('lead')"});
+  if(S.conv && !S.quote) tarefas.push({t:'Criar a cotação da oportunidade', s:oppName(), on:"S.tab='Related';go('opp')"});
+  if(S.quote && !lines.some(l=>l.parent)) tarefas.push({t:'Configurar o produto na cotação', s:'Cotação '+S.quote.number, on:"S.tab='Lines';go('quote')"});
+  if(S.quote && lines.some(l=>l.parent) && !S.pdfs.length) tarefas.push({t:'Gerar e enviar a proposta', s:'Cotação '+S.quote.number, on:"S.tab='Related';go('quote')"});
+  if(S.contract && S.contract.esig==='Sent') tarefas.push({t:'Aguardando assinatura do cliente', s:'Contrato '+S.contract.number, on:"S.tab='Related';go('contract')"});
+  if(S.qStatus==='Accepted' && !S.order) tarefas.push({t:'Criar o pedido', s:'Cotação aceita', on:"S.tab='Details';go('quote')"});
+  if(S.order && !S.order.submitted) tarefas.push({t:'Ativar e submeter o pedido', s:'Pedido '+S.order.number, on:"S.tab='Details';go('order')"});
+  if(S.order && S.order.plan && S.order.plan.status!=='Completed') tarefas.push({t:'Acompanhar a orquestração', s:pendentesManuais().length+' tarefa(s) manual(is) pendente(s)', on:"go('plan')"});
+  if(S.assets.length) tarefas.push({t:'Assets ativos na conta', s:S.assets.length+' managed · '+(S.fassets||[]).length+' fulfillment', on:"S.tab='Assets';go('accounts')"});
+  return { etapas, tarefas };
+}
+function homeChart(){
+  const passos=[['Lead', !!S.leadStatus], ['Oportunidade', !!S.conv], ['Cotação', !!S.quote], ['Proposta', !!S.pdfs.length],
+                ['Contrato', !!S.contract], ['Pedido', !!S.order], ['Orquestração', !!(S.order&&S.order.submitted)], ['Assets', !!S.assets.length]];
+  const W=660,H=120,L=8,pw=(W-16)/passos.length;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+    ${passos.map(([n,ok],i)=>`<g>
+      <rect x="${L+i*pw+4}" y="34" width="${pw-10}" height="34" rx="5" fill="${ok?'#0b827c':'#eef1f5'}"/>
+      <text x="${L+i*pw+pw/2}" y="56" font-size="11" text-anchor="middle" fill="${ok?'#fff':'#706e6b'}">${ok?'✓':'—'}</text>
+      <text x="${L+i*pw+pw/2}" y="86" font-size="10.5" text-anchor="middle" fill="#3e3e3c">${esc(n)}</text>
+    </g>`).join('')}
+    <text x="${L+4}" y="22" font-size="11.5" fill="#706e6b">Progresso da jornada nesta sessão</text>
+  </svg>`;
+}
+function telaHome(){
+  const d=homeDados();
+  const card=(t,corpo,acao)=>`<div class="rel"><div class="h"><div class="oi b">▦</div><b>${esc(t)}</b>${acao||''}</div>${corpo}</div>`;
+  return topbar('Home', false) + `
+  ${fonte('proto','<b>Home</b> — os painéis refletem o estado da jornada nesta sessão. No Lightning, a Home traz relatórios e dashboards do Analytics; aqui eles são representados pelo progresso e pelos indicadores do próprio protótipo.')}
+  <div class="hgrid">
+    <div>
+      ${card('Assistente', d.tarefas.length
+        ? d.tarefas.map(x=>`<div class="it" onclick="${x.on}"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div>`).join('')
+        : '<div class="note">Nada pendente por aqui.</div>')}
+      ${card('Progresso da jornada', `<div style="padding:10px 14px">${homeChart()}</div>`)}
+      ${card('Registros recentes', `
+        <div class="it" onclick="S.leadId='00Q1';S.tab='Details';go('lead')"><b>${esc(LEADS[0].Company)}</b><small>Lead · ${esc(S.leadStatus)}</small></div>
+        ${S.conv?`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(oppName())}</b><small>Opportunity · ${esc(S.oStage)}</small></div>`:''}
+        ${S.quote?`<div class="it" onclick="S.tab='Lines';go('quote')"><b>${esc(S.quote.name)}</b><small>Quote ${esc(S.quote.number)} · ${esc(S.qStatus)}</small></div>`:''}
+        ${S.contract?`<div class="it" onclick="S.tab='Related';go('contract')"><b>Contrato ${esc(S.contract.number)}</b><small>${esc(S.contract.status)} · assinatura ${esc(S.contract.esig)}</small></div>`:''}
+        ${S.order?`<div class="it" onclick="S.tab='Details';go('order')"><b>Pedido ${esc(S.order.number)}</b><small>${esc(S.order.status)}${S.order.submitStatus?' · '+esc(S.order.submitStatus):''}</small></div>`:''}`)}
+    </div>
+    <div>
+      ${card('Indicadores', `<div class="kpis" style="padding:12px 14px 0">
+        <div class="kpi"><div class="t">Oportunidades abertas</div><div class="v">${S.conv?1:0}</div></div>
+        <div class="kpi"><div class="t">Cotações</div><div class="v">${S.quote?1:0}</div></div>
+        <div class="kpi"><div class="t">Pedidos</div><div class="v">${S.order?1:0}</div></div>
+        <div class="kpi"><div class="t">Assets ativos</div><div class="v">${S.assets.length}</div></div>
+      </div><div class="note">Valores monetários dependem da precificação, que a Revisão 1 não define.</div>`)}
+      ${card('Funil por estágio', `<div style="padding:6px 14px 12px">${OSTAGES.map(s=>`
+        <div style="display:flex;align-items:center;gap:8px;margin:7px 0">
+          <span style="flex:0 0 42%;font-size:12.5px;color:${S.oStage===s?'var(--brand)':'var(--tx2)'}">${esc(s)}</span>
+          <span style="flex:1;height:10px;border-radius:5px;background:${S.oStage===s?'var(--brand)':'#eef1f5'}"></span>
+          <span style="font-size:12px;color:var(--mut);width:16px;text-align:right">${S.oStage===s?1:0}</span>
+        </div>`).join('')}</div>`)}
+      ${card('Relatórios e dashboards', `
+        <div class="it" onclick="toast('Relatório: Pipeline por estágio — não implementado no protótipo.','warn')"><b>Pipeline por estágio</b><small>Relatório padrão do Sales Cloud</small></div>
+        <div class="it" onclick="toast('Relatório: Cotações por status — não implementado no protótipo.','warn')"><b>Cotações por status</b><small>Relatório padrão</small></div>
+        <div class="it" onclick="toast('Dashboard: Receita recorrente — depende de precificação.','warn')"><b>Receita recorrente (MRR)</b><small>Dashboard do Revenue Cloud</small></div>
+        ${fonte('nv','Relatórios e dashboards existem no Lightning, mas não foram reproduzidos aqui — os cartões acima são atalhos ilustrativos.')}`)}
+    </div>
+  </div>`;
+}
+function telaOpps(){
+  const linhas = S.conv ? [{n:oppName(), c:CTX.conta.nome, s:S.oStage, d:S.opp.close, v:fmtMoney()}] : [];
+  return topbar('Opportunities', false) + `
+  ${fonte('ver','Lista de objeto no Lightning: colunas do list view, com abertura do registro ao clicar.')}
+  <div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (${linhas.length})</b><a onclick="S.conv?go('opp'):toast('Converta um lead para criar a oportunidade.','warn')">New</a></div>
+    ${linhas.length? linhas.map(l=>`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(l.n)}</b><small>${esc(l.c)} · ${esc(l.s)} · fechamento ${esc(l.d)} · ${esc(l.v)}</small></div>`).join('')
+      : `<div class="note">Nenhuma oportunidade ainda. Converta o lead <b>${esc(LEADS[0].Company)}</b> para criar a primeira.</div>
+         <div class="it" onclick="S.leadId='00Q1';S.tab='Details';go('lead')"><b>Ir para o lead</b><small>${esc(LEADS[0].Name)} — ${esc(LEADS[0].Company)}</small></div>`}
+  </div>`;
+}
 function telaProcedencia(){
   const g=n=>FONTES.filter(f=>f[1]===n);
   const bloco=(t,n)=>g(n).length?`<div class="rel"><div class="h"><div class="oi ${n==='ver'?'g':n==='inf'?'b':n==='nv'?'y':'m'}">${n==='ver'?'✓':n==='inf'?'≈':n==='nv'?'▲':'◻'}</div><b>${t} (${g(n).length})</b></div>${g(n).map(f=>`<div class="it proc"><b style="color:var(--tx)">${esc(f[0])}</b><small>${esc(f[2])}</small></div>`).join('')}</div>`:'';
@@ -935,7 +1022,14 @@ function pathHtml(steps, cur, sel, label, fn){
   return `<div class="pathw"><div class="path">${steps.map((s,i)=>`<div class="ps ${s===cur?'cur':''} ${i<ci?'done':''} ${s===sel&&diff?'sel':''}" onclick="${fn}Sel('${s}')">${i<ci?'✓':esc(s)}</div>`).join('')}</div>
     <div class="stage">${label}: ${esc(cur)}<button class="btn sm brand" onclick="${fn}Mark()">✓ ${diff?'Mark as Current '+label:'Mark '+label+' as Complete'}</button></div></div>`;
 }
-function bnav(){ $('#bnav').innerHTML = [['Chatter','〰','chatter'],['Accounts','🏢','accounts'],['Contacts','👤','contacts'],['Leads','★','leads'],['Menu','☰','menu']]
+function simBotoes(){
+  const on=(id,ok,titulo)=>{ const el=$('#'+id); if(!el) return; el.disabled=!ok; el.title=titulo; };
+  on('s-prop', !!(S.quote && lines.some(l=>l.parent)), 'Gera a proposta no Lightning (no app o PDF não é criado)');
+  on('s-assin', !!(S.contract && S.contract.esig==='Sent'), 'Retorno do DocuSign com o contrato assinado');
+  on('s-ativar', !!(S.order && S.order.status!=='Activated'), 'Ativa o pedido');
+  on('s-submit', !!(S.order && S.order.status==='Activated' && !S.order.submitted), 'Submete o pedido e dispara a decomposição');
+}
+function bnav(){ simBotoes(); $('#bnav').innerHTML = [['Chatter','〰','chatter'],['Accounts','🏢','accounts'],['Contacts','👤','contacts'],['Leads','★','leads'],['Menu','☰','menu']]
   .map(([n,i,t])=>`<button class="${S.tela===t||(n==='Menu'&&!['chatter','accounts','contacts','leads'].includes(S.tela))?'on':''}" onclick="go('${t}')"><i>${i}</i>${n}</button>`).join(''); }
 function fields(rows){ return `<div class="fl">${rows.map(([k,v])=>`<div class="fr"><span>${k}</span><span>${v}</span></div>`).join('')}</div>`; }
 
@@ -1028,6 +1122,13 @@ function relatedQuote(){
   <div class="rel"><div class="h"><div class="oi p">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`;
 }
 function sheetPdf(){ return sheet(`<div class="row" style="border:0;font-weight:700">${esc(S.pdfs[0].name)}</div><div class="note" style="padding:0 18px 12px;color:var(--mut);font-size:13px;line-height:1.45">Quote PDFs aren't viewable in the Salesforce mobile app (ajuda oficial). O documento foi gerado e enviado pelo Lightning Experience.</div>${row('👁','b','Ver a proposta enviada (visualização do protótipo, fora do app)','S.sheet=null;S.pdfView=true;render()')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function simAtivar(){ if(!S.order){ toast('Ainda não há pedido para ativar.','warn'); return; }
+  if(S.order.status==='Activated'){ toast('Pedido já está ativado.','warn'); return; }
+  ativarPedido(); S.modal=null; S.tab='Details'; go('order',true); toast('Pedido ativado.'); }
+function simSubmeter(){ if(!S.order){ toast('Ainda não há pedido para submeter.','warn'); return; }
+  if(S.order.status!=='Activated'){ toast('Ative o pedido antes de submeter.','warn'); return; }
+  if(S.order.submitted){ toast('Pedido já submetido.','warn'); return; }
+  submeterPedido(); S.modal=null; S.tab='Decomp'; go('order',true); }
 function gerarProposta(){ if(!S.quote||!lines.some(l=>l.parent)){ toast('Crie a cotação e adicione o VPN Node antes de gerar a proposta.','warn'); return; } if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1', tpl:'Proposta Comercial Algar — Conectividade', quando:new Date().toLocaleDateString('pt-BR'), emailed:true}); if(S.qStatus==='Draft') S.qSel='Presented'; S.pdfView=true; S.tab='Related'; S.hist=['opp']; go('quote',true); toast('Proposta gerada e enviada pelo Lightning Experience (Create PDF › Save to Quote › Email Quote).'); }
 function agRetoma(){ if(AG.thread.length && !AG.busy && !AG.dateAsk && !AG.cfg) agNext(); }
 /* ================= documentos (proposta, cotação, contrato, pedido) =================
@@ -1086,6 +1187,9 @@ body.agp-open #app{margin-right:400px}
 #lx .tabs a{padding:10px 14px;font-size:14px;color:var(--tx);border-bottom:3px solid transparent;white-space:nowrap}
 #lx .tabs a.on{color:var(--navy);font-weight:700;border-bottom-color:var(--brand)}
 #lx .tabs a:hover{background:#f4f6f9}
+/* Home em duas colunas, como no Lightning */
+.hgrid{grid-template-columns:1fr 380px;gap:0 16px}
+.hgrid>div{min-width:0}
 /* página do Customer Asset em duas colunas, como na captura oficial */
 .acols{grid-template-columns:1fr 380px}
 .ahl{margin:0;border-radius:6px 6px 0 0}
@@ -1757,7 +1861,7 @@ function telaList(kind){
 function telaMenu(){ return topbar('Menu', false) + `<div class="menu-list">
   ${[['⋮⋮','#747474','App Launcher',"toast('App Launcher: Sales, Service, Revenue Management…')"],['≡','#747474','All Items',"toast('All Items: lista completa de objetos.')"],['🔎','#0b5cab','Procedência das telas',"go('procedencia')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}
   <div class="sec">Revenue Management <em style="float:right;color:var(--brand);font-style:normal">✎ Edit</em></div>
-  ${[['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
+  ${[['⌂','#0b5cab','Home',"go('home')"],['👑','#f4592f','Opportunities',"go('opps')"],['〰','#1b96ff','Chatter',"go('chatter')"],['🏢','#7f8de1','Accounts',"go('accountsList')"],['👤','#9050e9','Contacts',"go('contacts')"],['★','#0b827c','Leads',"go('leads')"],['👑','#f88962','Opportunities',"go('opp')"],['🏷','#2e844a','Quotes',"go('quotes')"],['📦','#769ed9','Orders',S.order?"go('order')":"toast('No orders yet.','warn')"],['📊','#032d60','Dashboards',"toast('Dashboards: Sales Rep Dashboard.')"],['📋','#0b827c','Reports',"toast('Reports: recent reports.')"]].map(([i,c,n,on])=>`<div class="row" onclick="${on}"><i style="background:${c}">${i}</i><span>${n}</span><em>›</em></div>`).join('')}</div>`; }
 function telaChatter(){ return topbar('Chatter', false) + feedHtml(); }
 function telaSearch(){ const q=(S.q2||'').toLowerCase(); const hits=[]; if(S.quote&&(!q||S.quote.name.toLowerCase().includes(q))) hits.push(['🏷','g',S.quote.name,'Quote',"go('quote')"]); if(!q||oppName().toLowerCase().includes(q)) hits.push(['👑','o',oppName(),'Opportunity',"go('opp')"]); if(!q||CTX.conta.nome.toLowerCase().includes(q)) hits.push(['🏢','p',CTX.conta.nome,'Account',"go('accounts')"]); if(S.order&&(!q||'order'.includes(q))) hits.push(['📦','y',S.order.number,'Order',"go('order')"]);
   return topbar('Search', true) + `<div class="srch">🔍 <input autofocus placeholder="Search Salesforce" value="${esc(S.q2||'')}" oninput="S.q2=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div><div class="list">${hits.map(([i,c,t,s,on])=>`<div class="it" onclick="${on}"><div class="oi ${c}">${i}</div><div><b>${esc(t)}</b><small>${s}</small></div></div>`).join('')||'<div class="note" style="padding:14px;color:var(--mut)">No results.</div>'}</div>`; }
@@ -2161,6 +2265,12 @@ function atdDetalhe(){ const a=atdAtual(); if(!a) return; toast(`Atendimento ${a
 function guia(){
   const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk);
   const C=[]; const add=(cond,t,passos,acao)=>{ if(cond && !C.length) C.push({t,passos,acao}); };
+  add(S.tela==='home','A Home mostra o que está pendente na jornada.',
+      ['O <b>Assistente</b> lista o próximo passo de cada registro.','O progresso mostra até onde a jornada chegou.','Toque num item para abrir o registro.'],
+      (function(){ const t=homeDados().tarefas[0]; return t?{l:'Abrir o próximo passo',f:()=>{ eval(t.on); }}:null; })());
+  add(S.tela==='opps','Abra a oportunidade na lista.',
+      ['A lista traz conta, estágio, data de fechamento e valor.','Clique na linha para abrir o registro.'],
+      S.conv?{l:'Abrir a oportunidade',f:()=>{S.tab='Details';go('opp');}}:{l:'Ir para o lead',f:()=>{S.leadId='00Q1';S.tab='Details';go('lead');}});
   add(S.tela==='lead'&&!S.conv&&S.leadStatus==='Novo','Avance o lead para <b>Em qualificação</b>.',
       ['No path, toque no próximo status.','Depois em <b>Mark Status as Complete</b>.','O path do lead funciona como o da oportunidade.'],
       {l:'Marcar Em qualificação',f:leadMark});
@@ -2263,7 +2373,7 @@ function guia(){
 /* ---------- render ---------- */
 function render(){
   CTX.endereco=endEff();
-  const v=$('#view'); const T={convert:telaConvert,asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
+  const v=$('#view'); const T={home:telaHome,opps:telaOpps,convert:telaConvert,asset:telaAsset,procedencia:telaProcedencia,lead:telaLead,plan:telaPlano,local:telaLocal,opp:telaOpp,newquote:telaNewQuote,quote:telaQuote,browse:telaBrowse,config:telaConfig,flow:telaFlow,contract:telaContract,order:telaOrder,accounts:telaAccount,editopp:telaEditOpp,editquote:telaEditQuote,task:telaTask,call:telaCall,newcontact:telaNewContact,menu:telaMenu,chatter:telaChatter,search:telaSearch,contacts:()=>telaList('contacts'),leads:()=>telaList('leads'),quotes:()=>telaList('quotes'),accountsList:()=>telaList('accountsList')};
   v.innerHTML=(T[S.tela]||telaOpp)();
   let o='';
   const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets,'asset-more':sheetAssetMore};
@@ -2271,16 +2381,14 @@ function render(){
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
   if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
-  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset','convert'].includes(S.tela);
+  const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList','procedencia','asset','convert','home','opps'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
   bnav(); pinta(); guia(); atdRender();
 }
 function pinta(){ const f=(id,arr,cur,lab)=>{ $(id).innerHTML=arr.map(x=>`<option value="${x.id}" ${x.id===cur?'selected':''}>${esc(lab(x))}</option>`).join(''); };
-  f('#p-conta',CTX_DATA.contas,CTX.conta.id,x=>x.nome); f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); f('#p-loc',LOCALIDADES,CTX.localidade.id,x=>x.nome+' · '+x.territorio); f('#p-end',enderecosDaLocalidade(CTX.localidade.id),endFull().id,x=>(S.viab[x.id]?'✓ ':'')+x.nome); }
+  f('#p-user',CTX_DATA.usuarios,CTX.usuario.id,x=>x.nome.replace('Usuário com permissão de ','')); }
 function resetViab(){ if(cfgProduct){ cfgProduct.autoSig=null; ['Tecnologia','Interface','Abordagem','Metragem'].forEach(k=>delete cfgProduct.toque[k]); } }
-$('#p-conta').onchange=e=>{ CTX.conta=CTX_DATA.contas.find(x=>x.id===e.target.value); render(); };
 $('#p-user').onchange=e=>{ CTX.usuario=CTX_DATA.usuarios.find(x=>x.id===e.target.value); render(); };
-$('#p-loc').onchange=e=>setLoc(e.target.value); $('#p-end').onchange=e=>setEnd(e.target.value);
 function setLoc(id){ CTX.localidade=LOCALIDADES.find(l=>l.id===id); const ends=enderecosDaLocalidade(id); if(ends.length&&endFull().localidade!==id) setEnd(ends[0].id,true); resetViab(); render(); }
 function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=LOCALIDADES.find(l=>l.id===CTX.endereco.localidade)||CTX.localidade; resetViab(); if(!silent) render(); }
 function reset(){ S=novo(); lines=[]; lineSeq=0; cfgProduct=null; Object.assign(AG,{thread:[],chips:[],step:null,cfg:null,pid:null,pending:false,busy:false,equipOk:false,svaOk:false,dateAsk:null,resolve:null,reajOk:false,indOk:false}); if(AG.open) agRender(); render(); }
@@ -2291,15 +2399,15 @@ const LXTABS = [['Home','home'],['Accounts','accounts'],['Opportunities','opp'],
 function lxTabs(){
   const atual = {opp:'Opportunities',quote:'Quotes',browse:'Quotes',config:'Quotes',local:'Quotes',flow:'Quotes',
     order:'Orders',plan:'Orders',contract:'Contracts',accounts:'Accounts',accountsList:'Accounts',lead:'Leads',leads:'Leads',
-    contacts:'Contacts',quotes:'Quotes',chatter:'Chatter',procedencia:'Home',menu:'Home',search:'Home'}[S.tela]||'Home';
-  const itens = [['Home','home'],['Accounts','accountsList'],['Contacts','contacts'],['Leads','leads'],['Opportunities','opp'],['Quotes','quotes'],['Orders','ordersTab'],['Contracts','contractsTab'],['Assets','assetsTab'],['Procedência','procedencia']];
+    contacts:'Contacts',quotes:'Quotes',chatter:'Chatter',procedencia:'Procedência',menu:'Home',search:'Home',home:'Home',opps:'Opportunities',convert:'Leads',asset:'Assets'}[S.tela]||'Home';
+  const itens = [['Home','home'],['Accounts','accountsList'],['Contacts','contacts'],['Leads','leads'],['Opportunities','opps'],['Quotes','quotes'],['Orders','ordersTab'],['Contracts','contractsTab'],['Assets','assetsTab'],['Procedência','procedencia']];
   $('#lxtabs').innerHTML = itens.map(([n,t])=>`<a class="${n===atual?'on':''}" onclick="lxIr('${t}')">${n}</a>`).join('');
 }
 function lxIr(t){
   if(t==='ordersTab'){ if(S.order){ S.tab='Details'; go('order'); } else toast('Nenhum pedido criado ainda.','warn'); return; }
   if(t==='contractsTab'){ if(S.contract){ S.tab='Related'; go('contract'); } else toast('Nenhum contrato criado ainda.','warn'); return; }
   if(t==='assetsTab'){ S.tab='Assets'; go('accounts'); return; }
-  if(t==='home'){ S.tab='Details'; go('opp'); return; }
+  if(t==='home'){ go('home'); return; }
   go(t);
 }
 /* trilha de navegação no lugar da barra do app */
@@ -2311,7 +2419,7 @@ topbar = function(title, canBack){
   return `<div class="top"><span class="ttl">${esc(trilha)}</span></div>`;
 };
 /* barra inferior do app não existe no Lightning */
-const _bnav = bnav; bnav = function(){ const el=$('#bnav'); if(el) el.style.display='none'; lxTabs(); };
+const _bnav = bnav; bnav = function(){ const el=$('#bnav'); if(el) el.style.display='none'; if(typeof simBotoes==='function') simBotoes(); lxTabs(); };
 /* menus de ação: no desktop abrem como painel no canto, não como folha inferior */
 const _render = render;
 render = function(){
