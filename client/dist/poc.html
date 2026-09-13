@@ -2232,7 +2232,36 @@ function agAtuais(){
   c.push({l:'Adicionar outro node',f:()=>agSay('Qual produto?',agProdChips())});
   return c;
 }
+const PEDIDOS_TEXTO = [
+  [/assinatur|docusign|assinar|envelope/i,'assinatura'],
+  [/proposta|gerar.*pdf|enviar.*cota/i,'proposta'],
+  [/criar.*contrato|gerar.*contrato|fazer.*contrato/i,'contrato'],
+  [/aceit|accepted/i,'aceite'],
+  [/criar.*pedido|gerar.*pedido|fazer.*pedido/i,'pedido'],
+  [/ativar|activate/i,'ativar'],
+  [/submet|submit/i,'submeter']
+];
+const EXPLICA = {
+  assinatura:['Assinatura do contrato','O contrato é gerado a partir do template, vira documento e sai num envelope de assinatura eletrônica para os signatários das duas partes. Enquanto o envelope está enviado, o contrato fica aguardando; quando todos assinam, ele passa a Activated e a data de assinatura é o que ancora o reajuste, quando o tipo escolhido for esse.','Contract + Salesforce Contracts / DocuSign'],
+  proposta:['Proposta','No Lightning, Create PDF gera o documento a partir da cotação, Save to Quote guarda em Quote PDFs e Email Quote envia ao cliente. No app mobile os três não existem — a lista mostra os PDFs, mas eles não abrem no aplicativo.','QuoteDocument'],
+  contrato:['Contrato','Nasce da cotação e carrega as cláusulas de fidelização, reajuste e multa que vieram dos atributos contratuais do item.','Contract'],
+  pedido:['Pedido','Criado da cotação aceita. Activate trava os itens; Submit Order dispara o orquestrador, que decompõe o produto comercial em produtos técnicos e monta o plano.','Order + OrderItem'],
+  ativar:['Ativação','Activate muda o pedido para Activated e impede alteração dos itens. É o passo anterior à submissão.','Order'],
+  submeter:['Submissão','Submit Order aciona o Dynamic Revenue Orchestrator: gera os produtos técnicos, cria o plano com raias e etapas, e ao fim nascem os assets.','FulfillmentOrder + plano de orquestração'],
+  plano:['Orquestração','O plano tem raias por sistema e etapas tipadas — tarefa manual, callout, automática e marco — com dependências entre elas. As automáticas correm sozinhas; as manuais esperam alguém concluir.','Orchestration plan (DRO)']
+};
+function agExplicar(tema){
+  const e=EXPLICA[tema]; if(!e) return false;
+  const feito = jaFeito(tema);
+  agSay(`${e[0]} — ${e[1]}${feito?`\n\nNesta sessão: ${feito}.`:''}`, agAtuais(), e[2]);
+  return true;
+}
 function agIntent(t){
+  const alvo = PEDIDOS_TEXTO.find(([re])=>re.test(t));
+  const pergunta = /\?|^(como|o que|que |qual|por que|porque|quando|explic|me explica|pra que)/i.test(t.trim());
+  /* pergunta explica; pedido de ação confere o estado e não repete o que já foi feito */
+  if(alvo && pergunta && agExplicar(alvo[1])) return;
+  if(alvo && !pergunta && agJaFeito(alvo[1])) return;
   const s=t.toLowerCase();
   const hit=AG.chips.find(c=>c.l.toLowerCase()===s || s.includes(c.l.toLowerCase()));
   if(hit){ hit.f(); return; }
@@ -2519,8 +2548,32 @@ function agNext(){
   chips.push({l:'Resumo',f:()=>agSay(agResumo(),agAtuais())});
   agSay(`${agResumo()} O que fazemos agora?`, chips);
 }
-function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();agSay('Abri a proposta enviada. Quando fechar, seguimos daqui.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
-function agContrato(){ if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
+/* o que já foi feito nesta sessão — evita o agente repetir ação concluída */
+function jaFeito(acao){
+  const c=S.contract, o=S.order;
+  switch(acao){
+    case 'proposta':  return S.pdfs.length ? `a proposta já foi gerada e enviada (${S.pdfs[0].name})` : null;
+    case 'contrato':  return c ? `o contrato ${c.number} já existe` : null;
+    case 'assinatura':return c && c.esig==='Completed' ? `o contrato ${c.number} já está assinado (${c.status})`
+                           : (c && c.esig==='Sent' ? `o envelope já foi enviado para ${c.recipients.length} signatário(s) e aguarda assinatura` : null);
+    case 'aceite':    return S.qStatus==='Accepted' ? 'a cotação já está Accepted' : null;
+    case 'pedido':    return o ? `o pedido ${o.number} já foi criado` : null;
+    case 'ativar':    return o && o.status==='Activated' ? `o pedido ${o.number} já está Activated` : null;
+    case 'submeter':  return o && o.submitted ? `o pedido ${o.number} já foi submetido (${o.fls.length} produtos técnicos)` : null;
+    case 'plano':     return o && o.plan && o.plan.status==='Completed' ? 'o plano de orquestração já foi concluído' : null;
+  }
+  return null;
+}
+function agJaFeito(acao, extra){
+  const t = jaFeito(acao); if(!t) return false;
+  agSay(`Isso já está feito — ${t}. Não vou repetir.`, (extra||[]).concat(agAtuais()), 'Estado atual da sessão');
+  return true;
+}
+function agProposta(){ if(agJaFeito('proposta',[{l:'Ver a proposta na cotação',f:()=>{agClose();S.tab='Related';S.hist=['quote'];go('quote',true);}}])) return;
+  if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();agSay('Abri a proposta enviada. Quando fechar, seguimos daqui.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
+function agContrato(){
+  if(S.contract && S.contract.esig!=='Not sent' && agJaFeito('assinatura',[{l:'Abrir o contrato',f:()=>{agClose();S.tab='Related';S.hist=['quote'];S.tela='contract';render();}}])) return;
+  if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
   agThink('Criando o contrato, gerando o documento e enviando para assinatura (DocuSign)…',1400,()=>{ if(!S.contract.docs.length) genContractDoc(); if(S.contract.esig==='Not sent'){ S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}]; S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); }
     S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Abrir o documento do contrato',f:()=>{agClose();S.docView='contract';render();agSay('Abri o documento do contrato. Quando fechar, seguimos daqui.',agAtuais());}},{l:'Ver o registro do contrato',f:()=>{agClose();S.tab='Related';S.hist=['quote'];go('contract',true);agSay('Abri o contrato.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
 function agDescreverAtivacao(){
@@ -2529,8 +2582,11 @@ function agDescreverAtivacao(){
   const lista=fls.map(f=>`• ${f.name} — escopo ${f.scope}, ${f.sistema} (origem: ${f.source})`).join('\n');
   return { fls, plan, texto:`Fluxo de ativação do pedido ${o.number}:\n1) Activate — trava os itens do pedido.\n2) Submit Order — dispara o Dynamic Revenue Orchestrator.\n3) Decomposição do produto comercial em ${fls.length} produtos técnicos:\n${lista}\n4) Plano de orquestração: ${plan.steps.length} etapas em ${fls.length} raias — ${Object.entries(tipos).map(([k,v])=>v+' '+k).join(', ')}. As tarefas manuais (TAC e instalação do CPE) pedem confirmação; callouts vão aos sistemas Algar.\n5) Ao concluir: assets comerciais (Managed Assets) e técnicos (Fulfillment Assets) na conta.` };
 }
-function agAtivar(){ const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que eu ative e submeta agora?', [{l:'Ativar e submeter',f:agSubmeter,pri:true},{l:'Ver os produtos técnicos no pedido',f:()=>{agClose();S.tab='Details';go('order',true);agSay('Abri o pedido.',agAtuais());}},{l:'Ainda não',f:agNext}], 'DRO: Activate › Submit Order › Decomposition Details › View Orchestration Plan'); }
-function agSubmeter(){ const o=S.order; agThink('Ativando e submetendo o pedido (Activate › Submit Order)…',1100,()=>{ if(o.status!=='Activated'){ o.status='Activated'; o.sel=null; } if(!o.submitted){ o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); setTimeout(planoTick,500); }
+function agAtivar(){ if(agJaFeito('submeter',[{l:'Acompanhar a orquestração',f:agAndamento}])) return;
+  if(agJaFeito('ativar',[{l:'Submeter o pedido',f:agSubmeter,pri:true}])) return;
+  const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que eu ative e submeta agora?', [{l:'Ativar e submeter',f:agSubmeter,pri:true},{l:'Ver os produtos técnicos no pedido',f:()=>{agClose();S.tab='Details';go('order',true);agSay('Abri o pedido.',agAtuais());}},{l:'Ainda não',f:agNext}], 'DRO: Activate › Submit Order › Decomposition Details › View Orchestration Plan'); }
+function agSubmeter(){ if(agJaFeito('submeter',[{l:'Acompanhar a orquestração',f:agAndamento,pri:true}])) return;
+  const o=S.order; agThink('Ativando e submetendo o pedido (Activate › Submit Order)…',1100,()=>{ if(o.status!=='Activated'){ o.status='Activated'; o.sel=null; } if(!o.submitted){ o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); setTimeout(planoTick,500); }
   S.tab='Decomp'; S.hist=['quote']; S.tela='order'; render(); agSay(`Pedido ${o.number} ativado e submetido. ${o.fls.length} produtos técnicos gerados; o plano de orquestração começou (${o.plan.steps.length} etapas). Vou avisar quando uma tarefa manual precisar de você.`, [{l:'Andamento da orquestração',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');agSay('Abri o plano de orquestração.',agAtuais());}}], 'Submit Status: Submitted'); setTimeout(agAndamento,2600); }); }
 async function agConcluirPlano(){
   const o=S.order; if(!o||!o.plan){ agNext(); return; }
@@ -2560,7 +2616,8 @@ function agAndamento(){ const o=S.order; if(!o||!o.plan){ agNext(); return; } pl
   agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas; ${txt}`, [{l:'Concluir a orquestração',f:agConcluirPlano,pri:true},{l:'Atualizar',f:agAndamento},{l:'Ver o plano',f:()=>{agClose();go('plan');agSay('Abri o plano de orquestração. Quando fechar, seguimos daqui.',agAtuais());}}]);
   setTimeout(planoTick,400);
 }
-function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
+function agPedido(){ if(agJaFeito('pedido',[{l:'Abrir o pedido',f:()=>{agClose();S.tab='Details';S.hist=['quote'];S.tela='order';render();}}])) return;
+  if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
   agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Quer ver o fluxo de ativação antes de ativar?`, [{l:'Ativar o pedido',f:agAtivar,pri:true},{l:'Ver o pedido',f:()=>{agClose();agSay('Abri o pedido.',agAtuais());}}], 'Ação: Create Order'); }); }
 
 /* ================= apoios do agente (revisão e ajuste) ================= */
