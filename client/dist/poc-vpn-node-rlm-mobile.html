@@ -831,8 +831,7 @@ function telaOpps(){
   ${fonte('ver','Lista de objeto no Lightning: colunas do list view, com abertura do registro ao clicar.')}
   <div class="rel"><div class="h"><div class="oi o">👑</div><b>Opportunities (${linhas.length})</b><a onclick="S.conv?go('opp'):toast('Converta um lead para criar a oportunidade.','warn')">New</a></div>
     ${linhas.length? linhas.map(l=>`<div class="it" onclick="S.tab='Details';go('opp')"><b>${esc(l.n)}</b><small>${esc(l.c)} · ${esc(l.s)} · fechamento ${esc(l.d)} · ${esc(l.v)}</small></div>`).join('')
-      : `<div class="note">Nenhuma oportunidade ainda. Converta o lead <b>${esc(LEADS[0].Company)}</b> para criar a primeira.</div>
-         <div class="it" onclick="S.leadId='00Q1';S.tab='Details';go('lead')"><b>Ir para o lead</b><small>${esc(LEADS[0].Name)} — ${esc(LEADS[0].Company)}</small></div>`}
+      : `<div class="note">Nenhuma oportunidade ainda. Converta um lead para criar a primeira.</div>`}
   </div>`;
 }
 /* ============================ relatórios e dashboards ============================
