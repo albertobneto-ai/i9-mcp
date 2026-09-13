@@ -16,8 +16,17 @@ a{color:var(--brand);text-decoration:none}
 #poc b{color:#9fc3ee;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px}
 #poc select{background:#fff;color:#181818;border:0;border-radius:3px;padding:2px 4px;font-size:11px;max-width:150px}
 #poc button{background:0;border:1px solid #6d8cc0;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px}
-#guia{background:#fef3d7;color:#3e3e3c;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #fadfa4;line-height:1.4}
-#guia b{color:#8c4b02}
+#guia{position:fixed;left:0;right:0;bottom:118px;max-width:430px;margin:0 auto;padding:0 12px;z-index:26;display:none}
+#guia.show{display:block}
+#guia .g-body{background:#fff;border:1px solid #fadfa4;border-left:4px solid #fe9339;border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.18);padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:12.5px;line-height:1.35;color:#3e3e3c}
+#guia .g-ic{font-size:16px;flex:none}
+#guia .g-txt{flex:1}
+#guia .g-txt b{color:#8c4b02}
+#guia .g-txt small{display:block;color:var(--mut);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
+#guia .g-go{flex:none;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:16px;padding:7px 12px;font-size:12px;font-weight:600}
+#guia .g-go.hide{display:none}
+#guia .g-x{flex:none;border:0;background:0;color:var(--mut);font-size:14px;padding:0 2px}
+#guia.min .g-txt small,#guia.min .g-go{display:none}
 #app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;background:#fff;padding-bottom:128px}
 .sb{height:22px;display:flex;justify-content:space-between;padding:3px 14px;font-size:11px}
 .top{display:flex;align-items:center;padding:8px 12px;gap:8px;min-height:44px}
@@ -55,7 +64,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .rel .it b{display:block;color:var(--brand)}.rel .it small{color:var(--tx2)}
 .rel .rfoot{padding:10px;text-align:center;font-size:14px}
 .rel .note{padding:10px 12px;font-size:12.5px;color:var(--mut);background:#fafaf9;line-height:1.4}
-#atd{position:fixed;right:12px;bottom:150px;z-index:25;display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:22px;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.22);max-width:86%;cursor:pointer}
+#atd{position:fixed;right:12px;bottom:176px;z-index:25;display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:22px;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.22);max-width:86%;cursor:pointer}
 #atd.show{display:inline-flex}
 #atd small{display:block;font-weight:400;font-size:11px;opacity:.9;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #atd.Formatado{background:#ebf7e6;color:#1d6b38;border:1px solid #b6e3c2}
@@ -289,13 +298,13 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 <div id="poc"><b>Protótipo · cenário</b>
   <select id="p-conta"></select><select id="p-user"></select><select id="p-loc"></select><select id="p-end"></select>
   <button onclick="gerarProposta()">Gerar proposta (Lightning)</button><button onclick="simularAssinatura()">Simular assinatura (DocuSign)</button><button onclick="reset()">Reiniciar</button></div>
-<div id="guia"></div>
 <div id="app">
   <div class="sb"><span>9:41</span><span>●●● ⌂ 100%</span></div>
   <div id="view"></div>
 </div>
 <div id="overlay"></div>
 <div id="atd" onclick="atdDetalhe()"></div>
+<div id="guia"><div class="g-body"><span class="g-ic">🧭</span><div class="g-txt" id="guia-txt"></div><button class="g-go" id="guia-go"></button><button class="g-x" onclick="S.guiaOff=!S.guiaOff;render()">▾</button></div></div>
 <div class="agent" id="agent"><div onclick="agOpen()"><span class="afi" id="afi"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'"><span>AF</span></span><span>Ask Agentforce</span><span class="mic" onclick="event.stopPropagation();agOpen();toast('Microfone: use o texto neste protótipo.')">🎤</span></div></div>
 <div id="agp"><div class="agp-h"><button class="ic" title="Pin" onclick="toast('Fixado.')">📌</button><b>Agentforce</b><button class="ic" title="Info" onclick="toast('Agente: cria e configura cotações, consulta viabilidade, gera contrato, pedido e acompanha a orquestração.')">ⓘ</button><button class="ic" onclick="agClose()">✕</button></div>
   <div class="agp-b" id="agp-b"></div>
@@ -538,7 +547,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, docView:null, guiaOff:false, flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -652,6 +661,54 @@ function relatedQuote(){
 }
 function sheetPdf(){ return sheet(`<div class="row" style="border:0;font-weight:700">${esc(S.pdfs[0].name)}</div><div class="note" style="padding:0 18px 12px;color:var(--mut);font-size:13px;line-height:1.45">Quote PDFs aren't viewable in the Salesforce mobile app (ajuda oficial). O documento foi gerado e enviado pelo Lightning Experience.</div>${row('👁','b','Ver a proposta enviada (visualização do protótipo, fora do app)','S.sheet=null;S.pdfView=true;render()')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function gerarProposta(){ if(!S.quote||!lines.some(l=>l.parent)){ toast('Crie a cotação e adicione o VPN Node antes de gerar a proposta.','warn'); return; } if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1', tpl:'Proposta Comercial Algar — Conectividade', quando:new Date().toLocaleDateString('pt-BR'), emailed:true}); if(S.qStatus==='Draft') S.qSel='Presented'; S.pdfView=true; S.tab='Related'; S.hist=['opp']; go('quote',true); toast('Proposta gerada e enviada pelo Lightning Experience (Create PDF › Save to Quote › Email Quote).'); }
+function docHtml(tipo){
+  const roots=lines.filter(l=>l.parent), l0=roots[0]||{attrs:{}};
+  const th=(t)=>`<th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">${t}</th>`;
+  const box=(c)=>`<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px">${c}</div>`;
+  let corpo='';
+  if(tipo==='quote'){
+    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Cotação')}<td style="padding:6px;border:1px solid #ddd">${S.quote.number} · ${esc(S.qStatus)}</td></tr>
+      <tr>${th('Cliente')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)} · ${esc(CTX.conta.segmento)}</td></tr>
+      <tr>${th('Oportunidade')}<td style="padding:6px;border:1px solid #ddd">${esc(oppName())}</td></tr>
+      <tr>${th('Validade')}<td style="padding:6px;border:1px solid #ddd">${esc(S.quote.exp)}</td></tr></table>
+      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Itens (${roots.length})</h3>
+      ${roots.map((l,i)=>box(`<b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · ${SM[l.sell]||l.sell} <span style="float:right">${esc(l.classif||'')}</span>
+        <div style="color:#444;font-size:12px;margin-top:4px">${Object.entries(l.attrs||{}).filter(([k])=>!['Localidade','Endereço de instalação','Entidade faturadora'].includes(k)).map(([k,v])=>'<b>'+esc(k)+':</b> '+esc(v)).join(' · ')}</div>
+        <div style="color:#444;font-size:12px;margin-top:4px"><b>Local:</b> ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')} — ${esc((l.attrs&&l.attrs['Localidade'])||'')} · <b>Faturamento:</b> ${esc((l.attrs&&l.attrs['Entidade faturadora'])||'')}</div>
+        ${lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} — ${esc((k.attrs&&(k.attrs['Modalidade Equipamento']||k.attrs['Plano MIR']||k.attrs['Velocidade Temporária']))||'—')}${(k.attrs&&k.attrs['Quantidade'])?' · '+k.attrs['Quantidade']+'×':''}</div>`).join('')}
+        <div style="text-align:right;margin-top:6px"><b>Valor mensal: Pendente</b></div>`)).join('')}
+      <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Total mensal: Pendente</div>
+      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Condições contratuais</h3>
+      <p style="margin:0;font-size:12.5px">${['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Data do Próximo Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l0.attrs&&l0.attrs[k]).map(k=>k+': '+esc(l0.attrs[k])).join(' · ')||'—'}</p>
+      ${S.pdfs.length?`<p style="margin:8px 0 0;font-size:12px;color:#666">Proposta enviada: ${esc(S.pdfs[0].name)} · ${S.pdfs[0].quando}.</p>`:''}
+      ${S.contract?`<p style="margin:4px 0 0;font-size:12px;color:#666">Contrato ${S.contract.number} · ${esc(S.contract.status)} · assinatura ${esc(S.contract.esig)}.</p>`:''}`;
+  } else {
+    const o=S.order, oroots=o.lines.filter(l=>l.parent);
+    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Pedido')}<td style="padding:6px;border:1px solid #ddd">${o.number} · ${esc(o.status)}${o.submitStatus?' · '+esc(o.submitStatus):''}</td></tr>
+      <tr>${th('Cliente')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr>
+      <tr>${th('Origem')}<td style="padding:6px;border:1px solid #ddd">Cotação ${S.quote.number}${S.contract?' · Contrato '+S.contract.number:''}</td></tr>
+      <tr>${th('Início')}<td style="padding:6px;border:1px solid #ddd">${o.start}${o.activatedAt?' · ativado em '+o.activatedAt:''}</td></tr></table>
+      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Order Products (${oroots.length})</h3>
+      ${oroots.map((l,i)=>box(`<b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · Billing Frequency Monthly
+        <div style="color:#444;font-size:12px;margin-top:4px"><b>Local:</b> ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')}</div>
+        ${o.lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} — Included</div>`).join('')}
+        <div style="text-align:right;margin-top:6px"><b>Net Total Price: Pendente</b></div>`)).join('')}
+      <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Order Amount: Pendente</div>
+      ${o.fls?`<h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Produtos técnicos (decomposição)</h3>
+        ${o.fls.map(f=>`<div style="font-size:12.5px;margin-bottom:4px">• ${esc(f.name)} — ${esc(f.scope)} · ${esc(f.sistema)} <span style="color:#666">(de ${esc(f.source)})</span></div>`).join('')}
+        <p style="margin:8px 0 0;font-size:12.5px"><b>Plano de orquestração:</b> ${esc(o.plan.status)} — ${o.plan.steps.filter(s=>s.status==='Completed').length}/${o.plan.steps.length} etapas.</p>`:'<p style="font-size:12.5px;color:#666">Pedido ainda não submetido: sem decomposição em produtos técnicos.</p>'}
+      ${S.assets.length?`<h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Assets</h3>
+        ${S.assets.map(a=>`<div style="font-size:12.5px">• ${esc(a.name)} — ${esc(a.children.join(', '))}</div>`).join('')}
+        ${(S.fassets||[]).map(f=>`<div style="font-size:12.5px;color:#666">• ${esc(f.name)} (fulfillment) — ${esc(f.status)}</div>`).join('')}`:''}`;
+  }
+  const tit = tipo==='quote'?'Cotação '+S.quote.number:'Pedido '+S.order.number;
+  return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column">
+    <div class="form-h"><a onclick="S.docView=null;render()">Fechar</a><b>${esc(tit)}</b><a></a></div>
+    <div class="nv-tag">Visualização do protótipo: documento montado a partir do registro. No app, o registro é consultado nas abas Details, Lines e Related.</div>
+    <div style="overflow:auto;padding:14px;background:#5a5a5a;flex:1"><div style="background:#fff;padding:22px 18px;font-size:13px;line-height:1.5;color:#111;box-shadow:0 4px 18px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">${tipo==='quote'?'Resumo da cotação':'Resumo do pedido'} · Conectividade Corporativa</div></div><div style="text-align:right"><b>${esc(tit)}</b><div style="color:#666;font-size:12px">${new Date().toLocaleDateString('pt-BR')}</div></div></div>
+      ${corpo}</div></div></div></div>`;
+}
 function pdfViewHtml(){
   const roots=lines.filter(l=>l.parent); const l0=roots[0]||{attrs:{}};
   return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column"><div class="form-h"><a onclick="S.pdfView=false;render()">Fechar</a><b>Proposta enviada (PDF)</b><a></a></div>
@@ -673,6 +730,7 @@ function pdfViewHtml(){
 function sheetMoreQuote(){
   const nodes = lines.some(l=>l.parent && (l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP'));
   return sheet(`
+  ${row('👁','m','Visualizar cotação',"S.sheet=null;S.docView='quote';render()",'',!lines.some(l=>l.parent))}
   ${row('📝','b','Edit',"go('editquote')")}${row('🗑','r','Delete',"S.sheet=null;toast('Delete requires confirmation on the record page.','warn');render()")}
   ${row('📝','p','Create Contract','createContract()','<span class="nvt">não verificado no app</span>', !!S.contract)}
   ${row('📦','y','Create Order',"S.modal='order';render()",'<span class="nvt">não verificado no app</span>', S.qStatus!=='Accepted'||!!S.order)}
@@ -989,7 +1047,8 @@ function telaOrder(){
     ${o.status==='Activated'?'<div class="nv-tag">Order activated: line editing is locked. Submit Order starts decomposition and orchestration.</div>':''}`
   : `<div class="rel"><div class="h"><div class="oi y">📦</div><b>Assets (${S.assets.length})</b></div>${S.assets.map(a=>`<div class="it" onclick="S.tab='Assets';go('accounts')"><b>${esc(a.name)}</b><small>${a.children.join(' · ')}</small></div>`).join('')||'<div class="note">Assets are created when the orchestration plan completes.</div>'}</div>`}`;
 }
-function sheetMoreOrder(){ const o=S.order; return sheet(`${row('✓','g','Activate',"S.sheet=null;S.modal='activate';render()",'',o.status==='Activated')}${row('⇪','b','Submit Order',"S.sheet=null;submeterPedido()",'',o.status!=='Activated'||o.submitted)}${row('▦','p','View Orchestration Plan',"go('plan')",'',!o.plan)}${row('🏷','g','Quote',"go('quote')")}${row('🏢','p','Account',"go('accounts')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+function sheetMoreOrder(){ const o=S.order; return sheet(`
+  ${row('👁','m','Visualizar pedido',"S.sheet=null;S.docView='order';render()")}${row('✓','g','Activate',"S.sheet=null;S.modal='activate';render()",'',o.status==='Activated')}${row('⇪','b','Submit Order',"S.sheet=null;submeterPedido()",'',o.status!=='Activated'||o.submitted)}${row('▦','p','View Orchestration Plan',"go('plan')",'',!o.plan)}${row('🏷','g','Quote',"go('quote')")}${row('🏢','p','Account',"go('accounts')")}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function modalActivate(){ return `<div class="modal-bg"><div class="modal"><h3>Activate Order</h3><div class="mb"><p style="margin:0;font-size:14px;line-height:1.5">Activating locks the order products. After activation, use Submit Order to start decomposition and orchestration.</p></div><div class="mf"><button class="btn" onclick="S.modal=null;render()">Cancel</button><button class="btn brand" onclick="S.modal=null;ativarPedido()">Activate</button></div></div></div>`; }
 
 /* ---------- Account, listas, Chatter, menu, busca, Agentforce ---------- */
@@ -1075,7 +1134,7 @@ function agAtuais(){
   if(S.order&&S.order.status!=='Activated') c.push({l:'Ativar o pedido',f:agAtivar,pri:true});
   if(S.order&&S.order.status==='Activated'&&!S.order.submitted) c.push({l:'Submeter o pedido',f:agSubmeter,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') c.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
-  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') c.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
+  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') c.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets da conta.',agAtuais());}});
   c.push({l:'Adicionar outro node',f:()=>agSay('Qual produto?',agProdChips())});
   return c;
 }
@@ -1194,29 +1253,31 @@ function agNext(){
   if(S.order&&S.order.status!=='Activated') chips.push({l:'Ativar o pedido',f:agAtivar,pri:true});
   if(S.order&&S.order.status==='Activated'&&!S.order.submitted) chips.push({l:'Submeter o pedido (orquestração)',f:agSubmeter,pri:true});
   if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') chips.push({l:'Andamento da orquestração',f:agAndamento,pri:true});
-  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);}});
+  if(S.order&&S.order.plan&&S.order.plan.status==='Completed') chips.push({l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);agSay('Abri os assets da conta.',agAtuais());}});
+  chips.push({l:'Ver a cotação',f:()=>{agClose();S.docView='quote';render();agSay('Abri o resumo da cotação. Quando fechar, seguimos daqui.',agAtuais());}});
+  if(S.order) chips.push({l:'Ver o pedido',f:()=>{agClose();S.docView='order';render();agSay('Abri o resumo do pedido.',agAtuais());}});
   chips.push({l:'Resumo',f:()=>agSay(agResumo(),agAtuais())});
   agSay(`${agResumo()} O que fazemos agora?`, chips);
 }
-function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
+function agProposta(){ if(!lines.some(l=>l.parent)){ agNext(); return; } agThink('Gerando a proposta (Create PDF › Save to Quote › Email Quote no Lightning)…',1200,()=>{ if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1',tpl:'Proposta Comercial Algar — Conectividade',quando:new Date().toLocaleDateString('pt-BR'),emailed:true}); S.qStatus= S.qStatus==='Draft'?'Presented':S.qStatus; S.tab='Related'; render(); agSay(`Proposta ${S.pdfs[0].name} gerada e enviada por e-mail ao contato da conta; cotação marcada como Presented. No app o PDF aparece listado, sem visualização.`, [{l:'Ver a proposta enviada',f:()=>{agClose();S.pdfView=true;render();agSay('Abri a proposta enviada.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ação: Create PDF + Email Quote (Lightning Experience)'); }); }
 function agContrato(){ if(!S.contract){ S.contract={number:'00000123',status:'Draft',esig:'Not sent',docs:[],recipients:[],events:[]}; }
   agThink('Criando o contrato, gerando o documento e enviando para assinatura (DocuSign)…',1400,()=>{ if(!S.contract.docs.length) genContractDoc(); if(S.contract.esig==='Not sent'){ S.contract.recipients=[{email:'representante.legal@cliente.com.br',role:'Signer — Cliente',status:'Sent'},{email:'vendedor@algar.com.br',role:'Signer — Algar',status:'Sent'}]; S.contract.esig='Sent'; S.contract.status='In Approval Process'; S.contract.docs.forEach(d=>d.sig='Sent'); S.contract.events.push(new Date().toLocaleString('pt-BR')+' — Envelope DocuSign enviado.'); }
-    S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Ver o contrato',f:()=>{agClose();}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
+    S.tab='Related'; S.hist=['quote']; S.tela='contract'; render(); agSay(`Contrato ${S.contract.number} criado, documento gerado e enviado para assinatura de ${S.contract.recipients.length} signatários.`, [{l:'Ver o contrato',f:()=>{agClose();agSay('Abri o contrato.',agAtuais());}},{l:'Continuar',f:agNext,pri:true}], 'Ações: Create Contract › Generate Document › Send for eSignature'); }); }
 function agDescreverAtivacao(){
   const o=S.order; const fls=decompor(o); const plan=montarPlano(fls);
   const tipos=plan.steps.reduce((a,s)=>{a[s.type]=(a[s.type]||0)+1;return a;},{});
   const lista=fls.map(f=>`• ${f.name} — escopo ${f.scope}, ${f.sistema} (origem: ${f.source})`).join('\n');
   return { fls, plan, texto:`Fluxo de ativação do pedido ${o.number}:\n1) Activate — trava os itens do pedido.\n2) Submit Order — dispara o Dynamic Revenue Orchestrator.\n3) Decomposição do produto comercial em ${fls.length} produtos técnicos:\n${lista}\n4) Plano de orquestração: ${plan.steps.length} etapas em ${fls.length} raias — ${Object.entries(tipos).map(([k,v])=>v+' '+k).join(', ')}. As tarefas manuais (TAC e instalação do CPE) pedem confirmação; callouts vão aos sistemas Algar.\n5) Ao concluir: assets comerciais (Managed Assets) e técnicos (Fulfillment Assets) na conta.` };
 }
-function agAtivar(){ const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que eu ative e submeta agora?', [{l:'Ativar e submeter',f:agSubmeter,pri:true},{l:'Ver os produtos técnicos no pedido',f:()=>{agClose();S.tab='Details';go('order',true);}},{l:'Ainda não',f:agNext}], 'DRO: Activate › Submit Order › Decomposition Details › View Orchestration Plan'); }
+function agAtivar(){ const d=agDescreverAtivacao(); agSay(d.texto+'\n\nQuer que eu ative e submeta agora?', [{l:'Ativar e submeter',f:agSubmeter,pri:true},{l:'Ver os produtos técnicos no pedido',f:()=>{agClose();S.tab='Details';go('order',true);agSay('Abri o pedido.',agAtuais());}},{l:'Ainda não',f:agNext}], 'DRO: Activate › Submit Order › Decomposition Details › View Orchestration Plan'); }
 function agSubmeter(){ const o=S.order; agThink('Ativando e submetendo o pedido (Activate › Submit Order)…',1100,()=>{ if(o.status!=='Activated'){ o.status='Activated'; o.sel=null; } if(!o.submitted){ o.submitted=true; o.submitStatus='Submitted'; o.fls=decompor(o); o.plan=montarPlano(o.fls); setTimeout(planoTick,500); }
-  S.tab='Decomp'; S.hist=['quote']; S.tela='order'; render(); agSay(`Pedido ${o.number} ativado e submetido. ${o.fls.length} produtos técnicos gerados; o plano de orquestração começou (${o.plan.steps.length} etapas). Vou avisar quando uma tarefa manual precisar de você.`, [{l:'Andamento da orquestração',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}], 'Submit Status: Submitted'); setTimeout(agAndamento,2600); }); }
+  S.tab='Decomp'; S.hist=['quote']; S.tela='order'; render(); agSay(`Pedido ${o.number} ativado e submetido. ${o.fls.length} produtos técnicos gerados; o plano de orquestração começou (${o.plan.steps.length} etapas). Vou avisar quando uma tarefa manual precisar de você.`, [{l:'Andamento da orquestração',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');agSay('Abri o plano de orquestração.',agAtuais());}}], 'Submit Status: Submitted'); setTimeout(agAndamento,2600); }); }
 function agAndamento(){ const o=S.order; if(!o||!o.plan){ agNext(); return; } const P=o.plan; const done=P.steps.filter(s=>s.status==='Completed').length; const man=pendentesManuais();
   if(P.status==='Completed'){ agSay(`Plano concluído: ${P.steps.length}/${P.steps.length} etapas. Assets criados: ${S.assets.length} comercial (${S.assets.map(a=>a.name).join(', ')}) e ${(S.fassets||[]).length} de fulfillment (${(S.fassets||[]).map(f=>f.name).join('; ')}).`, [{l:'Ver os assets da conta',f:()=>{S.tab='Assets';agClose();S.hist=['order'];go('accounts',true);},pri:true},{l:'Resumo',f:()=>agSay(agResumo(),agAtuais())}]); return; }
-  if(man.length){ const s=man[0]; agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas. A etapa manual "${s.name}" (${s.laneName}) está aguardando conclusão. Já foi feita?`, [{l:`Concluir "${s.name}"`,f:()=>{completarManual(s.id); agSay(`"${s.name}" concluída; a orquestração continua.`,[]); setTimeout(agAndamento,2200);},pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}},{l:'Ainda não',f:agNext}]); return; }
-  agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas; em execução: ${P.steps.filter(s=>s.status==='In Progress').map(s=>s.name).join(', ')||'—'}.`, [{l:'Atualizar',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');}}]); }
+  if(man.length){ const s=man[0]; agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas. A etapa manual "${s.name}" (${s.laneName}) está aguardando conclusão. Já foi feita?`, [{l:`Concluir "${s.name}"`,f:()=>{completarManual(s.id); agSay(`"${s.name}" concluída; a orquestração continua.`,[]); setTimeout(agAndamento,2200);},pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');agSay('Abri o plano de orquestração.',agAtuais());}},{l:'Ainda não',f:agNext}]); return; }
+  agSay(`Andamento: ${done}/${P.steps.length} etapas concluídas; em execução: ${P.steps.filter(s=>s.status==='In Progress').map(s=>s.name).join(', ')||'—'}.`, [{l:'Atualizar',f:agAndamento,pri:true},{l:'Ver o plano',f:()=>{agClose();go('plan');agSay('Abri o plano de orquestração.',agAtuais());}}]); }
 function agPedido(){ if(S.qStatus!=='Accepted'){ agSay('A cotação precisa estar Accepted para criar o pedido.', [{l:'Marcar como Accepted',f:()=>{S.qStatus='Accepted';render();agPedido();},pri:true}]); return; }
-  agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Quer ver o fluxo de ativação antes de ativar?`, [{l:'Ativar o pedido',f:agAtivar,pri:true},{l:'Ver o pedido',f:agClose}], 'Ação: Create Order'); }); }
+  agThink('Criando o pedido (Create Order › Create Single Order)…',1100,()=>{ S.order={number:'00000037',status:'Draft',sel:null,lines:JSON.parse(JSON.stringify(lines)),start:new Date().toLocaleDateString('pt-BR')}; S.tab='Details'; S.hist=['quote']; S.tela='order'; render(); toast('Order '+S.order.number+' was created.'); agSay(`Pedido ${S.order.number} criado em Draft com ${S.order.lines.filter(l=>l.parent).length} item(ns). Quer ver o fluxo de ativação antes de ativar?`, [{l:'Ativar o pedido',f:agAtivar,pri:true},{l:'Ver o pedido',f:()=>{agClose();agSay('Abri o pedido.',agAtuais());}}], 'Ação: Create Order'); }); }
 
 /* ---------- roteiro (chrome do protótipo) ---------- */
 function atdAtual(){
@@ -1236,28 +1297,37 @@ function atdRender(){
 }
 function atdDetalhe(){ const a=atdAtual(); if(!a) return; toast(`Atendimento ${a.cls.v} — ${(a.cls.motivos||[]).join('; ')} · ${endFull().nome}`, a.cls.v==='Formatado'?'':'warn'); }
 function guia(){
-  const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk); let t='';
-  if(S.tela==='opp'&&!S.quote) t=S.tab==='Related'?'1 · Em <b>Quotes</b>, toque em <b>New</b> (ou More › New Quote).':'1 · Toque em <b>Related</b> e, em Quotes, em <b>New</b> (ou More › New Quote).';
-  else if(S.tela==='newquote') t='2 · Confira o nome e toque em <b>Save</b>.';
-  else if(S.tela==='quote'&&!n) t='3 · <b>Browse Catalogs</b> › tabela de preços › catálogo › <b>Next</b>.';
-  else if(S.tela==='browse'&&!n) t='4 · No VPN Node, toque em <b>⚙</b>: primeiro o endereço de instalação (UC passo 1).';
-  else if(S.tela==='local') t='UC passo 1 · Confirme localidade e endereço e toque em <b>Consultar viabilidade</b> (UC passo 2, automático).';
-  else if(S.tela==='flow'&&S.flow&&S.flow.auto) t='UC passo 2 · Retorno da viabilidade: tecnologia, interface, abordagem e distância. <b>Continuar</b>.';
-  else if(S.tela==='config') t='UC passos 3 a 7 · Rede privativa › Acesso (velocidade) › infraestrutura › equipamentos › SVAs › condições contratuais › <b>Save &amp; Exit</b>.';
-  else if(S.tela==='browse'&&n) t='Toque em <b>Save Quote</b>.';
-  else if(S.tela==='flow') t='Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.';
-  else if(S.tela==='quote'&&n&&!S.pdfs.length) t='Proposta · use <b>Gerar proposta (Lightning)</b> na barra do protótipo para ver o documento enviado; depois marque <b>Presented</b> no path.';
-  else if(S.tela==='quote'&&viab&&!S.contract) t='<b>More › Create Contract</b> para gerar o documento e enviar para assinatura.';
-  else if(S.tela==='contract'&&!S.contract.docs.length) t='9 · Toque em <b>Generate Doc</b> e depois em <b>Send eSign</b>.';
-  else if(S.tela==='contract'&&S.contract.esig==='Not sent') t='9 · Toque em <b>Send eSign</b> › Send.';
-  else if(S.tela==='contract'&&S.contract.esig==='Sent') t='10 · Use <b>Simular assinatura (DocuSign)</b> na barra do protótipo.';
-  else if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') t='11 · Na cotação (Details), toque em <b>Accepted</b> no path e em <b>Mark as Current Status</b>.';
-  else if(S.qStatus==='Accepted'&&!S.order) t='12 · <b>More › Create Order</b> › Create Single Order › <b>Finish</b>.';
-  else if(S.order&&S.order.status!=='Activated') t='13 · No pedido, toque em <b>Activate</b> (ou pergunte ao Agentforce: "ativar o pedido" — ele explica o fluxo antes).';
-  else if(S.order&&S.order.status==='Activated'&&!S.order.submitted) t='14 · <b>Submit Order</b> dispara a decomposição em produtos técnicos e o plano de orquestração.';
-  else if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') t='15 · Acompanhe em <b>Decomposition › View Orchestration Plan</b>; conclua as tarefas manuais (<b>Complete</b>).';
-  else if(S.order&&S.order.plan&&S.order.plan.status==='Completed') t='16 · Concluído: <b>Account › Assets</b> mostra Managed Assets e Fulfillment Assets.';
-  $('#guia').innerHTML=t?'Roteiro — '+t:''; $('#guia').style.display=t?'block':'none';
+  const n=lines.filter(l=>l.parent).length, viab=lines.some(l=>l.parent&&l.viabOk); let t='', acao=null;
+  if(S.tela==='opp'&&!S.quote) { t=S.tab==='Related'?'Em <b>Quotes</b>, toque em <b>New</b> para criar a cotação.':'Abra a aba <b>Related</b> e crie a cotação em Quotes › New.'; acao={l:S.tab==='Related'?'New':'Related',f:()=>{ if(S.tab==='Related') go('newquote'); else { S.tab='Related'; render(); } }}; }
+  else if(S.tela==='newquote') { t='Confira o nome da cotação e toque em <b>Save</b>.'; }
+  else if(S.tela==='quote'&&!n) { t='Adicione o produto: <b>Browse Catalogs</b> › tabela de preços › catálogo.'; acao={l:'Browse',f:()=>browse()}; }
+  else if(S.tela==='browse'&&!n) { t='No VPN Node, toque em <b>⚙</b>: primeiro o endereço de instalação (UC passo 1).'; acao={l:'Configurar',f:()=>openConfig('VPNNODE')}; }
+  else if(S.tela==='local') { t='<b>UC passo 1</b> · confirme localidade e endereço; a viabilidade (passo 2) roda automática.'; }
+  else if(S.tela==='flow'&&S.flow&&S.flow.auto) { t='<b>UC passo 2</b> · retorno da viabilidade: tecnologia, interface, abordagem e distância.'; }
+  else if(S.tela==='config') { t='<b>UC passos 3 a 7</b> · rede › velocidade › infraestrutura › equipamentos › SVAs › contrato › <b>Save &amp; Exit</b>.'; }
+  else if(S.tela==='browse'&&n) { t='Toque em <b>Save Quote</b> para voltar à cotação com o item.'; }
+  else if(S.tela==='flow') { t='Selecione o item, <b>Next</b>, e ao final <b>Finish</b>.'; }
+  else if(S.tela==='quote'&&n&&!S.pdfs.length) { t='Gere e envie a <b>proposta</b>; depois marque <b>Presented</b> no path.'; acao={l:'Gerar proposta',f:()=>gerarProposta()}; }
+  else if(S.tela==='quote'&&viab&&!S.contract) { t='Crie o <b>contrato</b>, gere o documento e envie para assinatura.'; acao={l:'Create Contract',f:()=>createContract()}; }
+  else if(S.tela==='contract'&&!S.contract.docs.length) { t='Toque em <b>Generate Doc</b> e depois em <b>Send eSign</b>.'; acao={l:'Generate Doc',f:()=>genContractDoc()}; }
+  else if(S.tela==='contract'&&S.contract.esig==='Not sent') { t='Toque em <b>Send eSign</b> › Send para criar o envelope DocuSign.'; acao={l:'Send eSign',f:()=>{S.modal='esig';render();}}; }
+  else if(S.tela==='contract'&&S.contract.esig==='Sent') { t='Aguardando assinatura — use <b>Simular assinatura</b> para o retorno do DocuSign.'; acao={l:'Simular',f:()=>simularAssinatura()}; }
+  else if(S.contract&&S.contract.esig==='Completed'&&S.qStatus!=='Accepted') { t='Na cotação, marque <b>Accepted</b> no path para liberar o pedido.'; acao={l:'Accepted',f:()=>{S.qStatus='Accepted';S.qSel=null;S.tab='Details';go('quote',true);toast('Status changed successfully.');}}; }
+  else if(S.qStatus==='Accepted'&&!S.order) { t='<b>Create Order</b> › Create Single Order › Finish.'; acao={l:'Create Order',f:()=>{S.modal='order';render();}}; }
+  else if(S.order&&S.order.status!=='Activated') { t='No pedido, toque em <b>Activate</b> — ou peça ao Agentforce, que explica o fluxo antes.'; acao={l:'Activate',f:()=>{S.modal='activate';render();}}; }
+  else if(S.order&&S.order.status==='Activated'&&!S.order.submitted) { t='<b>Submit Order</b> dispara a decomposição em produtos técnicos e a orquestração.'; acao={l:'Submit',f:()=>submeterPedido()}; }
+  else if(S.order&&S.order.plan&&S.order.plan.status!=='Completed') { t='Acompanhe em <b>Decomposition › View Orchestration Plan</b> e conclua as tarefas manuais.'; acao={l:'Ver plano',f:()=>go('plan')}; }
+  else if(S.order&&S.order.plan&&S.order.plan.status==='Completed') { t='Concluído: veja os <b>assets</b> na conta ou o resumo do pedido.'; acao={l:'Ver pedido',f:()=>{S.docView='order';render();}}; }
+  else if(S.tela==='quote'&&n) { t='Acompanhe pela aba <b>Lines</b> ou veja o resumo da cotação.'; acao={l:'Ver cotação',f:()=>{S.docView='quote';render();}}; }
+  else if(S.tela==='order') { t='Veja o resumo do pedido com itens, produtos técnicos e orquestração.'; acao={l:'Ver pedido',f:()=>{S.docView='order';render();}}; }
+  else if(S.tela==='accounts'&&S.assets.length) { t='Assets criados: use <b>Amend</b>, <b>Renew</b> ou <b>Cancel</b> para o pós-venda.'; }
+  const el=$('#guia'); const esconder = !t || AG.open || S.pdfView || S.docView || S.modal || S.sheet;
+  el.className = esconder ? '' : ('show'+(S.guiaOff?' min':''));
+  if(esconder) return;
+  $('#guia-txt').innerHTML = (S.guiaOff?'':'<small>Roteiro sugerido</small>')+t;
+  const go=$('#guia-go');
+  if(acao && !S.guiaOff){ go.className='g-go'; go.textContent=acao.l; go.onclick=acao.f; } else { go.className='g-go hide'; go.onclick=null; }
+  $('#guia .g-x').textContent = S.guiaOff?'▴':'▾';
 }
 
 /* ---------- render ---------- */
@@ -1269,7 +1339,7 @@ function render(){
   const sh={post:sheetPost,'more-lead':sheetMoreLead,'more-opp':sheetMoreOpp,'more-quote':sheetMoreQuote,'more-contract':sheetMoreContract,'more-order':sheetMoreOrder,'more-acc':sheetMoreAcc,addassets:sheetAddAssets};
   if(S.sheet==='pdf') o=sheetPdf(); else if(S.sheet&&sh[S.sheet]) o=sh[S.sheet](); else if(S.sheet&&S.sheet.startsWith('line:')) o=sheetLine(S.sheet.slice(5)); else if(S.sheet&&S.sheet.startsWith('menu:')) o=sheetMenu(S.sheet.slice(5));
   if(S.modal==='activate') o+=modalActivate(); else if(S.modal==='submit') o+=modalSubmit(); else if(S.modal==='pricebook') o+=modalPB(); else if(S.modal==='catalogs') o+=modalCatalogs(); else if(S.modal==='esig') o+=modalEsig(); else if(S.modal==='order') o+=modalOrder(); else if(S.modal&&S.modal.startsWith('bo:')) o+=modalBuying(S.modal.slice(3));
-  if(S.pdfView) o+=pdfViewHtml();
+  if(S.pdfView) o+=pdfViewHtml(); else if(S.docView) o+=docHtml(S.docView);
   $('#overlay').innerHTML=o;
   const record=['opp','quote','contract','order','accounts','menu','chatter','contacts','leads','lead','quotes','accountsList'].includes(S.tela);
   $('#agent').style.display=record?'block':'none'; $('#bnav').style.display=record?'flex':'none';
@@ -1323,6 +1393,7 @@ if(/selftest=1/.test(location.search)){
     setAttr('VPNNetwork','VPN-000124'); setAttr('ModalidadeInstalacao','Físico'); setAttr('PeriodoFidelizacao','36'); setAttr('TipoReajuste','Data de assinatura do contrato'); setAttr('DataAssinatura','2026-10-01');
     ok('sem erros; Save & Exit habilitado', $('.foot .brand').disabled===false);
     ok('asterisco em todos os obrigatórios da categoria e legenda no topo', (()=>{ const R=avaliarUI(cfgProduct); const vis=cfgProduct.defs.filter(x=>x.cat===S.atab&&!x.hidden&&!R.hidden[x.key]); const esp=vis.filter(x=>R.required[x.key]||(x.obg&&!x.ro)).length; return document.querySelectorAll('.fld .rq').length===esp && esp>0 && $('#view').textContent.includes('campo obrigatório'); })());
+    ok('roteiro flutuante na parte de baixo, com ação sugerida', $('#guia').classList.contains('show') && $('#guia').getBoundingClientRect().top > window.innerHeight/2 && $('#guia-txt').textContent.length>10);
     ok('marcador flutuante mostra o atendimento', $('#atd').classList.contains('show') && /Atendimento (Formatado|Customizado|Pendente|Inviável)/.test($('#atd').textContent));
     const n=lines.length; click($('.foot .brand')); ok('Save & Exit cria a linha com 3 componentes e volta ao Browse Products', lines.length===n+4 && S.tela==='browse');
     click($('.foot .brand')); ok('Save Quote → aba Lines com a linha viável e Quote Summary', S.tela==='quote' && S.tab==='Lines' && $('.badge.ok') && $('#view').textContent.includes('Quote Summary'));
