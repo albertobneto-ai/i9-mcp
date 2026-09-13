@@ -26,6 +26,7 @@ import revenueCloudRoutes from './routes/revenue-cloud.js';
 import explorerRoutes from './routes/explorer.js';
 import githubRoutes from './routes/github.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
+import ucRoutes, { initUcTables } from './routes/uc.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
 import agentFarmRoutes from './routes/agent-farm.js';
 import tracelogRoutes from './routes/tracelog.js';
@@ -204,7 +205,8 @@ app.use('/api/aidetector', aidetectorRoutes);  // AIDETECTOR — auditoria de cr
 app.use('/api/kb', kbRoutes);  // Base de Conhecimento (RAG grounded) — antes do catch-all /api
 app.use('/api/vagas', vagasRoutes);  // Radar de Vagas — pipeline de candidaturas (antes do catch-all /api)
 app.use('/api/agente', agenteRoutes);  // Agente Funcional — UC + mapa de componentes (antes do catch-all /api)
-app.use('/api/github', authMiddleware, githubRoutes);  // proxy GitHub — comentários de revisão
+app.use('/api/uc', ucRoutes);  // Casos de uso publicados — comentários de revisão (público, escopo estreito)
+app.use('/api/github', authMiddleware, githubRoutes);  // proxy GitHub — uso interno
 app.use('/api', explorerRoutes);
 
 // Job status polling
@@ -496,6 +498,7 @@ app.get('/api/debug/ip', async (req, res) => {
 
 initControlTables().catch(e => console.error('[control] init falhou:', e.message));
 initAgenteTables().catch(e => console.error('[agente] init falhou:', e.message));
+initUcTables().catch(e => console.error('[uc] init falhou:', e.message));
 
 app.listen(PORT, () => console.log(`[i9-mcp] SF Agent v1.2 on port ${PORT}`));
 
