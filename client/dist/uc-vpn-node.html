@@ -582,7 +582,7 @@ document.getElementById('cSave').onclick=function(){
     var P = D.Paragraph, T = D.TextRun, H = D.HeadingLevel, AL = D.AlignmentType,
         WT = D.WidthType, SH = D.ShadingType, BS = D.BorderStyle, VA = D.VerticalAlign,
         TL = D.TableLayoutType;
-    var FONT = 'Calibri', TX = '0D0D0D', TX2 = '3A3A3A', MUT = '6B6B6B',
+    var FONT = 'Aptos', TX = '0D0D0D', TX2 = '3A3A3A', MUT = '6B6B6B',
         BD = 'D9D9D9', S1 = 'F2F3F5', S2 = 'E8E9EC';
     var PAGE_W = 11906, MG = 1134, LARG = PAGE_W - MG * 2;
     var nada = { top: { style: BS.NONE }, bottom: { style: BS.NONE },
@@ -662,9 +662,9 @@ document.getElementById('cSave').onclick=function(){
           size: TAM[n.tipo], bold: true, color: TX })] }));
       if (n.chips.length) {
         filhos.push(new P({ spacing: { after: 90 }, children: n.chips.map(function (c, i) {
-          return new T({ text: (i ? '   ' : '') + ' ' + c.t + ' ', font: FONT, size: 15,
-            bold: c.forte, color: c.forte ? 'FFFFFF' : TX2,
-            shading: { type: SH.CLEAR, fill: c.forte ? TX : S2 } });
+          return new T({ text: (i ? '    ' : '') + ' ' + c.t + ' ', font: FONT, size: 16,
+            bold: c.forte, color: c.forte ? TX : TX2,
+            shading: { type: SH.CLEAR, fill: c.forte ? S2 : 'F7F8F9' } });
         }) }));
       }
       n.blocos.forEach(function (b) {
