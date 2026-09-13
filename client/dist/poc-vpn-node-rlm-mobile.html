@@ -2312,7 +2312,7 @@ function setEnd(id,silent){ CTX.endId=id; CTX.endereco=endEff(); CTX.localidade=
    eles vêm do próprio arquivo e mudam com o deploy. */
 const POC_API = '/api/poc/sessoes';
 const POC_PROTO = /lightning/i.test(location.pathname) || document.getElementById('lx') ? 'lightning' : 'mobile';
-let sessaoCodigo = null, sessaoTimer = null, sessaoUltimo = null;
+let sessaoCodigo = null, sessaoTimer = null, sessaoUltimo = null, sessaoQuando = 0;
 
 function sessaoEstado(){
   return {
@@ -2358,14 +2358,20 @@ async function sessaoSalvar(manual){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ proto:POC_PROTO, rotulo:(S.quote?S.quote.name:oppName()).slice(0,110), estado }) });
     if(!r.ok) throw new Error('HTTP '+r.status);
-    sessaoUltimo = texto;
+    sessaoUltimo = texto; sessaoQuando = Date.now();
     const el=$('#p-sessao'); if(el) el.textContent = sessaoCodigo;
     history.replaceState(null,'', location.pathname + '?s=' + encodeURIComponent(sessaoCodigo));
     sessaoSync('salvo ' + new Date().toLocaleTimeString('pt-BR').slice(0,5));
     if(manual) toast('Sessão salva: '+sessaoCodigo);
   }catch(e){ sessaoSync('falhou', true); if(manual) toast('Não consegui salvar: '+e.message,'warn'); }
 }
-function sessaoAuto(){ if(S.semPersistencia) return; clearTimeout(sessaoTimer); sessaoTimer=setTimeout(()=>sessaoSalvar(false), 1500); }
+function sessaoAuto(){
+  if(S.semPersistencia) return;
+  /* telas que se atualizam sozinhas (orquestração) adiariam o salvamento para sempre:
+     depois de 6 s sem gravar, salva na hora em vez de esperar a pausa */
+  if(sessaoQuando && Date.now()-sessaoQuando > 6000){ clearTimeout(sessaoTimer); sessaoSalvar(false); return; }
+  clearTimeout(sessaoTimer); sessaoTimer=setTimeout(()=>sessaoSalvar(false), 1500);
+}
 async function sessaoCarregar(codigo){
   sessaoSync('abrindo…');
   try{
