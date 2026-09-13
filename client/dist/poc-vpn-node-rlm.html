@@ -1188,14 +1188,14 @@ function addLine(p,cfg,R){
   return line;
 }
 const ACESSO = ['VPNNODE','LINKDED','BLEMP'];
-function quickAdd(pid){ const p=findProd(pid); if(ACESSO.includes(pid) && !S.viab[endFull().id]){ S.pend={pid, mode:'add'}; go('local'); return; } if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
+function quickAdd(pid){ const p=findProd(pid); if(ACESSO.includes(pid)){ S.pend={pid, mode:'add'}; go('local'); return; } if(isConfigurable(p)){ const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; } else addLine(p,null,null); toast(p.name+' added to quote.'); render(); }
 function addSel(){ Object.keys(S.checked).filter(k=>S.checked[k]).forEach(pid=>quickAdd(pid)); S.checked={}; render(); }
 
 /* ---------- Product Configurator ---------- */
 function avaliarUI(cfg){ const R=avaliar(cfg); if(!S.viab[endFull().id]) R.msgs=R.msgs.filter(m=>!(m.regra==='R11'&&m.texto.indexOf('no mínimo 1 equipamento')>=0)); return R; }
-function openConfig(id,uid){
+function openConfig(id,uid,pularEndereco){
   const p=findProd(id); const qp=qualificadoProduto(p); if(!qp.ok){ toast(qp.hits[qp.hits.length-1].motivo,'warn'); return; }
-  if(ACESSO.includes(id) && !S.viab[endFull().id] && !uid){ S.pend={pid:id, mode:'config'}; go('local'); return; }
+  if(ACESSO.includes(id) && !uid && !pularEndereco){ S.pend={pid:id, mode:'config'}; go('local'); return; }   /* UC passo 1: o endereço é por node */
   cfgProduct=novoCfg(p); cfgProduct.uid=uid||null;
   if(uid){ const l=lines.find(x=>x.uid===uid); if(l&&l.cfgState){ cfgProduct.a=JSON.parse(JSON.stringify(l.cfgState.a)); cfgProduct.c=JSON.parse(JSON.stringify(l.cfgState.c)); cfgProduct.toque=Object.assign({},l.cfgState.toque); cfgProduct.autoSig=l.cfgState.autoSig; } }
   S.msgTab=null; S.atab=null; S.grpOpen={}; S.compOpen={}; S.sumOpen=false; go('config');
@@ -1377,19 +1377,23 @@ function telaLocal(){
   ${fonte('inf','<b>Viabilidade</b> — passos 1 e 2 do UC-VPN-001; a consulta é integração MuleSoft do projeto. Não há componente nativo de viabilidade no Revenue Cloud.')}
   <div class="ff"><label>Produto</label><span class="pill">${p.icon} ${esc(p.name)}</span></div>
   <div class="ff"><label><span class="rq">*</span>Localidade (grupo de cidades)</label><select onchange="setLoc(this.value);S.tela='local';render()">${LOCALIDADES.map(l=>`<option value="${l.id}" ${CTX.localidade.id===l.id?'selected':''}>${esc(l.nome)} · ${esc(l.territorio)}</option>`).join('')}</select></div>
-  <div class="ff"><label><span class="rq">*</span>Endereço de instalação (Service Account do node)</label><select onchange="setEnd(this.value,true);S.tela='local';render()">${enderecosDaLocalidade(CTX.localidade.id).map(x=>`<option value="${x.id}" ${e.id===x.id?'selected':''}>${esc(x.nome)}</option>`).join('')}</select></div>
+  <div class="ff"><label><span class="rq">*</span>Endereço de instalação (Service Account do node)</label><select onchange="setEnd(this.value,true);S.tela='local';render()">${enderecosDaLocalidade(CTX.localidade.id).map(x=>`<option value="${x.id}" ${e.id===x.id?'selected':''}>${(S.viab[x.id]?'✓ ':'')+esc(x.nome)}${lines.some(l=>l.parent&&l.end===x.id)?' — já tem node nesta cotação':''}</option>`).join('')}</select>
+  ${lines.filter(l=>l.parent).length?`<div class="ff"><label>Nodes já na cotação</label><span>${lines.filter(l=>l.parent).map(l=>esc(l.name)+' — '+esc((l.attrs&&l.attrs['Endereço de instalação'])||'')).join('<br>')}</span></div>`:''}
   <div class="ff"><label>Território · entidade faturadora</label><span>${esc(CTX.localidade.territorio)} · ${esc(entidadeFaturadora().valor)}</span>${CTX.localidade.arq5?'<div class="help" style="color:var(--warnt);font-size:12px;margin-top:4px">Localidade ARQ5 — dúvida aberta com o time Algar.</div>':''}</div>
   ${qualificadoProduto(p).ok?'':`<div class="mrow Error"><i>⊘</i><span>${esc(qualificadoProduto(p).hits.slice(-1)[0].motivo)}</span></div>`}
   <div style="height:70px"></div>
-  <div class="foot"><button class="btn" onclick="S.pend=null;back()">Cancel</button><button class="btn brand" ${qualificadoProduto(p).ok?'':'disabled'} onclick="viabAuto()">Consultar viabilidade</button></div>`;
+  <div class="foot"><button class="btn" onclick="S.pend=null;back()">Cancel</button><button class="btn brand" ${qualificadoProduto(p).ok?'':'disabled'} onclick="viabAuto()">${S.viab[e.id]?'Continuar (viabilidade já consultada)':'Consultar viabilidade'}</button></div>`;
 }
-function viabAuto(){ S.flow={step:2, auto:true, sel:{}, result:null, end:endFull()}; go('flow',true); setTimeout(()=>{ if(S.flow&&S.flow.auto){ S.flow.result=[{uid:null,name:findProd(S.pend.pid).name,end:S.flow.end}]; S.flow.step=3; render(); } },1400); }
+function viabAuto(){ const e=endFull(); const jaTem=!!S.viab[e.id];
+  S.flow={step:jaTem?3:2, auto:true, sel:{}, result:jaTem?[{uid:null,name:findProd(S.pend.pid).name,end:e}]:null, end:e};
+  go('flow',true);
+  if(!jaTem) setTimeout(()=>{ if(S.flow&&S.flow.auto){ S.flow.result=[{uid:null,name:findProd(S.pend.pid).name,end:S.flow.end}]; S.flow.step=3; render(); } },1400); }
 function finishViabAuto(){
   const e=S.flow.end; S.viab[e.id]=true; S.flow=null; CTX.endereco=endEff();
   const pend=S.pend; S.pend=null;
   if(e.cobertura===false || e.redeNeutra){ toast('Atendimento inviável neste endereço — item não adicionado.','warn'); S.tab='Lines'; S.hist=['opp']; go('quote',true); return; }
   if(pend.mode==='add'){ const p=findProd(pend.pid); const cfg=novoCfg(p); const R=avaliar(cfg); const l=addLine(p,cfg,R); l.cfgState={a:cfg.a,c:cfg.c,toque:cfg.toque,autoSig:cfg.autoSig}; toast(p.name+' added to quote.'); S.tab='Lines'; S.hist=['opp']; go('quote',true); }
-  else openConfig(pend.pid);
+  else openConfig(pend.pid, null, true);
 }
 /* ---------- Consultar Viabilidade (Screen Flow · integração MuleSoft do projeto) ---------- */
 function startViab(){ const nodes=lines.filter(l=>l.parent&&(l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP')); S.sheet=null; S.flow={step:1,sel:Object.fromEntries(nodes.map(n=>[n.uid,!S.viab[n.end]])),result:null}; go('flow'); }
@@ -2064,7 +2068,8 @@ if(/selftest=1/.test(location.search)){
     S.pdfView=false; render(); click($('.rel .it')); ok('tocar no PDF mostra a nota oficial (não abre no app)', S.sheet==='pdf' && $('.bsheet').textContent.includes("aren't viewable")); S.sheet=null; render();
     quoteMark(); ok('path marcado como Presented', S.qStatus==='Presented');
     S.tab='Lines'; render();
-    click($('.line .n b')); ok('toque no item abre Details/Attributes', S.sheet && S.sheet.startsWith('line:')); S.stab='Attributes'; render(); ok('Attributes com localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade')); S.sheet=null; render();
+    click($('.line .n b')); ok('toque no item abre Details/Attributes', S.sheet && S.sheet.startsWith('line:')); S.stab='Attributes'; render(); ok('Attributes com localidade e entidade faturadora', $('.bsheet').textContent.includes('Localidade'));
+    ok('rede privativa com nome legível, não o código interno', !/\bNOVA\b/.test($('.bsheet').textContent)); S.sheet=null; render();
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); click([...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Contract')));
     ok('Create Contract abre o contrato', S.tela==='contract' && $('.rh b').textContent==='00000123');
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Generate'))); ok('Generate Doc cria o documento', S.contract.docs.length===1);
