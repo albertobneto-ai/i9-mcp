@@ -87,7 +87,7 @@ i.b,.oi.b{background:#1b96ff}i.t,.oi.t{background:#0b827c}i.g,.oi.g{background:#
 .agent .afi.has img{display:block}.agent .afi.has span{display:none}
 .agent .mic{margin-left:auto;font-size:20px;color:#444}
 .agent .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);margin-left:-6px;margin-top:-18px}
-#agp{position:fixed;inset:0;background:#fff;z-index:70;display:none;flex-direction:column;max-width:430px;margin:0 auto}
+#agp{position:fixed;left:0;right:0;top:var(--poch,0px);bottom:0;background:#fff;z-index:70;display:none;flex-direction:column;max-width:430px;margin:0 auto}
 #agp.show{display:flex}
 .agp-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
 .agp-h b{font-size:18px;flex:1;font-weight:600}
@@ -1455,7 +1455,9 @@ function agPerg(passo, pergunta, porque, chips, src){
 }
 function agUser(text){ AG.thread.push({u:true,text}); AG.chips=[]; agRender(); }
 function agThink(text, ms, then){ AG.busy=true; AG.thread.push({a:true,text,think:true}); AG.chips=[]; agRender(); setTimeout(()=>{ AG.thread=AG.thread.filter(m=>!m.think); AG.busy=false; agSafe(then,'processamento'); }, ms); }
-function agRender(){ if(AG.open && !AG.auto && !AG.busy && !AG.chips.length && !AG.dateAsk && AG.cfg && AG.thread.length) setTimeout(agGuardaFio,60);
+function pocAltura(){ const el=$('#poc'); document.documentElement.style.setProperty('--poch', (el?el.offsetHeight:0)+'px'); }
+addEventListener('resize', pocAltura); addEventListener('load', pocAltura);
+function agRender(){ pocAltura(); if(AG.open && !AG.auto && !AG.busy && !AG.chips.length && !AG.dateAsk && AG.cfg && AG.thread.length) setTimeout(agGuardaFio,60);
   const b=$('#agp-b'); if(!b) return;
   const BOT='<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><rect x="12" y="18" width="40" height="32" rx="10" fill="#0b5cab"/><rect x="18" y="26" width="28" height="16" rx="8" fill="#fff"/><circle cx="27" cy="34" r="3.2" fill="#0b5cab"/><circle cx="37" cy="34" r="3.2" fill="#0b5cab"/><rect x="30" y="9" width="4" height="9" rx="2" fill="#0b5cab"/><circle cx="32" cy="8" r="3" fill="#0b5cab"/><rect x="6" y="28" width="6" height="12" rx="3" fill="#0b5cab"/><rect x="52" y="28" width="6" height="12" rx="3" fill="#0b5cab"/></svg>';
   b.innerHTML = (AG.thread.length>1?'':`<div class="welcome"><div class="bot" id="agbot"><img src="img/agentforce-icon.png" onload="this.parentNode.classList.add('has')" onerror="this.style.display='none'">${BOT}</div><p>Welcome! I'm Agentforce. I can help you create and manage quotes quickly and accurately — from feasibility to order fulfillment.</p></div>`)
