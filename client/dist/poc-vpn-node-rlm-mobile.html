@@ -685,92 +685,156 @@ function relatedQuote(){
 function sheetPdf(){ return sheet(`<div class="row" style="border:0;font-weight:700">${esc(S.pdfs[0].name)}</div><div class="note" style="padding:0 18px 12px;color:var(--mut);font-size:13px;line-height:1.45">Quote PDFs aren't viewable in the Salesforce mobile app (ajuda oficial). O documento foi gerado e enviado pelo Lightning Experience.</div>${row('👁','b','Ver a proposta enviada (visualização do protótipo, fora do app)','S.sheet=null;S.pdfView=true;render()')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
 function gerarProposta(){ if(!S.quote||!lines.some(l=>l.parent)){ toast('Crie a cotação e adicione o VPN Node antes de gerar a proposta.','warn'); return; } if(!S.pdfs.length) S.pdfs.push({name:S.quote.name+'_V1', tpl:'Proposta Comercial Algar — Conectividade', quando:new Date().toLocaleDateString('pt-BR'), emailed:true}); if(S.qStatus==='Draft') S.qSel='Presented'; S.pdfView=true; S.tab='Related'; S.hist=['opp']; go('quote',true); toast('Proposta gerada e enviada pelo Lightning Experience (Create PDF › Save to Quote › Email Quote).'); }
 function agRetoma(){ if(AG.thread.length && !AG.busy && !AG.dateAsk && !AG.cfg) agNext(); }
+/* ================= documentos (proposta, cotação, contrato, pedido) =================
+   Layout tabulado: cabeçalho com marca, tabela de partes, tabela de itens com atributos,
+   componentes, condições contratuais, assets e assinaturas. */
+const DOC_CSS = `
+<style>
+.doc{background:#fff;color:#1a1a1a;font-size:12.5px;line-height:1.45;padding:0 0 26px}
+.doc .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 18px 12px;border-bottom:3px solid #0b5cab}
+.doc .cab .marca{font-size:20px;font-weight:800;letter-spacing:.04em;color:#0b5cab}
+.doc .cab .sub{font-size:11px;color:#666;margin-top:2px}
+.doc .cab .num{text-align:right;font-size:11.5px;color:#444}
+.doc .cab .num b{display:block;font-size:14px;color:#111}
+.doc h3{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#0b5cab;margin:18px 18px 7px;padding-bottom:4px;border-bottom:1px solid #dfe4ea}
+.doc .wrap{padding:0 18px}
+.doc table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px}
+.doc th{background:#eef2f7;color:#33475b;text-align:left;font-weight:700;padding:6px 8px;border:1px solid #d8dee6}
+.doc td{padding:6px 8px;border:1px solid #d8dee6;vertical-align:top}
+.doc tr:nth-child(even) td{background:#fafbfc}
+.doc table.partes th{width:34%}
+.doc table.itens th{white-space:nowrap}
+.doc table.itens td.n{text-align:right;white-space:nowrap}
+.doc .item-tit{font-weight:700;color:#0b5cab}
+.doc .grade{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d8dee6;border-bottom:0;margin-bottom:10px}
+.doc .grade div{border-bottom:1px solid #d8dee6;padding:5px 8px;font-size:11.5px;min-width:0}
+.doc .grade div:nth-child(odd){background:#fafbfc;border-right:1px solid #d8dee6}
+.doc .grade b{display:block;color:#5a6b7d;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+.doc .tot{display:flex;justify-content:flex-end;gap:14px;padding:8px 10px;background:#eef2f7;border:1px solid #d8dee6;font-weight:700;margin-bottom:6px}
+.doc .obs{color:#666;font-size:11px;margin:0 0 6px}
+.doc .ass{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.doc .ass div{border-top:1px solid #111;padding-top:5px;font-size:11.5px}
+.doc .ass small{color:#666;display:block}
+.doc .ok{color:#1d6b38;font-weight:700}
+.doc .sel{display:inline-block;border:1px solid #1d6b38;color:#1d6b38;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px}
+.doc .rod{margin:14px 18px 0;padding-top:8px;border-top:1px solid #dfe4ea;color:#888;font-size:10.5px;text-align:center}
+</style>`;
+function docMoldura(titulo, corpo, nota){
+  return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column">
+    <div class="form-h"><a onclick="S.docView=null;S.pdfView=false;render();agRetoma()">Fechar</a><b>${esc(titulo)}</b><a></a></div>
+    ${nota?`<div class="nv-tag">${esc(nota)}</div>`:''}
+    <div style="overflow:auto;background:#5f6b76;padding:12px;flex:1">
+      <div class="doc" style="max-width:780px;margin:0 auto;box-shadow:0 6px 22px rgba(0,0,0,.45)">${DOC_CSS}${corpo}</div>
+    </div></div></div>`;
+}
+function docCab(tit, sub, linhas){
+  return `<div class="cab"><div><div class="marca">ALGAR</div><div class="sub">${esc(sub)}</div></div>
+    <div class="num"><b>${esc(tit)}</b>${linhas.map(l=>`<div>${esc(l)}</div>`).join('')}</div></div>`;
+}
+function docPartes(rows){ return `<div class="wrap"><table class="partes"><tbody>${rows.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('')}</tbody></table></div>`; }
+function docAtributos(l){
+  const skip=['Localidade','Endereço de instalação','Entidade faturadora','Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Data do Próximo Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo','Data de Assinatura do Contrato','Data Base','Reajustar Antes de 12 Meses','Data de Início do Contrato','Data de Término do Contrato'];
+  const ats=Object.entries(l.attrs||{}).filter(([k])=>!skip.includes(k));
+  if(!ats.length) return '';
+  return `<div class="grade">${ats.map(([k,v])=>`<div><b>${esc(k)}</b>${esc(v)}</div>`).join('')}</div>`;
+}
+function docComponentes(kids){
+  if(!kids.length) return '';
+  return `<table><thead><tr><th style="width:46%">Componente</th><th>Modalidade / plano</th><th class="n" style="width:16%">Qtd</th><th style="width:22%">Valor</th></tr></thead><tbody>
+    ${kids.map(k=>`<tr><td>${esc(k.name)}</td><td>${esc((k.attrs&&(k.attrs['Modalidade Equipamento']||k.attrs['Plano MIR']||k.attrs['Velocidade Temporária']))||'—')}</td><td class="n">${k.qty||1}</td><td>${(k.attrs&&k.attrs['Modalidade Equipamento']==='Comodato')?'Incluído':'Pendente'}</td></tr>`).join('')}</tbody></table>`;
+}
+function docItens(roots, getKids, comAtend){
+  return `<table class="itens"><thead><tr><th style="width:26px">#</th><th>Produto</th><th style="width:64px">Qtd</th><th style="width:96px">Modelo</th>${comAtend?'<th style="width:104px">Atendimento</th>':''}<th class="n" style="width:92px">Valor mensal</th></tr></thead><tbody>
+    ${roots.map((l,i)=>`<tr><td>${i+1}</td><td class="item-tit">${esc(l.name)}</td><td>${l.qty}</td><td>${esc(SM[l.sell]||l.sell)}</td>${comAtend?`<td>${esc(l.classif||'—')}</td>`:''}<td class="n">Pendente</td></tr>`).join('')}
+  </tbody></table>
+  ${roots.map((l,i)=>`<h3>Item ${i+1} · ${esc(l.name)}</h3><div class="wrap">
+     <table class="partes"><tbody>
+       <tr><th>Local de instalação</th><td>${esc((l.attrs&&l.attrs['Endereço de instalação'])||'—')}</td></tr>
+       <tr><th>Localidade / território</th><td>${esc((l.attrs&&l.attrs['Localidade'])||'—')}</td></tr>
+       <tr><th>Entidade faturadora</th><td>${esc((l.attrs&&l.attrs['Entidade faturadora'])||'—')}</td></tr>
+     </tbody></table>
+     ${docAtributos(l)}
+     ${docComponentes(getKids(l))}</div>`).join('')}`;
+}
+function docCondicoes(l0){
+  const c=['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Data do Próximo Reajuste','Data de Assinatura do Contrato','Data Base','Percentual da Multa','Quantidade de Dias Aviso Previo','Data de Início do Contrato','Data de Término do Contrato']
+    .filter(k=>l0.attrs&&l0.attrs[k]).map(k=>[k,l0.attrs[k]]);
+  if(!c.length) return '<p class="obs">Sem condições contratuais informadas.</p>';
+  return `<div class="grade">${c.map(([k,v])=>`<div><b>${esc(k)}</b>${esc(v)}</div>`).join('')}</div>`;
+}
+function docRodape(txt){ return `<div class="rod">${esc(txt)}</div>`; }
+
 function docHtml(tipo){
   const roots=lines.filter(l=>l.parent), l0=roots[0]||{attrs:{}};
-  const th=(t)=>`<th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">${t}</th>`;
-  const box=(c)=>`<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px">${c}</div>`;
-  let corpo='';
+  const kids=l=>lines.filter(x=>x.parentUid===l.uid);
   if(tipo==='quote'){
-    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Cotação')}<td style="padding:6px;border:1px solid #ddd">${S.quote.number} · ${esc(S.qStatus)}</td></tr>
-      <tr>${th('Cliente')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)} · ${esc(CTX.conta.segmento)}</td></tr>
-      <tr>${th('Oportunidade')}<td style="padding:6px;border:1px solid #ddd">${esc(oppName())}</td></tr>
-      <tr>${th('Validade')}<td style="padding:6px;border:1px solid #ddd">${esc(S.quote.exp)}</td></tr></table>
-      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Itens (${roots.length})</h3>
-      ${roots.map((l,i)=>box(`<b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · ${SM[l.sell]||l.sell} <span style="float:right">${esc(l.classif||'')}</span>
-        <div style="color:#444;font-size:12px;margin-top:4px">${Object.entries(l.attrs||{}).filter(([k])=>!['Localidade','Endereço de instalação','Entidade faturadora'].includes(k)).map(([k,v])=>'<b>'+esc(k)+':</b> '+esc(v)).join(' · ')}</div>
-        <div style="color:#444;font-size:12px;margin-top:4px"><b>Local:</b> ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')} — ${esc((l.attrs&&l.attrs['Localidade'])||'')} · <b>Faturamento:</b> ${esc((l.attrs&&l.attrs['Entidade faturadora'])||'')}</div>
-        ${lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} — ${esc((k.attrs&&(k.attrs['Modalidade Equipamento']||k.attrs['Plano MIR']||k.attrs['Velocidade Temporária']))||'—')}${(k.attrs&&k.attrs['Quantidade'])?' · '+k.attrs['Quantidade']+'×':''}</div>`).join('')}
-        <div style="text-align:right;margin-top:6px"><b>Valor mensal: Pendente</b></div>`)).join('')}
-      <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Total mensal: Pendente</div>
-      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Condições contratuais</h3>
-      <p style="margin:0;font-size:12.5px">${['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Data do Próximo Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l0.attrs&&l0.attrs[k]).map(k=>k+': '+esc(l0.attrs[k])).join(' · ')||'—'}</p>
-      ${S.pdfs.length?`<p style="margin:8px 0 0;font-size:12px;color:#666">Proposta enviada: ${esc(S.pdfs[0].name)} · ${S.pdfs[0].quando}.</p>`:''}
-      ${S.contract?`<p style="margin:4px 0 0;font-size:12px;color:#666">Contrato ${S.contract.number} · ${esc(S.contract.status)} · assinatura ${esc(S.contract.esig)}.</p>`:''}`;
-  } else if(tipo==='order'){
-    const o=S.order, oroots=o.lines.filter(l=>l.parent);
-    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Pedido')}<td style="padding:6px;border:1px solid #ddd">${o.number} · ${esc(o.status)}${o.submitStatus?' · '+esc(o.submitStatus):''}</td></tr>
-      <tr>${th('Cliente')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr>
-      <tr>${th('Origem')}<td style="padding:6px;border:1px solid #ddd">Cotação ${S.quote.number}${S.contract?' · Contrato '+S.contract.number:''}</td></tr>
-      <tr>${th('Início')}<td style="padding:6px;border:1px solid #ddd">${o.start}${o.activatedAt?' · ativado em '+o.activatedAt:''}</td></tr></table>
-      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Order Products (${oroots.length})</h3>
-      ${oroots.map((l,i)=>box(`<b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · Billing Frequency Monthly
-        <div style="color:#444;font-size:12px;margin-top:4px"><b>Local:</b> ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')}</div>
-        ${o.lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} — Included</div>`).join('')}
-        <div style="text-align:right;margin-top:6px"><b>Net Total Price: Pendente</b></div>`)).join('')}
-      <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Order Amount: Pendente</div>
-      ${o.fls?`<h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Produtos técnicos (decomposição)</h3>
-        ${o.fls.map(f=>`<div style="font-size:12.5px;margin-bottom:4px">• ${esc(f.name)} — ${esc(f.scope)} · ${esc(f.sistema)} <span style="color:#666">(de ${esc(f.source)})</span></div>`).join('')}
-        <p style="margin:8px 0 0;font-size:12.5px"><b>Plano de orquestração:</b> ${esc(o.plan.status)} — ${o.plan.steps.filter(s=>s.status==='Completed').length}/${o.plan.steps.length} etapas.</p>`:'<p style="font-size:12.5px;color:#666">Pedido ainda não submetido: sem decomposição em produtos técnicos.</p>'}
-      ${S.assets.length?`<h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Assets</h3>
-        ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id); return `<div style="font-size:12.5px">• ${esc(a.name)} — ${esc(a.children.join(', '))}${acr?' · contrato '+esc(acr.contract)+' ('+esc(acr.name)+')':''}</div>`; }).join('')}
-        ${(S.fassets||[]).map(f=>`<div style="font-size:12.5px;color:#666">• ${esc(f.name)} (fulfillment) — ${esc(f.status)}</div>`).join('')}`:''}`;
+    const corpo = docCab('Cotação '+S.quote.number, 'Resumo da cotação · Conectividade corporativa',
+        ['Status: '+S.qStatus, 'Validade: '+S.quote.exp, 'Emissão: '+new Date().toLocaleDateString('pt-BR')])
+      + docPartes([['Cliente', esc(CTX.conta.nome)+' · '+esc(CTX.conta.segmento)],['Oportunidade', esc(oppName())],['Responsável', esc(CTX.usuario.nome)],['Tabela de preços', esc(S.pb||'Tabela de Preços B2B (a definir)')]])
+      + `<h3>Itens da cotação (${roots.length})</h3><div class="wrap">${roots.length?docItens(roots,kids,true):'<p class="obs">Cotação sem itens.</p>'}
+         <div class="tot"><span>Total mensal</span><span>Pendente</span></div>
+         <p class="obs">Preços pendentes: tabela e procedimento de precificação não definidos na Revisão 1.</p></div>`
+      + `<h3>Condições contratuais</h3><div class="wrap">${docCondicoes(l0)}</div>`
+      + (S.pdfs.length||S.contract||S.order ? `<h3>Documentos relacionados</h3><div class="wrap"><table><tbody>
+          ${S.pdfs.length?`<tr><th style="width:34%">Proposta enviada</th><td>${esc(S.pdfs[0].name)} · ${esc(S.pdfs[0].quando)}</td></tr>`:''}
+          ${S.contract?`<tr><th>Contrato</th><td>${esc(S.contract.number)} · ${esc(S.contract.status)} · assinatura ${esc(S.contract.esig)}</td></tr>`:''}
+          ${S.order?`<tr><th>Pedido</th><td>${esc(S.order.number)} · ${esc(S.order.status)}${S.order.submitStatus?' · '+esc(S.order.submitStatus):''}</td></tr>`:''}
+        </tbody></table></div>`:'')
+      + docRodape('Documento gerado pelo protótipo a partir do registro da cotação · ALGAR TELECOM');
+    return docMoldura('Cotação '+S.quote.number, corpo, 'Visualização do protótipo: documento montado a partir do registro. No app, o registro é consultado nas abas Details, Lines e Related.');
   }
   if(tipo==='contract'){
-    const c=S.contract, l1=roots[0]||{attrs:{}};
-    corpo = `<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>${th('Contrato')}<td style="padding:6px;border:1px solid #ddd">${c.number} · ${esc(c.status)}</td></tr>
-      <tr>${th('Contratante')}<td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr>
-      <tr>${th('Contratada')}<td style="padding:6px;border:1px solid #ddd">${esc(entidadeFaturadora().valor)}</td></tr>
-      <tr>${th('Origem')}<td style="padding:6px;border:1px solid #ddd">Cotação ${S.quote.number}</td></tr>
-      <tr>${th('Assinatura')}<td style="padding:6px;border:1px solid #ddd">${esc(c.esig)}${c.docs[0]?' · '+esc(c.docs[0].v):''}</td></tr></table>
-      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Objeto</h3>
-      <p style="margin:0;font-size:12.5px">Prestação de serviço de conectividade corporativa nos termos da cotação ${S.quote.number}, compreendendo ${roots.length} item(ns):</p>
-      ${roots.map((l,i)=>`<div style="font-size:12.5px;margin-top:6px">${i+1}. <b>${esc(l.name)}</b> — ${esc((l.attrs&&l.attrs['Velocidade'])||'')} · ${esc((l.attrs&&l.attrs['Tecnologia'])||'')} · ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')}${lines.filter(x=>x.parentUid===l.uid).length?'<div style="margin-left:14px;color:#444">Equipamentos: '+lines.filter(x=>x.parentUid===l.uid).map(k=>esc(k.name)+' ('+esc((k.attrs&&k.attrs['Modalidade Equipamento'])||'—')+')').join(', ')+'</div>':''}</div>`).join('')}
-      <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Cláusulas contratuais</h3>
-      <p style="margin:0;font-size:12.5px"><b>Prazo:</b> ${esc((l1.attrs&&l1.attrs['Período Fidelização'])||'—')} meses de fidelização.<br>
-      <b>Reajuste:</b> ${esc((l1.attrs&&l1.attrs['Tipo de Reajuste'])||'—')}${l1.attrs&&l1.attrs['Índice de Reajuste']?' pelo '+esc(l1.attrs['Índice de Reajuste']):''}${l1.attrs&&l1.attrs['Data do Próximo Reajuste']?', próximo em '+esc(l1.attrs['Data do Próximo Reajuste']):''}.<br>
-      <b>Multa por rescisão:</b> ${esc((l1.attrs&&l1.attrs['Percentual da Multa'])||'não elegível')}.<br>
-      <b>Aviso prévio:</b> ${esc((l1.attrs&&l1.attrs['Quantidade de Dias Aviso Previo'])||'—')} dias.<br>
-      <b>Faturamento:</b> ${esc((l1.attrs&&l1.attrs['Entidade faturadora'])||'—')} · valores pendentes de precificação.</p>
-      <h3 style="font-size:13px;margin:16px 0 6px;text-transform:uppercase">Assinaturas</h3>
-      ${(c.recipients.length?c.recipients:[{email:'—',role:'Signer',status:'Pendente'}]).map(r=>`<div style="border-top:1px solid #111;margin-top:22px;padding-top:4px;font-size:12px">${esc(r.email)}<br><span style="color:#666">${esc(r.role)} · ${esc(r.status)}</span>${r.status==='Completed'?'<div style="color:#1d6b38;font-weight:700;margin-top:2px">✓ assinado eletronicamente via DocuSign</div>':''}</div>`).join('')}
-      ${(S.acrs||[]).length?`<h3 style="font-size:13px;margin:16px 0 6px;text-transform:uppercase">Assets cobertos por este contrato</h3>${S.acrs.map(x=>`<div style="font-size:12.5px">• ${esc(x.assetName)} — ${esc(x.name)} · vigência ${esc(x.start)}${x.end?' a '+esc(x.end):''}</div>`).join('')}`:''}
-      ${c.events.length?`<p style="margin:12px 0 0;font-size:11.5px;color:#666">${c.events.map(esc).join('<br>')}</p>`:''}`;
+    const c=S.contract;
+    const corpo = docCab('Contrato '+c.number, 'Contrato de prestação de serviços · Conectividade corporativa',
+        ['Status: '+c.status, 'Assinatura: '+c.esig, 'Emissão: '+new Date().toLocaleDateString('pt-BR')])
+      + docPartes([['Contratante', esc(CTX.conta.nome)],['Contratada', esc(entidadeFaturadora().valor)],['Origem', 'Cotação '+esc(S.quote.number)],['Documento', c.docs[0]?esc(c.docs[0].name)+' · '+esc(c.docs[0].v):'—']])
+      + `<h3>Objeto</h3><div class="wrap"><p class="obs">Prestação de serviço de conectividade corporativa nos termos da cotação ${esc(S.quote.number)}, compreendendo ${roots.length} item(ns).</p>
+         ${roots.length?docItens(roots,kids,false):''}</div>`
+      + `<h3>Cláusulas contratuais</h3><div class="wrap">${docCondicoes(l0)}
+         <p class="obs">Valores pendentes de precificação. Faturamento por ${esc((l0.attrs&&l0.attrs['Entidade faturadora'])||'—')}.</p></div>`
+      + ((S.acrs||[]).length?`<h3>Assets cobertos (Asset Contract Relationship)</h3><div class="wrap"><table><thead><tr><th>Asset</th><th style="width:110px">ACR</th><th style="width:150px">Vigência</th></tr></thead><tbody>
+          ${S.acrs.map(x=>`<tr><td>${esc(x.assetName)}</td><td>${esc(x.name)}</td><td>${esc(x.start)}${x.end?' a '+esc(x.end):''}</td></tr>`).join('')}</tbody></table></div>`:'')
+      + `<h3>Assinaturas</h3><div class="wrap"><div class="ass">${(c.recipients.length?c.recipients:[{email:'—',role:'Signer',status:'Pendente'}]).map(r=>`<div>${esc(r.email)}<small>${esc(r.role)} · ${esc(r.status)}</small>${r.status==='Completed'?'<div class="ok">✓ assinado eletronicamente via DocuSign</div>':''}</div>`).join('')}</div>
+         ${c.events.length?`<p class="obs" style="margin-top:10px">${c.events.map(esc).join('<br>')}</p>`:''}</div>`
+      + docRodape('Documento gerado pelo protótipo · Salesforce Contracts + DocuSign · ALGAR TELECOM');
+    return docMoldura('Contrato '+c.number, corpo, 'Visualização do protótipo: documento montado a partir do registro. No app, o contrato é consultado nas abas Details e Related.');
   }
-  const tit = tipo==='quote'?'Cotação '+S.quote.number:tipo==='contract'?'Contrato '+S.contract.number:'Pedido '+S.order.number;
-  return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column">
-    <div class="form-h"><a onclick="S.docView=null;render();agRetoma()">Fechar</a><b>${esc(tit)}</b><a></a></div>
-    <div class="nv-tag">Visualização do protótipo: documento montado a partir do registro. No app, o registro é consultado nas abas Details, Lines e Related.</div>
-    <div style="overflow:auto;padding:14px;background:#5a5a5a;flex:1"><div style="background:#fff;padding:22px 18px;font-size:13px;line-height:1.5;color:#111;box-shadow:0 4px 18px rgba(0,0,0,.4)">
-      <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">${tipo==='quote'?'Resumo da cotação':tipo==='contract'?'Contrato de prestação de serviços':'Resumo do pedido'} · Conectividade Corporativa</div></div><div style="text-align:right"><b>${esc(tit)}</b><div style="color:#666;font-size:12px">${new Date().toLocaleDateString('pt-BR')}</div></div></div>
-      ${corpo}</div></div></div></div>`;
+  /* pedido */
+  const o=S.order, oroots=o.lines.filter(l=>l.parent), okids=l=>o.lines.filter(x=>x.parentUid===l.uid);
+  const corpo = docCab('Pedido '+o.number, 'Resumo do pedido · Conectividade corporativa',
+      ['Status: '+o.status+(o.submitStatus?' · '+o.submitStatus:''), 'Início: '+o.start, o.activatedAt?'Ativado: '+o.activatedAt:''].filter(Boolean))
+    + docPartes([['Cliente', esc(CTX.conta.nome)],['Origem', 'Cotação '+esc(S.quote.number)+(S.contract?' · Contrato '+esc(S.contract.number):'')],['Faturamento', esc((oroots[0]&&oroots[0].attrs&&oroots[0].attrs['Entidade faturadora'])||'—')]])
+    + `<h3>Order Products (${oroots.length})</h3><div class="wrap">
+       <table class="itens"><thead><tr><th style="width:26px">#</th><th>Produto</th><th style="width:56px">Qtd</th><th style="width:96px">Billing</th><th class="n" style="width:92px">Net total</th></tr></thead><tbody>
+       ${oroots.map((l,i)=>`<tr><td>${i+1}</td><td class="item-tit">${esc(l.name)}</td><td>${l.qty}</td><td>Monthly</td><td class="n">Pendente</td></tr>`).join('')}</tbody></table>
+       ${oroots.map((l,i)=>`<div style="margin-bottom:10px"><div class="obs"><b>Item ${i+1} · ${esc(l.name)}</b> — ${esc((l.attrs&&l.attrs['Endereço de instalação'])||'')}</div>${docComponentes(okids(l))}</div>`).join('')}
+       <div class="tot"><span>Order Amount</span><span>Pendente</span></div></div>`
+    + (o.fls?`<h3>Decomposição em produtos técnicos (${o.fls.length})</h3><div class="wrap">
+       <table><thead><tr><th>Produto técnico</th><th style="width:120px">Escopo</th><th style="width:150px">Sistema</th><th style="width:120px">Origem</th></tr></thead><tbody>
+       ${o.fls.map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(f.scope)}</td><td>${esc(f.sistema)}</td><td>${esc(f.source)}</td></tr>`).join('')}</tbody></table>
+       <table><tbody><tr><th style="width:34%">Plano de orquestração</th><td>${esc(o.plan.status)} — ${o.plan.steps.filter(s=>s.status==='Completed').length}/${o.plan.steps.length} etapas concluídas</td></tr>
+       <tr><th>Tarefas manuais</th><td>${o.plan.steps.filter(s=>s.type==='Manual Task').length} no plano · ${pendentesManuais().length} pendente(s)</td></tr></tbody></table></div>`
+      :'<div class="wrap"><p class="obs">Pedido ainda não submetido: sem decomposição em produtos técnicos.</p></div>')
+    + (S.assets.length?`<h3>Assets criados</h3><div class="wrap"><table><thead><tr><th>Asset</th><th style="width:34%">Componentes</th><th style="width:140px">Contrato (ACR)</th></tr></thead><tbody>
+       ${S.assets.map(a=>{ const acr=(S.acrs||[]).find(x=>x.assetId===a.id); return `<tr><td>${esc(a.name)}</td><td>${esc(a.children.join(', '))}</td><td>${acr?esc(acr.contract)+' · '+esc(acr.name):'—'}</td></tr>`; }).join('')}</tbody></table>
+       ${(S.fassets||[]).length?`<table><thead><tr><th>Fulfillment Asset</th><th style="width:100px">Qtd</th><th style="width:120px">Status</th></tr></thead><tbody>${S.fassets.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.qty}</td><td>${esc(f.status)}</td></tr>`).join('')}</tbody></table>`:''}</div>`:'')
+    + docRodape('Documento gerado pelo protótipo a partir do registro do pedido · ALGAR TELECOM');
+  return docMoldura('Pedido '+o.number, corpo, 'Visualização do protótipo: documento montado a partir do registro. No app, o pedido é consultado nas abas Details, Lines e Decomposition.');
 }
 function pdfViewHtml(){
-  const roots=lines.filter(l=>l.parent); const l0=roots[0]||{attrs:{}};
-  return `<div class="modal-bg" style="align-items:stretch"><div class="modal" style="max-height:100vh;border-radius:0;display:flex;flex-direction:column"><div class="form-h"><a onclick="S.pdfView=false;render();agRetoma()">Fechar</a><b>Proposta enviada (PDF)</b><a></a></div>
-  <div class="nv-tag">Visualização do protótipo: no app o PDF só aparece listado. Documento gerado no Lightning pelo template "Proposta Comercial Algar — Conectividade".</div>
-  <div style="overflow:auto;padding:14px;background:#5a5a5a;flex:1"><div style="background:#fff;padding:22px 18px;font-size:13px;line-height:1.5;color:#111;box-shadow:0 4px 18px rgba(0,0,0,.4)">
-    <div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px"><div><b style="font-size:18px">ALGAR</b><div style="color:#666;font-size:12px">Proposta Comercial · Conectividade Corporativa</div></div><div style="text-align:right"><b>Cotação ${S.quote.number}</b><div style="color:#666;font-size:12px">Validade ${esc(S.quote.exp)}</div></div></div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Cliente</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.nome)}</td></tr><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Segmento</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.conta.segmento)}</td></tr><tr><th style="text-align:left;background:#f3f3f3;padding:6px;border:1px solid #ddd">Preparado por</th><td style="padding:6px;border:1px solid #ddd">${esc(CTX.usuario.nome)}</td></tr></table>
-    <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Itens da proposta</h3>
-    ${roots.map((l,i)=>`<div style="border:1px solid #ddd;padding:8px;margin-bottom:8px"><b>${i+1}. ${esc(l.name)}</b> · Qtd ${l.qty} · ${SM[l.sell]||l.sell}<div style="color:#444;font-size:12px;margin-top:4px">${['Velocidade','Tecnologia','Interface','Abordagem','VPN Network','Protocolo de Roteamento','Modalidade de Instalação','Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l.attrs&&l.attrs[k]).map(k=>'<b>'+k+':</b> '+esc(l.attrs[k])).join(' · ')}</div>
-      <div style="color:#444;font-size:12px;margin-top:4px"><b>Local de instalação:</b> ${esc(l.attrs&&l.attrs['Endereço de instalação']||'')} — ${esc(l.attrs&&l.attrs['Localidade']||'')}</div>
-      ${lines.filter(x=>x.parentUid===l.uid).map(k=>`<div style="color:#444;font-size:12px;margin-left:12px">└ ${esc(k.name)} (${esc(k.attrs&&k.attrs['Modalidade Equipamento']||'—')}${k.attrs&&k.attrs['Velocidade Temporária']?' · '+esc(k.attrs['Velocidade Temporária']):''})</div>`).join('')}
-      <div style="text-align:right;margin-top:6px"><b>Valor mensal: Pendente</b></div></div>`).join('')}
-    <div style="text-align:right;font-weight:700;border-top:1px solid #111;padding-top:6px">Total mensal: Pendente</div>
-    <h3 style="font-size:13px;margin:14px 0 6px;text-transform:uppercase">Condições contratuais</h3>
-    <p style="margin:0;font-size:12.5px">${['Período Fidelização','Tipo de Reajuste','Índice de Reajuste','Percentual da Multa','Quantidade de Dias Aviso Previo'].filter(k=>l0.attrs&&l0.attrs[k]).map(k=>k+': '+esc(l0.attrs[k])).join(' · ')||'—'}</p>
-    <p style="margin:6px 0 0;font-size:12px;color:#666">Entidade faturadora: ${esc(l0.attrs&&l0.attrs['Entidade faturadora']||'—')}. Preços sujeitos à precificação pendente na Revisão 1.</p>
-  </div></div></div></div>`;
+  const roots=lines.filter(l=>l.parent), l0=roots[0]||{attrs:{}};
+  const kids=l=>lines.filter(x=>x.parentUid===l.uid);
+  const corpo = docCab('Proposta comercial', 'Conectividade corporativa · Cotação '+S.quote.number,
+      ['Cliente: '+CTX.conta.nome, 'Validade: '+S.quote.exp, 'Emissão: '+(S.pdfs[0]?S.pdfs[0].quando:new Date().toLocaleDateString('pt-BR'))])
+    + docPartes([['Cliente', esc(CTX.conta.nome)],['Segmento', esc(CTX.conta.segmento)],['Preparado por', esc(CTX.usuario.nome)],['Documento', S.pdfs[0]?esc(S.pdfs[0].name):'—']])
+    + `<h3>Itens da proposta (${roots.length})</h3><div class="wrap">${roots.length?docItens(roots,kids,true):'<p class="obs">Sem itens.</p>'}
+       <div class="tot"><span>Total mensal</span><span>Pendente</span></div>
+       <p class="obs">Preços pendentes: a Revisão 1 não define tabela nem procedimento de precificação.</p></div>`
+    + `<h3>Condições contratuais</h3><div class="wrap">${docCondicoes(l0)}
+       <p class="obs">Entidade faturadora: ${esc((l0.attrs&&l0.attrs['Entidade faturadora'])||'—')}.</p></div>`
+    + `<h3>Aceite</h3><div class="wrap"><div class="ass"><div>${esc(CTX.conta.nome)}<small>Representante legal · assinatura</small></div><div>${esc(entidadeFaturadora().valor)}<small>${esc(CTX.usuario.nome)} · assinatura</small></div></div></div>`
+    + docRodape('Proposta gerada pelo template "Proposta Comercial Algar — Conectividade" · ALGAR TELECOM');
+  return docMoldura('Proposta enviada (PDF)', corpo, 'Visualização do protótipo: no app o PDF só aparece listado. Documento gerado no Lightning pelo template "Proposta Comercial Algar — Conectividade".');
 }
 function sheetMoreQuote(){
   const nodes = lines.some(l=>l.parent && (l.id==='VPNNODE'||l.id==='LINKDED'||l.id==='BLEMP'));
@@ -1658,7 +1722,7 @@ if(/selftest=1/.test(location.search)){
     ok('Assets: Managed Assets (1) e Fulfillment Assets (n)', $('.rel .h b').textContent==='Managed Assets (1)' && [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Fulfillment Assets (')));
     ok('cada asset mostra o contrato vinculado (ACR) com vigência', $('.acr') && /Contrato 00000123/.test($('.acr').textContent) && /Asset Contract Relationship/.test($('.acr').textContent));
     ok('lista Asset Contract Relationships na conta', [...document.querySelectorAll('.rel .h b')].some(b=>b.textContent.startsWith('Asset Contract Relationships (')) && S.acrs.length===S.assets.length);
-    click($('.acr')); ok('tocar no vínculo abre o contrato, que lista os assets cobertos', S.docView==='contract' && /Assets cobertos por este contrato/.test($('.modal').textContent));
+    click($('.acr')); ok('tocar no vínculo abre o contrato, que lista os assets cobertos', S.docView==='contract' && /Assets cobertos \(Asset Contract Relationship\)/.test($('.modal').textContent) && $('.modal .doc table'));
     S.docView=null; S.tela='contract'; S.tab='Related'; render();
     ok('o contrato tem a lista relacionada de assets', [...document.querySelectorAll('.rel .h b')].some(b=>/^Assets \(1\)$/.test(b.textContent)));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Menu'))); ok('Menu lista os itens de navegação', S.tela==='menu' && $('.menu-list').textContent.includes('Opportunities'));
