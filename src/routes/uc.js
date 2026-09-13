@@ -11,6 +11,7 @@ const router = express.Router();
 export const UC_DOCS = {
   'UC-VPN-001': { titulo: 'VPN Node', pagina: 'uc-vpn-node.html' },
   'UC-LOC-001': { titulo: 'Locação de Equipamentos', pagina: 'uc-locacao-equipamentos.html' },
+  'UC-IA-001': { titulo: 'Inteligência Artificial', pagina: 'uc-inteligencia-artificial.html' },
 };
 
 const MAX_ITENS = 400;
