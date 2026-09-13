@@ -632,6 +632,9 @@ const QSTEPS = ['Draft','Needs Review','In Review','Approved','Rejected','Presen
 const OSTAGES = ['Qualification','Discovery','Proposal/Price Quote','Negotiation','Closed Won'];
 const NV = 'documentado para Lightning Experience; exibição no app não verificada';
 function fonte(nivel, texto){
+  const modo = S && S.fonteModo ? S.fonteModo : 'atencao';
+  if(modo==='nenhuma') return '';
+  if(modo==='atencao' && nivel==='ver') return '';   /* o que está verificado não precisa de aviso na tela */
   const rot={ver:'Verificado',inf:'Inferido',nv:'Não verificado',proto:'Protótipo'}[nivel];
   return `<div class="fnt ${nivel}"><span class="tg">${rot}</span><span>${texto}</span></div>`;
 }
@@ -957,12 +960,23 @@ function telaRpt(){
 }
 function telaProcedencia(){
   const g=n=>FONTES.filter(f=>f[1]===n);
+  const modo = S.fonteModo||'atencao';
   const bloco=(t,n)=>g(n).length?`<div class="rel"><div class="h"><div class="oi ${n==='ver'?'g':n==='inf'?'b':n==='nv'?'y':'m'}">${n==='ver'?'✓':n==='inf'?'≈':n==='nv'?'▲':'◻'}</div><b>${t} (${g(n).length})</b></div>${g(n).map(f=>`<div class="it proc"><b style="color:var(--tx)">${esc(f[0])}</b><small>${esc(f[2])}</small></div>`).join('')}</div>`:'';
   return topbar('Procedência', true) + `
-  ${fonte('ver','Confirmado em documentação oficial da Salesforce, no UC-VPN-001 Revisão 1 ou na leitura da org HOMOL.')}
-  ${fonte('inf','Proposta do projeto: o mecanismo é oficial, o conteúdo específico do VPN Node ainda precisa de validação.')}
-  ${fonte('nv','Existe na documentação, mas descrito para Lightning Experience; a exibição no app Salesforce Mobile não foi verificada.')}
-  ${fonte('proto','Elemento do protótipo, fora da interface Salesforce.')}
+  <div class="rel"><div class="h"><div class="oi b">⚙</div><b>Faixas nas telas</b></div>
+    <div style="padding:10px 14px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span>Mostrar</span>
+      <select onchange="S.fonteModo=this.value;render()" style="border:1px solid var(--bd2);border-radius:4px;padding:4px 6px;font-size:12.5px">
+        <option value="atencao" ${modo==='atencao'?'selected':''}>só o que exige atenção (inferido, não verificado, protótipo)</option>
+        <option value="todas" ${modo==='todas'?'selected':''}>todas, inclusive o verificado</option>
+        <option value="nenhuma" ${modo==='nenhuma'?'selected':''}>nenhuma</option>
+      </select>
+      <span style="color:var(--mut)">A lista completa abaixo não muda.</span>
+    </div></div>
+  <div class="fnt ver"><span class="tg">Verificado</span><span>Confirmado em documentação oficial da Salesforce, no UC-VPN-001 Revisão 1 ou na leitura da org HOMOL.</span></div>
+  <div class="fnt inf"><span class="tg">Inferido</span><span>Proposta do projeto: o mecanismo é oficial, o conteúdo específico do VPN Node ainda precisa de validação.</span></div>
+  <div class="fnt nv"><span class="tg">Não verificado</span><span>Existe na documentação, mas descrito para Lightning Experience; a exibição no app Salesforce Mobile não foi verificada.</span></div>
+  <div class="fnt proto"><span class="tg">Protótipo</span><span>Elemento do protótipo, fora da interface Salesforce.</span></div>
   ${bloco('Verificado','ver')}${bloco('Inferido — precisa de validação','inf')}${bloco('Não verificado no app','nv')}${bloco('Chrome do protótipo','proto')}`;
 }
 /* Layouts lidos da org HOMOL em consulta somente leitura (13/09/2026):
@@ -1002,7 +1016,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':''); el.textContent=(k==='warn'?'⚠ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -2308,7 +2322,7 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('More'))); ok('More da cotação sem Create PDF / Email Quote / Start Sync (limitação oficial) e com Create Contract/Create Order/Viabilidade', ![...document.querySelectorAll('.bsheet .row')].some(r=>/Email Quote|Create PDF|Start Sync/.test(r.textContent)) && $('.bsheet').textContent.includes('Create Contract') && $('.bsheet').textContent.includes('Create Order') && $('.bsheet').textContent.includes('Consultar Viabilidade'));
     ok('Create Order desabilitado antes de Accepted', [...document.querySelectorAll('.bsheet .row')].find(r=>r.textContent.includes('Create Order')).classList.contains('dis'));
     S.sheet=null; render();
-    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs (0) com a procedência oficial', $('.rel .h b').textContent==='Quote PDFs (0)' && [...document.querySelectorAll('.fnt.ver')].some(x=>/não está disponível no app/.test(x.textContent)));
+    click([...document.querySelectorAll('.rtabs a')].find(a=>a.textContent==='Related')); ok('Related: Quote PDFs (0)', $('.rel .h b').textContent==='Quote PDFs (0)');
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Browse Catalogs'))); ok('Browse Catalogs → Choose Price Book', $('.modal h3').textContent==='Choose Price Book');
     click($('.modal .brand')); ok('→ All Catalogs', $('.modal h3').textContent==='All Catalogs');
     click($('.modal .brand')); ok('→ Browse Products com busca, categorias e Save Quote', S.tela==='browse' && $('.srch input') && document.querySelectorAll('.cats button').length===4 && $('.foot .brand').textContent.includes('Save Quote'));
@@ -2402,7 +2416,7 @@ if(/selftest=1/.test(location.search)){
     click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Procedência')));
     ok('tela de procedência lista as fontes por nível', S.tela==='procedencia' && document.querySelectorAll('.fnt').length>=4 && document.querySelectorAll('.proc').length>=20 && $('#view').textContent.includes('AssetContractRelationship'));
     go('menu');
-    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a procedência e a cotação', S.tela==='quotes' && $('.fnt.ver') && $('.list .it'));
+    click([...document.querySelectorAll('.menu-list .row')].find(r=>r.textContent.includes('Quotes'))); ok('Quotes: lista com a cotação', S.tela==='quotes' && !!$('.list .it'));
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Leads'))); ok('Leads lista com empresa, status, segmento e rating', S.tela==='leads' && document.querySelectorAll('.list .it').length===2 && $('.list .it small').textContent.includes('Em qualificação'));
     click($('.list .it')); ok('registro do Lead abre com as 7 seções do layout Nacional', S.tela==='lead' && document.querySelectorAll('.lsec').length===7);
     ok('path do lead começa em Novo e avança pelo Mark Status as Complete', S.leadStatus==='Novo' && (()=>{ leadMark(); return S.leadStatus==='Em qualificação'; })());
@@ -2428,6 +2442,7 @@ if(/selftest=1/.test(location.search)){
     ok('54 campos do layout, com obrigatórios marcados', document.querySelectorAll('#view .fr').length===54 && $('#view').textContent.includes('CNPJ') && $('#view').textContent.includes('Telefone 1 blacklist') && document.querySelectorAll('#view .fr b').length>=5);
     go('opp'); S.tab='Details'; render();
     ok('oportunidade usa o layout real: Opportunity Information, Additional Information, System Information', [...document.querySelectorAll('.lsec')].map(x=>x.textContent).join('|')==='Opportunity Information|Additional Information|System Information' && $('#view').textContent.includes('Budget Confirmed') && $('#view').textContent.includes('somente leitura'));
+    ok('faixas verdes não poluem as telas de registro por padrão', document.querySelectorAll('#view .fnt.ver').length===0);
     click([...document.querySelectorAll('#bnav button')].find(b=>b.textContent.includes('Chatter'))); ok('Chatter mostra o post', S.tela==='chatter' && $('.feed .post p').textContent.includes('Kickoff'));
     ok('ícone oficial do Agentforce na barra e no cabeçalho do painel', document.querySelectorAll('img[src="img/agentforce-icon.png"]').length>=2);
     click($('#agent div')); ok('Ask Agentforce abre o painel: pin, título Agentforce, fechar, boas-vindas com robô e caixa "Describe your task"', $('#agp').classList.contains('show') && document.querySelectorAll('.agp-h .ic').length===3 && $('.welcome .bot') && $('#agp-in').placeholder.startsWith('Describe your task'));
