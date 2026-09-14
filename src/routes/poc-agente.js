@@ -39,10 +39,12 @@ HONESTIDADE
   produtos técnicos da decomposição, etapas do plano de orquestração, correspondência de regra para ExpressionSet.
 - Nunca afirme que o protótipo fez algo que não está no ESTADO. Não invente números, nomes de API, campos ou telas.
 
-FORMATO DA RESPOSTA — responda SOMENTE com um JSON válido, sem cercas de código:
-{"resposta":"texto curto em pt-BR","fonte":"origem em poucas palavras ou vazio","acoes":[{"acao":"<uma das permitidas>","rotulo":"texto curto do botão"}]}
-No máximo 3 ações, e só ações que façam sentido no estado atual. Se nenhuma fizer sentido, mande "acoes": [].
-Ações permitidas: ${ACOES.join(', ')}.
+FORMATO DA RESPOSTA — três linhas, exatamente nestes rótulos, sem markdown e sem JSON:
+RESPOSTA: <texto curto em pt-BR, pode usar aspas à vontade>
+FONTE: <origem em poucas palavras, ou vazio>
+ACOES: <acao|rótulo curto; acao|rótulo curto>   (no máximo 3, ou vazio)
+Só use ações desta lista: ${ACOES.join(', ')}.
+Escolha apenas ações que façam sentido no estado atual; se nenhuma fizer, deixe ACOES vazio.
 
 CONTEXTO DO PRODUTO (UC-VPN-001 Revisão 1)
 ${REGRAS_UC}
@@ -79,13 +81,21 @@ async function chamar(model, mensagens, pensar) {
   return { texto, pensamento, modelo: model };
 }
 
-function extrairJson(t) {
+// formato delimitado: imune a aspas dentro do texto, ao contrário do JSON
+function interpretar(t) {
   if (!t) return null;
-  const limpo = t.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
-  try { return JSON.parse(limpo); } catch (e) {}
-  const i = limpo.indexOf('{'), j = limpo.lastIndexOf('}');
-  if (i >= 0 && j > i) { try { return JSON.parse(limpo.slice(i, j + 1)); } catch (e) {} }
-  return null;
+  const limpo = t.replace(/```/g, '').trim();
+  const pega = (rot) => {
+    const re = new RegExp('^' + rot + ':\\s*([\\s\\S]*?)(?=\\n(?:RESPOSTA|FONTE|ACOES):|$)', 'm');
+    const m = limpo.match(re); return m ? m[1].trim() : '';
+  };
+  const resposta = pega('RESPOSTA') || (limpo.includes('RESPOSTA:') ? '' : limpo);
+  if (!resposta) return null;
+  const acoes = pega('ACOES').split(';').map(s => s.trim()).filter(Boolean).map(par => {
+    const [acao, rotulo] = par.split('|').map(x => (x || '').trim());
+    return { acao, rotulo: rotulo || acao };
+  });
+  return { resposta, fonte: pega('FONTE'), acoes };
 }
 
 router.post('/agente', async (req, res) => {
@@ -106,7 +116,7 @@ router.post('/agente', async (req, res) => {
     let r;
     try { r = await chamar(OPUS, conversa, true); }
     catch (e) { console.error('[poc-agente] Opus falhou, indo de Sonnet:', e.message); r = await chamar(SONNET, conversa, false); }
-    const j = extrairJson(r.texto);
+    const j = interpretar(r.texto);
     if (!j || !j.resposta) return res.json({ resposta: r.texto || 'Não consegui formular a resposta.', acoes: [], modelo: r.modelo });
     const acoes = (Array.isArray(j.acoes) ? j.acoes : [])
       .filter(a => a && ACOES.includes(a.acao) && a.acao !== 'nada')
