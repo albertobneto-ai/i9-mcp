@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:31:12.385Z",
+  "quando": "2026-09-14T14:41:45.213Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -109,6 +109,10 @@
     "s1-u02": {
       "item": "Quantidade de Dias",
       "comentario": "segue a mesma dinâmica de VPNNão pode ser comercializado para acesso terceiro rede neutra e last mileA quantidade de dias informada não pode ser menor que 10 dias e a quantidade maxima deve ser até 60 dias."
+    },
+    "s1-x01": {
+      "item": "Quantidade de Endereços IP",
+      "comentario": "Com a contratação, o bloco vigente do circuito é substituído automaticamente pelo novo (técnico)1) Se o atributo \"Versão do IP\" for selecionado com IPV6, o SVA de IP Adicional não faz sentido e não poderá ser selecionado;2) A partir do /28, este produto pode ser comercializado exclusivamente para os seguintes perfis de clientes: Governo, Operadoras, Big Dial e Tier 0, 1 e 2. ( pendente de verificação)3)Para a abordagem de Parceiro (Rede Neutra), esse SVA não é habilitado4) Não pode contratar se Acesso Terceiro (Last Mile)."
     }
   }
 }
