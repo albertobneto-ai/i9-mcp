@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:23:32.973Z",
+  "quando": "2026-09-14T14:25:16.271Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -101,6 +101,10 @@
     "s1-u01": {
       "item": "Velocidade Temporária",
       "comentario": "segue mesmo dinamica de VPN"
+    },
+    "s1-s01": {
+      "item": "Banda Flexível (velocidade)",
+      "comentario": "Alterar titulo do atributo para Velocidade sob demanda"
     }
   }
 }
