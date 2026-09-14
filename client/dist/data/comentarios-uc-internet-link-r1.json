@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:51:24.514Z",
+  "quando": "2026-09-14T13:52:05.630Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -45,6 +45,10 @@
     "s1-i15": {
       "item": "Solução Contratada em Rede Neutra",
       "comentario": "deixar default"
+    },
+    "s1-i16": {
+      "item": "Valor de Instalação em Rede Neutra",
+      "comentario": "não é valor de cobrança, valor monetário em BLR R$"
     }
   }
 }
