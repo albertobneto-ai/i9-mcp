@@ -2305,7 +2305,10 @@ function agEstadoResumo(){
   return {
     usuario: { nome: CTX.usuario.nome, permissoes: CTX.usuario.perms },
     conta: { nome: CTX.conta.nome, segmento: CTX.conta.segmento },
-    endereco: CTX.endereco ? { texto: endTexto(), cobertura: CTX.endereco.cobertura, tecnologias: CTX.endereco.tec, anel: CTX.endereco.anel } : null,
+    endereco: (function(){ const e=endEff(); return e ? { nome:e.nome, cobertura:e.cobertura, tecnologias:e.tec,
+      anel:e.anel, distancia:e.metragemDistancia, condominio:e.condominio, dataCenter:e.dataCenter,
+      subterranea:e.subterranea, redeNeutra:e.redeNeutra, arq5:e.arq5,
+      viabilidade_consultada: !!S.viab[endFull().id] } : null; })(),
     lead: { status: S.leadStatus, convertido: !!S.conv },
     oportunidade: S.conv ? { nome: oppName(), estagio: S.oStage } : null,
     cotacao: S.quote ? { numero: S.quote.number, status: S.qStatus, itens: lines.filter(l=>l.parent).length,
