@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:00:26.877Z",
+  "quando": "2026-09-14T14:04:51.490Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -61,6 +61,10 @@
     "s1-e02": {
       "item": "Modalidade do Equipamento",
       "comentario": "desconsiderar melhoria prevista"
+    },
+    "s1-n01": {
+      "item": "Referência do Cliente",
+      "comentario": "não existe segmento governo, ele é tipo de clienteO preenchimento é restrito para segmento operadoras e tipo de cliente governo ( municipal, estadual e federal). ( pendente de verificação)"
     }
   }
 }
