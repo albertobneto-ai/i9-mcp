@@ -1,0 +1,34 @@
+{
+  "quando": "2026-09-14T13:22:03.426Z",
+  "documento": "UC-ILK-001",
+  "comentarios": {
+    "s1-a01": {
+      "item": "Velocidade",
+      "comentario": "adicionar todos os valores upgrade temporário ativo não pode alterar a velocidadeverificar a disponibilidade de criar uma logica de que quando for governo  adicionar um valor personalizado para uso único na venda atual.Padronizar a informação para ser em mbps."
+    },
+    "s1-a02": {
+      "item": "Link Redundante",
+      "comentario": "A regra de cancelamento fica com a OS de Cancelamentocondicional deveria ser de acordo com o produto.A estrutura do redundante tem que ser diferente do principal (técnico)"
+    },
+    "s1-a03": {
+      "item": "Circuito Principal",
+      "comentario": "mostrar disponibilidade dos produtos de acordo com circuito, CNPJ, endereço."
+    },
+    "s1-a04": {
+      "item": "Temporário (quantidade de dias)",
+      "comentario": "desconsiderar"
+    },
+    "s1-a06": {
+      "item": "Trial",
+      "comentario": "desconsiderar"
+    },
+    "s1-a05": {
+      "item": "Data de Início (temporário)",
+      "comentario": "desconsiderar"
+    },
+    "s1-a07": {
+      "item": "Tecnologia de Acesso",
+      "comentario": "toda parte de tecnologia de acesso a logica é igual a logica de VPN. ou seja o funcionamento dos atributos."
+    }
+  }
+}
