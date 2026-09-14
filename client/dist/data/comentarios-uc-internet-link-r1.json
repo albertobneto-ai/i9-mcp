@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:21:02.598Z",
+  "quando": "2026-09-14T14:23:32.973Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -97,6 +97,10 @@
     "s1-n09": {
       "item": "Confaz (alíquota)",
       "comentario": "desconsiderar"
+    },
+    "s1-u01": {
+      "item": "Velocidade Temporária",
+      "comentario": "segue mesmo dinamica de VPN"
     }
   }
 }
