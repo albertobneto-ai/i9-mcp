@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:55:33.582Z",
+  "quando": "2026-09-14T14:00:26.877Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -57,6 +57,10 @@
     "s1-e01": {
       "item": "Tipo de Equipamento",
       "comentario": "considerar mesma tratativa de VPN"
+    },
+    "s1-e02": {
+      "item": "Modalidade do Equipamento",
+      "comentario": "desconsiderar melhoria prevista"
     }
   }
 }
