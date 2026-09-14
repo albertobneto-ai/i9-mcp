@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:05:15.575Z",
+  "quando": "2026-09-14T14:07:21.569Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -68,6 +68,10 @@
     },
     "s1-n02": {
       "item": "Produto a Serviço",
+      "comentario": "desconsiderar"
+    },
+    "s1-n03": {
+      "item": "Associado Solicitante",
       "comentario": "desconsiderar"
     }
   }
