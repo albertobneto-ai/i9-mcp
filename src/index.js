@@ -28,6 +28,7 @@ import githubRoutes from './routes/github.js';
 import rlmPocRoutes from './routes/rlm-poc.js';
 import ucRoutes, { initUcTables } from './routes/uc.js';
 import pocRoutes, { initPocTables } from './routes/poc.js';
+import pocAgenteRoutes from './routes/poc-agente.js';
 import controlRoutes, { initControlTables } from './routes/control.js';
 import agentFarmRoutes from './routes/agent-farm.js';
 import tracelogRoutes from './routes/tracelog.js';
@@ -208,6 +209,7 @@ app.use('/api/vagas', vagasRoutes);  // Radar de Vagas — pipeline de candidatu
 app.use('/api/agente', agenteRoutes);  // Agente Funcional — UC + mapa de componentes (antes do catch-all /api)
 app.use('/api/uc', ucRoutes);  // Casos de uso publicados — comentários de revisão (público, escopo estreito)
 app.use('/api/poc', pocRoutes);  // sessões dos protótipos (público, escopo estreito)
+app.use('/api/poc', pocAgenteRoutes);  // cérebro do agente do protótipo
 app.use('/api/github', authMiddleware, githubRoutes);  // proxy GitHub — uso interno
 app.use('/api', explorerRoutes);
 
