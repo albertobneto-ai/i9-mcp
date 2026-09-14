@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:36:14.472Z",
+  "quando": "2026-09-14T13:45:50.679Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -37,6 +37,10 @@
     "s1-p02": {
       "item": "Protocolo de Roteamento",
       "comentario": "retirar frase \"mas pode ser alterado no momento da ordem de serviço de instalação. Não participa da formação do preço.\""
+    },
+    "s1-i14": {
+      "item": "Fornecedor de Rede Neutra",
+      "comentario": "criar componente: Acesso terceiro rede neutraRegra: se abordagem= Parceiros. marcar que tem acesso terceiro rede neutra, e não possibilitar desmarcar e se torna obrigatório.picklist afim e adicionar novos parceiros futuramente"
     }
   }
 }
