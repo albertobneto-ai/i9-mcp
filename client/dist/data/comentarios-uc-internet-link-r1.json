@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:22:03.426Z",
+  "quando": "2026-09-14T13:31:41.885Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -29,6 +29,10 @@
     "s1-a07": {
       "item": "Tecnologia de Acesso",
       "comentario": "toda parte de tecnologia de acesso a logica é igual a logica de VPN. ou seja o funcionamento dos atributos."
+    },
+    "s1-p01": {
+      "item": "Versão do IP",
+      "comentario": "retirar regra de validação.é obrigatorio."
     }
   }
 }
