@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:45:33.950Z",
+  "quando": "2026-09-14T14:48:12.009Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -117,6 +117,14 @@
     "s1-x02": {
       "item": "Tipo de Bloco Adicional",
       "comentario": "sva diferente ,  Bloco de ip adicional e o tipo de bloco é um atributo dele. ( pendente de verificação)"
+    },
+    "s1-m01": {
+      "item": "Plano",
+      "comentario": "considerar com a mesma dinamica de VPN.desconsiderar Ao contrário do Lan to Lan e do IP Trânsito, aqui os dois planos são oferecidos."
+    },
+    "s1-m02": {
+      "item": "Tipo de Monitoramento",
+      "comentario": "Segue a dinamica de VPN"
     }
   }
 }
