@@ -216,6 +216,13 @@ border:1px solid var(--bd2);color:var(--tx2);background:var(--s2);line-height:1.
 text-decoration:none;border-radius:6px;white-space:nowrap}
 .btn:hover{background:#3A3A3A}
 .hmsg{font-size:14px;color:var(--tx2);padding:18px 0}
+.pocb{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;background:var(--s1);
+border:1px solid var(--bd);border-radius:6px;padding:20px 24px;margin:14px 0 26px}
+.pocb h2{font-size:15px;font-weight:600;margin:0 0 6px}
+.pocb p{font-size:13.5px;color:var(--tx2);max-width:720px;margin:0}
+.pocb-a{display:flex;gap:10px}
+@media (max-width:760px){.pocb{grid-template-columns:1fr}}
+
 @media (max-width:760px){.prod{grid-template-columns:1fr;gap:10px}.wrap{padding:0 18px 60px}}
 @media print{.hbar,.hnote{display:none}.prod{page-break-inside:avoid}}
 </style></head><body>
@@ -231,6 +238,13 @@ text-decoration:none;border-radius:6px;white-space:nowrap}
 <button id="expandir" type="button" class="hsec">Expandir tudo</button>
 <button id="recolher" type="button" class="hsec">Recolher tudo</button>
 <button id="refresh" type="button">Atualizar status</button></div>
+<section id="poc-bloco" class="pocb">
+  <div>
+    <h2>Protótipo navegável</h2>
+    <p>A jornada completa em tela, sobre os casos de uso publicados aqui: lead, conversão, cotação, configuração do produto com as regras, proposta, aceite, contrato, pedido, orquestração e assets. O Agentforce conduz passo a passo.</p>
+  </div>
+  <div class="pocb-a"><a class="btn" href="/poc" target="_blank" rel="noopener">Abrir no Lightning</a></div>
+</section>
 <div id="lista" aria-live="polite"><p class="hmsg">Carregando produtos…</p></div>
 <footer><span>ALGAR — Casos de uso de produto</span><span>Confidencial — Uso Interno</span></footer>
 </div>
