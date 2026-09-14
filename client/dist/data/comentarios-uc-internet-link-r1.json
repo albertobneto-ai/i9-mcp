@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:53:04.356Z",
+  "quando": "2026-09-14T13:55:33.582Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -53,6 +53,10 @@
     "s1-i17": {
       "item": "Valor Mensal em Rede Neutra",
       "comentario": "Valor monetário em moeda corrente."
+    },
+    "s1-e01": {
+      "item": "Tipo de Equipamento",
+      "comentario": "considerar mesma tratativa de VPN"
     }
   }
 }
