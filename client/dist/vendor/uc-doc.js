@@ -720,7 +720,10 @@
     if (!bar) return setTimeout(montar, 200);
     var stat = function (t) { var s = document.getElementById('cStat'); if (s) s.textContent = t; };
     var bHub = document.createElement('a');
-    bHub.id = 'cHub'; bHub.className = 'sec'; bHub.href = 'uc-hub.html';
+    // endereço amigável do hub; local, segue o arquivo ao lado para o teste funcionar
+    bHub.id = 'cHub'; bHub.className = 'sec';
+    bHub.href = /^https?:$/.test(location.protocol) && !/^localhost|^127\./.test(location.hostname)
+      ? 'https://everi9.albertobottaro.info/hub' : 'uc-hub.html';
     bHub.textContent = '← Hub';
     var bUp = document.createElement('button');
     bUp.id = 'cUpd'; bUp.className = 'sec'; bUp.type = 'button'; bUp.textContent = 'Atualizar documento';
