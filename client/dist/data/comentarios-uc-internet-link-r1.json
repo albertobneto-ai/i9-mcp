@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:45:50.679Z",
+  "quando": "2026-09-14T13:51:24.514Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -40,7 +40,11 @@
     },
     "s1-i14": {
       "item": "Fornecedor de Rede Neutra",
-      "comentario": "criar componente: Acesso terceiro rede neutraRegra: se abordagem= Parceiros. marcar que tem acesso terceiro rede neutra, e não possibilitar desmarcar e se torna obrigatório.picklist afim e adicionar novos parceiros futuramente"
+      "comentario": "criar componente: Acesso terceiro rede neutraRegra: se abordagem= Parceiros. marcar que tem acesso terceiro rede neutra, e não possibilitar desmarcar e se torna obrigatório.picklist afim e adicionar novos parceiros futuramentedeixar default"
+    },
+    "s1-i15": {
+      "item": "Solução Contratada em Rede Neutra",
+      "comentario": "deixar default"
     }
   }
 }
