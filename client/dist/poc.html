@@ -586,6 +586,7 @@ body.agp-open #guia-abrir{right:416px}
   <select id="p-user" title="Perfil do usuário"></select>
   <span class="sim">Simular:</span>
   <button id="s-prop" onclick="gerarProposta()">proposta no Lightning</button>
+  <button id="s-aceite" onclick="simAceite()">aceite da proposta</button>
   <button id="s-assin" onclick="simularAssinatura()">assinatura do contrato</button>
   <button id="s-ativar" onclick="simAtivar()">ativação do pedido</button>
   <button id="s-submit" onclick="simSubmeter()">submissão do pedido</button>
@@ -1271,7 +1272,7 @@ let S;
 function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
-  form:{}, viab:{}, acrs:[], msgOpen:false, assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
+  form:{}, viab:{}, acrs:[], msgOpen:false, aceite:null, assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
 function toast(t, k){ let el=document.querySelector('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
   el.className='toast'+(k==='warn'?' warn':k==='err'?' err':''); el.textContent=(k==='warn'?'⚠ ':k==='err'?'⊘ ':'✓ ')+t; clearTimeout(window._tt); window._tt=setTimeout(()=>el.remove(),2800); }
 function go(t, keep){ if(!keep) S.hist.push(S.tela); S.tela=t; S.sheet=null; S.modal=null; window.scrollTo(0,0); render(); }
@@ -1294,6 +1295,7 @@ function pathHtml(steps, cur, sel, label, fn){
 function simBotoes(){
   const on=(id,ok,titulo)=>{ const el=$('#'+id); if(!el) return; el.disabled=!ok; el.title=titulo; };
   on('s-prop', !!(S.quote && lines.some(l=>l.parent)), 'Gera a proposta no Lightning (no app o PDF não é criado)');
+  on('s-aceite', !!(S.pdfs.length && S.qStatus!=='Accepted'), 'O cliente devolve a proposta aceita: a cotação passa para Accepted');
   on('s-assin', !!(S.contract && S.contract.esig==='Sent'), 'Retorno do DocuSign com o contrato assinado');
   on('s-ativar', !!(S.order && S.order.status!=='Activated'), 'Ativa o pedido');
   on('s-submit', !!(S.order && S.order.status==='Activated' && !S.order.submitted), 'Submete o pedido e dispara a decomposição');
@@ -1368,7 +1370,7 @@ function telaQuote(){
   return topbar('Quote', true) + actions([{i:'💬',c:'b',n:'Post',on:"S.sheet='post';render()"},{i:'🗂',c:'g',n:'Browse Catalogs',on:'browse()'},{i:'👤',c:'p',n:'New Contact',on:"go('newcontact')"},{i:'⋯',c:'m',n:'More',on:"S.sheet='more-quote';render()"}]) + `
   <div class="rh"><div class="oi g">🏷</div><div><small>Quote</small><b>${esc(q.name)}</b></div></div>
   <div class="rtabs"><a class="${S.tab==='Details'?'on':''}" onclick="S.tab='Details';render()">Details</a><a class="${S.tab==='Lines'?'on':''}" onclick="S.tab='Lines';render()">Lines</a><a class="${S.tab==='Related'?'on':''}" onclick="S.tab='Related';render()">Related</a><a class="${S.tab==='Chatter'?'on':''}" onclick="S.tab='Chatter';render()">Chatter</a></div>
-  ${S.tab==='Details' ? pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote') + fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)]])
+  ${S.tab==='Details' ? pathHtml(QSTEPS, S.qStatus, S.qSel, 'Status', 'quote') + fields([['Quote Number',q.number],['Expiration Date',esc(q.exp)],['Syncing','<span class="chk"></span>'],['Opportunity Name',`<a onclick="go('opp')">${esc(oppName())}</a>`],['Account Name',`<a onclick="go('accounts')">${esc(CTX.conta.nome)}</a>`],['Grand Total',fmtMoney()],['Status',esc(S.qStatus)],['Aceite do cliente', S.aceite?esc(S.aceite.quando+' · '+S.aceite.por):'—']])
   : S.tab==='Lines' ? `${fonte('ver','<b>Transaction Line Editor</b> — componente documentado para Lightning Experience (Trailhead "Discover and Configure Products").')}
     <div class="tle-h"><div class="oi">▤</div><b>Quote Line Items (${roots.length})</b><div class="tog ${S.instant?'on':''}"><span>Instant Pricing</span><div><div class="sw" onclick="S.instant=!S.instant;render()"></div><small>${S.instant?'Active':'Inactive'}</small></div></div></div>
     <div class="tle-tools"><button class="btn sm" onclick="S.sheet='addassets';render()">Add Assets</button><button class="btn sm" onclick="addGroup()">Add Group</button><button class="btn sm" style="flex:1" onclick="browse(true)">🔍 Add Product</button></div>
@@ -1391,6 +1393,16 @@ function relatedQuote(){
   <div class="rel"><div class="h"><div class="oi p">✔</div><b>Approvals (0)</b></div><div class="it" style="color:var(--mut)">No approval requests.</div></div>`;
 }
 function sheetPdf(){ return sheet(`<div class="row" style="border:0;font-weight:700">${esc(S.pdfs[0].name)}</div><div class="note" style="padding:0 18px 12px;color:var(--mut);font-size:13px;line-height:1.45">Quote PDFs aren't viewable in the Salesforce mobile app (ajuda oficial). O documento foi gerado e enviado pelo Lightning Experience.</div>${row('👁','b','Ver a proposta enviada (visualização do protótipo, fora do app)','S.sheet=null;S.pdfView=true;render()')}<div class="cancel" onclick="S.sheet=null;render()">Cancel</div>`); }
+/* o cliente responde à proposta: Presented → Accepted, com o registro do aceite */
+function simAceite(){
+  if(!S.pdfs.length){ toast('Gere a proposta antes de simular o aceite.','warn'); return; }
+  if(S.qStatus==='Accepted'){ toast('A cotação já está Accepted.','warn'); return; }
+  if(S.qStatus!=='Presented'){ S.qStatus='Presented'; }
+  S.aceite = { quando:new Date().toLocaleString('pt-BR'), por:'Representante legal do cliente', doc:S.pdfs[0].name };
+  S.qStatus='Accepted'; S.qSel=null; S.tab='Details'; S.hist=['opp']; go('quote',true);
+  toast('Proposta aceita pelo cliente — cotação Accepted.');
+  if(AG.thread.length) agSay(`O cliente aceitou a proposta ${S.aceite.doc} em ${S.aceite.quando}. A cotação passou para Accepted${S.contract?'':' — o contrato pode ser gerado a partir dela'}.`, agAtuais(), 'Quote.Status (Accepted)');
+}
 function simAtivar(){ if(!S.order){ toast('Ainda não há pedido para ativar.','warn'); return; }
   if(S.order.status==='Activated'){ toast('Pedido já está ativado.','warn'); return; }
   ativarPedido(); S.modal=null; S.tab='Details'; go('order',true); toast('Pedido ativado.'); }
@@ -2232,11 +2244,12 @@ function agAtuais(){
   c.push({l:'Adicionar outro node',f:()=>agSay('Qual produto?',agProdChips())});
   return c;
 }
+/* ordem importa: o que é mais específico vem antes, para "aceita a proposta" não cair em proposta */
 const PEDIDOS_TEXTO = [
-  [/assinatur|docusign|assinar|envelope/i,'assinatura'],
-  [/proposta|gerar.*pdf|enviar.*cota/i,'proposta'],
+  [/aceit|accepted|assinatura da proposta|assinar a proposta|cliente (aprovou|assinou)/i,'aceite'],
+  [/(assinatur|assinar|docusign|envelope).*(contrato)?|contrato.*(assinatur|assinar)/i,'assinatura'],
   [/criar.*contrato|gerar.*contrato|fazer.*contrato/i,'contrato'],
-  [/aceit|accepted/i,'aceite'],
+  [/(gerar|criar|enviar|manda).*(proposta|pdf)|proposta.*(gerar|enviar)/i,'proposta'],
   [/criar.*pedido|gerar.*pedido|fazer.*pedido/i,'pedido'],
   [/ativar|activate/i,'ativar'],
   [/submet|submit/i,'submeter']
@@ -2245,6 +2258,7 @@ const EXPLICA = {
   assinatura:['Assinatura do contrato','O contrato é gerado a partir do template, vira documento e sai num envelope de assinatura eletrônica para os signatários das duas partes. Enquanto o envelope está enviado, o contrato fica aguardando; quando todos assinam, ele passa a Activated e a data de assinatura é o que ancora o reajuste, quando o tipo escolhido for esse.','Contract + Salesforce Contracts / DocuSign'],
   proposta:['Proposta','No Lightning, Create PDF gera o documento a partir da cotação, Save to Quote guarda em Quote PDFs e Email Quote envia ao cliente. No app mobile os três não existem — a lista mostra os PDFs, mas eles não abrem no aplicativo.','QuoteDocument'],
   contrato:['Contrato','Nasce da cotação e carrega as cláusulas de fidelização, reajuste e multa que vieram dos atributos contratuais do item.','Contract'],
+  aceite:['Aceite da proposta','A proposta enviada volta aceita pelo cliente e a cotação passa para Accepted. É esse status que libera a criação do pedido. O aceite pode vir por assinatura eletrônica do documento da proposta ou por registro manual do vendedor — a Revisão 1 não define qual dos dois a Algar vai usar, nem se o contrato nasce antes ou depois desse ponto.','Quote.Status'],
   pedido:['Pedido','Criado da cotação aceita. Activate trava os itens; Submit Order dispara o orquestrador, que decompõe o produto comercial em produtos técnicos e monta o plano.','Order + OrderItem'],
   ativar:['Ativação','Activate muda o pedido para Activated e impede alteração dos itens. É o passo anterior à submissão.','Order'],
   submeter:['Submissão','Submit Order aciona o Dynamic Revenue Orchestrator: gera os produtos técnicos, cria o plano com raias e etapas, e ao fim nascem os assets.','FulfillmentOrder + plano de orquestração'],
@@ -2258,7 +2272,7 @@ function agExplicar(tema){
 }
 function agIntent(t){
   const alvo = PEDIDOS_TEXTO.find(([re])=>re.test(t));
-  const pergunta = /\?|^(como|o que|que |qual|por que|porque|quando|explic|me explica|pra que)/i.test(t.trim());
+  const pergunta = /\?|^(como|o que|que |qual|por que|porque|quando|explic|me explica|pra que|pode explicar)/i.test(t.trim());
   /* pergunta explica; pedido de ação confere o estado e não repete o que já foi feito */
   if(alvo && pergunta && agExplicar(alvo[1])) return;
   if(alvo && !pergunta && agJaFeito(alvo[1])) return;
@@ -2556,7 +2570,7 @@ function jaFeito(acao){
     case 'contrato':  return c ? `o contrato ${c.number} já existe` : null;
     case 'assinatura':return c && c.esig==='Completed' ? `o contrato ${c.number} já está assinado (${c.status})`
                            : (c && c.esig==='Sent' ? `o envelope já foi enviado para ${c.recipients.length} signatário(s) e aguarda assinatura` : null);
-    case 'aceite':    return S.qStatus==='Accepted' ? 'a cotação já está Accepted' : null;
+    case 'aceite':    return S.qStatus==='Accepted' ? (S.aceite?`a proposta já foi aceita pelo cliente em ${S.aceite.quando}`:'a cotação já está Accepted') : null;
     case 'pedido':    return o ? `o pedido ${o.number} já foi criado` : null;
     case 'ativar':    return o && o.status==='Activated' ? `o pedido ${o.number} já está Activated` : null;
     case 'submeter':  return o && o.submitted ? `o pedido ${o.number} já foi submetido (${o.fls.length} produtos técnicos)` : null;
@@ -2680,6 +2694,9 @@ function guia(){
   add(S.tela==='convert','Confira os registros que a conversão vai criar.',
       ['A conta pode ser existente ou nova.','O contato vem dos dados do lead.','Desmarque a oportunidade se ainda não houver negócio.'],
       {l:'Converter',f:convertLead});
+  add(S.tela==='quote'&&S.pdfs.length&&S.qStatus!=='Accepted'&&S.tab==='Details','Registre o retorno do cliente sobre a proposta.',
+      ['No topo, em <b>Simular</b>, use <b>aceite da proposta</b>.','A cotação passa para Accepted e o aceite fica registrado.','Só com Accepted o pedido pode ser criado.'],
+      {l:'Simular o aceite',f:simAceite});
   add(S.tela==='opp'&&S.conv&&!S.quote&&S.oStage!=='Proposal/Price Quote','Avance o estágio da oportunidade.',
       ['No path, toque no próximo estágio.','Depois em <b>Mark as Current Stage</b>.','Em Proposal/Price Quote a cotação entra em cena.'],
       {l:'Avançar estágio',f:()=>{ const i=OSTAGES.indexOf(S.oStage); S.oStage=OSTAGES[Math.min(i+1,OSTAGES.length-1)]; S.oSel=null; render(); toast('Stage changed successfully.'); }});
