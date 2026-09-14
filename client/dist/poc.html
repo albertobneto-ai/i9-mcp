@@ -2309,8 +2309,10 @@ function agIntent(t){
   if(/^(e )?(agora|depois|dai|daí)\??$|e agora|e depois|pr[oó]xim|falta|pendent|continuar|continua|segue|seguir|vamos|o que (eu )?fa[çc]o|o que fazer|manda|prossegue|prosseguir/.test(s)){ agNext(); return; }
   if(/resum|status|onde estamos/.test(s)){ agSay(agResumo(), agAtuais()); return; }
   if(/obrigad|valeu/.test(s)){ agSay('Disponha. Quando quiser, sigo com a próxima etapa.', agAtuais()); return; }
-  agSay('Não peguei o que você quis dizer, mas posso responder sobre viabilidade, classificação ("por que customizado?"), equipamentos, condições contratuais, entidade faturadora e preço — ou seguir com a jornada. Onde paramos:');
-  agNext();
+  /* fora do roteiro, o modelo pensa com o estado da sessão e as 22 regras na mão */
+  agPensar(t).then(ok=>{ if(!ok){
+    agSay('Não peguei o que você quis dizer, e o modelo não respondeu agora. Posso falar de viabilidade, classificação, equipamentos, condições contratuais e entidade faturadora — ou seguir com a jornada. Onde paramos:');
+    agNext(); } });
 }
 function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`Cotação ${S.quote.number} (${S.qStatus}) para ${CTX.conta.nome}, ${n} item(ns)${S.contract?`, contrato ${S.contract.number} (${S.contract.esig})`:''}${S.order?`, pedido ${S.order.number} (${S.order.status})`:''}.`:`Oportunidade ${oppName()} em ${S.oStage}, sem cotação.`; }
 /* ---- passos, na ordem do UC-VPN-001 ---- */
