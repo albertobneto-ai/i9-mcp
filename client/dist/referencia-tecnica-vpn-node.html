@@ -25,7 +25,8 @@ table{width:100%;border-collapse:collapse;margin:14px 0 6px;background:var(--s1)
 th{background:var(--s2);text-align:left;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
 tr:last-child td{border-bottom:0}
-td.w{max-width:420px}
+td.w{max-width:520px;word-break:break-word}
+.qtd{display:inline-block;font:10.5px/1.5 ui-monospace,monospace;color:var(--mut);border:1px solid var(--bd);border-radius:3px;padding:0 5px;margin-right:6px;white-space:nowrap}
 .cod{font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);margin-top:3px}
 code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--s2);padding:1px 5px;border-radius:3px}
 code.cond{background:#EEF1F5;color:#22364f}
@@ -135,11 +136,28 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         <td class="w">ReferenciaCliente · TipoMoeda · ValorMoeda · ProdutoAServico</td></tr>
 <tr><td><b>Informações Contratuais</b></td><td>12</td>
         <td class="w">PeriodoFidelizacao · TipoReajuste · DataBase · DataAssinatura · IndiceReajuste · ReajustarAntes12Meses · DataProximoReajuste · PercentualMulta · DataInicioContrato · DataTerminoContrato · RecalculoPeriodoContrato · DiasAvisoPrevio</td></tr></tbody></table>
+<h3>Componentes e seus atributos</h3>
+<table><thead><tr><th>Grupo</th><th>Componente</th><th>Múltiplo</th><th>Atributos</th><th>Nota do UC</th></tr></thead><tbody>
+<tr><td>Equipamentos de Acesso<div class="cod">mín 1 · máx sem limite</div></td>
+  <td><b>Equipamento de Acesso</b></td><td>sim</td>
+  <td class="w">Tipo de Equipamento (TipoEquipamento) · Modalidade Equipamento (ModalidadeEquipamento)</td>
+  <td class="w">—</td></tr><tr><td>Serviços de Valor Agregado<div class="cod">mín 0 · máx 2</div></td>
+  <td><b>Upgrade Temporário de Velocidade</b></td><td>não</td>
+  <td class="w">Velocidade Temporária (VelocidadeTemporaria) · Quantidade de Dias (corridos) (QuantidadeDias)</td>
+  <td class="w">SVA modelado como produto independente e reutilizável (decisão de catálogo do projeto).</td></tr><tr><td>Serviços de Valor Agregado<div class="cod">mín 0 · máx 2</div></td>
+  <td><b>Monitoramento Inteligente de Rede</b></td><td>não</td>
+  <td class="w">Plano (PlanoMIR) · Tipo de Monitoramento (TipoMonitoramento)</td>
+  <td class="w">Família TIC: confirmar se integra o produto VPN Node ou é item transversal (dúvida aberta na Revisão 1).</td></tr>
+</tbody></table>
 <h3>Grupos de componentes</h3>
-<table><thead><tr><th>Grupo</th><th>Mínimo</th><th>Máximo</th><th>Produtos</th><th>Observação</th></tr></thead><tbody><tr><td><b>Equipamentos de Acesso</b></td><td>1</td><td>sem limite</td>
-        <td>—</td><td class="w">—</td></tr>
-<tr><td><b>Serviços de Valor Agregado</b></td><td>0</td><td>2</td>
-        <td>—</td><td class="w">—</td></tr></tbody></table>
+<table><thead><tr><th>Grupo</th><th>Mínimo</th><th>Máximo</th><th>Componentes</th><th>Objeto</th></tr></thead><tbody><tr><td><b>Equipamentos de Acesso</b><div class="cod">g-equip</div></td>
+        <td>1</td><td>sem limite</td>
+        <td>Equipamento de Acesso</td>
+        <td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a></td></tr>
+<tr><td><b>Serviços de Valor Agregado</b><div class="cod">g-sva</div></td>
+        <td>0</td><td>2</td>
+        <td>Upgrade Temporário de Velocidade · Monitoramento Inteligente de Rede</td>
+        <td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a></td></tr></tbody></table>
 <p>Na plataforma, o produto incluído no bundle é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productrelatedcomponent.htm" target="_blank" rel="noopener">ProductRelatedComponent</a>, e o agrupamento com sua política de arranjo é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a>. A cardinalidade mínima e máxima de cada grupo é propriedade dessa estrutura, não de código.</p>
 
 <h2 id="qualificacao"><span class="n">04</span>Qualificação do produto</h2>
@@ -156,43 +174,43 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <table><thead><tr><th>Atributo</th><th>Categoria</th><th>Tipo</th><th>Valores</th><th>Obrigatório</th><th>Card.</th><th>Regras</th></tr></thead><tbody>
 <tr>
           <td><b>Velocidade</b><div class="cod">Velocidade · linha 2</div></td>
-          <td>Acesso</td>
+          <td>Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps … (48)</td>
+          <td class="w"><span class="qtd">48 valores</span> 10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps · 300 Mbps · 400 Mbps · 500 Mbps · 700 Mbps · 900 Mbps · 1 Gbps · 1.2 Gbps · 1.5 Gbps · 2 Gbps · 2.5 Gbps · 3 Gbps · 3.5 Gbps · 4 Gbps · 4.5 Gbps · 5 Gbps · 5.5 Gbps · 6 Gbps · 6.5 Gbps · 7 Gbps · 7.5 Gbps · 8 Gbps · 8.5 Gbps · 9 Gbps · 9.5 Gbps · 10 Gbps · 15 Gbps · 20 Gbps · 25 Gbps · 30 Gbps · 40 Gbps · 50 Gbps · 60 Gbps · 70 Gbps · 80 Gbps · 90 Gbps · 100 Gbps · 200Gbps · 300Gbps · 400Gbps · 500Gbps · 600Gbps · 700Gbps</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td>—</td>
         </tr>
 <tr>
           <td><b>Tecnologia</b><div class="cod">Tecnologia · linha 5</div></td>
-          <td>Acesso</td>
+          <td>Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Metro · GPON · XGSPON · Rádio</td>
+          <td class="w"><span class="qtd">4 valores</span> Metro · GPON · XGSPON · Rádio</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
           <td>1</td>
           <td><span class="rid">R03</span></td>
         </tr>
 <tr>
           <td><b>Interface</b><div class="cod">Interface · linha 6</div></td>
-          <td>Acesso</td>
+          <td>Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Óptica · Elétrica</td>
+          <td class="w"><span class="qtd">2 valores</span> Óptica · Elétrica</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
           <td>1</td>
           <td><span class="rid">R03</span></td>
         </tr>
 <tr>
           <td><b>Abordagem</b><div class="cod">Abordagem · linha 7</div></td>
-          <td>Acesso</td>
+          <td>Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Pronta · Construir</td>
+          <td class="w"><span class="qtd">2 valores</span> Pronta · Construir</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
           <td>1</td>
           <td><span class="rid">R03</span></td>
         </tr>
 <tr>
           <td><b>Metragem</b><div class="cod">Metragem · linha 8</div></td>
-          <td>Acesso</td>
+          <td>Acesso<div class="cod">bundle</div></td>
           <td>Number<div class="cod">number</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
@@ -201,7 +219,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>VPN Network</b><div class="cod">VPNNetwork · linha 3</div></td>
-          <td>Produto Relacionado</td>
+          <td>Produto Relacionado<div class="cod">bundle</div></td>
           <td>Text / Lookup<div class="cod">network</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Manual</div></td>
@@ -210,25 +228,25 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Protocolo de Roteamento</b><div class="cod">ProtocoloRoteamento · linha 4</div></td>
-          <td>Produto Relacionado</td>
+          <td>Produto Relacionado<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">RIP · STATIC · BGP · eBGP</td>
+          <td class="w"><span class="qtd">4 valores</span> RIP · STATIC · BGP · eBGP</td>
           <td>sim<div class="cod">Manual/Automático</div></td>
           <td>1</td>
           <td><span class="rid">R05</span></td>
         </tr>
 <tr>
           <td><b>Golden Jumper</b><div class="cod">GoldenJumper · linha 9</div></td>
-          <td>Golden Jumper</td>
+          <td>Golden Jumper<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Algar · Cliente</td>
+          <td class="w"><span class="qtd">2 valores</span> Algar · Cliente</td>
           <td>condicional<div class="cod">Automático/Manual</div></td>
           <td>1</td>
           <td><span class="rid">R06</span></td>
         </tr>
 <tr>
           <td><b>Nome do Data Center</b><div class="cod">NomeDataCenter · linha 10</div></td>
-          <td>Golden Jumper</td>
+          <td>Golden Jumper<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -237,16 +255,16 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Interface</b><div class="cod">InterfaceGJ · linha 11</div></td>
-          <td>Golden Jumper</td>
+          <td>Golden Jumper<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Elétrico · Óptico</td>
+          <td class="w"><span class="qtd">2 valores</span> Elétrico · Óptico</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R06</span></td>
         </tr>
 <tr>
           <td><b>Nome do jumper</b><div class="cod">NomeJumper · linha 12</div></td>
-          <td>Golden Jumper</td>
+          <td>Golden Jumper<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -255,34 +273,34 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Alterar Fornecedor Golden Jumper</b><div class="cod">AlterarFornecedorGJ · linha 17</div></td>
-          <td>Golden Jumper</td>
+          <td>Golden Jumper<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Não · Sim</td>
+          <td class="w"><span class="qtd">2 valores</span> Não · Sim</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R06</span></td>
         </tr>
 <tr>
           <td><b>Modalidade de Instalação</b><div class="cod">ModalidadeInstalacao · linha 13</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Físico · Virtual/Fabric</td>
+          <td class="w"><span class="qtd">2 valores</span> Físico · Virtual/Fabric</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R07</span></td>
         </tr>
 <tr>
           <td><b>Modelo de Disponibilização</b><div class="cod">ModeloDisponibilizacao · linha 14</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Dedicado · Hospedado</td>
+          <td class="w"><span class="qtd">2 valores</span> Dedicado · Hospedado</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R07</span></td>
         </tr>
 <tr>
           <td><b>Velocidade de Conexão</b><div class="cod">VelocidadeConexao · linha 15</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Manual</div></td>
@@ -291,34 +309,34 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Provedor e Serviço Cloud</b><div class="cod">ProvedorCloud · linha 16</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">AWS - Direct Connect · Azure - ExpressRoute · Oracle Cloud (OCI) - Fast Connect · Google Cloud (GCP) - Cloud Interconnect · IBM - Cloud Direct Link</td>
+          <td class="w"><span class="qtd">5 valores</span> AWS - Direct Connect · Azure - ExpressRoute · Oracle Cloud (OCI) - Fast Connect · Google Cloud (GCP) - Cloud Interconnect · IBM - Cloud Direct Link</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R07</span></td>
         </tr>
 <tr>
           <td><b>Condomínio</b><div class="cod">Condominio · linha 18</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Sim · Não</td>
+          <td class="w"><span class="qtd">2 valores</span> Sim · Não</td>
           <td>sim<div class="cod">Automático</div></td>
           <td>1</td>
           <td><span class="rid">R08</span></td>
         </tr>
 <tr>
           <td><b>Acesso Terceiro Last Mile</b><div class="cod">AcessoTerceiroLastMile · linha 21</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Checkbox<div class="cod">checkbox</div></td>
-          <td class="w">Last Mile</td>
+          <td class="w"><span class="qtd">1 valores</span> Last Mile</td>
           <td>não<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R09</span></td>
         </tr>
 <tr>
           <td><b>Parceiro LastMile</b><div class="cod">ParceiroLastMile · linha 22</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -327,16 +345,16 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Proprietário do Roteador</b><div class="cod">ProprietarioRoteador · linha 23</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Algar · Parceiro</td>
+          <td class="w"><span class="qtd">2 valores</span> Algar · Parceiro</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R09</span></td>
         </tr>
 <tr>
           <td><b>Número Viabilidade GLM</b><div class="cod">NumeroViabilidadeGLM · linha 24</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Number<div class="cod">number</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -345,7 +363,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Vigência LastMile</b><div class="cod">VigenciaLastMile · linha 25</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -354,7 +372,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Valor Instalação LastMile s/ Impostos</b><div class="cod">ValorInstalacaoLastMile · linha 26</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Currency<div class="cod">currency</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -363,7 +381,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Valor Mensal LastMile s/ Impostos</b><div class="cod">ValorMensalLastMile · linha 27</div></td>
-          <td>Infraestrutura de Acesso</td>
+          <td>Infraestrutura de Acesso<div class="cod">bundle</div></td>
           <td>Currency<div class="cod">currency</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -372,34 +390,34 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo de Equipamento</b><div class="cod">TipoEquipamento · linha 19</div></td>
-          <td>—</td>
+          <td>Equipamento de Acesso (Equipamentos de Acesso)<div class="cod">componente</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Roteador · Switch · Conversor · Transceiver · Rádio · ONT … (7)</td>
+          <td class="w"><span class="qtd">7 valores</span> Roteador · Switch · Conversor · Transceiver · Rádio · ONT · Chave Ótica</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
           <td>1 até N</td>
           <td>—</td>
         </tr>
 <tr>
           <td><b>Modalidade Equipamento</b><div class="cod">ModalidadeEquipamento · linha 20</div></td>
-          <td>—</td>
+          <td>Equipamento de Acesso (Equipamentos de Acesso)<div class="cod">componente</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Comodato · Do Cliente · Locação</td>
+          <td class="w"><span class="qtd">3 valores</span> Comodato · Do Cliente · Locação</td>
           <td>sim<div class="cod">Automático/Manual</div></td>
           <td>1 até N</td>
           <td>—</td>
         </tr>
 <tr>
           <td><b>Velocidade Temporária</b><div class="cod">VelocidadeTemporaria · linha 28</div></td>
-          <td>—</td>
+          <td>Upgrade Temporário de Velocidade (Serviços de Valor Agregado)<div class="cod">componente</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps … (42)</td>
+          <td class="w"><span class="qtd">42 valores</span> 10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps · 300 Mbps · 400 Mbps · 500 Mbps · 700 Mbps · 900 Mbps · 1 Gbps · 1.2 Gbps · 1.5 Gbps · 2 Gbps · 2.5 Gbps · 3 Gbps · 3.5 Gbps · 4 Gbps · 4.5 Gbps · 5 Gbps · 5.5 Gbps · 6 Gbps · 6.5 Gbps · 7 Gbps · 7.5 Gbps · 8 Gbps · 8.5 Gbps · 9 Gbps · 9.5 Gbps · 10 Gbps · 15 Gbps · 20 Gbps · 25 Gbps · 30 Gbps · 40 Gbps · 50 Gbps · 60 Gbps · 70 Gbps · 80 Gbps · 90 Gbps · 100 Gbps</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R12</span></td>
         </tr>
 <tr>
           <td><b>Quantidade de Dias (corridos)</b><div class="cod">QuantidadeDias · linha 29</div></td>
-          <td>—</td>
+          <td>Upgrade Temporário de Velocidade (Serviços de Valor Agregado)<div class="cod">componente</div></td>
           <td>Number<div class="cod">number</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -408,7 +426,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Referência do Cliente</b><div class="cod">ReferenciaCliente · linha 32</div></td>
-          <td>Regras de Negócio</td>
+          <td>Regras de Negócio<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Manual</div></td>
@@ -417,16 +435,16 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo Moeda</b><div class="cod">TipoMoeda · linha 33</div></td>
-          <td>Regras de Negócio</td>
+          <td>Regras de Negócio<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Dólar</td>
+          <td class="w"><span class="qtd">1 valores</span> Dólar</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R15</span></td>
         </tr>
 <tr>
           <td><b>Valor Moeda</b><div class="cod">ValorMoeda · linha 34</div></td>
-          <td>Regras de Negócio</td>
+          <td>Regras de Negócio<div class="cod">bundle</div></td>
           <td>Number<div class="cod">number</div></td>
           <td class="w">—</td>
           <td>condicional<div class="cod">Manual</div></td>
@@ -435,7 +453,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Produto a Serviço</b><div class="cod">ProdutoAServico · linha 47</div></td>
-          <td>Regras de Negócio</td>
+          <td>Regras de Negócio<div class="cod">bundle</div></td>
           <td>Text<div class="cod">text</div></td>
           <td class="w">—</td>
           <td>não<div class="cod">—</div></td>
@@ -444,25 +462,25 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Período Fidelização</b><div class="cod">PeriodoFidelizacao · linha 35</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">0 · 12 · 24 · 36 · 48 · 60</td>
+          <td class="w"><span class="qtd">6 valores</span> 0 · 12 · 24 · 36 · 48 · 60</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R17</span></td>
         </tr>
 <tr>
           <td><b>Tipo de Reajuste</b><div class="cod">TipoReajuste · linha 36</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Data Ativação · Data de assinatura do contrato · Data base · Sem reajuste</td>
+          <td class="w"><span class="qtd">4 valores</span> Data Ativação · Data de assinatura do contrato · Data base · Sem reajuste</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R17</span></td>
         </tr>
 <tr>
           <td><b>Data Base</b><div class="cod">DataBase · linha 37</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Date<div class="cod">date</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Manual</div></td>
@@ -471,7 +489,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data de Assinatura do Contrato</b><div class="cod">DataAssinatura · linha 38</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Date<div class="cod">date</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Manual</div></td>
@@ -480,25 +498,25 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Índice de Reajuste</b><div class="cod">IndiceReajuste · linha 39</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">IPCA · IGP-M · IGP-DI · IST</td>
+          <td class="w"><span class="qtd">4 valores</span> IPCA · IGP-M · IGP-DI · IST</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R18</span></td>
         </tr>
 <tr>
           <td><b>Reajustar Antes de 12 Meses</b><div class="cod">ReajustarAntes12Meses · linha 40</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Não · Sim</td>
+          <td class="w"><span class="qtd">2 valores</span> Não · Sim</td>
           <td>não<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R18</span></td>
         </tr>
 <tr>
           <td><b>Data do Próximo Reajuste</b><div class="cod">DataProximoReajuste · linha 41</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Date<div class="cod">date</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Automático</div></td>
@@ -507,16 +525,16 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Percentual da Multa</b><div class="cod">PercentualMulta · linha 42</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">30%</td>
+          <td class="w"><span class="qtd">1 valores</span> 30%</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R20</span></td>
         </tr>
 <tr>
           <td><b>Data de Início do Contrato</b><div class="cod">DataInicioContrato · linha 43</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Date<div class="cod">date</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Automático</div></td>
@@ -525,7 +543,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data de Término do Contrato</b><div class="cod">DataTerminoContrato · linha 44</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Date<div class="cod">date</div></td>
           <td class="w">—</td>
           <td>sim<div class="cod">Automático</div></td>
@@ -534,36 +552,36 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Recálculo Período do Contrato</b><div class="cod">RecalculoPeriodoContrato · linha 45</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">Data Atual · Início do Contrato · Manter Vigência · Término do Contrato</td>
+          <td class="w"><span class="qtd">4 valores</span> Data Atual · Início do Contrato · Manter Vigência · Término do Contrato</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R21</span></td>
         </tr>
 <tr>
           <td><b>Quantidade de Dias Aviso Previo</b><div class="cod">DiasAvisoPrevio · linha 46</div></td>
-          <td>Informações Contratuais</td>
+          <td>Informações Contratuais<div class="cod">bundle</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">30 dias</td>
+          <td class="w"><span class="qtd">1 valores</span> 30 dias</td>
           <td>sim<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R21</span></td>
         </tr>
 <tr>
           <td><b>Plano</b><div class="cod">PlanoMIR · linha 30</div></td>
-          <td>—</td>
+          <td>Monitoramento Inteligente de Rede (Serviços de Valor Agregado)<div class="cod">componente</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">MIR - SMART · MIR - PRO</td>
+          <td class="w"><span class="qtd">2 valores</span> MIR - SMART · MIR - PRO</td>
           <td>não<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R13</span></td>
         </tr>
 <tr>
           <td><b>Tipo de Monitoramento</b><div class="cod">TipoMonitoramento · linha 31</div></td>
-          <td>—</td>
+          <td>Monitoramento Inteligente de Rede (Serviços de Valor Agregado)<div class="cod">componente</div></td>
           <td>Picklist<div class="cod">picklist</div></td>
-          <td class="w">ICMP/SNMP · PROBE</td>
+          <td class="w"><span class="qtd">2 valores</span> ICMP/SNMP · PROBE</td>
           <td>condicional<div class="cod">Manual</div></td>
           <td>1</td>
           <td><span class="rid">R13</span></td>
@@ -750,7 +768,7 @@ constraint(QuantidadeDias &gt;= 10 &amp;&amp; QuantidadeDias &lt;= 60, &quot;Qua
           <td><ul class="efs"><li><b>require</b> em <code>PlanoMIR</code> quando <code class="cond">true</code>
               <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>TipoMonitoramento</code> quando <code class="cond">x.PlanoMIR</code>
               <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">x.TipoMonitoramento === &#x27;PROBE&#x27;</code> · “PROBE: fluxo segue em alta complexidade para desenho do escopo, com equipamento específico.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">a.AcessoTerceiroLastMile &amp;&amp; a.ProprietarioRoteador === &#x27;Parceiro&#x27;</code> · “Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parc”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">a.AcessoTerceiroLastMile &amp;&amp; a.ProprietarioRoteador === &#x27;Parceiro&#x27;</code> · “Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parceiro.”
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
