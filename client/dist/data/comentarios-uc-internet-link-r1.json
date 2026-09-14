@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:16:53.690Z",
+  "quando": "2026-09-14T14:20:43.808Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -93,6 +93,10 @@
     "s1-n08": {
       "item": "Uso Próprio (ICMS)",
       "comentario": "retirar Atacado"
+    },
+    "s1-n09": {
+      "item": "Confaz (alíquota)",
+      "comentario": "desconsiderar"
     }
   }
 }
