@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:12:28.778Z",
+  "quando": "2026-09-14T14:16:53.690Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -89,6 +89,10 @@
     "s1-n06": {
       "item": "Tipo de Moeda",
       "comentario": "disponível apenas para o pré-vendas."
+    },
+    "s1-n08": {
+      "item": "Uso Próprio (ICMS)",
+      "comentario": "retirar Atacado"
     }
   }
 }
