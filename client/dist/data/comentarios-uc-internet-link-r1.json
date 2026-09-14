@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:41:45.213Z",
+  "quando": "2026-09-14T14:45:33.950Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -113,6 +113,10 @@
     "s1-x01": {
       "item": "Quantidade de Endereços IP",
       "comentario": "Com a contratação, o bloco vigente do circuito é substituído automaticamente pelo novo (técnico)1) Se o atributo \"Versão do IP\" for selecionado com IPV6, o SVA de IP Adicional não faz sentido e não poderá ser selecionado;2) A partir do /28, este produto pode ser comercializado exclusivamente para os seguintes perfis de clientes: Governo, Operadoras, Big Dial e Tier 0, 1 e 2. ( pendente de verificação)3)Para a abordagem de Parceiro (Rede Neutra), esse SVA não é habilitado4) Não pode contratar se Acesso Terceiro (Last Mile)."
+    },
+    "s1-x02": {
+      "item": "Tipo de Bloco Adicional",
+      "comentario": "sva diferente ,  Bloco de ip adicional e o tipo de bloco é um atributo dele. ( pendente de verificação)"
     }
   }
 }
