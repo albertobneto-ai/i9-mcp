@@ -1,0 +1,942 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Referência técnica — VPN Node no Revenue Cloud</title>
+<style>
+:root{--bg:#F2F3F5;--s1:#FAFBFC;--s2:#ECECEC;--s3:#D9D9D9;--tx:#0D0D0D;--tx2:#3A3A3A;--mut:#6B6B6B;--bd:#D9D9D9;--bd2:#A8A8A8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.cover{background:linear-gradient(135deg,#0d0d0d 0%,#4a4a4a 100%);color:#FAFBFC;padding:64px 0 56px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 32px}
+.kicker{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#C9C9C9;margin-bottom:14px}
+.cover h1{font-size:36px;line-height:1.2;font-weight:600;margin:0 0 12px}
+.cover p{font-size:15px;color:#DCDCDC;max-width:760px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:0;margin-top:30px;border:1px solid rgba(255,255,255,.16)}
+.meta div{padding:14px 20px;border-right:1px solid rgba(255,255,255,.16);min-width:150px}
+.meta div:last-child{border-right:0}
+.meta b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#B9B9B9;font-weight:500;margin-bottom:4px}
+.meta span{font-size:15px}
+main{padding:44px 0 64px}
+h2{font-size:20px;font-weight:600;margin:46px 0 6px;padding-top:18px;border-top:1px solid var(--bd)}
+h2 .n{color:var(--mut);font-weight:400;margin-right:10px}
+h3{font-size:15px;font-weight:600;margin:26px 0 8px}
+p{margin:10px 0}
+.lead{color:var(--tx2)}
+table{width:100%;border-collapse:collapse;margin:14px 0 6px;background:var(--s1);border:1px solid var(--bd);font-size:13px}
+th{background:var(--s2);text-align:left;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.w{max-width:420px}
+.cod{font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);margin-top:3px}
+code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--s2);padding:1px 5px;border-radius:3px}
+code.cond{background:#EEF1F5;color:#22364f}
+.api{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#1a4f8a;text-decoration:none;border-bottom:1px solid #b9cbe0}
+.nota{color:var(--mut);font-size:12px}
+.rid{display:inline-block;font:11px/1.6 ui-monospace,monospace;background:#EDF1F8;color:#2B4A80;border-radius:3px;padding:0 6px;margin:0 3px 3px 0}
+.rid.big{font-size:12.5px;padding:2px 8px}
+ul.efs{margin:0;padding-left:18px}
+ul.efs li{margin:0 0 9px}
+.mec{color:var(--mut);font-size:12px;margin-top:2px}
+pre.cml{background:#0d0d0d;color:#EDEDED;font:11.5px/1.6 ui-monospace,monospace;padding:10px 12px;border-radius:4px;overflow-x:auto;margin:8px 0 0;white-space:pre-wrap}
+.box{background:var(--s1);border:1px solid var(--bd);border-left:4px solid var(--bd2);padding:14px 18px;margin:16px 0}
+.box.alerta{border-left-color:#8C4B02;background:#FDF8F2}
+.box.info{border-left-color:#2B4A80;background:#F4F7FC}
+.box b{display:block;margin-bottom:5px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--bd);background:var(--s1);margin:18px 0}
+.kpis div{padding:16px 18px;border-right:1px solid var(--bd)}
+.kpis div:last-child{border-right:0}
+.kpis b{display:block;font-size:26px;font-weight:600;line-height:1.1}
+.kpis span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.sumario{background:var(--s1);border:1px solid var(--bd);padding:18px 22px;margin:22px 0 8px}
+.sumario ol{margin:0;padding-left:20px;columns:2;column-gap:40px}
+.sumario a{color:var(--tx);text-decoration:none;line-height:1.9}
+.sumario a:hover{text-decoration:underline}
+footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:var(--mut);font-size:12px;display:flex;justify-content:space-between;letter-spacing:.06em;text-transform:uppercase}
+@page{size:A4;margin:16mm 12mm}
+@media print{
+  body{background:#fff;font-size:11.5px}
+  .cover{padding:34px 0 28px}
+  .cover h1{font-size:26px}
+  .wrap{max-width:none;padding:0 6mm}
+  h2{page-break-after:avoid;font-size:16px;margin-top:26px}
+  table{page-break-inside:auto;font-size:10px}
+  tr{page-break-inside:avoid}
+  thead{display:table-header-group}
+  .box,.kpis,pre.cml{page-break-inside:avoid}
+  .sumario{page-break-after:always}
+  a{color:#1a4f8a;text-decoration:none}
+}
+</style></head><body>
+
+<header class="cover"><div class="wrap">
+  <div class="kicker">Algar · CRM B2B · Referência técnica</div>
+  <h1>VPN Node no Revenue Cloud</h1>
+  <p>Do caso de uso à modelagem: produtos, atributos, componentes, regras e o destino de cada peça na plataforma. Base documental: UC-VPN-001 Revisão 1 · 11/09/2026.</p>
+  <div class="meta">
+    <div><b>Caso de uso</b><span>UC-VPN-001</span></div>
+    <div><b>Revisão</b><span>11/09/2026</span></div>
+    <div><b>Atributos</b><span>46</span></div>
+    <div><b>Regras</b><span>22</span></div>
+    <div><b>Efeitos</b><span>100</span></div>
+    <div><b>Emitido em</b><span>14/09/2026</span></div>
+  </div>
+</div></header>
+
+<main class="wrap">
+
+<div class="sumario"><ol><li><a href="#escopo">Escopo e como ler</a></li>
+<li><a href="#catalogo">Modelo do catálogo</a></li>
+<li><a href="#estrutura">Estrutura do bundle e componentes</a></li>
+<li><a href="#qualificacao">Qualificação do produto</a></li>
+<li><a href="#atributos">Atributos — os 46 do UC</a></li>
+<li><a href="#regras">Regras de configuração — as 22</a></li>
+<li><a href="#classificacao">Classificação do atendimento</a></li>
+<li><a href="#gerais">Regras gerais do produto</a></li>
+<li><a href="#ciclo">Ciclo transacional: cotação, pedido e asset</a></li>
+<li><a href="#orquestracao">Decomposição e orquestração</a></li>
+<li><a href="#dicionario">Dicionário de objetos citados</a></li>
+<li><a href="#lacunas">Lacunas, dúvidas e o que exige validação</a></li></ol></div>
+
+<h2 id="escopo"><span class="n">01</span>Escopo e como ler</h2>
+<p class="lead">Este documento traduz o UC-VPN-001 para a modelagem no Salesforce Revenue Cloud. Ele não substitui o caso de uso: o que está aqui é a ponte entre o que o negócio descreveu e o que precisa existir na plataforma.</p>
+<p>Conexão privada de um site do cliente à VPN corporativa, com acesso, equipamentos e serviços de valor agregado.</p>
+<div class="kpis">
+  <div><b>46</b><span>atributos</span></div>
+  <div><b>22</b><span>regras</span></div>
+  <div><b>100</b><span>efeitos</span></div>
+  <div><b>6</b><span>categorias de atributo</span></div>
+</div>
+<h3>Procedência do conteúdo</h3>
+<p>Os nomes de API foram consultados um a um na Referência de Objetos do Salesforce durante a produção deste documento: os que foram localizados aparecem como link para a página oficial do objeto; os que não foram aparecem como texto simples e estão listados na seção 11, com a recomendação de conferência na org. O que é decisão do projeto, e não do caso de uso, está dito no próprio parágrafo em que aparece — sobretudo a decomposição em produtos técnicos, as etapas do plano de orquestração e a regra de território.</p>
+<div class="box info"><b>Sobre os números</b>Todas as contagens deste documento vêm do JSON do caso de uso, não de estimativa: 46 atributos, 22 regras, 100 efeitos, distribuídos em 30 require, 23 hide, 15 message, 12 setValue, 10 disable, 5 hideValues, 2 constraint, 1 exclude, 1 autoAdd, 1 transacao.</div>
+
+<h2 id="catalogo"><span class="n">02</span>Modelo do catálogo</h2>
+<p>O VPN Node é um produto configurável do tipo bundle, publicado em categoria de catálogo e vendido por modelo de venda contínuo.</p>
+<table><thead><tr><th>Peça do catálogo</th><th>Definição no UC</th><th>Objeto na plataforma</th></tr></thead><tbody>
+<tr><td>Produto comercial</td><td>VPN Node — Bundle, configurável</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_product2.htm" target="_blank" rel="noopener">Product2</a> <span class="nota">Type indica o bundle; IsConfigurable habilita o configurador</span></td></tr>
+<tr><td>Categoria</td><td>Catálogo B2B (a definir) › Conectividade · Serviços de TIC</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategory.htm" target="_blank" rel="noopener">ProductCategory</a> + <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategoryproduct.htm" target="_blank" rel="noopener">ProductCategoryProduct</a></td></tr>
+<tr><td>Modelo de venda</td><td>Evergreen para o acesso; Term-defined para o upgrade temporário</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodel.htm" target="_blank" rel="noopener">ProductSellingModel</a> + <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodeloption.htm" target="_blank" rel="noopener">ProductSellingModelOption</a></td></tr>
+<tr><td>Classificação de produto</td><td>Agrupa os atributos comuns da família de acesso</td><td><code class="api">ProductClassification</code> <span class="nota">nome não retornou na referência consultada; confirmar na org</span></td></tr>
+<tr><td>Tabela de preços</td><td>Tabela de Preços B2B (a definir) · Standard Price Book</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebook2.htm" target="_blank" rel="noopener">Pricebook2</a> + <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebookentry.htm" target="_blank" rel="noopener">PricebookEntry</a></td></tr>
+</tbody></table>
+<div class="box alerta"><b>Precificação — lacuna declarada</b>Pendente — procedimento de precificação e tabela de preços não definidos na Revisão 1. Nenhuma decisão de preço foi inferida neste documento.</div>
+
+<h2 id="estrutura"><span class="n">03</span>Estrutura do bundle e componentes</h2>
+<p>Product2 (Type = Bundle) · ProductClassification &quot;VPN Node&quot; · AttributeCategory por seção</p>
+<h3>Categorias de atributo</h3>
+<table><thead><tr><th>Categoria</th><th>Atributos</th><th>Quais</th></tr></thead><tbody><tr><td><b>Acesso</b></td><td>5</td>
+        <td class="w">Velocidade · Tecnologia · Interface · Abordagem · Metragem</td></tr>
+<tr><td><b>Produto Relacionado</b></td><td>2</td>
+        <td class="w">VPNNetwork · ProtocoloRoteamento</td></tr>
+<tr><td><b>Golden Jumper</b></td><td>5</td>
+        <td class="w">GoldenJumper · NomeDataCenter · InterfaceGJ · NomeJumper · AlterarFornecedorGJ</td></tr>
+<tr><td><b>Infraestrutura de Acesso</b></td><td>12</td>
+        <td class="w">ModalidadeInstalacao · ModeloDisponibilizacao · VelocidadeConexao · ProvedorCloud · Condominio · AcessoTerceiroLastMile · ParceiroLastMile · ProprietarioRoteador · NumeroViabilidadeGLM · VigenciaLastMile · ValorInstalacaoLastMile · ValorMensalLastMile</td></tr>
+<tr><td><b>Regras de Negócio</b></td><td>4</td>
+        <td class="w">ReferenciaCliente · TipoMoeda · ValorMoeda · ProdutoAServico</td></tr>
+<tr><td><b>Informações Contratuais</b></td><td>12</td>
+        <td class="w">PeriodoFidelizacao · TipoReajuste · DataBase · DataAssinatura · IndiceReajuste · ReajustarAntes12Meses · DataProximoReajuste · PercentualMulta · DataInicioContrato · DataTerminoContrato · RecalculoPeriodoContrato · DiasAvisoPrevio</td></tr></tbody></table>
+<h3>Grupos de componentes</h3>
+<table><thead><tr><th>Grupo</th><th>Mínimo</th><th>Máximo</th><th>Produtos</th><th>Observação</th></tr></thead><tbody><tr><td><b>Equipamentos de Acesso</b></td><td>1</td><td>sem limite</td>
+        <td>—</td><td class="w">—</td></tr>
+<tr><td><b>Serviços de Valor Agregado</b></td><td>0</td><td>2</td>
+        <td>—</td><td class="w">—</td></tr></tbody></table>
+<p>Na plataforma, o produto incluído no bundle é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productrelatedcomponent.htm" target="_blank" rel="noopener">ProductRelatedComponent</a>, e o agrupamento com sua política de arranjo é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a>. A cardinalidade mínima e máxima de cada grupo é propriedade dessa estrutura, não de código.</p>
+
+<h2 id="qualificacao"><span class="n">04</span>Qualificação do produto</h2>
+<p>Duas condições impedem a venda antes mesmo da configuração.</p>
+<table><thead><tr><th>ID</th><th>Condição</th><th>Motivo declarado no UC</th><th>Objeto indicado no UC</th></tr></thead><tbody><tr><td class="cod">Q1</td><td><code class="cond">ctx.conta.tipoPessoa === &#x27;PF&#x27;</code></td>
+        <td>O produto não pode ser vendido para clientes Pessoa Física.</td><td><code class="api">ProductDisqualification</code></td></tr>
+<tr><td class="cod">Q2</td><td><code class="cond">ctx.conta.segmento === &#x27;Governo&#x27; &amp;&amp; ![&#x27;Consultor Corporativo&#x27;,&#x27;Administração de Vendas Centralizada&#x27;].includes(ctx.usuario.canal)</code></td>
+        <td>Clientes Governo: vendas somente pelos canais Consultor Corporativo e Administração de Vendas Centralizada.</td><td><code class="api">ProductDisqualification</code></td></tr></tbody></table>
+<div class="box info"><b>Elegibilidade por território</b>O UC também restringe a venda por território da localidade. O mecanismo existe na plataforma; a regra específica da Algar é decisão do projeto.</div>
+
+<h2 id="atributos"><span class="n">05</span>Atributos — os 46 do UC</h2>
+<p>Distribuição por tipo de campo: 26 picklist, 7 text, 5 date, 4 number, 2 currency, 1 network, 1 checkbox. Por forma de preenchimento: 33 manual, 7 automático/manual, 4 automático, 1 manual/automático, 1 —.</p>
+<p>Todo atributo vira <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributedefinition.htm" target="_blank" rel="noopener">AttributeDefinition</a>; os de lista vêm com <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklist.htm" target="_blank" rel="noopener">AttributePicklist</a> e <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklistvalue.htm" target="_blank" rel="noopener">AttributePicklistValue</a>. O agrupamento por produto usa <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributeset.htm" target="_blank" rel="noopener">ProductAttributeSet</a>, <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetitem.htm" target="_blank" rel="noopener">ProductAttributeSetItem</a> e <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetproduct.htm" target="_blank" rel="noopener">ProductAttributeSetProduct</a>. A associação atributo ↔ produto é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattribute.htm" target="_blank" rel="noopener">ProductAttribute</a>.</p>
+<table><thead><tr><th>Atributo</th><th>Categoria</th><th>Tipo</th><th>Valores</th><th>Obrigatório</th><th>Card.</th><th>Regras</th></tr></thead><tbody>
+<tr>
+          <td><b>Velocidade</b><div class="cod">Velocidade · linha 2</div></td>
+          <td>Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps … (48)</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><b>Tecnologia</b><div class="cod">Tecnologia · linha 5</div></td>
+          <td>Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Metro · GPON · XGSPON · Rádio</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R03</span></td>
+        </tr>
+<tr>
+          <td><b>Interface</b><div class="cod">Interface · linha 6</div></td>
+          <td>Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Óptica · Elétrica</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R03</span></td>
+        </tr>
+<tr>
+          <td><b>Abordagem</b><div class="cod">Abordagem · linha 7</div></td>
+          <td>Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Pronta · Construir</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R03</span></td>
+        </tr>
+<tr>
+          <td><b>Metragem</b><div class="cod">Metragem · linha 8</div></td>
+          <td>Acesso</td>
+          <td>Number<div class="cod">number</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R03</span> <span class="rid">R04</span></td>
+        </tr>
+<tr>
+          <td><b>VPN Network</b><div class="cod">VPNNetwork · linha 3</div></td>
+          <td>Produto Relacionado</td>
+          <td>Text / Lookup<div class="cod">network</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R05</span></td>
+        </tr>
+<tr>
+          <td><b>Protocolo de Roteamento</b><div class="cod">ProtocoloRoteamento · linha 4</div></td>
+          <td>Produto Relacionado</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">RIP · STATIC · BGP · eBGP</td>
+          <td>sim<div class="cod">Manual/Automático</div></td>
+          <td>1</td>
+          <td><span class="rid">R05</span></td>
+        </tr>
+<tr>
+          <td><b>Golden Jumper</b><div class="cod">GoldenJumper · linha 9</div></td>
+          <td>Golden Jumper</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Algar · Cliente</td>
+          <td>condicional<div class="cod">Automático/Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R06</span></td>
+        </tr>
+<tr>
+          <td><b>Nome do Data Center</b><div class="cod">NomeDataCenter · linha 10</div></td>
+          <td>Golden Jumper</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R06</span></td>
+        </tr>
+<tr>
+          <td><b>Interface</b><div class="cod">InterfaceGJ · linha 11</div></td>
+          <td>Golden Jumper</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Elétrico · Óptico</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R06</span></td>
+        </tr>
+<tr>
+          <td><b>Nome do jumper</b><div class="cod">NomeJumper · linha 12</div></td>
+          <td>Golden Jumper</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R06</span></td>
+        </tr>
+<tr>
+          <td><b>Alterar Fornecedor Golden Jumper</b><div class="cod">AlterarFornecedorGJ · linha 17</div></td>
+          <td>Golden Jumper</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Não · Sim</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R06</span></td>
+        </tr>
+<tr>
+          <td><b>Modalidade de Instalação</b><div class="cod">ModalidadeInstalacao · linha 13</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Físico · Virtual/Fabric</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R07</span></td>
+        </tr>
+<tr>
+          <td><b>Modelo de Disponibilização</b><div class="cod">ModeloDisponibilizacao · linha 14</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Dedicado · Hospedado</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R07</span></td>
+        </tr>
+<tr>
+          <td><b>Velocidade de Conexão</b><div class="cod">VelocidadeConexao · linha 15</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R07</span></td>
+        </tr>
+<tr>
+          <td><b>Provedor e Serviço Cloud</b><div class="cod">ProvedorCloud · linha 16</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">AWS - Direct Connect · Azure - ExpressRoute · Oracle Cloud (OCI) - Fast Connect · Google Cloud (GCP) - Cloud Interconnect · IBM - Cloud Direct Link</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R07</span></td>
+        </tr>
+<tr>
+          <td><b>Condomínio</b><div class="cod">Condominio · linha 18</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Sim · Não</td>
+          <td>sim<div class="cod">Automático</div></td>
+          <td>1</td>
+          <td><span class="rid">R08</span></td>
+        </tr>
+<tr>
+          <td><b>Acesso Terceiro Last Mile</b><div class="cod">AcessoTerceiroLastMile · linha 21</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Checkbox<div class="cod">checkbox</div></td>
+          <td class="w">Last Mile</td>
+          <td>não<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Parceiro LastMile</b><div class="cod">ParceiroLastMile · linha 22</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Proprietário do Roteador</b><div class="cod">ProprietarioRoteador · linha 23</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Algar · Parceiro</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Número Viabilidade GLM</b><div class="cod">NumeroViabilidadeGLM · linha 24</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Number<div class="cod">number</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Vigência LastMile</b><div class="cod">VigenciaLastMile · linha 25</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Valor Instalação LastMile s/ Impostos</b><div class="cod">ValorInstalacaoLastMile · linha 26</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Currency<div class="cod">currency</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Valor Mensal LastMile s/ Impostos</b><div class="cod">ValorMensalLastMile · linha 27</div></td>
+          <td>Infraestrutura de Acesso</td>
+          <td>Currency<div class="cod">currency</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R09</span></td>
+        </tr>
+<tr>
+          <td><b>Tipo de Equipamento</b><div class="cod">TipoEquipamento · linha 19</div></td>
+          <td>—</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Roteador · Switch · Conversor · Transceiver · Rádio · ONT … (7)</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1 até N</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><b>Modalidade Equipamento</b><div class="cod">ModalidadeEquipamento · linha 20</div></td>
+          <td>—</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Comodato · Do Cliente · Locação</td>
+          <td>sim<div class="cod">Automático/Manual</div></td>
+          <td>1 até N</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><b>Velocidade Temporária</b><div class="cod">VelocidadeTemporaria · linha 28</div></td>
+          <td>—</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">10 Mbps · 20 Mbps · 30 Mbps · 50 Mbps · 100 Mbps · 200 Mbps … (42)</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R12</span></td>
+        </tr>
+<tr>
+          <td><b>Quantidade de Dias (corridos)</b><div class="cod">QuantidadeDias · linha 29</div></td>
+          <td>—</td>
+          <td>Number<div class="cod">number</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R12</span></td>
+        </tr>
+<tr>
+          <td><b>Referência do Cliente</b><div class="cod">ReferenciaCliente · linha 32</div></td>
+          <td>Regras de Negócio</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R14</span></td>
+        </tr>
+<tr>
+          <td><b>Tipo Moeda</b><div class="cod">TipoMoeda · linha 33</div></td>
+          <td>Regras de Negócio</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Dólar</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R15</span></td>
+        </tr>
+<tr>
+          <td><b>Valor Moeda</b><div class="cod">ValorMoeda · linha 34</div></td>
+          <td>Regras de Negócio</td>
+          <td>Number<div class="cod">number</div></td>
+          <td class="w">—</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R15</span></td>
+        </tr>
+<tr>
+          <td><b>Produto a Serviço</b><div class="cod">ProdutoAServico · linha 47</div></td>
+          <td>Regras de Negócio</td>
+          <td>Text<div class="cod">text</div></td>
+          <td class="w">—</td>
+          <td>não<div class="cod">—</div></td>
+          <td>1</td>
+          <td><span class="rid">R16</span></td>
+        </tr>
+<tr>
+          <td><b>Período Fidelização</b><div class="cod">PeriodoFidelizacao · linha 35</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">0 · 12 · 24 · 36 · 48 · 60</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R17</span></td>
+        </tr>
+<tr>
+          <td><b>Tipo de Reajuste</b><div class="cod">TipoReajuste · linha 36</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Data Ativação · Data de assinatura do contrato · Data base · Sem reajuste</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R17</span></td>
+        </tr>
+<tr>
+          <td><b>Data Base</b><div class="cod">DataBase · linha 37</div></td>
+          <td>Informações Contratuais</td>
+          <td>Date<div class="cod">date</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R18</span></td>
+        </tr>
+<tr>
+          <td><b>Data de Assinatura do Contrato</b><div class="cod">DataAssinatura · linha 38</div></td>
+          <td>Informações Contratuais</td>
+          <td>Date<div class="cod">date</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R18</span></td>
+        </tr>
+<tr>
+          <td><b>Índice de Reajuste</b><div class="cod">IndiceReajuste · linha 39</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">IPCA · IGP-M · IGP-DI · IST</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R18</span></td>
+        </tr>
+<tr>
+          <td><b>Reajustar Antes de 12 Meses</b><div class="cod">ReajustarAntes12Meses · linha 40</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Não · Sim</td>
+          <td>não<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R18</span></td>
+        </tr>
+<tr>
+          <td><b>Data do Próximo Reajuste</b><div class="cod">DataProximoReajuste · linha 41</div></td>
+          <td>Informações Contratuais</td>
+          <td>Date<div class="cod">date</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Automático</div></td>
+          <td>1</td>
+          <td><span class="rid">R19</span></td>
+        </tr>
+<tr>
+          <td><b>Percentual da Multa</b><div class="cod">PercentualMulta · linha 42</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">30%</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R20</span></td>
+        </tr>
+<tr>
+          <td><b>Data de Início do Contrato</b><div class="cod">DataInicioContrato · linha 43</div></td>
+          <td>Informações Contratuais</td>
+          <td>Date<div class="cod">date</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Automático</div></td>
+          <td>1</td>
+          <td><span class="rid">R19</span></td>
+        </tr>
+<tr>
+          <td><b>Data de Término do Contrato</b><div class="cod">DataTerminoContrato · linha 44</div></td>
+          <td>Informações Contratuais</td>
+          <td>Date<div class="cod">date</div></td>
+          <td class="w">—</td>
+          <td>sim<div class="cod">Automático</div></td>
+          <td>1</td>
+          <td><span class="rid">R19</span></td>
+        </tr>
+<tr>
+          <td><b>Recálculo Período do Contrato</b><div class="cod">RecalculoPeriodoContrato · linha 45</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">Data Atual · Início do Contrato · Manter Vigência · Término do Contrato</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R21</span></td>
+        </tr>
+<tr>
+          <td><b>Quantidade de Dias Aviso Previo</b><div class="cod">DiasAvisoPrevio · linha 46</div></td>
+          <td>Informações Contratuais</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">30 dias</td>
+          <td>sim<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R21</span></td>
+        </tr>
+<tr>
+          <td><b>Plano</b><div class="cod">PlanoMIR · linha 30</div></td>
+          <td>—</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">MIR - SMART · MIR - PRO</td>
+          <td>não<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R13</span></td>
+        </tr>
+<tr>
+          <td><b>Tipo de Monitoramento</b><div class="cod">TipoMonitoramento · linha 31</div></td>
+          <td>—</td>
+          <td>Picklist<div class="cod">picklist</div></td>
+          <td class="w">ICMP/SNMP · PROBE</td>
+          <td>condicional<div class="cod">Manual</div></td>
+          <td>1</td>
+          <td><span class="rid">R13</span></td>
+        </tr>
+</tbody></table>
+
+<h2 id="regras"><span class="n">06</span>Regras de configuração — as 22</h2>
+<p>Cada regra aparece com seus efeitos, a condição que os dispara e o mecanismo correspondente na plataforma. As condições estão na notação do caso de uso; a tradução para o motor de restrições é trabalho de implementação.</p>
+<div class="box info"><b>Onde as regras moram</b>Visibilidade, obrigatoriedade, filtro de valores e preenchimento automático são regras de configuração do produto. Restrição que bloqueia salvamento e exclusão entre componentes pertencem ao modelo de restrição, associado ao produto por <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_expressionsetconstraintobj.htm" target="_blank" rel="noopener">ExpressionSetConstraintObj</a> <span class="nota">API 63.0+</span>.</div>
+<table><thead><tr><th>ID</th><th>Regra</th><th>Efeitos</th></tr></thead><tbody>
+<tr>
+          <td><span class="rid big">R01</span></td>
+          <td><b>Endereço sem cobertura</b>
+              <div class="cod">escopo Produto · motor declarado no UC: message</div>
+              <pre class="cml">message(Cobertura == false, &quot;Sem cobertura para o endereço. Atendimento inviável.&quot;, &quot;Error&quot;);</pre></td>
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.endereco.cobertura === false</code> · “Viabilidade: sem cobertura para o endereço. Atendimento inviável — segue para estudo dedicado.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R02</span></td>
+          <td><b>Rede neutra = inviável</b>
+              <div class="cod">escopo Produto · motor declarado no UC: message</div>
+              <pre class="cml">message(RedeNeutra == true, &quot;Endereço atendido por rede neutra: atendimento inviável.&quot;, &quot;Error&quot;);</pre></td>
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.endereco.redeNeutra === true</code> · “Viabilidade: endereço atendido por rede neutra. Atendimento inviável.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R03</span></td>
+          <td><b>Tecnologia, interface, abordagem e metragem vêm da viabilidade</b>
+              <div class="cod">escopo Produto · motor declarado no UC: setdefault + rule(disable)</div>
+              <pre class="cml">@(contextPath = &quot;SalesTransaction.TecnologiaViabilidade__c&quot;)
+extern string TecnologiaViab;
+setdefault(true, Tecnologia == TecnologiaViab, &quot;Tecnologia definida pela viabilidade.&quot;);
+rule(!EdicaoTecnicaPermitida, &quot;disable&quot;, &quot;attribute&quot;, &quot;Tecnologia&quot;);</pre></td>
+          <td><ul class="efs"><li><b>setValue</b> em <code>Tecnologia</code> quando <code class="cond">ctx.endereco.tecnologia</code> · valor: ctx.endereco.tecnologia
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Interface</code> quando <code class="cond">ctx.endereco.cobertura !== false</code> · valor: ctx.endereco.interface || &#x27;Elétrica&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Abordagem</code> quando <code class="cond">ctx.endereco.abordagem</code> · valor: ctx.endereco.abordagem
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Metragem</code> quando <code class="cond">ctx.endereco.abordagem === &#x27;Construir&#x27;</code> · valor: ctx.endereco.metragem
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Tecnologia</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Interface</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Abordagem</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Metragem</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R04</span></td>
+          <td><b>Metragem obrigatória e maior que zero na abordagem Construir</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
+              <pre class="cml">rule(Abordagem != &quot;Construir&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;Metragem&quot;);
+constraint(Abordagem == &quot;Construir&quot; -&gt; Metragem &gt; 0, &quot;Metragem deve ser maior que zero na abordagem Construir.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem !== &#x27;Construir&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem === &#x27;Construir&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>constraint</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem === &#x27;Construir&#x27; &amp;&amp; a.Metragem !== &#x27;&#x27; &amp;&amp; a.Metragem != null &amp;&amp; Number(a.Metragem) &lt;= 0</code> · “Metragem deve ser maior que zero na abordagem Construir.”
+              <div class="mec">Restrição que bloqueia o salvamento — Modelo de restrição associado ao produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R05</span></td>
+          <td><b>VPN Network: existente herda protocolo; nova exige protocolo</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide/disable) + setdefault</div>
+              <pre class="cml">rule(VPNNetwork != &quot;NOVA&quot;, &quot;disable&quot;, &quot;attribute&quot;, &quot;ProtocoloRoteamento&quot;);
+setdefault(VPNNetwork == &quot;NOVA&quot;, ProtocoloRoteamento == &quot;RIP&quot;);</pre></td>
+          <td><ul class="efs"><li><b>require</b> em <code>VPNNetwork</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">!a.VPNNetwork</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code> · valor: f.networkProtocolo(a.VPNNetwork)
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code> · “Nova VPN Network: o identificador é gerado na criação e a rede exige no mínimo dois VPN Nodes vinculados.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R06</span></td>
+          <td><b>Golden Jumper só em endereço elegível; Algar exige dados da conexão; alteração de fornecedor só em mudança de endereço</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
+              <pre class="cml">rule(!EnderecoDataCenter, &quot;hide&quot;, &quot;attribute&quot;, &quot;GoldenJumper&quot;);
+constraint(GoldenJumper == &quot;Algar&quot; -&gt; NomeDataCenter != &quot;&quot; &amp;&amp; NomeJumper != &quot;&quot;, &quot;Golden Jumper Algar exige Data Center, interface e nome do jumper.&quot;);
+rule(NovaVenda, &quot;hide&quot;, &quot;attribute&quot;, &quot;AlterarFornecedorGJ&quot;);
+constraint(AlterarFornecedorGJ == &quot;Sim&quot; -&gt; InterfaceGJ != &quot;&quot; &amp;&amp; NomeJumper != &quot;&quot;, &quot;Alteração de fornecedor exige interface e nome do jumper.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>GoldenJumper</code> quando <code class="cond">!ctx.endereco.dataCenter</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>GoldenJumper</code> quando <code class="cond">ctx.endereco.dataCenter</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>InterfaceGJ</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NomeJumper</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>InterfaceGJ</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27; &amp;&amp; ctx.endereco.nomeDataCenter</code> · valor: ctx.endereco.nomeDataCenter
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>hide</b> em <code>AlterarFornecedorGJ</code> quando <code class="cond">ctx.transacao.novaVenda</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>InterfaceGJ</code> quando <code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> quando <code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R07</span></td>
+          <td><b>Virtual/Fabric torna obrigatório o bloco de nuvem</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
+              <pre class="cml">rule(ModalidadeInstalacao != &quot;Virtual/Fabric&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;ProvedorCloud&quot;);
+constraint(ModalidadeInstalacao == &quot;Virtual/Fabric&quot; -&gt; ProvedorCloud != &quot;&quot;, &quot;Virtual/Fabric exige modelo, velocidade (Mbps) e provedor.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>require</b> em <code>ModalidadeInstalacao</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ModeloDisponibilizacao</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VelocidadeConexao</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProvedorCloud</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ModeloDisponibilizacao</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VelocidadeConexao</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProvedorCloud</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R08</span></td>
+          <td><b>Condomínio vem do cadastro do endereço</b>
+              <div class="cod">escopo Produto · motor declarado no UC: setdefault + rule(disable)</div>
+              <pre class="cml">@(contextPath = &quot;SalesTransaction.EnderecoCondominio__c&quot;)
+extern boolean EnderecoCondominio;
+rule(true, &quot;disable&quot;, &quot;attribute&quot;, &quot;Condominio&quot;);</pre></td>
+          <td><ul class="efs"><li><b>setValue</b> em <code>Condominio</code> quando <code class="cond">true</code> · valor: ctx.endereco.condominio ? &#x27;Sim&#x27; : &#x27;Não&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Condominio</code> quando <code class="cond">true</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R09</span></td>
+          <td><b>Acesso Terceiro Last Mile: só com complementação técnica; exige dados do parceiro</b>
+              <div class="cod">escopo Bundle · motor declarado no UC: rule(disable/hide) + constraint + exclude</div>
+              <pre class="cml">exclude(AcessoTerceiroLastMile == true, svas[UpgradeTemporario], &quot;Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.&quot;);
+rule(!AcessoTerceiroLastMile, &quot;hide&quot;, &quot;attribute&quot;, &quot;ParceiroLastMile&quot;);</pre></td>
+          <td><ul class="efs"><li><b>disable</b> em <code>AcessoTerceiroLastMile</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;complementacao&#x27;)</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ParceiroLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProprietarioRoteador</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NumeroViabilidadeGLM</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VigenciaLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorInstalacaoLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMensalLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ParceiroLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProprietarioRoteador</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NumeroViabilidadeGLM</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VigenciaLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorInstalacaoLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorMensalLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>exclude</b> em <code>upgrade</code> quando <code class="cond">a.AcessoTerceiroLastMile</code> · “Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.”
+              <div class="mec">Exclusão mútua entre componentes — Modelo de restrição associado ao produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R10</span></td>
+          <td><b>Equipamentos dimensionados pela tecnologia (comodato) · exigência por tecnologia</b>
+              <div class="cod">escopo Bundle · motor declarado no UC: require</div>
+              <pre class="cml">require(Tecnologia == &quot;GPON&quot;, equipamentos[Roteador]{Modalidade = &quot;Comodato&quot;} == 1, &quot;GPON: Roteador em comodato.&quot;);
+require(Tecnologia == &quot;GPON&quot;, equipamentos[ONT]{Modalidade = &quot;Comodato&quot;} == 1, &quot;GPON: ONT em comodato.&quot;);
+require(Tecnologia == &quot;Metro&quot; &amp;&amp; EntregaAnel, equipamentos[ChaveOtica]{Modalidade = &quot;Comodato&quot;} == 1);</pre></td>
+          <td><ul class="efs"><li><b>autoAdd</b> em <code>equip</code> quando <code class="cond">d.classificacao === &#x27;Formatado&#x27;</code>
+              <div class="mec">Inclusão automática de componente — Regra de configuração sobre o grupo de componentes</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.Tecnologia === &#x27;XGSPON&#x27;</code> · “Dimensionamento automático de equipamentos para XGSPON não está definido na Revisão 1 — incluir manualmente.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">f.equipamentosFaltando(a.Tecnologia, ctx.endereco.anel, c.equip).length &gt; 0</code> · “__FALTANDO__”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R11</span></td>
+          <td><b>Roteador no máximo 1; Rádio exige equipamento Rádio</b>
+              <div class="cod">escopo Bundle · motor declarado no UC: constraint</div>
+              <pre class="cml">constraint(equipamentos[Roteador] &lt;= 1, &quot;Roteador tem cardinalidade máxima de 1.&quot;);
+constraint(Tecnologia == &quot;Rádio&quot; -&gt; equipamentos[Radio] &gt;= 1, &quot;Tecnologia Rádio exige o equipamento Rádio.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.filter(e =&gt; e.TipoEquipamento === &#x27;Roteador&#x27;).reduce((s,e)=&gt;s+Number(e.Quantidade||e.qtd||1),0) &gt; 1</code> · “Roteador tem cardinalidade máxima de 1.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.Tecnologia === &#x27;Rádio&#x27; &amp;&amp; !c.equip.some(e =&gt; e.TipoEquipamento === &#x27;Rádio&#x27;)</code> · “Tecnologia Rádio exige o equipamento Rádio.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.length === 0 &amp;&amp; ctx.endereco.cobertura !== false &amp;&amp; !ctx.endereco.redeNeutra</code> · “O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.some(e =&gt; (e.Quantidade===undefined||e.Quantidade===null||e.Quantidade===&#x27;&#x27; ? 1 : Number(e.Quantidade)) &lt; 1)</code> · “A quantidade de cada equipamento deve ser maior que zero.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.some(e =&gt; !e.ModalidadeEquipamento)</code> · “Informe a modalidade de cada equipamento selecionado.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R12</span></td>
+          <td><b>Upgrade Temporário: opções elegíveis, tetos por faixa e 10 a 60 dias</b>
+              <div class="cod">escopo Bundle · motor declarado no UC: rule(hide value) + constraint</div>
+              <pre class="cml">rule(VelocidadeTemporaria &lt;= Velocidade, &quot;hide&quot;, &quot;attribute&quot;, &quot;VelocidadeTemporaria&quot;, &quot;value&quot;, &quot;...&quot;);
+constraint(QuantidadeDias &gt;= 10 &amp;&amp; QuantidadeDias &lt;= 60, &quot;Quantidade de dias entre 10 e 60.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>require</b> em <code>VelocidadeTemporaria</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>QuantidadeDias</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>VelocidadeTemporaria</code> quando <code class="cond">true</code>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>constraint</b> em <code>QuantidadeDias</code> quando <code class="cond">x.QuantidadeDias !== &#x27;&#x27; &amp;&amp; x.QuantidadeDias != null &amp;&amp; (Number(x.QuantidadeDias) &lt; 10 || Number(x.QuantidadeDias) &gt; 60)</code> · “Quantidade de dias do upgrade deve ficar entre 10 e 60.”
+              <div class="mec">Restrição que bloqueia o salvamento — Modelo de restrição associado ao produto</div></li><li><b>message</b> em <code>upgrade</code> quando <code class="cond">f.mbps(a.Velocidade) === 100</code> · “Pendência em revisão: enquadramento da velocidade contratada igual a 100 Mbps nas faixas de limite (time Algar).”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>upgrade</code> quando <code class="cond">f.mbps(a.Velocidade) &gt; 1000</code> · “Contratada acima de 1 Gbps: upgrade temporário segue em esteira customizada.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R13</span></td>
+          <td><b>Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade</b>
+              <div class="cod">escopo Bundle · motor declarado no UC: constraint + message</div>
+              <pre class="cml">message(TipoMonitoramento == &quot;PROBE&quot;, &quot;PROBE: alta complexidade para desenho do escopo.&quot;, &quot;Info&quot;);</pre></td>
+          <td><ul class="efs"><li><b>require</b> em <code>PlanoMIR</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>TipoMonitoramento</code> quando <code class="cond">x.PlanoMIR</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">x.TipoMonitoramento === &#x27;PROBE&#x27;</code> · “PROBE: fluxo segue em alta complexidade para desenho do escopo, com equipamento específico.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">a.AcessoTerceiroLastMile &amp;&amp; a.ProprietarioRoteador === &#x27;Parceiro&#x27;</code> · “Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parc”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R14</span></td>
+          <td><b>Referência do Cliente obrigatória para Operadoras-Atacado e Governo</b>
+              <div class="cod">escopo Produto · motor declarado no UC: extern + rule(hide) + constraint</div>
+              <pre class="cml">@(contextPath = &quot;SalesTransaction.Segmento__c&quot;)
+extern string Segmento;
+rule(Segmento != &quot;Governo&quot; &amp;&amp; Segmento != &quot;Operadoras-Atacado&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;ReferenciaCliente&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>ReferenciaCliente</code> quando <code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ReferenciaCliente</code> quando <code class="cond">[&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R15</span></td>
+          <td><b>Moeda e cotação só para cliente internacional</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
+              <pre class="cml">rule(!ClienteInternacional, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoMoeda&quot;);
+constraint(TipoMoeda != &quot;&quot; -&gt; ValorMoeda &gt; 0, &quot;Informe a cotação de conversão.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>TipoMoeda</code> quando <code class="cond">!ctx.conta.internacional</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMoeda</code> quando <code class="cond">!ctx.conta.internacional</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ValorMoeda</code> quando <code class="cond">ctx.conta.internacional &amp;&amp; a.TipoMoeda</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.conta.internacional</code> · “Cliente internacional: a cotação de conversão é calculada pelo usuário, não pelo sistema.”
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R16</span></td>
+          <td><b>Produto a Serviço sem definição</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(disable)</div>
+              <pre class="cml">rule(true, &quot;disable&quot;, &quot;attribute&quot;, &quot;ProdutoAServico&quot;); // pendente de definição</pre></td>
+          <td><ul class="efs"><li><b>disable</b> em <code>ProdutoAServico</code> quando <code class="cond">true</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R17</span></td>
+          <td><b>Fidelização 0 e &quot;Sem reajuste&quot; só para segmentos permitidos</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide value)</div>
+              <pre class="cml">rule(Segmento != &quot;Governo&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoReajuste&quot;, &quot;value&quot;, &quot;Sem reajuste&quot;);
+rule(!PermissaoDataBase, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoReajuste&quot;, &quot;value&quot;, &quot;Data base&quot;);</pre></td>
+          <td><ul class="efs"><li><b>require</b> em <code>PeriodoFidelizacao</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>PeriodoFidelizacao</code> quando <code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>require</b> em <code>TipoReajuste</code> quando <code class="cond">true</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;dataBase&#x27;)</code>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">!(ctx.transacao.novaVenda &amp;&amp; [&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento))</code>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R18</span></td>
+          <td><b>Datas-âncora conforme o tipo de reajuste</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
+              <pre class="cml">rule(TipoReajuste != &quot;Data base&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;DataBase&quot;);
+rule(!PermissaoReajusteAntes12, &quot;disable&quot;, &quot;attribute&quot;, &quot;ReajustarAntes12Meses&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>DataBase</code> quando <code class="cond">a.TipoReajuste !== &#x27;Data base&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataBase</code> quando <code class="cond">a.TipoReajuste === &#x27;Data base&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>DataAssinatura</code> quando <code class="cond">a.TipoReajuste !== &#x27;Data de assinatura do contrato&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataAssinatura</code> quando <code class="cond">a.TipoReajuste === &#x27;Data de assinatura do contrato&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>IndiceReajuste</code> quando <code class="cond">a.TipoReajuste !== &#x27;Sem reajuste&#x27;</code>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ReajustarAntes12Meses</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;reajusteAntes12&#x27;)</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R19</span></td>
+          <td><b>Data do próximo reajuste calculada</b>
+              <div class="cod">escopo Produto · motor declarado no UC: constraint (derivação)</div>
+              <pre class="cml">constraint(DataProximoReajuste == addMonths(DataAncora, PeriodoFidelizacao &lt; 12 &amp;&amp; ReajustarAntes12Meses == &quot;Não&quot; ? PeriodoFidelizacao + 12 : PeriodoFidelizacao));</pre></td>
+          <td><ul class="efs"><li><b>setValue</b> em <code>DataProximoReajuste</code> quando <code class="cond">true</code> · valor: f.proximoReajuste(a)
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataInicioContrato</code> quando <code class="cond">true</code> · valor: &#x27;Definida na ativação do asset&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataTerminoContrato</code> quando <code class="cond">true</code> · valor: &#x27;Ativação + período de fidelização&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R20</span></td>
+          <td><b>Multa fixa em 30% e não elegível para Governo</b>
+              <div class="cod">escopo Produto · motor declarado no UC: setdefault + rule(hide)</div>
+              <pre class="cml">rule(Segmento == &quot;Governo&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;PercentualMulta&quot;);
+setdefault(Segmento != &quot;Governo&quot;, PercentualMulta == &quot;30%&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>PercentualMulta</code> quando <code class="cond">ctx.conta.segmento === &#x27;Governo&#x27;</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>PercentualMulta</code> quando <code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code> · valor: &#x27;30%&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>PercentualMulta</code> quando <code class="cond">true</code>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R21</span></td>
+          <td><b>Recálculo do período só em alteração; aviso prévio de 30 dias</b>
+              <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + setdefault</div>
+              <pre class="cml">rule(TipoTransacao == &quot;NovaVenda&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;RecalculoPeriodoContrato&quot;);
+setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
+          <td><ul class="efs"><li><b>hide</b> em <code>RecalculoPeriodoContrato</code> quando <code class="cond">ctx.transacao.novaVenda</code>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>DiasAvisoPrevio</code> quando <code class="cond">true</code> · valor: &#x27;30 dias&#x27;
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li></ul></td>
+        </tr>
+<tr>
+          <td><span class="rid big">R22</span></td>
+          <td><b>Nova network exige no mínimo 2 VPN Nodes na cotação</b>
+              <div class="cod">escopo Transação · motor declarado no UC: constraint (transaction)</div>
+              <pre class="cml">constraint(count(nodes, VPNNetwork == &quot;NOVA&quot;) != 1, &quot;Nova VPN Network exige no mínimo dois VPN Nodes.&quot;);</pre></td>
+          <td><ul class="efs"><li><b>transacao</b> em <code>—</code> quando <code class="cond">t.nodesNovaNetwork === 1</code> · “A nova VPN Network exige no mínimo dois VPN Nodes vinculados — adicione outro VPN Node à cotação.”
+              <div class="mec">Condição por tipo de transação — Regra sensível ao tipo de ação do pedido</div></li></ul></td>
+        </tr>
+</tbody></table>
+
+<h2 id="classificacao"><span class="n">07</span>Classificação do atendimento</h2>
+<p>Formatado quando a matriz de formatação é atendida e nenhuma situação de customização está presente (UC-VPN-001, fluxo passo 4).</p>
+<p>[[&#x27;ctx.endereco.subterranea&#x27;, &#x27;Rede subterrânea sem prédio abordado&#x27;], [&quot;a.Tecnologia === &#x27;Rádio&#x27;&quot;, &#x27;Acesso por Rádio&#x27;], [&#x27;ctx.conta.internacional&#x27;, &#x27;Cliente internacional&#x27;], [&quot;[&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)&quot;, &#x27;Segmento Governo ou Operadoras&#x27;], [&#x27;ctx.endereco.dataCenter&#x27;, &#x27;Endereço classificado como Golden Jumper&#x27;], [&#x27;a.AcessoTerceiroLastMile&#x27;, &#x27;Acesso Terceiro Last Mile&#x27;], [&#x27;ctx.endereco.condominio&#x27;, &#x27;Condomínio empresarial&#x27;], [&#x27;ctx.endereco.arq5&#x27;, &#x27;Localidade ARQ5 (dúvida aberta)&#x27;], [&quot;c.mir.length &amp;&amp; c.mir[0].TipoMonitoramento === &#x27;PROBE&#x27;&quot;, &#x27;Monitoramento PROBE (alta complexidade)&#x27;]]</p>
+<h3>Matriz do atendimento formatado</h3>
+<table><thead><tr><th>Condição</th><th>Leitura</th></tr></thead><tbody><tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &lt;= 500 &amp;&amp; a.Tecnologia === &#x27;Metro&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 400</code></td><td>Até 500 Mb: Metro a até 400 m</td></tr>
+<tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &lt;= 500 &amp;&amp; a.Tecnologia === &#x27;GPON&#x27; &amp;&amp; a.Abordagem === &#x27;Pronta&#x27;</code></td><td>Até 500 Mb: GPON pronto</td></tr>
+<tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &lt;= 500 &amp;&amp; a.Tecnologia === &#x27;GPON&#x27; &amp;&amp; a.Abordagem === &#x27;Construir&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 2200</code></td><td>Até 500 Mb: GPON a construir a até 2.200 m</td></tr>
+<tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &gt; 500 &amp;&amp; f.mbps(a.Velocidade) &lt;= 1000 &amp;&amp; a.Tecnologia === &#x27;XGSPON&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 400</code></td><td>500 Mb a 1 Gb: XGSPON a até 400 m da CTO</td></tr>
+<tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &gt; 500 &amp;&amp; f.mbps(a.Velocidade) &lt;= 900 &amp;&amp; a.Tecnologia === &#x27;Metro&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 400 &amp;&amp; ctx.endereco.anel</code></td><td>500 a 900 Mb: Metro a até 400 m com entrega em anel</td></tr></tbody></table>
+
+<h2 id="gerais"><span class="n">08</span>Regras gerais do produto</h2>
+<table><thead><tr><th>Item</th><th>Texto do UC</th></tr></thead><tbody><tr><td class="cod"></td><td>O Produto não pode ser vendido para clientes Pessoa Física.</td></tr>
+<tr><td class="cod"></td><td>clientes do segmento Governo somente podem ter vendas feitas pelos canais Consultor Corporativo e Administração de Vendas Centralizada — restrição de canal de venda.</td></tr>
+<tr><td class="cod"></td><td>O Produto não pode ser vendido em rede neutra.</td></tr>
+<tr><td class="cod"></td><td>Deve existir uma parametrização para elegibilizar localidades disponíveis para venda ou um &quot;território&quot; para excluir algumas localidades.</td></tr>
+<tr><td class="cod"></td><td>O produto poderá ser vendido no modelo FORMATADO ou CUSTOMIZADO mediante algumas regras de complexidade.</td></tr>
+<tr><td class="cod"></td><td>Obrigatório um endereço de instalação.  Cada node terá o seu endereço de instalação.</td></tr>
+<tr><td class="cod"></td><td>Não é permitido realizar a alteração do endereço internacional.</td></tr>
+<tr><td class="cod"></td><td>Não é permitido realizar a alteração do endereço nacional para um internacional.</td></tr>
+<tr><td class="cod"></td><td>Não é permitida a alteração do estado do endereço de instalação.</td></tr>
+<tr><td class="cod"></td><td>Em toda nova venda, exige-se pelo menos 2 VPN Node associado a um mesmo VPN Network.</td></tr>
+<tr><td class="cod"></td><td>É necessário identificar se o endereço de instalação é de um local, com necessidade de Golden Jumper (data center ou pode ser necessidade especifica de um cliente que não é data center). Para a marcação do flag &quot;Condomínio&quot;, o endereço de instalação deverá estar previamente cadastrado de forma similar ao que ocorre com os endereços de Data Centers. É necessário identificar se o endereço de instalação é de um condomínio empresarial (para consideração dos custos relativos ao condomínio que impactam no custo da solução para o cliente). Ex. cobrança pelo condomínio da visita, aluguel do espaço para instalação do equipamento ...) Um endereço pré-cadastrado poderá definir se é Data Center (uso de Golden Jumper) ou Condomínio (Impacta em Custos Extras) ou ambos.</td></tr>
+<tr><td class="cod"></td><td>Produto Formatado quando (levando em consideração as respostas retornadas pela viabilidade técnica-capacidade): - Velocidade até 500 Mb: Tecnologia Metro: Viabilidade física até 400 metros (pronto ou construir) ou GPON pronto; Tecnologia GPON: Viabilidade física até 2200 metros abordagem construir; - Velocidade de 500Mb até 1Gb: Tecnologia XGSPON: Viabilidade física até 400 metros da CTO (Caixa de terminação óptica) que esteja conectada à uma OLT com placa apta ao XGSPON; - Velocidade a partir de 500Mb até 900Mb: Tecnologia Metro: Viabilidade física até 400 metros (pronto ou construir); e Foi feita viabilidade lógica com retorno viável para a capacidade solicitada em Anel metro/cliente Produto Não Formatado (projeto customizado) quando: - Não atende os critérios de formatação citados acima - Se a viabilidade retornar que o Tipo de Rede é Subterrânea e Abordagem diferente de Prédio Abordado e Prédio Multi Abordado - Acesso Radio - Cliente do tipo Internacional (não possui CNPJ), faturado por invoice em moeda e cotação definida por contrato - Cliente com segmento Governo e Operadoras - Se endereço for classificado como Golden Jumper - Se Last Mile - Se endereço é de um condomínio empresarial - Endereços na localidade ARQ5</td></tr>
+<tr><td class="cod"></td><td>SLA de implantação: - MTTR (Incidente): 4hrs - Implantação: formatado 9 dias? - Customizado de 25 - 85d</td></tr>
+<tr><td class="cod"></td><td>O produto pode ter seus atributos comerciais e técnicos alterados ou sofrer renegociação contratual (dados de contrato e preço), exceto nas seguintes situações: a) se estiver com algum tipo de bloqueio (inadimplencia, suspensão provisória, fraude, ...) ativo b) se estiver com um protocolo de mudança de endereço, transferencia de titularidade e cancelamento em aberto</td></tr>
+<tr><td class="cod"></td><td>SS de Retenção/TT/Cancelamento em aberto Quando Há Solicitação de Serviço (Retenção, Troca de Titularidade ou Cancelamento) em aberto sobre o mesmo asset. Resultado &quot;Existe uma SS [] de em aberto para o Asset selecionado.&quot; Nota Evita operações concorrentes sobre o mesmo asset.</td></tr>
+<tr><td class="cod"></td><td>Auto-quantificação de equipamento por Tecnologia Quando Escolher a Tecnologia no Acesso (cotações simplificadas). Resultado Preenche Quantidade=1: Metro→Roteador+Switch (ou +Transceiver em MiniPop/Pronta); GPON→Roteador+ONT;</td></tr>
+<tr><td class="cod"></td><td>Modalidade do equipamento travada por tecnologia Quando Tecnologia × abordagem × segmento. Resultado Metro→Comodato; GPON→Venda (Nova Venda) ou Comodato (troca); sem equipamento Algar→Do Cliente.</td></tr>
+<tr><td class="cod"></td><td>Alta Complexidade por velocidade/tecnologia Quando METRO ≥307.200 kbps (sem análise) / ≥921.600 (com análise); GPON ≥512.000 kbps; ETHoTDM; Arquétipo 5; &gt;20 itens. Resultado Escala a cotação para alçada manual (aprovação adicional).</td></tr>
+<tr><td class="cod"></td><td>Upgrade/Downgrade: Possibilita alteração entre planos MIR SMART &gt; MIR PRO e vice-versa</td></tr>
+<tr><td class="cod"></td><td>Cancelamento SVA MIR: Se cancelar o circuito de dados relacionado, o circuito deverá ser cancelado automaticamente</td></tr>
+<tr><td class="cod"></td><td>Ativação SVA MIR: Gera OS de ativação, e somente quando ativa o circuito de dados, o circuito de MIR pode ser ativado</td></tr>
+<tr><td class="cod"></td><td>Exceção SVA MIR: MIR PRO não é valido para LAN TO LAN e IP TRANSITO</td></tr>
+<tr><td class="cod"></td><td>Regra negócio SVA MIR: Na seleção de TIPO DE MONITORAMENTO via &quot;PROBE&quot;, deve seguir Alta complexidade para desenho da solução considerando um equipamento específico, não estocável</td></tr>
+<tr><td class="cod"></td><td>Automação e integrações SVA: Existem hoje muitas regras de automação e integração com sistemas internos, Zabbix, NAVA que precisa ser olhada a arquitetura atual e replicar para Sales Force. Essas regras devem ser mapeadas para realizar o DE/PARA.</td></tr>
+<tr><td class="cod"></td><td>Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix para ativação de acordo com o plano escolhido.</td></tr></tbody></table>
+
+<h2 id="ciclo"><span class="n">09</span>Ciclo transacional: cotação, pedido e asset</h2>
+<table><thead><tr><th>Etapa</th><th>O que acontece</th><th>Objetos</th></tr></thead><tbody>
+<tr><td>Cotação</td><td>O item configurado vira linha da cotação; os componentes viram linhas filhas e o endereço amarra o node.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quote.htm" target="_blank" rel="noopener">Quote</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelineitem.htm" target="_blank" rel="noopener">QuoteLineItem</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinegroup.htm" target="_blank" rel="noopener">QuoteLineGroup</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinerelationship.htm" target="_blank" rel="noopener">QuoteLineRelationship</a></td></tr>
+<tr><td>Proposta</td><td>Documento gerado a partir da cotação.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotedocument.htm" target="_blank" rel="noopener">QuoteDocument</a></td></tr>
+<tr><td>Contrato</td><td>Carrega fidelização, reajuste e multa vindos dos atributos contratuais.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contract.htm" target="_blank" rel="noopener">Contract</a></td></tr>
+<tr><td>Pedido</td><td>Criado da cotação aceita; o tipo da transação distingue nova venda de alteração.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_order.htm" target="_blank" rel="noopener">Order</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitem.htm" target="_blank" rel="noopener">OrderItem</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderaction.htm" target="_blank" rel="noopener">OrderAction</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitemrelationship.htm" target="_blank" rel="noopener">OrderItemRelationship</a></td></tr>
+<tr><td>Entrega por endereço</td><td>Itens que compartilham método e endereço de entrega — é onde o endereço por node se encaixa.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderdeliverygroup.htm" target="_blank" rel="noopener">OrderDeliveryGroup</a></td></tr>
+<tr><td>Asset</td><td>Nasce da ativação e guarda os atributos configurados.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_asset.htm" target="_blank" rel="noopener">Asset</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetattribute.htm" target="_blank" rel="noopener">AssetAttribute</a></td></tr>
+<tr><td>Ciclo de vida do asset</td><td>Mudanças e períodos com mesma quantidade e valor.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetaction.htm" target="_blank" rel="noopener">AssetAction</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetactionsource.htm" target="_blank" rel="noopener">AssetActionSource</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiod.htm" target="_blank" rel="noopener">AssetStatePeriod</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiodattribute.htm" target="_blank" rel="noopener">AssetStatePeriodAttribute</a></td></tr>
+<tr><td>Vínculo com o contrato</td><td>Liga o asset ao contrato com vigência.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetcontractrelationship.htm" target="_blank" rel="noopener">AssetContractRelationship</a></td></tr>
+<tr><td>Origem comercial</td><td>Lead convertido em conta, contato e oportunidade.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_lead.htm" target="_blank" rel="noopener">Lead</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm" target="_blank" rel="noopener">Account</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contact.htm" target="_blank" rel="noopener">Contact</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunity.htm" target="_blank" rel="noopener">Opportunity</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunitylineitem.htm" target="_blank" rel="noopener">OpportunityLineItem</a></td></tr>
+</tbody></table>
+
+<h2 id="orquestracao"><span class="n">10</span>Decomposição e orquestração</h2>
+<p>A submissão do pedido decompõe o produto comercial em produtos técnicos e monta um plano com raias por sistema e etapas tipadas. O mecanismo é do orquestrador de receita; <b>quais</b> produtos técnicos o VPN Node gera e <b>quais</b> etapas compõem o plano são proposta do projeto — a Revisão 1 não descreve o pós-venda.</p>
+<table><thead><tr><th>Peça</th><th>Objeto</th><th>Situação</th></tr></thead><tbody>
+<tr><td>Ordem de execução por sistema</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorder.htm" target="_blank" rel="noopener">FulfillmentOrder</a></td><td>Mecanismo oficial; conteúdo a validar com o time de catálogo</td></tr>
+<tr><td>Item da ordem de execução</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorderlineitem.htm" target="_blank" rel="noopener">FulfillmentOrderLineItem</a></td><td>idem</td></tr>
+<tr><td>Plano, raias e etapas</td><td><code class="api">Orchestration plan</code></td><td>Tipos usados: tarefa manual, callout, automática e marco</td></tr>
+</tbody></table>
+
+<h2 id="dicionario"><span class="n">11</span>Dicionário de objetos citados</h2>
+<p>Cada nome abaixo foi consultado na Referência de Objetos do Salesforce durante a produção deste documento.</p>
+<table><thead><tr><th>Objeto</th><th>Situação da consulta</th></tr></thead><tbody>
+<tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm" target="_blank" rel="noopener">Account</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_asset.htm" target="_blank" rel="noopener">Asset</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetaction.htm" target="_blank" rel="noopener">AssetAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetactionsource.htm" target="_blank" rel="noopener">AssetActionSource</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetattribute.htm" target="_blank" rel="noopener">AssetAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetcontractrelationship.htm" target="_blank" rel="noopener">AssetContractRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiod.htm" target="_blank" rel="noopener">AssetStatePeriod</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiodattribute.htm" target="_blank" rel="noopener">AssetStatePeriodAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">AttributeCategory</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributedefinition.htm" target="_blank" rel="noopener">AttributeDefinition</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklist.htm" target="_blank" rel="noopener">AttributePicklist</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklistvalue.htm" target="_blank" rel="noopener">AttributePicklistValue</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contact.htm" target="_blank" rel="noopener">Contact</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contract.htm" target="_blank" rel="noopener">Contract</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_expressionsetconstraintobj.htm" target="_blank" rel="noopener">ExpressionSetConstraintObj</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorder.htm" target="_blank" rel="noopener">FulfillmentOrder</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorderlineitem.htm" target="_blank" rel="noopener">FulfillmentOrderLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_lead.htm" target="_blank" rel="noopener">Lead</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunity.htm" target="_blank" rel="noopener">Opportunity</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunitylineitem.htm" target="_blank" rel="noopener">OpportunityLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_order.htm" target="_blank" rel="noopener">Order</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderaction.htm" target="_blank" rel="noopener">OrderAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderdeliverygroup.htm" target="_blank" rel="noopener">OrderDeliveryGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitem.htm" target="_blank" rel="noopener">OrderItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitemrelationship.htm" target="_blank" rel="noopener">OrderItemRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebook2.htm" target="_blank" rel="noopener">Pricebook2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebookentry.htm" target="_blank" rel="noopener">PricebookEntry</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_product2.htm" target="_blank" rel="noopener">Product2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattribute.htm" target="_blank" rel="noopener">ProductAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductAttributeDefinition</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributeset.htm" target="_blank" rel="noopener">ProductAttributeSet</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetitem.htm" target="_blank" rel="noopener">ProductAttributeSetItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetproduct.htm" target="_blank" rel="noopener">ProductAttributeSetProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategory.htm" target="_blank" rel="noopener">ProductCategory</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategoryproduct.htm" target="_blank" rel="noopener">ProductCategoryProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductClassification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductClassificationAttr</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductDisqualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductQualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productrelatedcomponent.htm" target="_blank" rel="noopener">ProductRelatedComponent</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodel.htm" target="_blank" rel="noopener">ProductSellingModel</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodeloption.htm" target="_blank" rel="noopener">ProductSellingModelOption</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quote.htm" target="_blank" rel="noopener">Quote</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotedocument.htm" target="_blank" rel="noopener">QuoteDocument</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinegroup.htm" target="_blank" rel="noopener">QuoteLineGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelineitem.htm" target="_blank" rel="noopener">QuoteLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinerelationship.htm" target="_blank" rel="noopener">QuoteLineRelationship</a></td><td>localizado na Referência de Objetos</td></tr>
+</tbody></table>
+
+<h2 id="lacunas"><span class="n">12</span>Lacunas, dúvidas e o que exige validação</h2>
+<h3>Declarado como não definido pela Revisão 1</h3>
+<ul>
+<li>Precificação e tabela de preços do VPN Node.</li>
+<li>Pós-venda: alteração, renovação e cancelamento do asset.</li>
+<li>Ordem comercial entre proposta enviada, aceite do cliente e geração do contrato.</li>
+<li>Produtos técnicos da decomposição e etapas do plano de orquestração.</li>
+<li>Dono e processo de manutenção da base de endereços pré-cadastrados (Data Center e condomínio).</li>
+</ul>
+<h3>Dúvidas registradas no caso de uso</h3>
+<ul><li><b>D-GJ-01</b> — R06 · Golden Jumper: a Revisão 1 diz que com responsável Cliente os atributos do grupo não são elegíveis, e também que marcar Alterar Fornecedor como Sim obriga interface e nome do jumper. Se, numa mudança de endereço, o responsável for Cliente e a alteração for Sim, qual das duas prevalece? O protótipo faz a alteração prevalecer, exibindo e exigindo os dois campos.</li></ul>
+<h3>O que exige validação humana antes de virar configuração</h3>
+<ul>
+<li>Os seis objetos que não retornaram na Referência de Objetos consultada — confirmar nome, versão de API e disponibilidade na org.</li>
+<li>A tradução de cada uma das 22 regras para o motor de restrições, com a severidade correta.</li>
+<li>A origem dos atributos de preenchimento automático: quais vêm da viabilidade, quais do cadastro do endereço e quais do contrato.</li>
+<li>A cardinalidade dos grupos de componentes contra o catálogo real.</li>
+</ul>
+<div class="box alerta"><b>Fronteira deste documento</b>Ele descreve o que modelar, não como implementar. Não contém definição de layout, permissões, sharing, testes de aceitação nem dimensionamento de volumetria. As condições aparecem na notação do caso de uso, que é legível, mas não é sintaxe de produção.</div>
+
+</main>
+<footer class="wrap"><span>Algar — Referência técnica · VPN Node</span><span>Confidencial — uso interno</span></footer>
+</body></html>
