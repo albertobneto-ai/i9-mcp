@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T13:31:41.885Z",
+  "quando": "2026-09-14T13:36:14.472Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -33,6 +33,10 @@
     "s1-p01": {
       "item": "Versão do IP",
       "comentario": "retirar regra de validação.é obrigatorio."
+    },
+    "s1-p02": {
+      "item": "Protocolo de Roteamento",
+      "comentario": "retirar frase \"mas pode ser alterado no momento da ordem de serviço de instalação. Não participa da formação do preço.\""
     }
   }
 }
