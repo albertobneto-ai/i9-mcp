@@ -3,7 +3,15 @@
   {
    "produto": "VPN Node",
    "familia": "Conectividade",
-   "pagina": "uc-vpn-node.html"
+   "pagina": "uc-vpn-node.html",
+   "anexos": [
+    {
+     "titulo": "Referência técnica — modelagem no Revenue Cloud",
+     "pagina": "referencia-tecnica-vpn-node.html",
+     "pdf": "referencia-tecnica-vpn-node.pdf",
+     "nota": "46 atributos, 22 regras e o destino de cada peça na plataforma"
+    }
+   ]
   },
   {
    "produto": "Locação de Equipamentos",
