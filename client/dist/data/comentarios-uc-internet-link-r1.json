@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:29:44.601Z",
+  "quando": "2026-09-14T14:31:12.385Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -108,7 +108,7 @@
     },
     "s1-u02": {
       "item": "Quantidade de Dias",
-      "comentario": "segue a mesma dinamica de VPNNão pode ser comercializado para acesso terceiro rede neutra e last mile"
+      "comentario": "segue a mesma dinâmica de VPNNão pode ser comercializado para acesso terceiro rede neutra e last mileA quantidade de dias informada não pode ser menor que 10 dias e a quantidade maxima deve ser até 60 dias."
     }
   }
 }
