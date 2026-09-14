@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:27:27.655Z",
+  "quando": "2026-09-14T14:28:10.149Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -104,7 +104,7 @@
     },
     "s1-s01": {
       "item": "Banda Flexível (velocidade)",
-      "comentario": "Alterar titulo do atributo para Velocidade sob demanda.Não pode ser comercializado para acesso terceiro rede neutra e last mile"
+      "comentario": "Alterar titulo do atributo para Velocidade sob demanda.Não pode ser comercializado para acesso terceiro rede neutra e last mileA velocidade máxima selecionada para o SOB DEMANDA não poderá ser superior a 100% da velocidade informada para o IL."
     }
   }
 }
