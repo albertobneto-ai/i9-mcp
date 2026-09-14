@@ -1093,7 +1093,7 @@ function layoutHtml(secs, vals, nota){
     return `<div class="fr"><span>${esc(c.label)}${c.req?' <b style="color:var(--err)">*</b>':''}</span><span>${c.type==='reference'&&txt?`<a>${esc(txt)}</a>`:esc(txt)}${c.ro?' <small style="color:var(--mut)">(somente leitura)</small>':''}</span></div>`; }).join('')}</div>`).join('');
 }
 let S;
-function novo(){ return { tela:'opp', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
+function novo(){ return { tela:'home', tab:'Details', sheet:null, modal:null, quote:null, qStatus:'Draft', qSel:null, oStage:'Proposal/Price Quote', oSel:null, conv:null, leadStatus:'Novo', lSel:null,
   opp:{ amount:'R$ 12.000,00', close:'2026-10-30', prob:'50%' }, leadId:'00Q1', feed:[], tasks:[], contacts:[{name:'Contato comercial', role:'Decision Maker', email:'contato.comercial@cliente.com.br'}],
   pb:null, catalogo:null, categoria:'all', checked:{}, qtd:{}, q:'', instant:false, validacao:true, msgTab:null, atab:null, grpOpen:{}, compOpen:{}, sumOpen:false,
   form:{}, viab:{}, acrs:[], msgOpen:false, aceite:null, assetId:null, atab2:'Summary', aacc:'pricing', rpt:'pipeline', rptGrupo:null, fonteModo:'atencao', docView:null, guiaMode:'compact', flow:null, contract:null, order:null, assets:[], fassets:[], groups:[], hist:[], pend:null, pdfs:[], pdfView:false }; }
@@ -2032,6 +2032,7 @@ function agIntent(t){
   if(/t[ée]cnic|decomp/.test(s)&&S.order){ const d=agDescreverAtivacao(); agSay('Produtos técnicos que a decomposição gera para este pedido:\n'+d.fls.map(f=>`• ${f.name} — ${f.scope} · ${f.sistema}`).join('\n'), agAtuais(), 'ProductFulfillmentDecompRule (inferido para o VPN Node)'); return; }
   if(/por que|porque|motivo/.test(s)&&/custom|format/.test(s)){ const l=lines.filter(x=>x.parent)[0]; if(l&&l.cfgState){ const cfg=novoCfg(findProd(l.id)); cfg.a=l.cfgState.a; cfg.c=l.cfgState.c; const R=avaliar(cfg); agSay(`Atendimento ${R.cls.v}: ${R.cls.motivos.join('; ')}.`, agAtuais(), 'Regra: matriz de formatação × situações de customização'); return; } }
   if(/equipament|cpe|roteador/.test(s)){ const l=lines.filter(x=>x.parent)[0]; const eq=l?lines.filter(x=>x.parentUid===l.uid).map(x=>x.name+' ('+(x.attrs&&x.attrs['Modalidade Equipamento']||'—')+')'):[]; agSay(eq.length?`Equipamentos do node: ${eq.join(', ')} — dimensionados pela tecnologia ${l.attrs['Tecnologia']}.`:'Ainda não há equipamentos: eles são definidos pela tecnologia retornada na viabilidade.', agAtuais()); return; }
+  if(/onde (estou|eu estou)|em que tela|qual tela|meu contexto/.test(s)){ agSay((agContexto()||'Não consegui identificar a tela.')+' O que quer fazer daqui?', agAtuais()); return; }
   if(/qual objeto|objeto padr|api name|nome de api|mapea|equival|no salesforce (isso|seria)/.test(s)){
     agSay('O mapa completo está em Menu › Procedência: cada peça do protótipo ligada ao objeto do Salesforce, com o nome de API conferido na Referência de Objetos. Por exemplo: as linhas da cotação são QuoteLineItem com QuoteLineRelationship; os equipamentos, ProductRelatedComponent dentro de ProductComponentGroup; o vínculo do asset com o contrato, AssetContractRelationship.', agAtuais().concat([{l:'Abrir o mapa de componentes',f:()=>{agClose();go('procedencia');}}]), 'Referência de Objetos do Salesforce');
     return; }
@@ -2059,15 +2060,41 @@ function agResumo(){ const n=lines.filter(l=>l.parent).length; return S.quote?`C
 /* ---- passos, na ordem do UC-VPN-001 ---- */
 function agLead(){
   const l = LEADS.find(x=>x.id===S.leadId) || LEADS[0];
-  agSay(`Estou no lead ${l.Name} — ${l.Company} (${S.leadStatus}). Posso conduzir a partir daqui: qualificação, conversão em conta, contato e oportunidade, e depois a cotação.`,
+  agSay(`${agContexto()} Posso conduzir a partir daqui: qualificação, conversão em conta, contato e oportunidade, e depois a cotação.`,
     [{l:'Avançar o status',f:()=>{ leadMark(); agSay(`Status do lead agora: ${S.leadStatus}.`, agAtuais()); }},
      {l:'Converter o lead',f:()=>{agClose();go('convert');agSay('Abri a tela de conversão. Confira conta, contato e oportunidade e toque em Convert.',agAtuais());},pri:true},
      {l:'Resumir o lead',f:()=>agSay(`${l.Name}, ${l['Title']||'contato'} na ${l.Company}. Segmento ${l['Segmento__c']||'—'}, ticket ${l['Ticket_Potencial__c']||'—'}, produto de interesse ${l['Produto_Interesse__c']||'—'}, origem ${l.LeadSource||'—'}, rating ${l.Rating||'—'}.`, agAtuais(),'Layout Lead · Record Type Nacional (HOMOL)')},
      {l:'O que a conversão cria?',f:()=>agSay('A conversão cria a conta, o contato e, se você marcar, a oportunidade. O lead fica somente leitura com o status convertido, e os registros ficam vinculados a ele.', agAtuais(),'Conversão de lead (Sales Cloud)')}]);
 }
+function agContexto(){
+  const t=S.tela;
+  if(t==='home')    { const d=homeDados(); return `Você está na Home. ${d.tarefas.length?`O assistente aponta ${d.tarefas.length} passo(s) pendente(s); o primeiro é "${d.tarefas[0].t}".`:'Não há pendências na jornada.'}`; }
+  if(t==='opps')    return S.conv ? `Você está na lista de oportunidades — ${oppName()}, em ${S.oStage}.` : 'Você está na lista de oportunidades, ainda vazia: a jornada começa convertendo um lead.';
+  if(t==='leads')   return 'Você está na lista de leads.';
+  if(t==='lead')    { const l=LEADS.find(x=>x.id===S.leadId)||LEADS[0]; return `Você está no lead ${l.Name} — ${l.Company}, com status ${S.leadStatus}.`; }
+  if(t==='convert') return 'Você está na tela de conversão do lead.';
+  if(t==='opp')     return `Você está na oportunidade ${oppName()}, em ${S.oStage}${S.quote?`, com a cotação ${S.quote.number} (${S.qStatus})`:', ainda sem cotação'}.`;
+  if(t==='quote')   return `Você está na cotação ${S.quote?S.quote.number:''} (${S.qStatus}), com ${lines.filter(l=>l.parent).length} item(ns).`;
+  if(t==='quotes')  return 'Você está na lista de cotações.';
+  if(t==='contract')return `Você está no contrato ${S.contract?S.contract.number:''} — ${S.contract?S.contract.status:''}, assinatura ${S.contract?S.contract.esig:''}.`;
+  if(t==='order')   return `Você está no pedido ${S.order?S.order.number:''} — ${S.order?S.order.status:''}${S.order&&S.order.submitted?' e submetido':''}.`;
+  if(t==='plan')    return S.order&&S.order.plan ? `Você está no plano de orquestração: ${S.order.plan.steps.filter(s=>s.status==='Completed').length} de ${S.order.plan.steps.length} etapas concluídas.` : 'Você está no plano de orquestração.';
+  if(t==='asset')   return 'Você está na página do asset.';
+  if(t==='accounts')return `Você está na conta ${CTX.conta.nome}${S.tab==='Assets'?`, na aba Assets (${S.assets.length} managed, ${(S.fassets||[]).length} de fulfillment)`:''}.`;
+  if(t==='browse'||t==='config') return 'Você está no configurador do produto.';
+  if(t==='rpts'||t==='rpt')      return 'Você está nos relatórios.';
+  if(t==='dash')    return 'Você está no dashboard.';
+  if(t==='procedencia') return 'Você está na Procedência, com o mapa de componentes.';
+  return null;
+}
 function agStart(){
   if(S.tela==='lead' && !S.conv){ agLead(); return; }
-  if(!S.quote) agSay(`Estou na oportunidade ${oppName()} (${S.oStage}). Eu conduzo a jornada passo a passo: em cada etapa explico o que está em jogo e você escolhe.`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
+  const ctx = agContexto();
+  if(ctx && ['home','opps','leads','accounts','rpts','rpt','dash','procedencia','quotes','asset','plan'].includes(S.tela)){
+    agSay(`${ctx} Eu conduzo a jornada passo a passo: em cada etapa explico o que está em jogo e você escolhe.`, agAtuais());
+    return;
+  }
+  if(!S.quote) agSay(`${ctx||''} Eu conduzo a jornada passo a passo: em cada etapa explico o que está em jogo e você escolhe.`, [{l:'Criar a cotação',f:agCreateQuote,pri:true},{l:'Resumir a oportunidade',f:()=>agSay(agResumo(),agAtuais())}]);
   else agNext();
 }
 function agCreateQuote(){ agThink('Criando a cotação a partir da oportunidade…',900,()=>{ S.quote={name:oppName(),number:'00000036',exp:'12/10/2026'}; S.tab='Details'; S.hist=['opp']; S.tela='quote'; render(); toast('Quote "'+S.quote.name+'" was created.'); agSay(`Cotação ${S.quote.number} criada para ${CTX.conta.nome}. Qual produto adicionamos?`, agProdChips(), 'Ação: New Quote (Quote Name, Account for Quote)'); }); }
@@ -2649,6 +2676,8 @@ if(/selftest=1/.test(location.search)){
   const o=[], ok=(n,c)=>o.push((c?'PASS ':'FAIL ')+n);
   const click=el=>el&&el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
   try{
+    ok('a POC abre na Home', S.tela==='home' && $('#view').textContent.includes('Assistente'));
+    S.tab='Details'; go('opp');
     ok('oportunidade: 4 ações, cabeçalho, campos do layout real (18), path (5) e Stage', document.querySelectorAll('.acts .act').length===4 && document.querySelectorAll('#view .fr').length===18 && document.querySelectorAll('.ps').length===5 && $('.stage').textContent.startsWith('Stage:'));
     click([...document.querySelectorAll('.act')].find(a=>a.textContent.includes('Post'))); ok('Post abre a folha', S.sheet==='post');
     $('#post-txt').value='Kickoff com o cliente'; click($('.bsheet .brand')); ok('post publicado no Chatter', S.feed.length===1 && S.sheet===null);
