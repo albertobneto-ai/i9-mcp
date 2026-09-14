@@ -36,6 +36,9 @@ code.cond{background:#EEF1F5;color:#22364f}
 .rid.big{font-size:12.5px;padding:2px 8px}
 ul.efs{margin:0;padding-left:18px}
 ul.efs li{margin:0 0 9px}
+.quando{font-size:12.5px;margin-top:3px}
+.quando b{color:var(--tx2)}
+.expr{margin-top:2px}
 .mec{color:var(--mut);font-size:12px;margin-top:2px}
 pre.cml{background:#0d0d0d;color:#EDEDED;font:11.5px/1.6 ui-monospace,monospace;padding:10px 12px;border-radius:4px;overflow-x:auto;margin:8px 0 0;white-space:pre-wrap}
 .box{background:var(--s1);border:1px solid var(--bd);border-left:4px solid var(--bd2);padding:14px 18px;margin:16px 0}
@@ -107,8 +110,12 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
   <div><b>6</b><span>categorias de atributo</span></div>
 </div>
 <h3>Procedência do conteúdo</h3>
-<p>Os nomes de API foram consultados um a um na Referência de Objetos do Salesforce durante a produção deste documento: os que foram localizados aparecem como link para a página oficial do objeto; os que não foram aparecem como texto simples e estão listados na seção 11, com a recomendação de conferência na org. O que é decisão do projeto, e não do caso de uso, está dito no próprio parágrafo em que aparece — sobretudo a decomposição em produtos técnicos, as etapas do plano de orquestração e a regra de território.</p>
-<div class="box info"><b>Sobre os números</b>Todas as contagens deste documento vêm do JSON do caso de uso, não de estimativa: 46 atributos, 22 regras, 100 efeitos, distribuídos em 30 require, 23 hide, 15 message, 12 setValue, 10 disable, 5 hideValues, 2 constraint, 1 exclude, 1 autoAdd, 1 transacao.</div>
+<p>Os nomes de API foram conferidos na Referência de Objetos do Salesforce: os localizados aparecem como link para a página oficial do objeto; os que não foram aparecem como texto simples e estão listados na seção 11, com a recomendação de conferência na org. O que é decisão do projeto, e não do caso de uso, está dito no próprio parágrafo em que aparece — sobretudo a decomposição em produtos técnicos, as etapas do plano de orquestração e a regra de território.</p>
+<h3>O que é um “efeito de regra”</h3>
+<p>Uma regra do caso de uso quase nunca faz uma coisa só. A R06 do Golden Jumper, por exemplo, esconde um atributo, torna outro obrigatório, preenche um terceiro automaticamente e ainda restringe um quarto — cada uma dessas ações é um efeito, com sua própria condição de disparo. É por isso que 22 regras produzem 100 efeitos. Quem configura a plataforma implementa efeito a efeito, não regra a regra; daí a contagem aparecer aqui.</p>
+<table><thead><tr><th>Tipo de efeito</th><th>Quantos</th><th>O que faz</th></tr></thead><tbody>
+<tr><td><code>require</code></td><td>30</td><td>Obrigatoriedade condicional</td></tr><tr><td><code>hide</code></td><td>23</td><td>Visibilidade condicional do atributo</td></tr><tr><td><code>message</code></td><td>15</td><td>Mensagem ao usuário</td></tr><tr><td><code>setValue</code></td><td>12</td><td>Preenchimento automático</td></tr><tr><td><code>disable</code></td><td>10</td><td>Atributo somente leitura</td></tr><tr><td><code>hideValues</code></td><td>5</td><td>Filtro de valores da picklist</td></tr><tr><td><code>constraint</code></td><td>2</td><td>Restrição que bloqueia o salvamento</td></tr><tr><td><code>exclude</code></td><td>1</td><td>Exclusão mútua entre componentes</td></tr><tr><td><code>autoAdd</code></td><td>1</td><td>Inclusão automática de componente</td></tr><tr><td><code>transacao</code></td><td>1</td><td>Condição por tipo de transação</td></tr>
+</tbody></table>
 
 <h2 id="catalogo"><span class="n">02</span>Modelo do catálogo</h2>
 <p>O VPN Node é um produto configurável do tipo bundle, publicado em categoria de catálogo e vendido por modelo de venda contínuo.</p>
@@ -590,6 +597,17 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 
 <h2 id="regras"><span class="n">06</span>Regras de configuração — as 22</h2>
 <p>Cada regra aparece com seus efeitos, a condição que os dispara e o mecanismo correspondente na plataforma. As condições estão na notação do caso de uso; a tradução para o motor de restrições é trabalho de implementação.</p>
+<h3>Como ler as condições</h3>
+<p>As condições vêm do caso de uso na notação usada para especificá-las. Cada efeito abaixo traz a leitura em português — essa é a que vale para entender — e a expressão original em seguida, para quem for implementar. O prefixo diz de onde o dado vem:</p>
+<table><thead><tr><th>Prefixo</th><th>De onde vem</th><th>Exemplo</th></tr></thead><tbody>
+<tr><td><code>a.</code></td><td>Atributo preenchido na configuração do produto</td><td><code class="cond">a.Velocidade</code> — a velocidade escolhida</td></tr>
+<tr><td><code>x.</code></td><td>Atributo de um componente, não do bundle</td><td><code class="cond">x.QuantidadeDias</code> — dias do upgrade temporário</td></tr>
+<tr><td><code>c.</code></td><td>Coleção de componentes incluídos</td><td><code class="cond">c.equip</code> — os equipamentos de acesso</td></tr>
+<tr><td><code>ctx.</code></td><td>Contexto da venda: conta, usuário, endereço consultado e tipo de transação</td><td><code class="cond">ctx.endereco.dataCenter</code> — o endereço é Data Center</td></tr>
+<tr><td><code>d.</code></td><td>Resultado calculado da própria configuração</td><td><code class="cond">d.classificacao</code> — formatado ou customizado</td></tr>
+<tr><td><code>f.</code></td><td>Função auxiliar de apoio à regra</td><td><code class="cond">f.mbps(a.Velocidade)</code> — a velocidade em Mbps</td></tr>
+<tr><td><code>t.</code></td><td>Dado da transação em andamento</td><td><code class="cond">t.nodesNovaNetwork</code> — nodes na nova VPN Network</td></tr>
+</tbody></table>
 <div class="box info"><b>Onde as regras moram</b>Visibilidade, obrigatoriedade, filtro de valores e preenchimento automático são regras de configuração do produto. Restrição que bloqueia salvamento e exclusão entre componentes pertencem ao modelo de restrição, associado ao produto por <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_expressionsetconstraintobj.htm" target="_blank" rel="noopener">ExpressionSetConstraintObj</a> <span class="nota">API 63.0+</span>.</div>
 <table><thead><tr><th>ID</th><th>Regra</th><th>Efeitos</th></tr></thead><tbody>
 <tr>
@@ -597,7 +615,9 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
           <td><b>Endereço sem cobertura</b>
               <div class="cod">escopo Produto · motor declarado no UC: message</div>
               <pre class="cml">message(Cobertura == false, &quot;Sem cobertura para o endereço. Atendimento inviável.&quot;, &quot;Error&quot;);</pre></td>
-          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.endereco.cobertura === false</code> · “Viabilidade: sem cobertura para o endereço. Atendimento inviável — segue para estudo dedicado.”
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> · “Viabilidade: sem cobertura para o endereço. Atendimento inviável — segue para estudo dedicado.”
+              <div class="quando"><b>Quando:</b> o endereço não tem cobertura</div>
+              <div class="expr"><code class="cond">ctx.endereco.cobertura === false</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -605,7 +625,9 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
           <td><b>Rede neutra = inviável</b>
               <div class="cod">escopo Produto · motor declarado no UC: message</div>
               <pre class="cml">message(RedeNeutra == true, &quot;Endereço atendido por rede neutra: atendimento inviável.&quot;, &quot;Error&quot;);</pre></td>
-          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.endereco.redeNeutra === true</code> · “Viabilidade: endereço atendido por rede neutra. Atendimento inviável.”
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> · “Viabilidade: endereço atendido por rede neutra. Atendimento inviável.”
+              <div class="quando"><b>Quando:</b> o endereço é atendido por rede neutra</div>
+              <div class="expr"><code class="cond">ctx.endereco.redeNeutra === true</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -616,14 +638,30 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 extern string TecnologiaViab;
 setdefault(true, Tecnologia == TecnologiaViab, &quot;Tecnologia definida pela viabilidade.&quot;);
 rule(!EdicaoTecnicaPermitida, &quot;disable&quot;, &quot;attribute&quot;, &quot;Tecnologia&quot;);</pre></td>
-          <td><ul class="efs"><li><b>setValue</b> em <code>Tecnologia</code> quando <code class="cond">ctx.endereco.tecnologia</code> · valor: ctx.endereco.tecnologia
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Interface</code> quando <code class="cond">ctx.endereco.cobertura !== false</code> · valor: ctx.endereco.interface || &#x27;Elétrica&#x27;
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Abordagem</code> quando <code class="cond">ctx.endereco.abordagem</code> · valor: ctx.endereco.abordagem
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Metragem</code> quando <code class="cond">ctx.endereco.abordagem === &#x27;Construir&#x27;</code> · valor: ctx.endereco.metragem
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Tecnologia</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
-              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Interface</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
-              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Abordagem</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
-              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Metragem</code> quando <code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code>
+          <td><ul class="efs"><li><b>setValue</b> em <code>Tecnologia</code> — Tecnologia · valor: ctx.endereco.tecnologia
+              <div class="quando"><b>Quando:</b> a viabilidade retornou a tecnologia</div>
+              <div class="expr"><code class="cond">ctx.endereco.tecnologia</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Interface</code> — Interface · valor: ctx.endereco.interface || &#x27;Elétrica&#x27;
+              <div class="quando"><b>Quando:</b> o endereço tem cobertura</div>
+              <div class="expr"><code class="cond">ctx.endereco.cobertura !== false</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Abordagem</code> — Abordagem · valor: ctx.endereco.abordagem
+              <div class="quando"><b>Quando:</b> a viabilidade retornou a abordagem</div>
+              <div class="expr"><code class="cond">ctx.endereco.abordagem</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>Metragem</code> — Metragem · valor: ctx.endereco.metragem
+              <div class="quando"><b>Quando:</b> a viabilidade retornou a abordagem é “Construir”</div>
+              <div class="expr"><code class="cond">ctx.endereco.abordagem === &#x27;Construir&#x27;</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Tecnologia</code> — Tecnologia
+              <div class="quando"><b>Quando:</b> a viabilidade não voltou para tratamento manual e não é atendimento customizado com usuário de complementação técnica</div>
+              <div class="expr"><code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code></div>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Interface</code> — Interface
+              <div class="quando"><b>Quando:</b> a viabilidade não voltou para tratamento manual e não é atendimento customizado com usuário de complementação técnica</div>
+              <div class="expr"><code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code></div>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Abordagem</code> — Abordagem
+              <div class="quando"><b>Quando:</b> a viabilidade não voltou para tratamento manual e não é atendimento customizado com usuário de complementação técnica</div>
+              <div class="expr"><code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code></div>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Metragem</code> — Metragem
+              <div class="quando"><b>Quando:</b> a viabilidade não voltou para tratamento manual e não é atendimento customizado com usuário de complementação técnica</div>
+              <div class="expr"><code class="cond">!(ctx.endereco.retornoManual || (d.classificacao === &#x27;Customizado&#x27; &amp;&amp; ctx.usuario.perms.includes(&#x27;complementacao&#x27;)))</code></div>
               <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -632,9 +670,15 @@ rule(!EdicaoTecnicaPermitida, &quot;disable&quot;, &quot;attribute&quot;, &quot;
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
               <pre class="cml">rule(Abordagem != &quot;Construir&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;Metragem&quot;);
 constraint(Abordagem == &quot;Construir&quot; -&gt; Metragem &gt; 0, &quot;Metragem deve ser maior que zero na abordagem Construir.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem !== &#x27;Construir&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem === &#x27;Construir&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>constraint</b> em <code>Metragem</code> quando <code class="cond">a.Abordagem === &#x27;Construir&#x27; &amp;&amp; a.Metragem !== &#x27;&#x27; &amp;&amp; a.Metragem != null &amp;&amp; Number(a.Metragem) &lt;= 0</code> · “Metragem deve ser maior que zero na abordagem Construir.”
+          <td><ul class="efs"><li><b>hide</b> em <code>Metragem</code> — Metragem
+              <div class="quando"><b>Quando:</b> “Abordagem” não é “Construir”</div>
+              <div class="expr"><code class="cond">a.Abordagem !== &#x27;Construir&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>Metragem</code> — Metragem
+              <div class="quando"><b>Quando:</b> “Abordagem” é “Construir”</div>
+              <div class="expr"><code class="cond">a.Abordagem === &#x27;Construir&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>constraint</b> em <code>Metragem</code> — Metragem · “Metragem deve ser maior que zero na abordagem Construir.”
+              <div class="quando"><b>Quando:</b> a abordagem é Construir e a metragem informada é zero ou negativa</div>
+              <div class="expr"><code class="cond">a.Abordagem === &#x27;Construir&#x27; &amp;&amp; a.Metragem !== &#x27;&#x27; &amp;&amp; a.Metragem != null &amp;&amp; Number(a.Metragem) &lt;= 0</code></div>
               <div class="mec">Restrição que bloqueia o salvamento — Modelo de restrição associado ao produto</div></li></ul></td>
         </tr>
 <tr>
@@ -643,12 +687,24 @@ constraint(Abordagem == &quot;Construir&quot; -&gt; Metragem &gt; 0, &quot;Metra
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide/disable) + setdefault</div>
               <pre class="cml">rule(VPNNetwork != &quot;NOVA&quot;, &quot;disable&quot;, &quot;attribute&quot;, &quot;ProtocoloRoteamento&quot;);
 setdefault(VPNNetwork == &quot;NOVA&quot;, ProtocoloRoteamento == &quot;RIP&quot;);</pre></td>
-          <td><ul class="efs"><li><b>require</b> em <code>VPNNetwork</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">!a.VPNNetwork</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code> · valor: f.networkProtocolo(a.VPNNetwork)
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code>
-              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProtocoloRoteamento</code> quando <code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code> · “Nova VPN Network: o identificador é gerado na criação e a rede exige no mínimo dois VPN Nodes vinculados.”
+          <td><ul class="efs"><li><b>require</b> em <code>VPNNetwork</code> — VPN Network
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ProtocoloRoteamento</code> — Protocolo de Roteamento
+              <div class="quando"><b>Quando:</b> “VPN Network” está sem valor</div>
+              <div class="expr"><code class="cond">!a.VPNNetwork</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>ProtocoloRoteamento</code> — Protocolo de Roteamento · valor: f.networkProtocolo(a.VPNNetwork)
+              <div class="quando"><b>Quando:</b> uma VPN Network existente foi escolhida</div>
+              <div class="expr"><code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ProtocoloRoteamento</code> — Protocolo de Roteamento
+              <div class="quando"><b>Quando:</b> uma VPN Network existente foi escolhida</div>
+              <div class="expr"><code class="cond">a.VPNNetwork &amp;&amp; a.VPNNetwork !== &#x27;NOVA&#x27;</code></div>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProtocoloRoteamento</code> — Protocolo de Roteamento
+              <div class="quando"><b>Quando:</b> “VPN Network” é “NOVA”</div>
+              <div class="expr"><code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> · “Nova VPN Network: o identificador é gerado na criação e a rede exige no mínimo dois VPN Nodes vinculados.”
+              <div class="quando"><b>Quando:</b> “VPN Network” é “NOVA”</div>
+              <div class="expr"><code class="cond">a.VPNNetwork === &#x27;NOVA&#x27;</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -659,18 +715,42 @@ setdefault(VPNNetwork == &quot;NOVA&quot;, ProtocoloRoteamento == &quot;RIP&quot
 constraint(GoldenJumper == &quot;Algar&quot; -&gt; NomeDataCenter != &quot;&quot; &amp;&amp; NomeJumper != &quot;&quot;, &quot;Golden Jumper Algar exige Data Center, interface e nome do jumper.&quot;);
 rule(NovaVenda, &quot;hide&quot;, &quot;attribute&quot;, &quot;AlterarFornecedorGJ&quot;);
 constraint(AlterarFornecedorGJ == &quot;Sim&quot; -&gt; InterfaceGJ != &quot;&quot; &amp;&amp; NomeJumper != &quot;&quot;, &quot;Alteração de fornecedor exige interface e nome do jumper.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>GoldenJumper</code> quando <code class="cond">!ctx.endereco.dataCenter</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>GoldenJumper</code> quando <code class="cond">ctx.endereco.dataCenter</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>InterfaceGJ</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NomeJumper</code> quando <code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>InterfaceGJ</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>NomeDataCenter</code> quando <code class="cond">a.GoldenJumper === &#x27;Algar&#x27; &amp;&amp; ctx.endereco.nomeDataCenter</code> · valor: ctx.endereco.nomeDataCenter
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>hide</b> em <code>AlterarFornecedorGJ</code> quando <code class="cond">ctx.transacao.novaVenda</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>InterfaceGJ</code> quando <code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> quando <code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code>
+          <td><ul class="efs"><li><b>hide</b> em <code>GoldenJumper</code> — Golden Jumper
+              <div class="quando"><b>Quando:</b> o endereço não está cadastrado como Data Center</div>
+              <div class="expr"><code class="cond">!ctx.endereco.dataCenter</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>GoldenJumper</code> — Golden Jumper
+              <div class="quando"><b>Quando:</b> o endereço está cadastrado como Data Center</div>
+              <div class="expr"><code class="cond">ctx.endereco.dataCenter</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>NomeDataCenter</code> — Nome do Data Center
+              <div class="quando"><b>Quando:</b> “Golden Jumper” não é “Algar”</div>
+              <div class="expr"><code class="cond">a.GoldenJumper !== &#x27;Algar&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>InterfaceGJ</code> — Interface
+              <div class="quando"><b>Quando:</b> o responsável pelo Golden Jumper não é a Algar e a alteração de fornecedor não está marcada como Sim</div>
+              <div class="expr"><code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NomeJumper</code> — Nome do jumper
+              <div class="quando"><b>Quando:</b> o responsável pelo Golden Jumper não é a Algar e a alteração de fornecedor não está marcada como Sim</div>
+              <div class="expr"><code class="cond">a.GoldenJumper !== &#x27;Algar&#x27; &amp;&amp; a.AlterarFornecedorGJ !== &#x27;Sim&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>NomeDataCenter</code> — Nome do Data Center
+              <div class="quando"><b>Quando:</b> “Golden Jumper” é “Algar”</div>
+              <div class="expr"><code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>InterfaceGJ</code> — Interface
+              <div class="quando"><b>Quando:</b> “Golden Jumper” é “Algar”</div>
+              <div class="expr"><code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> — Nome do jumper
+              <div class="quando"><b>Quando:</b> “Golden Jumper” é “Algar”</div>
+              <div class="expr"><code class="cond">a.GoldenJumper === &#x27;Algar&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>NomeDataCenter</code> — Nome do Data Center · valor: ctx.endereco.nomeDataCenter
+              <div class="quando"><b>Quando:</b> o responsável pelo Golden Jumper é a Algar e o endereço traz o nome do Data Center</div>
+              <div class="expr"><code class="cond">a.GoldenJumper === &#x27;Algar&#x27; &amp;&amp; ctx.endereco.nomeDataCenter</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>hide</b> em <code>AlterarFornecedorGJ</code> — Alterar Fornecedor Golden Jumper
+              <div class="quando"><b>Quando:</b> a transação é uma nova venda</div>
+              <div class="expr"><code class="cond">ctx.transacao.novaVenda</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>InterfaceGJ</code> — Interface
+              <div class="quando"><b>Quando:</b> “Alterar Fornecedor Golden Jumper” é “Sim”</div>
+              <div class="expr"><code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NomeJumper</code> — Nome do jumper
+              <div class="quando"><b>Quando:</b> “Alterar Fornecedor Golden Jumper” é “Sim”</div>
+              <div class="expr"><code class="cond">a.AlterarFornecedorGJ === &#x27;Sim&#x27;</code></div>
               <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -679,13 +759,27 @@ constraint(AlterarFornecedorGJ == &quot;Sim&quot; -&gt; InterfaceGJ != &quot;&qu
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
               <pre class="cml">rule(ModalidadeInstalacao != &quot;Virtual/Fabric&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;ProvedorCloud&quot;);
 constraint(ModalidadeInstalacao == &quot;Virtual/Fabric&quot; -&gt; ProvedorCloud != &quot;&quot;, &quot;Virtual/Fabric exige modelo, velocidade (Mbps) e provedor.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>require</b> em <code>ModalidadeInstalacao</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ModeloDisponibilizacao</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VelocidadeConexao</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProvedorCloud</code> quando <code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ModeloDisponibilizacao</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VelocidadeConexao</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProvedorCloud</code> quando <code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code>
+          <td><ul class="efs"><li><b>require</b> em <code>ModalidadeInstalacao</code> — Modalidade de Instalação
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ModeloDisponibilizacao</code> — Modelo de Disponibilização
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” não é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VelocidadeConexao</code> — Velocidade de Conexão
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” não é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProvedorCloud</code> — Provedor e Serviço Cloud
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” não é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao !== &#x27;Virtual/Fabric&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ModeloDisponibilizacao</code> — Modelo de Disponibilização
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VelocidadeConexao</code> — Velocidade de Conexão
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProvedorCloud</code> — Provedor e Serviço Cloud
+              <div class="quando"><b>Quando:</b> “Modalidade de Instalação” é “Virtual/Fabric”</div>
+              <div class="expr"><code class="cond">a.ModalidadeInstalacao === &#x27;Virtual/Fabric&#x27;</code></div>
               <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -695,8 +789,12 @@ constraint(ModalidadeInstalacao == &quot;Virtual/Fabric&quot; -&gt; ProvedorClou
               <pre class="cml">@(contextPath = &quot;SalesTransaction.EnderecoCondominio__c&quot;)
 extern boolean EnderecoCondominio;
 rule(true, &quot;disable&quot;, &quot;attribute&quot;, &quot;Condominio&quot;);</pre></td>
-          <td><ul class="efs"><li><b>setValue</b> em <code>Condominio</code> quando <code class="cond">true</code> · valor: ctx.endereco.condominio ? &#x27;Sim&#x27; : &#x27;Não&#x27;
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Condominio</code> quando <code class="cond">true</code>
+          <td><ul class="efs"><li><b>setValue</b> em <code>Condominio</code> — Condomínio · valor: ctx.endereco.condominio ? &#x27;Sim&#x27; : &#x27;Não&#x27;
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>Condominio</code> — Condomínio
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
               <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -705,20 +803,48 @@ rule(true, &quot;disable&quot;, &quot;attribute&quot;, &quot;Condominio&quot;);<
               <div class="cod">escopo Bundle · motor declarado no UC: rule(disable/hide) + constraint + exclude</div>
               <pre class="cml">exclude(AcessoTerceiroLastMile == true, svas[UpgradeTemporario], &quot;Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.&quot;);
 rule(!AcessoTerceiroLastMile, &quot;hide&quot;, &quot;attribute&quot;, &quot;ParceiroLastMile&quot;);</pre></td>
-          <td><ul class="efs"><li><b>disable</b> em <code>AcessoTerceiroLastMile</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;complementacao&#x27;)</code>
-              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ParceiroLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProprietarioRoteador</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NumeroViabilidadeGLM</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VigenciaLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorInstalacaoLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMensalLastMile</code> quando <code class="cond">!a.AcessoTerceiroLastMile</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ParceiroLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProprietarioRoteador</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NumeroViabilidadeGLM</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VigenciaLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorInstalacaoLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorMensalLastMile</code> quando <code class="cond">a.AcessoTerceiroLastMile</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>exclude</b> em <code>upgrade</code> quando <code class="cond">a.AcessoTerceiroLastMile</code> · “Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.”
+          <td><ul class="efs"><li><b>disable</b> em <code>AcessoTerceiroLastMile</code> — Acesso Terceiro Last Mile
+              <div class="quando"><b>Quando:</b> o usuário não tem a permissão de complementação técnica</div>
+              <div class="expr"><code class="cond">!ctx.usuario.perms.includes(&#x27;complementacao&#x27;)</code></div>
+              <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li><li><b>hide</b> em <code>ParceiroLastMile</code> — Parceiro LastMile
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ProprietarioRoteador</code> — Proprietário do Roteador
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>NumeroViabilidadeGLM</code> — Número Viabilidade GLM
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>VigenciaLastMile</code> — Vigência LastMile
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorInstalacaoLastMile</code> — Valor Instalação LastMile s/ Impostos
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMensalLastMile</code> — Valor Mensal LastMile s/ Impostos
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile” está sem valor</div>
+              <div class="expr"><code class="cond">!a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ParceiroLastMile</code> — Parceiro LastMile
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ProprietarioRoteador</code> — Proprietário do Roteador
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>NumeroViabilidadeGLM</code> — Número Viabilidade GLM
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>VigenciaLastMile</code> — Vigência LastMile
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorInstalacaoLastMile</code> — Valor Instalação LastMile s/ Impostos
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>ValorMensalLastMile</code> — Valor Mensal LastMile s/ Impostos
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>exclude</b> em <code>upgrade</code> · “Upgrade Temporário não pode ser contratado com Acesso Terceiro Last Mile.”
+              <div class="quando"><b>Quando:</b> “Acesso Terceiro Last Mile”</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile</code></div>
               <div class="mec">Exclusão mútua entre componentes — Modelo de restrição associado ao produto</div></li></ul></td>
         </tr>
 <tr>
@@ -728,9 +854,15 @@ rule(!AcessoTerceiroLastMile, &quot;hide&quot;, &quot;attribute&quot;, &quot;Par
               <pre class="cml">require(Tecnologia == &quot;GPON&quot;, equipamentos[Roteador]{Modalidade = &quot;Comodato&quot;} == 1, &quot;GPON: Roteador em comodato.&quot;);
 require(Tecnologia == &quot;GPON&quot;, equipamentos[ONT]{Modalidade = &quot;Comodato&quot;} == 1, &quot;GPON: ONT em comodato.&quot;);
 require(Tecnologia == &quot;Metro&quot; &amp;&amp; EntregaAnel, equipamentos[ChaveOtica]{Modalidade = &quot;Comodato&quot;} == 1);</pre></td>
-          <td><ul class="efs"><li><b>autoAdd</b> em <code>equip</code> quando <code class="cond">d.classificacao === &#x27;Formatado&#x27;</code>
-              <div class="mec">Inclusão automática de componente — Regra de configuração sobre o grupo de componentes</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.Tecnologia === &#x27;XGSPON&#x27;</code> · “Dimensionamento automático de equipamentos para XGSPON não está definido na Revisão 1 — incluir manualmente.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">f.equipamentosFaltando(a.Tecnologia, ctx.endereco.anel, c.equip).length &gt; 0</code> · “__FALTANDO__”
+          <td><ul class="efs"><li><b>autoAdd</b> em <code>equip</code>
+              <div class="quando"><b>Quando:</b> a classificação do atendimento é “Formatado”</div>
+              <div class="expr"><code class="cond">d.classificacao === &#x27;Formatado&#x27;</code></div>
+              <div class="mec">Inclusão automática de componente — Regra de configuração sobre o grupo de componentes</div></li><li><b>message</b> em <code>—</code> · “Dimensionamento automático de equipamentos para XGSPON não está definido na Revisão 1 — incluir manualmente.”
+              <div class="quando"><b>Quando:</b> “Tecnologia” é “XGSPON”</div>
+              <div class="expr"><code class="cond">a.Tecnologia === &#x27;XGSPON&#x27;</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> · “__FALTANDO__”
+              <div class="quando"><b>Quando:</b> falta algum equipamento que a tecnologia do endereço exige</div>
+              <div class="expr"><code class="cond">f.equipamentosFaltando(a.Tecnologia, ctx.endereco.anel, c.equip).length &gt; 0</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -739,11 +871,21 @@ require(Tecnologia == &quot;Metro&quot; &amp;&amp; EntregaAnel, equipamentos[Cha
               <div class="cod">escopo Bundle · motor declarado no UC: constraint</div>
               <pre class="cml">constraint(equipamentos[Roteador] &lt;= 1, &quot;Roteador tem cardinalidade máxima de 1.&quot;);
 constraint(Tecnologia == &quot;Rádio&quot; -&gt; equipamentos[Radio] &gt;= 1, &quot;Tecnologia Rádio exige o equipamento Rádio.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.filter(e =&gt; e.TipoEquipamento === &#x27;Roteador&#x27;).reduce((s,e)=&gt;s+Number(e.Quantidade||e.qtd||1),0) &gt; 1</code> · “Roteador tem cardinalidade máxima de 1.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">a.Tecnologia === &#x27;Rádio&#x27; &amp;&amp; !c.equip.some(e =&gt; e.TipoEquipamento === &#x27;Rádio&#x27;)</code> · “Tecnologia Rádio exige o equipamento Rádio.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.length === 0 &amp;&amp; ctx.endereco.cobertura !== false &amp;&amp; !ctx.endereco.redeNeutra</code> · “O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.some(e =&gt; (e.Quantidade===undefined||e.Quantidade===null||e.Quantidade===&#x27;&#x27; ? 1 : Number(e.Quantidade)) &lt; 1)</code> · “A quantidade de cada equipamento deve ser maior que zero.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">c.equip.some(e =&gt; !e.ModalidadeEquipamento)</code> · “Informe a modalidade de cada equipamento selecionado.”
+          <td><ul class="efs"><li><b>message</b> em <code>—</code> · “Roteador tem cardinalidade máxima de 1.”
+              <div class="quando"><b>Quando:</b> a soma das quantidades de Roteador passa de 1</div>
+              <div class="expr"><code class="cond">c.equip.filter(e =&gt; e.TipoEquipamento === &#x27;Roteador&#x27;).reduce((s,e)=&gt;s+Number(e.Quantidade||e.qtd||1),0) &gt; 1</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> · “Tecnologia Rádio exige o equipamento Rádio.”
+              <div class="quando"><b>Quando:</b> a tecnologia é Rádio e não há equipamento do tipo Rádio entre os componentes</div>
+              <div class="expr"><code class="cond">a.Tecnologia === &#x27;Rádio&#x27; &amp;&amp; !c.equip.some(e =&gt; e.TipoEquipamento === &#x27;Rádio&#x27;)</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> · “O grupo Equipamentos de Acesso exige no mínimo 1 equipamento.”
+              <div class="quando"><b>Quando:</b> nenhum equipamento foi incluído, havendo cobertura e sem rede neutra</div>
+              <div class="expr"><code class="cond">c.equip.length === 0 &amp;&amp; ctx.endereco.cobertura !== false &amp;&amp; !ctx.endereco.redeNeutra</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> · “A quantidade de cada equipamento deve ser maior que zero.”
+              <div class="quando"><b>Quando:</b> algum equipamento está com quantidade menor que 1</div>
+              <div class="expr"><code class="cond">c.equip.some(e =&gt; (e.Quantidade===undefined||e.Quantidade===null||e.Quantidade===&#x27;&#x27; ? 1 : Number(e.Quantidade)) &lt; 1)</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>—</code> · “Informe a modalidade de cada equipamento selecionado.”
+              <div class="quando"><b>Quando:</b> algum equipamento está sem modalidade</div>
+              <div class="expr"><code class="cond">c.equip.some(e =&gt; !e.ModalidadeEquipamento)</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -752,12 +894,24 @@ constraint(Tecnologia == &quot;Rádio&quot; -&gt; equipamentos[Radio] &gt;= 1, &
               <div class="cod">escopo Bundle · motor declarado no UC: rule(hide value) + constraint</div>
               <pre class="cml">rule(VelocidadeTemporaria &lt;= Velocidade, &quot;hide&quot;, &quot;attribute&quot;, &quot;VelocidadeTemporaria&quot;, &quot;value&quot;, &quot;...&quot;);
 constraint(QuantidadeDias &gt;= 10 &amp;&amp; QuantidadeDias &lt;= 60, &quot;Quantidade de dias entre 10 e 60.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>require</b> em <code>VelocidadeTemporaria</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>QuantidadeDias</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>VelocidadeTemporaria</code> quando <code class="cond">true</code>
-              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>constraint</b> em <code>QuantidadeDias</code> quando <code class="cond">x.QuantidadeDias !== &#x27;&#x27; &amp;&amp; x.QuantidadeDias != null &amp;&amp; (Number(x.QuantidadeDias) &lt; 10 || Number(x.QuantidadeDias) &gt; 60)</code> · “Quantidade de dias do upgrade deve ficar entre 10 e 60.”
-              <div class="mec">Restrição que bloqueia o salvamento — Modelo de restrição associado ao produto</div></li><li><b>message</b> em <code>upgrade</code> quando <code class="cond">f.mbps(a.Velocidade) === 100</code> · “Pendência em revisão: enquadramento da velocidade contratada igual a 100 Mbps nas faixas de limite (time Algar).”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>upgrade</code> quando <code class="cond">f.mbps(a.Velocidade) &gt; 1000</code> · “Contratada acima de 1 Gbps: upgrade temporário segue em esteira customizada.”
+          <td><ul class="efs"><li><b>require</b> em <code>VelocidadeTemporaria</code> — Velocidade Temporária
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>QuantidadeDias</code> — Quantidade de Dias (corridos)
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>VelocidadeTemporaria</code> — Velocidade Temporária
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>constraint</b> em <code>QuantidadeDias</code> — Quantidade de Dias (corridos) · “Quantidade de dias do upgrade deve ficar entre 10 e 60.”
+              <div class="quando"><b>Quando:</b> a quantidade de dias informada está fora da faixa de 10 a 60</div>
+              <div class="expr"><code class="cond">x.QuantidadeDias !== &#x27;&#x27; &amp;&amp; x.QuantidadeDias != null &amp;&amp; (Number(x.QuantidadeDias) &lt; 10 || Number(x.QuantidadeDias) &gt; 60)</code></div>
+              <div class="mec">Restrição que bloqueia o salvamento — Modelo de restrição associado ao produto</div></li><li><b>message</b> em <code>upgrade</code> · “Pendência em revisão: enquadramento da velocidade contratada igual a 100 Mbps nas faixas de limite (time Algar).”
+              <div class="quando"><b>Quando:</b> a velocidade contratada é igual a 100 Mbps</div>
+              <div class="expr"><code class="cond">f.mbps(a.Velocidade) === 100</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>upgrade</code> · “Contratada acima de 1 Gbps: upgrade temporário segue em esteira customizada.”
+              <div class="quando"><b>Quando:</b> a velocidade contratada é maior que 1000 Mbps</div>
+              <div class="expr"><code class="cond">f.mbps(a.Velocidade) &gt; 1000</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -765,10 +919,18 @@ constraint(QuantidadeDias &gt;= 10 &amp;&amp; QuantidadeDias &lt;= 60, &quot;Qua
           <td><b>Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade</b>
               <div class="cod">escopo Bundle · motor declarado no UC: constraint + message</div>
               <pre class="cml">message(TipoMonitoramento == &quot;PROBE&quot;, &quot;PROBE: alta complexidade para desenho do escopo.&quot;, &quot;Info&quot;);</pre></td>
-          <td><ul class="efs"><li><b>require</b> em <code>PlanoMIR</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>TipoMonitoramento</code> quando <code class="cond">x.PlanoMIR</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">x.TipoMonitoramento === &#x27;PROBE&#x27;</code> · “PROBE: fluxo segue em alta complexidade para desenho do escopo, com equipamento específico.”
-              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>mir</code> quando <code class="cond">a.AcessoTerceiroLastMile &amp;&amp; a.ProprietarioRoteador === &#x27;Parceiro&#x27;</code> · “Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parceiro.”
+          <td><ul class="efs"><li><b>require</b> em <code>PlanoMIR</code> — Plano
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>TipoMonitoramento</code> — Tipo de Monitoramento
+              <div class="quando"><b>Quando:</b> “Plano”</div>
+              <div class="expr"><code class="cond">x.PlanoMIR</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>mir</code> · “PROBE: fluxo segue em alta complexidade para desenho do escopo, com equipamento específico.”
+              <div class="quando"><b>Quando:</b> “Tipo de Monitoramento” é “PROBE”</div>
+              <div class="expr"><code class="cond">x.TipoMonitoramento === &#x27;PROBE&#x27;</code></div>
+              <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li><li><b>message</b> em <code>mir</code> · “Regra com dúvida aberta: o plano não pode ser adquirido com abordagem por parceiros ou Last Mile com equipamento de parceiro.”
+              <div class="quando"><b>Quando:</b> há acesso de terceiro em Last Mile e o roteador é do parceiro</div>
+              <div class="expr"><code class="cond">a.AcessoTerceiroLastMile &amp;&amp; a.ProprietarioRoteador === &#x27;Parceiro&#x27;</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -778,8 +940,12 @@ constraint(QuantidadeDias &gt;= 10 &amp;&amp; QuantidadeDias &lt;= 60, &quot;Qua
               <pre class="cml">@(contextPath = &quot;SalesTransaction.Segmento__c&quot;)
 extern string Segmento;
 rule(Segmento != &quot;Governo&quot; &amp;&amp; Segmento != &quot;Operadoras-Atacado&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;ReferenciaCliente&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>ReferenciaCliente</code> quando <code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ReferenciaCliente</code> quando <code class="cond">[&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
+          <td><ul class="efs"><li><b>hide</b> em <code>ReferenciaCliente</code> — Referência do Cliente
+              <div class="quando"><b>Quando:</b> o segmento da conta não está entre Governo, Operadoras-Atacado</div>
+              <div class="expr"><code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ReferenciaCliente</code> — Referência do Cliente
+              <div class="quando"><b>Quando:</b> o segmento da conta está entre Governo, Operadoras-Atacado</div>
+              <div class="expr"><code class="cond">[&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code></div>
               <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -788,10 +954,18 @@ rule(Segmento != &quot;Governo&quot; &amp;&amp; Segmento != &quot;Operadoras-Ata
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
               <pre class="cml">rule(!ClienteInternacional, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoMoeda&quot;);
 constraint(TipoMoeda != &quot;&quot; -&gt; ValorMoeda &gt; 0, &quot;Informe a cotação de conversão.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>TipoMoeda</code> quando <code class="cond">!ctx.conta.internacional</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMoeda</code> quando <code class="cond">!ctx.conta.internacional</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ValorMoeda</code> quando <code class="cond">ctx.conta.internacional &amp;&amp; a.TipoMoeda</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> quando <code class="cond">ctx.conta.internacional</code> · “Cliente internacional: a cotação de conversão é calculada pelo usuário, não pelo sistema.”
+          <td><ul class="efs"><li><b>hide</b> em <code>TipoMoeda</code> — Tipo Moeda
+              <div class="quando"><b>Quando:</b> a conta não é internacional</div>
+              <div class="expr"><code class="cond">!ctx.conta.internacional</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>hide</b> em <code>ValorMoeda</code> — Valor Moeda
+              <div class="quando"><b>Quando:</b> a conta não é internacional</div>
+              <div class="expr"><code class="cond">!ctx.conta.internacional</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>ValorMoeda</code> — Valor Moeda
+              <div class="quando"><b>Quando:</b> a conta é internacional e o tipo de moeda foi informado</div>
+              <div class="expr"><code class="cond">ctx.conta.internacional &amp;&amp; a.TipoMoeda</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>message</b> em <code>—</code> · “Cliente internacional: a cotação de conversão é calculada pelo usuário, não pelo sistema.”
+              <div class="quando"><b>Quando:</b> a conta é internacional</div>
+              <div class="expr"><code class="cond">ctx.conta.internacional</code></div>
               <div class="mec">Mensagem ao usuário — Mensagem de validação no configurador</div></li></ul></td>
         </tr>
 <tr>
@@ -799,7 +973,9 @@ constraint(TipoMoeda != &quot;&quot; -&gt; ValorMoeda &gt; 0, &quot;Informe a co
           <td><b>Produto a Serviço sem definição</b>
               <div class="cod">escopo Produto · motor declarado no UC: rule(disable)</div>
               <pre class="cml">rule(true, &quot;disable&quot;, &quot;attribute&quot;, &quot;ProdutoAServico&quot;); // pendente de definição</pre></td>
-          <td><ul class="efs"><li><b>disable</b> em <code>ProdutoAServico</code> quando <code class="cond">true</code>
+          <td><ul class="efs"><li><b>disable</b> em <code>ProdutoAServico</code> — Produto a Serviço
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
               <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -808,12 +984,24 @@ constraint(TipoMoeda != &quot;&quot; -&gt; ValorMoeda &gt; 0, &quot;Informe a co
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide value)</div>
               <pre class="cml">rule(Segmento != &quot;Governo&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoReajuste&quot;, &quot;value&quot;, &quot;Sem reajuste&quot;);
 rule(!PermissaoDataBase, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoReajuste&quot;, &quot;value&quot;, &quot;Data base&quot;);</pre></td>
-          <td><ul class="efs"><li><b>require</b> em <code>PeriodoFidelizacao</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>PeriodoFidelizacao</code> quando <code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code>
-              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>require</b> em <code>TipoReajuste</code> quando <code class="cond">true</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code>
-              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;dataBase&#x27;)</code>
-              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> quando <code class="cond">!(ctx.transacao.novaVenda &amp;&amp; [&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento))</code>
+          <td><ul class="efs"><li><b>require</b> em <code>PeriodoFidelizacao</code> — Período Fidelização
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>PeriodoFidelizacao</code> — Período Fidelização
+              <div class="quando"><b>Quando:</b> o segmento da conta não está entre Governo, Operadoras-Atacado</div>
+              <div class="expr"><code class="cond">![&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)</code></div>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>require</b> em <code>TipoReajuste</code> — Tipo de Reajuste
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> — Tipo de Reajuste
+              <div class="quando"><b>Quando:</b> o segmento da conta não é “Governo”</div>
+              <div class="expr"><code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code></div>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> — Tipo de Reajuste
+              <div class="quando"><b>Quando:</b> o usuário não tem a permissão de reajuste por data base</div>
+              <div class="expr"><code class="cond">!ctx.usuario.perms.includes(&#x27;dataBase&#x27;)</code></div>
+              <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li><li><b>hideValues</b> em <code>TipoReajuste</code> — Tipo de Reajuste
+              <div class="quando"><b>Quando:</b> não é o caso de nova venda para segmento Governo ou Operadoras-Atacado</div>
+              <div class="expr"><code class="cond">!(ctx.transacao.novaVenda &amp;&amp; [&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento))</code></div>
               <div class="mec">Filtro de valores da picklist — Regra de configuração do produto sobre AttributePicklistValue</div></li></ul></td>
         </tr>
 <tr>
@@ -822,12 +1010,24 @@ rule(!PermissaoDataBase, &quot;hide&quot;, &quot;attribute&quot;, &quot;TipoReaj
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + constraint</div>
               <pre class="cml">rule(TipoReajuste != &quot;Data base&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;DataBase&quot;);
 rule(!PermissaoReajusteAntes12, &quot;disable&quot;, &quot;attribute&quot;, &quot;ReajustarAntes12Meses&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>DataBase</code> quando <code class="cond">a.TipoReajuste !== &#x27;Data base&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataBase</code> quando <code class="cond">a.TipoReajuste === &#x27;Data base&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>DataAssinatura</code> quando <code class="cond">a.TipoReajuste !== &#x27;Data de assinatura do contrato&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataAssinatura</code> quando <code class="cond">a.TipoReajuste === &#x27;Data de assinatura do contrato&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>IndiceReajuste</code> quando <code class="cond">a.TipoReajuste !== &#x27;Sem reajuste&#x27;</code>
-              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ReajustarAntes12Meses</code> quando <code class="cond">!ctx.usuario.perms.includes(&#x27;reajusteAntes12&#x27;)</code>
+          <td><ul class="efs"><li><b>hide</b> em <code>DataBase</code> — Data Base
+              <div class="quando"><b>Quando:</b> “Tipo de Reajuste” não é “Data base”</div>
+              <div class="expr"><code class="cond">a.TipoReajuste !== &#x27;Data base&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataBase</code> — Data Base
+              <div class="quando"><b>Quando:</b> “Tipo de Reajuste” é “Data base”</div>
+              <div class="expr"><code class="cond">a.TipoReajuste === &#x27;Data base&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>hide</b> em <code>DataAssinatura</code> — Data de Assinatura do Contrato
+              <div class="quando"><b>Quando:</b> “Tipo de Reajuste” não é “Data de assinatura do contrato”</div>
+              <div class="expr"><code class="cond">a.TipoReajuste !== &#x27;Data de assinatura do contrato&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>require</b> em <code>DataAssinatura</code> — Data de Assinatura do Contrato
+              <div class="quando"><b>Quando:</b> “Tipo de Reajuste” é “Data de assinatura do contrato”</div>
+              <div class="expr"><code class="cond">a.TipoReajuste === &#x27;Data de assinatura do contrato&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>require</b> em <code>IndiceReajuste</code> — Índice de Reajuste
+              <div class="quando"><b>Quando:</b> “Tipo de Reajuste” não é “Sem reajuste”</div>
+              <div class="expr"><code class="cond">a.TipoReajuste !== &#x27;Sem reajuste&#x27;</code></div>
+              <div class="mec">Obrigatoriedade condicional — Regra de configuração do produto</div></li><li><b>disable</b> em <code>ReajustarAntes12Meses</code> — Reajustar Antes de 12 Meses
+              <div class="quando"><b>Quando:</b> o usuário não tem a permissão de reajuste antes de 12 meses</div>
+              <div class="expr"><code class="cond">!ctx.usuario.perms.includes(&#x27;reajusteAntes12&#x27;)</code></div>
               <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -835,9 +1035,15 @@ rule(!PermissaoReajusteAntes12, &quot;disable&quot;, &quot;attribute&quot;, &quo
           <td><b>Data do próximo reajuste calculada</b>
               <div class="cod">escopo Produto · motor declarado no UC: constraint (derivação)</div>
               <pre class="cml">constraint(DataProximoReajuste == addMonths(DataAncora, PeriodoFidelizacao &lt; 12 &amp;&amp; ReajustarAntes12Meses == &quot;Não&quot; ? PeriodoFidelizacao + 12 : PeriodoFidelizacao));</pre></td>
-          <td><ul class="efs"><li><b>setValue</b> em <code>DataProximoReajuste</code> quando <code class="cond">true</code> · valor: f.proximoReajuste(a)
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataInicioContrato</code> quando <code class="cond">true</code> · valor: &#x27;Definida na ativação do asset&#x27;
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataTerminoContrato</code> quando <code class="cond">true</code> · valor: &#x27;Ativação + período de fidelização&#x27;
+          <td><ul class="efs"><li><b>setValue</b> em <code>DataProximoReajuste</code> — Data do Próximo Reajuste · valor: f.proximoReajuste(a)
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataInicioContrato</code> — Data de Início do Contrato · valor: &#x27;Definida na ativação do asset&#x27;
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>setValue</b> em <code>DataTerminoContrato</code> — Data de Término do Contrato · valor: &#x27;Ativação + período de fidelização&#x27;
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
               <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -846,9 +1052,15 @@ rule(!PermissaoReajusteAntes12, &quot;disable&quot;, &quot;attribute&quot;, &quo
               <div class="cod">escopo Produto · motor declarado no UC: setdefault + rule(hide)</div>
               <pre class="cml">rule(Segmento == &quot;Governo&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;PercentualMulta&quot;);
 setdefault(Segmento != &quot;Governo&quot;, PercentualMulta == &quot;30%&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>PercentualMulta</code> quando <code class="cond">ctx.conta.segmento === &#x27;Governo&#x27;</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>PercentualMulta</code> quando <code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code> · valor: &#x27;30%&#x27;
-              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>PercentualMulta</code> quando <code class="cond">true</code>
+          <td><ul class="efs"><li><b>hide</b> em <code>PercentualMulta</code> — Percentual da Multa
+              <div class="quando"><b>Quando:</b> o segmento da conta é “Governo”</div>
+              <div class="expr"><code class="cond">ctx.conta.segmento === &#x27;Governo&#x27;</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>PercentualMulta</code> — Percentual da Multa · valor: &#x27;30%&#x27;
+              <div class="quando"><b>Quando:</b> o segmento da conta não é “Governo”</div>
+              <div class="expr"><code class="cond">ctx.conta.segmento !== &#x27;Governo&#x27;</code></div>
+              <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li><li><b>disable</b> em <code>PercentualMulta</code> — Percentual da Multa
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
               <div class="mec">Atributo somente leitura — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -857,8 +1069,12 @@ setdefault(Segmento != &quot;Governo&quot;, PercentualMulta == &quot;30%&quot;);
               <div class="cod">escopo Produto · motor declarado no UC: rule(hide) + setdefault</div>
               <pre class="cml">rule(TipoTransacao == &quot;NovaVenda&quot;, &quot;hide&quot;, &quot;attribute&quot;, &quot;RecalculoPeriodoContrato&quot;);
 setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
-          <td><ul class="efs"><li><b>hide</b> em <code>RecalculoPeriodoContrato</code> quando <code class="cond">ctx.transacao.novaVenda</code>
-              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>DiasAvisoPrevio</code> quando <code class="cond">true</code> · valor: &#x27;30 dias&#x27;
+          <td><ul class="efs"><li><b>hide</b> em <code>RecalculoPeriodoContrato</code> — Recálculo Período do Contrato
+              <div class="quando"><b>Quando:</b> a transação é uma nova venda</div>
+              <div class="expr"><code class="cond">ctx.transacao.novaVenda</code></div>
+              <div class="mec">Visibilidade condicional do atributo — Regra de configuração do produto, avaliada no configurador</div></li><li><b>setValue</b> em <code>DiasAvisoPrevio</code> — Quantidade de Dias Aviso Previo · valor: &#x27;30 dias&#x27;
+              <div class="quando"><b>Quando:</b> sempre, sem condição</div>
+              <div class="expr"><code class="cond">true</code></div>
               <div class="mec">Preenchimento automático — Regra de configuração do produto</div></li></ul></td>
         </tr>
 <tr>
@@ -866,7 +1082,9 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td><b>Nova network exige no mínimo 2 VPN Nodes na cotação</b>
               <div class="cod">escopo Transação · motor declarado no UC: constraint (transaction)</div>
               <pre class="cml">constraint(count(nodes, VPNNetwork == &quot;NOVA&quot;) != 1, &quot;Nova VPN Network exige no mínimo dois VPN Nodes.&quot;);</pre></td>
-          <td><ul class="efs"><li><b>transacao</b> em <code>—</code> quando <code class="cond">t.nodesNovaNetwork === 1</code> · “A nova VPN Network exige no mínimo dois VPN Nodes vinculados — adicione outro VPN Node à cotação.”
+          <td><ul class="efs"><li><b>transacao</b> em <code>—</code> · “A nova VPN Network exige no mínimo dois VPN Nodes vinculados — adicione outro VPN Node à cotação.”
+              <div class="quando"><b>Quando:</b> a quantidade de nodes na nova VPN Network é igual a 1</div>
+              <div class="expr"><code class="cond">t.nodesNovaNetwork === 1</code></div>
               <div class="mec">Condição por tipo de transação — Regra sensível ao tipo de ação do pedido</div></li></ul></td>
         </tr>
 </tbody></table>
@@ -930,7 +1148,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
 </tbody></table>
 
 <h2 id="dicionario"><span class="n">11</span>Dicionário de objetos citados</h2>
-<p>Cada nome abaixo foi consultado na Referência de Objetos do Salesforce durante a produção deste documento.</p>
+<p>Situação de cada nome de API na Referência de Objetos do Salesforce.</p>
 <table><thead><tr><th>Objeto</th><th>Situação da consulta</th></tr></thead><tbody>
 <tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm" target="_blank" rel="noopener">Account</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_asset.htm" target="_blank" rel="noopener">Asset</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetaction.htm" target="_blank" rel="noopener">AssetAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetactionsource.htm" target="_blank" rel="noopener">AssetActionSource</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetattribute.htm" target="_blank" rel="noopener">AssetAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetcontractrelationship.htm" target="_blank" rel="noopener">AssetContractRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiod.htm" target="_blank" rel="noopener">AssetStatePeriod</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiodattribute.htm" target="_blank" rel="noopener">AssetStatePeriodAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">AttributeCategory</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributedefinition.htm" target="_blank" rel="noopener">AttributeDefinition</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklist.htm" target="_blank" rel="noopener">AttributePicklist</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklistvalue.htm" target="_blank" rel="noopener">AttributePicklistValue</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contact.htm" target="_blank" rel="noopener">Contact</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contract.htm" target="_blank" rel="noopener">Contract</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_expressionsetconstraintobj.htm" target="_blank" rel="noopener">ExpressionSetConstraintObj</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorder.htm" target="_blank" rel="noopener">FulfillmentOrder</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorderlineitem.htm" target="_blank" rel="noopener">FulfillmentOrderLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_lead.htm" target="_blank" rel="noopener">Lead</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunity.htm" target="_blank" rel="noopener">Opportunity</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunitylineitem.htm" target="_blank" rel="noopener">OpportunityLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_order.htm" target="_blank" rel="noopener">Order</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderaction.htm" target="_blank" rel="noopener">OrderAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderdeliverygroup.htm" target="_blank" rel="noopener">OrderDeliveryGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitem.htm" target="_blank" rel="noopener">OrderItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitemrelationship.htm" target="_blank" rel="noopener">OrderItemRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebook2.htm" target="_blank" rel="noopener">Pricebook2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebookentry.htm" target="_blank" rel="noopener">PricebookEntry</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_product2.htm" target="_blank" rel="noopener">Product2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattribute.htm" target="_blank" rel="noopener">ProductAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductAttributeDefinition</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributeset.htm" target="_blank" rel="noopener">ProductAttributeSet</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetitem.htm" target="_blank" rel="noopener">ProductAttributeSetItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetproduct.htm" target="_blank" rel="noopener">ProductAttributeSetProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategory.htm" target="_blank" rel="noopener">ProductCategory</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategoryproduct.htm" target="_blank" rel="noopener">ProductCategoryProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductClassification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductClassificationAttr</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductDisqualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductQualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productrelatedcomponent.htm" target="_blank" rel="noopener">ProductRelatedComponent</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodel.htm" target="_blank" rel="noopener">ProductSellingModel</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodeloption.htm" target="_blank" rel="noopener">ProductSellingModelOption</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quote.htm" target="_blank" rel="noopener">Quote</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotedocument.htm" target="_blank" rel="noopener">QuoteDocument</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinegroup.htm" target="_blank" rel="noopener">QuoteLineGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelineitem.htm" target="_blank" rel="noopener">QuoteLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinerelationship.htm" target="_blank" rel="noopener">QuoteLineRelationship</a></td><td>localizado na Referência de Objetos</td></tr>
 </tbody></table>
@@ -946,7 +1164,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
 </ul>
 <h3>Dúvidas registradas no caso de uso</h3>
 <ul><li><b>D-GJ-01</b> — R06 · Golden Jumper: a Revisão 1 diz que com responsável Cliente os atributos do grupo não são elegíveis, e também que marcar Alterar Fornecedor como Sim obriga interface e nome do jumper. Se, numa mudança de endereço, o responsável for Cliente e a alteração for Sim, qual das duas prevalece? O protótipo faz a alteração prevalecer, exibindo e exigindo os dois campos.</li></ul>
-<h3>O que exige validação humana antes de virar configuração</h3>
+<h3>Validação</h3>
 <ul>
 <li>Os seis objetos que não retornaram na Referência de Objetos consultada — confirmar nome, versão de API e disponibilidade na org.</li>
 <li>A tradução de cada uma das 22 regras para o motor de restrições, com a severidade correta.</li>
