@@ -14,6 +14,11 @@ export const UC_DOCS = {
   'UC-IA-001': { titulo: 'Inteligência Artificial', pagina: 'uc-inteligencia-artificial.html' },
   'UC-MSG-001': { titulo: 'Message Solution', pagina: 'uc-message-solution.html' },
   'UC-IPT-001': { titulo: 'IP Trânsito', pagina: 'uc-ip-transito.html' },
+  'UC-ILK-001': { titulo: 'Internet Link', pagina: 'uc-internet-link.html' },
+  'UC-L2L-001': { titulo: 'Lan to Lan', pagina: 'uc-lan-to-lan.html' },
+  'UC-WAV-001': { titulo: 'Wavelength', pagina: 'uc-wavelength.html' },
+  'UC-SDW-001': { titulo: 'SD-WAN', pagina: 'uc-sd-wan.html' },
+  'UC-HOS-001': { titulo: 'Hospedagem Dedicada', pagina: 'uc-hospedagem-dedicada.html' },
 };
 
 const MAX_ITENS = 400;
