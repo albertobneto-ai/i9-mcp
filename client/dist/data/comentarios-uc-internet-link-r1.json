@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-14T14:48:12.009Z",
+  "quando": "2026-09-15T12:50:54.869Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -15,15 +15,15 @@
       "comentario": "mostrar disponibilidade dos produtos de acordo com circuito, CNPJ, endereço."
     },
     "s1-a04": {
-      "item": "Temporário (quantidade de dias)",
+      "item": "s1-a04",
       "comentario": "desconsiderar"
     },
     "s1-a06": {
-      "item": "Trial",
+      "item": "s1-a06",
       "comentario": "desconsiderar"
     },
     "s1-a05": {
-      "item": "Data de Início (temporário)",
+      "item": "s1-a05",
       "comentario": "desconsiderar"
     },
     "s1-a07": {
@@ -125,6 +125,10 @@
     "s1-m02": {
       "item": "Tipo de Monitoramento",
       "comentario": "Segue a dinamica de VPN"
+    },
+    "s2-l3": {
+      "item": "Análise de viabilidade como pré-requisito",
+      "comentario": "Desconsiderar"
     }
   }
 }
