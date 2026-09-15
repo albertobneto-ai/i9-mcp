@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T12:54:51.816Z",
+  "quando": "2026-09-15T12:56:21.669Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -137,6 +137,10 @@
     "s2-l6": {
       "item": "Precificação por tipo de esteira",
       "comentario": "desconsiderar"
+    },
+    "s2-l9": {
+      "item": "Renovação de licitação no governo",
+      "comentario": "Desconsiderar"
     }
   }
 }
