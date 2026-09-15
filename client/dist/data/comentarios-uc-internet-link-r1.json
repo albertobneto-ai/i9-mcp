@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T13:05:16.970Z",
+  "quando": "2026-09-15T13:08:24.784Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -161,6 +161,10 @@
     "s2-l14": {
       "item": "Automação e integrações do monitoramento",
       "comentario": "Desconsiderar"
+    },
+    "s2-l15": {
+      "item": "Empresa de faturamento e integração de cobrança",
+      "comentario": "desconsiderar por enquanto, em revisão"
     }
   }
 }
