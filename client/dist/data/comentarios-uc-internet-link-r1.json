@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T12:56:21.669Z",
+  "quando": "2026-09-15T12:57:14.433Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -140,6 +140,10 @@
     },
     "s2-l9": {
       "item": "Renovação de licitação no governo",
+      "comentario": "Desconsiderar"
+    },
+    "s2-l10": {
+      "item": "Produto como pré-requisito de outros",
       "comentario": "Desconsiderar"
     }
   }
