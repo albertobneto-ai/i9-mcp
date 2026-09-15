@@ -24,6 +24,11 @@
    "produto": "Internet Link",
    "familia": "Conectividade",
    "pagina": "uc-internet-link.html"
+  },
+  {
+   "produto": "Lan to Lan",
+   "familia": "Conectividade",
+   "pagina": "uc-lan-to-lan.html"
   }
  ]
 }
