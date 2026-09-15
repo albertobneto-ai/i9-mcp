@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T13:04:56.548Z",
+  "quando": "2026-09-15T13:05:16.970Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -156,6 +156,10 @@
     },
     "s2-l13": {
       "item": "Monitoramento: alteração, cancelamento e ativação",
+      "comentario": "Desconsiderar"
+    },
+    "s2-l14": {
+      "item": "Automação e integrações do monitoramento",
       "comentario": "Desconsiderar"
     }
   }
