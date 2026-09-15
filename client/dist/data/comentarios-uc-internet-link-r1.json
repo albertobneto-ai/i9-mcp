@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T12:54:16.875Z",
+  "quando": "2026-09-15T12:54:51.816Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -133,6 +133,10 @@
     "s2-l5": {
       "item": "Critérios de produto formatado",
       "comentario": "adicionar critério:Produto Não Formatado (projeto customizado) quando:- Não atende os critérios de formatação citados acima- Se a viabilidade retornar que o Tipo de Rede é Subterrânea e Abordagem diferente de Prédio Abordado e Prédio Multi Abordado- Acesso Radio- Cliente do tipo Internacional (não possui CNPJ), faturado por invoice em moeda e cotação definida por contrato- Cliente com segmento Governo e Operadoras- Se endereço for classificado como Golden Jumper- Atributo abordagem = Parceiros- Se Last Mile- Se endereço é de um condomínio empresarial"
+    },
+    "s2-l6": {
+      "item": "Precificação por tipo de esteira",
+      "comentario": "desconsiderar"
     }
   }
 }
