@@ -3,15 +3,7 @@
   {
    "produto": "VPN Node",
    "familia": "Conectividade",
-   "pagina": "uc-vpn-node.html",
-   "anexos": [
-    {
-     "titulo": "Referência técnica — Arquitetura e Especificação técnica",
-     "pagina": "referencia-tecnica-vpn-node.html",
-     "pdf": "referencia-tecnica-vpn-node.pdf",
-     "nota": "Parte I: diagramas nos níveis 1–4 do framework Salesforce · Parte II: registros a criar, destino das 22 regras e ordem de construção"
-    }
-   ]
+   "pagina": "uc-vpn-node.html"
   },
   {
    "produto": "Locação de Equipamentos",
@@ -29,34 +21,9 @@
    "pagina": "uc-message-solution.html"
   },
   {
-   "produto": "IP Trânsito",
-   "familia": "Conectividade",
-   "pagina": "uc-ip-transito.html"
-  },
-  {
    "produto": "Internet Link",
    "familia": "Conectividade",
    "pagina": "uc-internet-link.html"
-  },
-  {
-   "produto": "Lan to Lan",
-   "familia": "Conectividade",
-   "pagina": "uc-lan-to-lan.html"
-  },
-  {
-   "produto": "Wavelength",
-   "familia": "Conectividade",
-   "pagina": "uc-wavelength.html"
-  },
-  {
-   "produto": "SD-WAN",
-   "familia": "TIC Dados",
-   "pagina": "uc-sd-wan.html"
-  },
-  {
-   "produto": "Hospedagem Dedicada",
-   "familia": "TIC TI",
-   "pagina": "uc-hospedagem-dedicada.html"
   }
  ]
 }
