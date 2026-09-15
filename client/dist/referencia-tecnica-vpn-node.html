@@ -81,7 +81,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
     <div><b>Atributos</b><span>46</span></div>
     <div><b>Regras</b><span>22</span></div>
     <div><b>Efeitos</b><span>100</span></div>
-    <div><b>Emitido em</b><span>14/09/2026</span></div>
+    <div><b>Emitido em</b><span>15/09/2026</span></div>
   </div>
 </div></header>
 
@@ -98,7 +98,13 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <li><a href="#ciclo">Ciclo transacional: cotação, pedido e asset</a></li>
 <li><a href="#orquestracao">Decomposição e orquestração</a></li>
 <li><a href="#dicionario">Dicionário de objetos citados</a></li>
-<li><a href="#lacunas">Lacunas, dúvidas e o que exige validação</a></li></ol></div>
+<li><a href="#lacunas">Lacunas, dúvidas e o que exige validação</a></li>
+<li><a href="#build">O que construir — inventário de registros</a></li>
+<li><a href="#build-produtos">Produtos, grupos e componentes</a></li>
+<li><a href="#build-attrs">Atributos — especificação de criação</a></li>
+<li><a href="#build-regras">Regras — no que cada uma se transforma</a></li>
+<li><a href="#build-ordem">Ordem de construção</a></li>
+<li><a href="#build-riscos">Riscos da construção</a></li></ol></div>
 
 <h2 id="escopo"><span class="n">01</span>Escopo e como ler</h2>
 <p class="lead">Este documento traduz o UC-VPN-001 para a modelagem no Salesforce Revenue Cloud. Ele não substitui o caso de uso: o que está aqui é a ponte entre o que o negócio descreveu e o que precisa existir na plataforma.</p>
@@ -1172,6 +1178,625 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
 <li>A cardinalidade dos grupos de componentes contra o catálogo real.</li>
 </ul>
 <div class="box alerta"><b>Fronteira deste documento</b>Ele descreve o que modelar, não como implementar. Não contém definição de layout, permissões, sharing, testes de aceitação nem dimensionamento de volumetria. As condições aparecem na notação do caso de uso, que é legível, mas não é sintaxe de produção.</div>
+
+
+<h2 id="build"><span class="n">13</span>O que construir — inventário de registros</h2>
+<p class="lead">A partir daqui o documento deixa de descrever e passa a especificar. Os nomes de campo abaixo foram lidos da Referência de Objetos do Salesforce; os nomes de API dos registros são convenção proposta, e podem mudar sem prejuízo.</p>
+<table><thead><tr><th>Objeto</th><th>Quantos</th><th>O que representa</th><th>Campos que precisam de valor</th></tr></thead><tbody><tr><td>Product2</td><td>4</td><td>Bundle VPN Node mais um produto por componente</td><td>Name, ProductCode, Type, IsConfigurable, IsActive</td></tr><tr><td>ProductComponentGroup</td><td>2</td><td>Um por grupo do bundle</td><td>ParentProductId, Name, MinBundleComponents, MaxBundleComponents, Sequence</td></tr><tr><td>ProductRelatedComponent</td><td>3</td><td>Um por componente dentro do grupo</td><td>ParentProductId, ChildProductId, ChildProductRole, ProductComponentGroupId, IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity, Quantity, Sequence</td></tr><tr><td>ProductSellingModel</td><td>2</td><td>Contínuo para o acesso e por período para o upgrade temporário</td><td>Name, SellingModelType, PricingTerm, PricingTermUnit, Status</td></tr><tr><td>ProductCategory e ProductCategoryProduct</td><td>1 categoria e 4 associações</td><td>Publicação do produto no catálogo</td><td>Name, CatalogId; ProductId, ProductCategoryId</td></tr><tr><td>AttributeDefinition</td><td>46</td><td>Um por atributo do caso de uso</td><td>Label, DeveloperName, DataType, IsRequired, DefaultValue, PicklistId, IsActive</td></tr><tr><td>AttributePicklist</td><td>27</td><td>Uma por atributo de lista</td><td>Name, DataType, Status</td></tr><tr><td>AttributePicklistValue</td><td>159</td><td>Um por valor de lista</td><td>PicklistId, Name, Value, DisplayValue, Code, Sequence, IsDefault, Status</td></tr><tr><td>Modelo de restrição</td><td>22 regras / 100 efeitos</td><td>Tradução das regras do caso de uso</td><td>Associação ao produto por ExpressionSetConstraintObj</td></tr></tbody></table>
+<div class="box info"><b>Leitura rápida do esforço</b>4 produtos, 2 grupos, 3 relações de componente, 46 atributos, 27 listas com 159 valores e 100 efeitos de regra. Preço fica fora, por falta de definição.</div>
+
+<h2 id="build-produtos"><span class="n">14</span>Produtos, grupos e componentes</h2>
+<table><thead><tr><th>Registro</th><th>Papel</th><th>ChildProductRole</th><th>Grupo</th><th>Quantidade</th><th>Campos de controle</th></tr></thead><tbody><tr><td>VPN Node</td><td>Bundle configurável</td><td>—</td><td>—</td><td>1</td><td>IsConfigurable = true</td></tr><tr><td>Equipamento de Acesso</td><td>Componente</td><td>BundleComponent</td><td>Equipamentos de Acesso</td><td>mín 1 · máx sem limite</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr><tr><td>Upgrade Temporário de Velocidade</td><td>Componente</td><td>BundleComponent</td><td>Serviços de Valor Agregado</td><td>mín 0 · máx 2</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr><tr><td>Monitoramento Inteligente de Rede</td><td>Componente</td><td>BundleComponent</td><td>Serviços de Valor Agregado</td><td>mín 0 · máx 2</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr></tbody></table>
+<div class="box"><b>Sobre o Roteador</b>A regra do caso de uso limita o Roteador a uma unidade. Isso se modela no componente, com quantidade máxima, e não só na regra — assim o limite vale mesmo que a regra não seja avaliada.</div>
+
+<h2 id="build-attrs"><span class="n">15</span>Atributos — especificação de criação</h2>
+<p>Cada linha vira um registro de AttributeDefinition. <code>DataType</code> aceita Checkbox, Date, Datetime, Number, Picklist e Text — o atributo de VPN Network entra como texto, porque referencia um registro que ainda não existe como objeto.</p>
+<table><thead><tr><th>Atributo</th><th>DeveloperName proposto</th><th>DataType</th><th>DefaultValue</th><th>IsRequired</th><th>Lista de valores</th><th>Quem preenche</th></tr></thead><tbody>
+<tr>
+          <td><b>Velocidade</b><div class="cod">Velocidade</div></td>
+          <td><code>VPNN_Velocidade</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>48 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Tecnologia</b><div class="cod">Tecnologia</div></td>
+          <td><code>VPNN_Tecnologia</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>4 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Interface</b><div class="cod">Interface</div></td>
+          <td><code>VPNN_Interface</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>2 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Abordagem</b><div class="cod">Abordagem</div></td>
+          <td><code>VPNN_Abordagem</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>2 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Metragem</b><div class="cod">Metragem</div></td>
+          <td><code>VPNN_Metragem</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R04</div></td>
+          <td>—</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>VPN Network</b><div class="cod">VPNNetwork</div></td>
+          <td><code>VPNN_VPNNetwork</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R05</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Protocolo de Roteamento</b><div class="cod">ProtocoloRoteamento</div></td>
+          <td><code>VPNN_ProtocoloRoteamento</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R05</div></td>
+          <td>4 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Golden Jumper</b><div class="cod">GoldenJumper</div></td>
+          <td><code>VPNN_GoldenJumper</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R06</div></td>
+          <td>2 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Nome do Data Center</b><div class="cod">NomeDataCenter</div></td>
+          <td><code>VPNN_NomeDataCenter</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R06</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Interface</b><div class="cod">InterfaceGJ</div></td>
+          <td><code>VPNN_InterfaceGJ</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R06, R06</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Nome do jumper</b><div class="cod">NomeJumper</div></td>
+          <td><code>VPNN_NomeJumper</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R06, R06</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Alterar Fornecedor Golden Jumper</b><div class="cod">AlterarFornecedorGJ</div></td>
+          <td><code>VPNN_AlterarFornecedorGJ</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Modalidade de Instalação</b><div class="cod">ModalidadeInstalacao</div></td>
+          <td><code>VPNN_ModalidadeInstalacao</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R07</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Modelo de Disponibilização</b><div class="cod">ModeloDisponibilizacao</div></td>
+          <td><code>VPNN_ModeloDisponibilizacao</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R07</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Velocidade de Conexão</b><div class="cod">VelocidadeConexao</div></td>
+          <td><code>VPNN_VelocidadeConexao</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R07</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Provedor e Serviço Cloud</b><div class="cod">ProvedorCloud</div></td>
+          <td><code>VPNN_ProvedorCloud</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R07</div></td>
+          <td>5 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Condomínio</b><div class="cod">Condominio</div></td>
+          <td><code>VPNN_Condominio</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>2 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Acesso Terceiro Last Mile</b><div class="cod">AcessoTerceiroLastMile</div></td>
+          <td><code>VPNN_AcessoTerceiroLastMile</code></td>
+          <td>Checkbox</td>
+          <td>—</td>
+          <td>false</td>
+          <td>1 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Parceiro LastMile</b><div class="cod">ParceiroLastMile</div></td>
+          <td><code>VPNN_ParceiroLastMile</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Proprietário do Roteador</b><div class="cod">ProprietarioRoteador</div></td>
+          <td><code>VPNN_ProprietarioRoteador</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Número Viabilidade GLM</b><div class="cod">NumeroViabilidadeGLM</div></td>
+          <td><code>VPNN_NumeroViabilidadeGLM</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Vigência LastMile</b><div class="cod">VigenciaLastMile</div></td>
+          <td><code>VPNN_VigenciaLastMile</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Valor Instalação LastMile s/ Impostos</b><div class="cod">ValorInstalacaoLastMile</div></td>
+          <td><code>VPNN_ValorInstalacaoLastMile</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Valor Mensal LastMile s/ Impostos</b><div class="cod">ValorMensalLastMile</div></td>
+          <td><code>VPNN_ValorMensalLastMile</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R09</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Tipo de Equipamento</b><div class="cod">TipoEquipamento</div></td>
+          <td><code>VPNN_TipoEquipamento</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>7 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Modalidade Equipamento</b><div class="cod">ModalidadeEquipamento</div></td>
+          <td><code>VPNN_ModalidadeEquipamento</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>3 valores</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Velocidade Temporária</b><div class="cod">VelocidadeTemporaria</div></td>
+          <td><code>VPNN_VelocidadeTemporaria</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R12</div></td>
+          <td>42 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Quantidade de Dias (corridos)</b><div class="cod">QuantidadeDias</div></td>
+          <td><code>VPNN_QuantidadeDias</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R12</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Referência do Cliente</b><div class="cod">ReferenciaCliente</div></td>
+          <td><code>VPNN_ReferenciaCliente</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R14</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Tipo Moeda</b><div class="cod">TipoMoeda</div></td>
+          <td><code>VPNN_TipoMoeda</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false</td>
+          <td>1 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Valor Moeda</b><div class="cod">ValorMoeda</div></td>
+          <td><code>VPNN_ValorMoeda</code></td>
+          <td>Number</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R15</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Produto a Serviço</b><div class="cod">ProdutoAServico</div></td>
+          <td><code>VPNN_ProdutoAServico</code></td>
+          <td>Text</td>
+          <td>—</td>
+          <td>false</td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Período Fidelização</b><div class="cod">PeriodoFidelizacao</div></td>
+          <td><code>VPNN_PeriodoFidelizacao</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R17</div></td>
+          <td>6 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Tipo de Reajuste</b><div class="cod">TipoReajuste</div></td>
+          <td><code>VPNN_TipoReajuste</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R17</div></td>
+          <td>4 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Data Base</b><div class="cod">DataBase</div></td>
+          <td><code>VPNN_DataBase</code></td>
+          <td>Date</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R18</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Data de Assinatura do Contrato</b><div class="cod">DataAssinatura</div></td>
+          <td><code>VPNN_DataAssinatura</code></td>
+          <td>Date</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R18</div></td>
+          <td>—</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Índice de Reajuste</b><div class="cod">IndiceReajuste</div></td>
+          <td><code>VPNN_IndiceReajuste</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true<div class="cod">condicional por R18</div></td>
+          <td>4 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Reajustar Antes de 12 Meses</b><div class="cod">ReajustarAntes12Meses</div></td>
+          <td><code>VPNN_ReajustarAntes12Meses</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false</td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Data do Próximo Reajuste</b><div class="cod">DataProximoReajuste</div></td>
+          <td><code>VPNN_DataProximoReajuste</code></td>
+          <td>Date</td>
+          <td>—</td>
+          <td>true</td>
+          <td>—</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Percentual da Multa</b><div class="cod">PercentualMulta</div></td>
+          <td><code>VPNN_PercentualMulta</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>1 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Data de Início do Contrato</b><div class="cod">DataInicioContrato</div></td>
+          <td><code>VPNN_DataInicioContrato</code></td>
+          <td>Date</td>
+          <td>—</td>
+          <td>true</td>
+          <td>—</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Data de Término do Contrato</b><div class="cod">DataTerminoContrato</div></td>
+          <td><code>VPNN_DataTerminoContrato</code></td>
+          <td>Date</td>
+          <td>—</td>
+          <td>true</td>
+          <td>—</td>
+          <td>integração ou contexto</td>
+        </tr>
+<tr>
+          <td><b>Recálculo Período do Contrato</b><div class="cod">RecalculoPeriodoContrato</div></td>
+          <td><code>VPNN_RecalculoPeriodoContrato</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>4 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Quantidade de Dias Aviso Previo</b><div class="cod">DiasAvisoPrevio</div></td>
+          <td><code>VPNN_DiasAvisoPrevio</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>true</td>
+          <td>1 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Plano</b><div class="cod">PlanoMIR</div></td>
+          <td><code>VPNN_PlanoMIR</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R13</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+<tr>
+          <td><b>Tipo de Monitoramento</b><div class="cod">TipoMonitoramento</div></td>
+          <td><code>VPNN_TipoMonitoramento</code></td>
+          <td>Picklist</td>
+          <td>—</td>
+          <td>false<div class="cod">condicional por R13</div></td>
+          <td>2 valores</td>
+          <td>usuário</td>
+        </tr>
+</tbody></table>
+<div class="box alerta"><b>Obrigatoriedade condicional</b>O campo IsRequired é fixo. Atributo que só é obrigatório em certas condições entra com IsRequired falso e a exigência vive na regra — a coluna aponta qual regra cuida de cada caso.</div>
+
+<h2 id="build-regras"><span class="n">16</span>Regras — no que cada uma se transforma</h2>
+<table><thead><tr><th>Regra</th><th>Nome</th><th>Efeitos</th><th>Onde é construída</th><th>Contexto exigido</th><th>Função auxiliar</th></tr></thead><tbody>
+<tr>
+          <td><span class="rid big">R01</span></td>
+          <td>Endereço sem cobertura</td>
+          <td>1× message</td>
+          <td>Mensagem de validação</td>
+          <td>endereco</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R02</span></td>
+          <td>Rede neutra = inviável</td>
+          <td>1× message</td>
+          <td>Mensagem de validação</td>
+          <td>endereco</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R03</span></td>
+          <td>Tecnologia, interface, abordagem e metragem vêm da viabilidade</td>
+          <td>4× setValue · 4× disable</td>
+          <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>endereco · usuario</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R04</span></td>
+          <td>Metragem obrigatória e maior que zero na abordagem Construir</td>
+          <td>1× hide · 1× require · 1× constraint</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R05</span></td>
+          <td>VPN Network: existente herda protocolo; nova exige protocolo</td>
+          <td>2× require · 1× hide · 1× setValue · 1× disable · 1× message</td>
+          <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R06</span></td>
+          <td>Golden Jumper só em endereço elegível; Algar exige dados da conexão; alteração de fornecedor só em mudança de endereço</td>
+          <td>6× require · 5× hide · 1× setValue</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>endereco · transacao</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R07</span></td>
+          <td>Virtual/Fabric torna obrigatório o bloco de nuvem</td>
+          <td>4× require · 3× hide</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R08</span></td>
+          <td>Condomínio vem do cadastro do endereço</td>
+          <td>1× setValue · 1× disable</td>
+          <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R09</span></td>
+          <td>Acesso Terceiro Last Mile: só com complementação técnica; exige dados do parceiro</td>
+          <td>6× hide · 6× require · 1× disable · 1× exclude</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>usuario</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R10</span></td>
+          <td>Equipamentos dimensionados pela tecnologia (comodato) · exigência por tecnologia</td>
+          <td>2× message · 1× autoAdd</td>
+          <td>Componente do bundle<br>Mensagem de validação</td>
+          <td>endereco</td>
+          <td>equipamentosFaltando</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R11</span></td>
+          <td>Roteador no máximo 1; Rádio exige equipamento Rádio</td>
+          <td>5× message</td>
+          <td>Mensagem de validação</td>
+          <td>endereco</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R12</span></td>
+          <td>Upgrade Temporário: opções elegíveis, tetos por faixa e 10 a 60 dias</td>
+          <td>2× require · 2× message · 1× hideValues · 1× constraint</td>
+          <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição</td>
+          <td>—</td>
+          <td>mbps</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R13</span></td>
+          <td>Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade</td>
+          <td>2× require · 2× message</td>
+          <td>Configuração do atributo ou regra<br>Mensagem de validação</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R14</span></td>
+          <td>Referência do Cliente obrigatória para Operadoras-Atacado e Governo</td>
+          <td>1× hide · 1× require</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>conta</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R15</span></td>
+          <td>Moeda e cotação só para cliente internacional</td>
+          <td>2× hide · 1× require · 1× message</td>
+          <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição</td>
+          <td>conta</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R16</span></td>
+          <td>Produto a Serviço sem definição</td>
+          <td>1× disable</td>
+          <td>Regra do modelo de restrição</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R17</span></td>
+          <td>Fidelização 0 e &quot;Sem reajuste&quot; só para segmentos permitidos</td>
+          <td>4× hideValues · 2× require</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>conta · transacao · usuario</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R18</span></td>
+          <td>Datas-âncora conforme o tipo de reajuste</td>
+          <td>3× require · 2× hide · 1× disable</td>
+          <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
+          <td>usuario</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R19</span></td>
+          <td>Data do próximo reajuste calculada</td>
+          <td>3× setValue</td>
+          <td>Regra do modelo de restrição ou DefaultValue</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R20</span></td>
+          <td>Multa fixa em 30% e não elegível para Governo</td>
+          <td>1× hide · 1× setValue · 1× disable</td>
+          <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>conta</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R21</span></td>
+          <td>Recálculo do período só em alteração; aviso prévio de 30 dias</td>
+          <td>1× hide · 1× setValue</td>
+          <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
+          <td>transacao</td>
+          <td>—</td>
+        </tr>
+<tr>
+          <td><span class="rid big">R22</span></td>
+          <td>Nova network exige no mínimo 2 VPN Nodes na cotação</td>
+          <td>1× transacao</td>
+          <td>Regra sensível ao contexto</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+</tbody></table>
+<h3>De cada tipo de efeito para o artefato</h3>
+<table><thead><tr><th>Tipo</th><th>Onde vira</th><th>Observação de construção</th></tr></thead><tbody><tr><td><code>require</code></td><td>Configuração do atributo ou regra</td><td>IsRequired fixo quando vale sempre; regra do modelo de restrição quando depende de condição</td></tr><tr><td><code>hide</code></td><td>Regra do modelo de restrição</td><td>Visibilidade condicional — não existe campo de “oculto” no AttributeDefinition</td></tr><tr><td><code>message</code></td><td>Mensagem de validação</td><td>Texto apresentado no configurador, com severidade</td></tr><tr><td><code>setValue</code></td><td>Regra do modelo de restrição ou DefaultValue</td><td>DefaultValue quando o valor é fixo; regra quando depende de condição</td></tr><tr><td><code>disable</code></td><td>Regra do modelo de restrição</td><td>Somente leitura condicional</td></tr><tr><td><code>hideValues</code></td><td>Regra do modelo de restrição</td><td>Filtro sobre os valores da lista do atributo</td></tr><tr><td><code>constraint</code></td><td>Regra do modelo de restrição</td><td>Bloqueia o salvamento da configuração</td></tr><tr><td><code>exclude</code></td><td>Regra do modelo de restrição</td><td>Exclusão mútua entre componentes do bundle</td></tr><tr><td><code>autoAdd</code></td><td>Componente do bundle</td><td>IsDefaultComponent no ProductRelatedComponent, com a regra ajustando quantidade</td></tr><tr><td><code>transacao</code></td><td>Regra sensível ao contexto</td><td>Depende do tipo de ação do pedido — precisa do dado da transação disponível na avaliação</td></tr></tbody></table>
+<div class="box info"><b>O que o motor de restrições não resolve sozinho</b>Condição que depende de segmento da conta, de permissão do usuário, do retorno da viabilidade ou do tipo de transação precisa que esse dado esteja disponível no momento da avaliação. Essa é a primeira decisão de construção: cada item da coluna “contexto exigido” vira um campo do cabeçalho da cotação, um dado do endereço ou um atributo de apoio — e isso precisa ser resolvido antes de escrever as regras.</div>
+
+<h2 id="build-ordem"><span class="n">17</span>Ordem de construção</h2>
+<table><thead><tr><th>Passo</th><th>O que</th><th>Objetos</th><th>Depende de</th><th>Critério de pronto</th></tr></thead><tbody><tr><td>1</td><td>Modelos de venda e categoria</td><td>ProductSellingModel, ProductCategory</td><td>Nada depende antes</td><td>Registros ativos e visíveis no catálogo</td></tr><tr><td>2</td><td>Produtos</td><td>Product2 do bundle e dos componentes</td><td>Modelo de venda</td><td>Bundle marcado como configurável; componentes ativos</td></tr><tr><td>3</td><td>Listas de valores</td><td>AttributePicklist e AttributePicklistValue</td><td>Nada depende antes</td><td>159 valores conferidos contra o caso de uso</td></tr><tr><td>4</td><td>Atributos</td><td>AttributeDefinition</td><td>Listas de valores</td><td>Tipo, obrigatoriedade fixa e valor padrão conforme a tabela</td></tr><tr><td>5</td><td>Ligação atributo ↔ produto</td><td>Objeto a confirmar na org</td><td>Produtos e atributos</td><td>Atributo aparece na configuração do produto certo</td></tr><tr><td>6</td><td>Estrutura do bundle</td><td>ProductComponentGroup e ProductRelatedComponent</td><td>Produtos</td><td>Cardinalidade mínima e máxima conforme o caso de uso</td></tr><tr><td>7</td><td>Regras</td><td>Modelo de restrição associado ao produto</td><td>Atributos e estrutura</td><td>Os 100 efeitos reproduzidos, com severidade</td></tr><tr><td>8</td><td>Dados de contexto</td><td>Campos que recebem viabilidade, segmento e permissões</td><td>Integração de viabilidade</td><td>Regra que depende de contexto avalia com dado real</td></tr><tr><td>9</td><td>Preço</td><td>Tabela e procedimento de preço</td><td>Definição de negócio inexistente</td><td>Bloqueado: a Revisão 1 não define preço</td></tr></tbody></table>
+
+<h2 id="build-riscos"><span class="n">18</span>Riscos da construção</h2>
+<table><thead><tr><th>Risco</th><th>Por quê</th><th>O que fazer antes</th></tr></thead><tbody><tr><td>Objeto de ligação atributo ↔ produto não confirmado</td><td>A Referência de Objetos consultada não traz ProductAttributeDefinition nem AttributeCategory; ProductAttributeSet pertence ao modelo de Commerce, não ao de Revenue.</td><td>Conferir na org antes de começar o passo 5: listar os objetos disponíveis e o modelo de atributo que a versão instalada usa.</td></tr><tr><td>Tradução das regras para o motor de restrições</td><td>As condições do caso de uso usam contexto de conta, usuário, endereço e transação. Nem todo contexto está disponível na avaliação da regra.</td><td>Para cada regra que usa contexto, decidir na org se o dado chega ao configurador ou se vira campo do cabeçalho da cotação.</td></tr><tr><td>Atributos de preenchimento automático</td><td>11 atributos nascem de integração ou de contexto, não do usuário.</td><td>Definir a origem de cada um e o que acontece quando a origem não responde.</td></tr><tr><td>Cardinalidade e quantidade dos equipamentos</td><td>O grupo aceita vários equipamentos, e o Roteador tem teto de um.</td><td>Modelar com MinQuantity, MaxQuantity e IsQuantityEditable no componente, e a regra tratando a soma.</td></tr><tr><td>Severidade das mensagens</td><td>O caso de uso distingue mensagem que apenas avisa de mensagem que bloqueia.</td><td>Preservar a severidade na tradução; erro que vira aviso deixa passar configuração inválida.</td></tr><tr><td>Preço ausente</td><td>Sem tabela e procedimento, a cotação fecha sem valor.</td><td>Tratar como bloqueio declarado, não como pendência menor.</td></tr></tbody></table>
 
 </main>
 <footer class="wrap"><span>Algar — Referência técnica · VPN Node</span><span>Confidencial — uso interno</span></footer>
