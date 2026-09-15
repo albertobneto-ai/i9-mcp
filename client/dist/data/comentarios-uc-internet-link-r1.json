@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T12:57:14.433Z",
+  "quando": "2026-09-15T13:04:33.967Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -145,6 +145,14 @@
     "s2-l10": {
       "item": "Produto como pré-requisito de outros",
       "comentario": "Desconsiderar"
+    },
+    "s2-l11": {
+      "item": "Geração de contrato",
+      "comentario": "desconsiderar"
+    },
+    "s2-l12": {
+      "item": "Venda em lote e atributos que não se replicam",
+      "comentario": "verificar a possibilidade de clonar algumas informações para atendimento em lote. exemplo clonar alguns atributos para atender x cotações adicionando apenas valores que são distintos um do outro."
     }
   }
 }
