@@ -37,6 +37,16 @@
    "produto": "Lan to Lan",
    "familia": "Conectividade",
    "pagina": "uc-lan-to-lan.html"
+  },
+  {
+   "produto": "IP Trânsito",
+   "familia": "Conectividade",
+   "pagina": "uc-ip-transito.html"
+  },
+  {
+   "produto": "SD-WAN",
+   "familia": "TIC Dados",
+   "pagina": "uc-sd-wan.html"
   }
  ]
 }
