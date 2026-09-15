@@ -6,10 +6,16 @@
    "pagina": "uc-vpn-node.html",
    "anexos": [
     {
-     "titulo": "Referência técnica — modelagem no Revenue Cloud",
-     "pagina": "referencia-tecnica-vpn-node.html",
-     "pdf": "referencia-tecnica-vpn-node.pdf",
-     "nota": "46 atributos, 22 regras e o destino de cada peça na plataforma"
+     "titulo": "Arquitetura — o produto na plataforma",
+     "pagina": "arquitetura-vpn-node.html",
+     "pdf": "arquitetura-vpn-node.pdf",
+     "nota": "catálogo, bundle, qualificação, classificação e ciclo até o asset"
+    },
+    {
+     "titulo": "Engenharia — o que e como construir",
+     "pagina": "engenharia-vpn-node.html",
+     "pdf": "engenharia-vpn-node.pdf",
+     "nota": "inventário de registros, 46 atributos, destino das 22 regras e ordem de construção"
     }
    ]
   },
