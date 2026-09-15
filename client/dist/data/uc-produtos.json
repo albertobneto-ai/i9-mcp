@@ -3,7 +3,15 @@
   {
    "produto": "VPN Node",
    "familia": "Conectividade",
-   "pagina": "uc-vpn-node.html"
+   "pagina": "uc-vpn-node.html",
+   "anexos": [
+    {
+     "titulo": "Referência técnica — Arquitetura e Especificação técnica",
+     "pagina": "referencia-tecnica-vpn-node.html",
+     "pdf": "referencia-tecnica-vpn-node.pdf",
+     "nota": "Parte I: diagramas nos níveis 1–4 do framework Salesforce · Parte II: registros a criar, destino das 22 regras e ordem de construção"
+    }
+   ]
   },
   {
    "produto": "Locação de Equipamentos",
