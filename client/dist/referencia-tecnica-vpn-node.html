@@ -91,8 +91,8 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 </div></div></header>
 <main class="wrap">
 <div class="sumario"><div class="cols">
-<div><h4>Parte I — Arquitetura</h4><ol><li><a href="#escopo">01 · Escopo e convenções</a></li><li><a href="#nivel1">02 · Nível 1 — Panorama de sistemas</a></li><li><a href="#nivel2">03 · Nível 2 — Recorte da solução</a></li><li><a href="#catalogo">04 · Modelo do catálogo</a></li><li><a href="#estrutura">05 · Estrutura do bundle e componentes</a></li><li><a href="#qualificacao">06 · Qualificação do produto</a></li><li><a href="#attrs-resumo">07 · Atributos — panorama</a></li><li><a href="#regras-resumo">08 · Regras — panorama</a></li><li><a href="#classificacao">09 · Classificação do atendimento</a></li><li><a href="#gerais">10 · Regras gerais do produto</a></li><li><a href="#nivel3">11 · Nível 3 — Processos e interações</a></li><li><a href="#ciclo">12 · Ciclo transacional: cotação, pedido e asset</a></li><li><a href="#nivel4">13 · Nível 4 — Modelo de dados</a></li><li><a href="#orquestracao">14 · Decomposição e orquestração</a></li><li><a href="#dicionario">15 · Dicionário de objetos citados</a></li><li><a href="#lacunas">16 · Lacunas, dúvidas e validação</a></li></ol></div>
-<div><h4>Parte II — Especificação técnica</h4><ol><li><a href="#build">17 · Inventário de registros</a></li><li><a href="#build-produtos">18 · Produtos, grupos e componentes</a></li><li><a href="#build-attrs">19 · Atributos — especificação de criação</a></li><li><a href="#atributos">20 · Atributos — valores e categorias do caso de uso</a></li><li><a href="#regras">21 · Regras — efeitos, condições e leitura</a></li><li><a href="#build-regras">22 · Regras — destino de cada uma na plataforma</a></li><li><a href="#build-ordem">23 · Ordem de construção</a></li><li><a href="#build-riscos">24 · Riscos da construção</a></li></ol></div>
+<div><h4>Parte I — Arquitetura</h4><ol><li><a href="#escopo">01 · Escopo e convenções</a></li><li><a href="#nivel1">02 · Nível 1 — Panorama de sistemas</a></li><li><a href="#nivel2">03 · Nível 2 — Recorte da solução</a></li><li><a href="#catalogo">04 · Modelo do catálogo</a></li><li><a href="#estrutura">05 · Estrutura do bundle e componentes</a></li><li><a href="#qualificacao">06 · Qualificação do produto</a></li><li><a href="#attrs-resumo">07 · Atributos — panorama</a></li><li><a href="#regras-resumo">08 · Regras — panorama</a></li><li><a href="#modelo">09 · Modelo recomendado — fronteira comercial e técnica</a></li><li><a href="#classificacao">10 · Classificação do atendimento</a></li><li><a href="#gerais">11 · Regras gerais do produto</a></li><li><a href="#nivel3">12 · Nível 3 — Processos e interações</a></li><li><a href="#ciclo">13 · Ciclo transacional: cotação, pedido e asset</a></li><li><a href="#nivel4">14 · Nível 4 — Modelo de dados</a></li><li><a href="#orquestracao">15 · Decomposição e orquestração</a></li><li><a href="#dicionario">16 · Dicionário de objetos citados</a></li><li><a href="#lacunas">17 · Lacunas, dúvidas e validação</a></li></ol></div>
+<div><h4>Parte II — Especificação técnica</h4><ol><li><a href="#build">18 · Inventário de registros</a></li><li><a href="#build-produtos">19 · Produtos, grupos e componentes</a></li><li><a href="#build-attrs">20 · Atributos — especificação de criação</a></li><li><a href="#atributos">21 · Atributos — valores e categorias do caso de uso</a></li><li><a href="#regras">22 · Regras — efeitos, condições e leitura</a></li><li><a href="#build-regras">23 · Regras — destino de cada uma na plataforma</a></li><li><a href="#build-ordem">24 · Ordem de construção</a></li><li><a href="#build-riscos">25 · Riscos da construção</a></li></ol></div>
 </div></div>
 <div class="parte"><div class="parte-k">Parte I — Arquitetura</div><p>Visão do produto na plataforma: sistemas envolvidos, recorte da solução, catálogo, estrutura do bundle, qualificação, classificação do atendimento, processos, ciclo transacional, modelo de dados e lacunas. Destina-se à decisão e ao alinhamento entre as partes.</p></div><h2 id="escopo"><span class="n">01</span>Escopo e convenções</h2>
 <p class="lead">Este documento estabelece a correspondência entre o UC-VPN-001 e a modelagem do produto no Salesforce Revenue Cloud. Não substitui o caso de uso; delimita o que deve existir na plataforma para que o caso de uso seja atendido.</p>
@@ -241,7 +241,25 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <p class="lead">O caso de uso define 22 regras, decompostas em 100 efeitos unitários. A tabela relaciona o objeto de cada regra; a leitura de cada efeito, com a condição em português e a expressão original, consta da Parte II.</p>
 <table><thead><tr><th>Regra</th><th>O que governa</th><th>Escopo</th><th>Efeitos</th><th>Tipos</th><th>Sobre o quê</th></tr></thead><tbody><tr><td><span class='rid'>R01</span></td><td>Endereço sem cobertura</td><td>Produto</td><td>1</td><td>1 message</td><td>—</td></tr><tr><td><span class='rid'>R02</span></td><td>Rede neutra = inviável</td><td>Produto</td><td>1</td><td>1 message</td><td>—</td></tr><tr><td><span class='rid'>R03</span></td><td>Tecnologia, interface, abordagem e metragem vêm da viabilidade</td><td>Produto</td><td>8</td><td>4 setValue · 4 disable</td><td>Abordagem · Interface · Metragem · Tecnologia</td></tr><tr><td><span class='rid'>R04</span></td><td>Metragem obrigatória e maior que zero na abordagem Construir</td><td>Produto</td><td>3</td><td>1 hide · 1 require · 1 constraint</td><td>Metragem</td></tr><tr><td><span class='rid'>R05</span></td><td>VPN Network: existente herda protocolo; nova exige protocolo</td><td>Produto</td><td>6</td><td>2 require · 1 hide · 1 setValue · 1 disable · 1 message</td><td>Protocolo de Roteamento · VPN Network · —</td></tr><tr><td><span class='rid'>R06</span></td><td>Golden Jumper só em endereço elegível; Algar exige dados da conexão; alteração de fornecedor só em mudança de endereço</td><td>Produto</td><td>12</td><td>6 require · 5 hide · 1 setValue</td><td>Alterar Fornecedor Golden Jumper · Golden Jumper · Interface · Nome do Data Center · Nome do jumper</td></tr><tr><td><span class='rid'>R07</span></td><td>Virtual/Fabric torna obrigatório o bloco de nuvem</td><td>Produto</td><td>7</td><td>4 require · 3 hide</td><td>Modalidade de Instalação · Modelo de Disponibilização · Provedor e Serviço Cloud · Velocidade de Conexão</td></tr><tr><td><span class='rid'>R08</span></td><td>Condomínio vem do cadastro do endereço</td><td>Produto</td><td>2</td><td>1 setValue · 1 disable</td><td>Condomínio</td></tr><tr><td><span class='rid'>R09</span></td><td>Acesso Terceiro Last Mile: só com complementação técnica; exige dados do parceiro</td><td>Bundle</td><td>14</td><td>6 hide · 6 require · 1 disable · 1 exclude</td><td>Acesso Terceiro Last Mile · Número Viabilidade GLM · Parceiro LastMile · Proprietário do Roteador · Valor Instalação LastMile s/ Impostos …</td></tr><tr><td><span class='rid'>R10</span></td><td>Equipamentos dimensionados pela tecnologia (comodato) · exigência por tecnologia</td><td>Bundle</td><td>3</td><td>2 message · 1 autoAdd</td><td>equip · —</td></tr><tr><td><span class='rid'>R11</span></td><td>Roteador no máximo 1; Rádio exige equipamento Rádio</td><td>Bundle</td><td>5</td><td>5 message</td><td>—</td></tr><tr><td><span class='rid'>R12</span></td><td>Upgrade Temporário: opções elegíveis, tetos por faixa e 10 a 60 dias</td><td>Bundle</td><td>6</td><td>2 require · 2 message · 1 hideValues · 1 constraint</td><td>Quantidade de Dias (corridos) · Velocidade Temporária · upgrade</td></tr><tr><td><span class='rid'>R13</span></td><td>Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade</td><td>Bundle</td><td>4</td><td>2 require · 2 message</td><td>Plano · Tipo de Monitoramento · mir</td></tr><tr><td><span class='rid'>R14</span></td><td>Referência do Cliente obrigatória para Operadoras-Atacado e Governo</td><td>Produto</td><td>2</td><td>1 hide · 1 require</td><td>Referência do Cliente</td></tr><tr><td><span class='rid'>R15</span></td><td>Moeda e cotação só para cliente internacional</td><td>Produto</td><td>4</td><td>2 hide · 1 require · 1 message</td><td>Tipo Moeda · Valor Moeda · —</td></tr><tr><td><span class='rid'>R16</span></td><td>Produto a Serviço sem definição</td><td>Produto</td><td>1</td><td>1 disable</td><td>Produto a Serviço</td></tr><tr><td><span class='rid'>R17</span></td><td>Fidelização 0 e &quot;Sem reajuste&quot; só para segmentos permitidos</td><td>Produto</td><td>6</td><td>4 hideValues · 2 require</td><td>Período Fidelização · Tipo de Reajuste</td></tr><tr><td><span class='rid'>R18</span></td><td>Datas-âncora conforme o tipo de reajuste</td><td>Produto</td><td>6</td><td>3 require · 2 hide · 1 disable</td><td>Data Base · Data de Assinatura do Contrato · Reajustar Antes de 12 Meses · Índice de Reajuste</td></tr><tr><td><span class='rid'>R19</span></td><td>Data do próximo reajuste calculada</td><td>Produto</td><td>3</td><td>3 setValue</td><td>Data de Início do Contrato · Data de Término do Contrato · Data do Próximo Reajuste</td></tr><tr><td><span class='rid'>R20</span></td><td>Multa fixa em 30% e não elegível para Governo</td><td>Produto</td><td>3</td><td>1 hide · 1 setValue · 1 disable</td><td>Percentual da Multa</td></tr><tr><td><span class='rid'>R21</span></td><td>Recálculo do período só em alteração; aviso prévio de 30 dias</td><td>Produto</td><td>2</td><td>1 hide · 1 setValue</td><td>Quantidade de Dias Aviso Previo · Recálculo Período do Contrato</td></tr><tr><td><span class='rid'>R22</span></td><td>Nova network exige no mínimo 2 VPN Nodes na cotação</td><td>Transação</td><td>1</td><td>1 transacao</td><td>—</td></tr></tbody></table>
 <h3>Distribuição dos efeitos</h3>
-<table><thead><tr><th>Tipo de efeito</th><th>Quantos</th><th>O que faz</th></tr></thead><tbody><tr><td><code>require</code></td><td>30</td><td>Obrigatoriedade condicional</td></tr><tr><td><code>hide</code></td><td>23</td><td>Visibilidade condicional do atributo</td></tr><tr><td><code>message</code></td><td>15</td><td>Mensagem ao usuário</td></tr><tr><td><code>setValue</code></td><td>12</td><td>Preenchimento automático</td></tr><tr><td><code>disable</code></td><td>10</td><td>Atributo somente leitura</td></tr><tr><td><code>hideValues</code></td><td>5</td><td>Filtro de valores da picklist</td></tr><tr><td><code>constraint</code></td><td>2</td><td>Restrição que bloqueia o salvamento</td></tr><tr><td><code>exclude</code></td><td>1</td><td>Exclusão mútua entre componentes</td></tr><tr><td><code>autoAdd</code></td><td>1</td><td>Inclusão automática de componente</td></tr><tr><td><code>transacao</code></td><td>1</td><td>Condição por tipo de transação</td></tr></tbody></table><h2 id="classificacao"><span class="n">09</span>Classificação do atendimento</h2>
+<table><thead><tr><th>Tipo de efeito</th><th>Quantos</th><th>O que faz</th></tr></thead><tbody><tr><td><code>require</code></td><td>30</td><td>Obrigatoriedade condicional</td></tr><tr><td><code>hide</code></td><td>23</td><td>Visibilidade condicional do atributo</td></tr><tr><td><code>message</code></td><td>15</td><td>Mensagem ao usuário</td></tr><tr><td><code>setValue</code></td><td>12</td><td>Preenchimento automático</td></tr><tr><td><code>disable</code></td><td>10</td><td>Atributo somente leitura</td></tr><tr><td><code>hideValues</code></td><td>5</td><td>Filtro de valores da picklist</td></tr><tr><td><code>constraint</code></td><td>2</td><td>Restrição que bloqueia o salvamento</td></tr><tr><td><code>exclude</code></td><td>1</td><td>Exclusão mútua entre componentes</td></tr><tr><td><code>autoAdd</code></td><td>1</td><td>Inclusão automática de componente</td></tr><tr><td><code>transacao</code></td><td>1</td><td>Condição por tipo de transação</td></tr></tbody></table><h2 id="modelo"><span class="n">09</span>Modelo recomendado — fronteira comercial e técnica</h2>
+<p class="lead">A Revisão 1 concentra na oferta comercial atributos que descrevem a realização técnica do serviço. Este documento adota, como base da especificação, a separação em três camadas, mantendo a rastreabilidade com o caso de uso.</p>
+<h3>As três camadas</h3>
+<table><thead><tr><th>Camada</th><th>Critério</th><th>Onde vive</th></tr></thead><tbody><tr><td><b>Oferta</b></td><td>O vendedor decide; o valor define preço, contrato ou asset.</td><td>Atributo da oferta no configurador</td></tr><tr><td><b>Contexto</b></td><td>O vendedor vê, não edita; o valor vem da viabilidade ou do cadastro e explica a configuração e a classificação.</td><td>Painel de leitura da linha da cotação</td></tr><tr><td><b>Técnico</b></td><td>O vendedor não vê; o valor é capturado na execução do pedido por quem instala.</td><td>Produto técnico na decomposição do pedido</td></tr></tbody></table>
+<h3>Atributos por camada</h3>
+<table><thead><tr><th>Categoria</th><th>Atributos</th><th>Oferta</th><th>Contexto</th><th>Técnico</th></tr></thead><tbody><tr><td>Acesso</td><td>5</td><td>1</td><td>4</td><td>0</td></tr><tr><td>Produto Relacionado</td><td>2</td><td>1</td><td>0</td><td>1</td></tr><tr><td>Golden Jumper</td><td>5</td><td>1</td><td>1</td><td>3</td></tr><tr><td>Infraestrutura de Acesso</td><td>12</td><td>10</td><td>2</td><td>0</td></tr><tr><td>Regras de Negócio</td><td>4</td><td>4</td><td>0</td><td>0</td></tr><tr><td>Informações Contratuais</td><td>12</td><td>9</td><td>3</td><td>0</td></tr><tr><td>Equipamento de Acesso <span class='cod'>componente</span></td><td>2</td><td>1</td><td>1</td><td>0</td></tr><tr><td>Upgrade Temporário de Velocidade <span class='cod'>componente</span></td><td>2</td><td>2</td><td>0</td><td>0</td></tr><tr><td>Monitoramento Inteligente de Rede <span class='cod'>componente</span></td><td>2</td><td>2</td><td>0</td><td>0</td></tr><tr><td><b>Total</b></td><td><b>46</b></td><td><b>31</b></td><td><b>11</b></td><td><b>4</b></td></tr></tbody></table>
+<p>Dos 46 atributos, 31 permanecem como decisão do vendedor, 11 passam a contexto visível e 4 passam à camada técnica. A relação dos que deixam a oferta:</p>
+<table><thead><tr><th>Atributo</th><th>Chave</th><th>Camada</th></tr></thead><tbody><tr><td>Tecnologia</td><td>Tecnologia</td><td>Contexto — visível, não editável</td></tr><tr><td>Interface</td><td>Interface</td><td>Contexto — visível, não editável</td></tr><tr><td>Abordagem</td><td>Abordagem</td><td>Contexto — visível, não editável</td></tr><tr><td>Metragem</td><td>Metragem</td><td>Contexto — visível, não editável</td></tr><tr><td>Protocolo de Roteamento</td><td>ProtocoloRoteamento</td><td>Técnico — capturado na execução</td></tr><tr><td>Nome do Data Center</td><td>NomeDataCenter</td><td>Contexto — visível, não editável</td></tr><tr><td>Interface</td><td>InterfaceGJ</td><td>Técnico — capturado na execução</td></tr><tr><td>Nome do jumper</td><td>NomeJumper</td><td>Técnico — capturado na execução</td></tr><tr><td>Alterar Fornecedor Golden Jumper</td><td>AlterarFornecedorGJ</td><td>Técnico — capturado na execução</td></tr><tr><td>Condomínio</td><td>Condominio</td><td>Contexto — visível, não editável</td></tr><tr><td>Número Viabilidade GLM</td><td>NumeroViabilidadeGLM</td><td>Contexto — visível, não editável</td></tr><tr><td>Data do Próximo Reajuste</td><td>DataProximoReajuste</td><td>Contexto — visível, não editável</td></tr><tr><td>Data de Início do Contrato</td><td>DataInicioContrato</td><td>Contexto — visível, não editável</td></tr><tr><td>Data de Término do Contrato</td><td>DataTerminoContrato</td><td>Contexto — visível, não editável</td></tr><tr><td>Tipo de Equipamento</td><td>TipoEquipamento</td><td>Contexto — visível, não editável</td></tr></tbody></table>
+<h3>Equipamentos</h3>
+<p>Os equipamentos permanecem como componentes do bundle: a modalidade — locação, comodato ou do cliente — é condição contratual por item, com efeito no preço e no asset. O que deixa de existir é a seleção manual: o conjunto é derivado da tecnologia retornada pela viabilidade, conforme a R10 já prevê para o atendimento formatado. O vendedor confirma a modalidade de cada item; a validação de exigência por tecnologia e a cardinalidade deixam de ser tarefas do vendedor e passam a propriedades do componente e da derivação. A montagem manual permanece apenas no atendimento customizado.</p>
+<h3>Preço</h3>
+<p>O preço prende-se ao que o vendedor decide: velocidade, fidelização, modalidade dos equipamentos e adicionais, por procedimento de precificação sobre a oferta. O equipamento é precificado como componente do bundle, com regra por modalidade. Nenhuma outra oferta é referenciada. O valor numérico permanece indefinido pela Revisão 1; a estrutura não depende dele.</p>
+<h3>Regras no modelo recomendado</h3>
+<table><thead><tr><th>Regra</th><th>Objeto</th><th>Destino</th><th>Observação</th></tr></thead><tbody><tr><td><span class='rid'>R01</span></td><td>Endereço sem cobertura</td><td>comercial</td><td>Portão de viabilidade: sem cobertura não há oferta.</td></tr><tr><td><span class='rid'>R02</span></td><td>Rede neutra = inviável</td><td>comercial</td><td>Portão de viabilidade: rede neutra encerra o caminho padrão.</td></tr><tr><td><span class='rid'>R03</span></td><td>Tecnologia, interface, abordagem e metragem vêm da viabilidade</td><td>contexto</td><td>Deixa de copiar viabilidade para atributo de oferta; o retorno é exibido como contexto da linha.</td></tr><tr><td><span class='rid'>R04</span></td><td>Metragem obrigatória e maior que zero na abordagem Construir</td><td>tecnico</td><td>Metragem de obra é dado de execução; a abordagem Construir permanece visível como contexto.</td></tr><tr><td><span class='rid'>R05</span></td><td>VPN Network: existente herda protocolo; nova exige protocolo</td><td>comercial</td><td>VPN Network nova ou existente é escolha do vendedor; o protocolo passa a ser técnico.</td></tr><tr><td><span class='rid'>R06</span></td><td>Golden Jumper só em endereço elegível; Algar exige dados da conexão; alteração de fornecedor só em mudança de endereço</td><td>dividida</td><td>Responsável pelo Golden Jumper é comercial, pois define a classificação; interface, nome do jumper e alteração de fornecedor são técnicos.</td></tr><tr><td><span class='rid'>R07</span></td><td>Virtual/Fabric torna obrigatório o bloco de nuvem</td><td>comercial</td><td>Bloco de nuvem é escolha de oferta.</td></tr><tr><td><span class='rid'>R08</span></td><td>Condomínio vem do cadastro do endereço</td><td>contexto</td><td>Condomínio vem do cadastro do endereço e é exibido, não editado.</td></tr><tr><td><span class='rid'>R09</span></td><td>Acesso Terceiro Last Mile: só com complementação técnica; exige dados do parceiro</td><td>comercial</td><td>Last Mile é escolha de oferta com dados do parceiro.</td></tr><tr><td><span class='rid'>R10</span></td><td>Equipamentos dimensionados pela tecnologia (comodato) · exigência por tecnologia</td><td>comercial</td><td>Permanece apenas a inclusão automática dos equipamentos pela tecnologia; a validação de exigência deixa de existir para o vendedor.</td></tr><tr><td><span class='rid'>R11</span></td><td>Roteador no máximo 1; Rádio exige equipamento Rádio</td><td>comercial</td><td>Permanece o teto do Roteador, modelado na quantidade máxima do componente.</td></tr><tr><td><span class='rid'>R12</span></td><td>Upgrade Temporário: opções elegíveis, tetos por faixa e 10 a 60 dias</td><td>comercial</td><td>Upgrade temporário é add-on da oferta.</td></tr><tr><td><span class='rid'>R13</span></td><td>Monitoramento: tipo obrigatório com plano; PROBE é alta complexidade</td><td>comercial</td><td>Monitoramento é add-on da oferta.</td></tr><tr><td><span class='rid'>R14</span></td><td>Referência do Cliente obrigatória para Operadoras-Atacado e Governo</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R15</span></td><td>Moeda e cotação só para cliente internacional</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R16</span></td><td>Produto a Serviço sem definição</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R17</span></td><td>Fidelização 0 e &quot;Sem reajuste&quot; só para segmentos permitidos</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R18</span></td><td>Datas-âncora conforme o tipo de reajuste</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R19</span></td><td>Data do próximo reajuste calculada</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R20</span></td><td>Multa fixa em 30% e não elegível para Governo</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R21</span></td><td>Recálculo do período só em alteração; aviso prévio de 30 dias</td><td>comercial</td><td>Bloco contratual.</td></tr><tr><td><span class='rid'>R22</span></td><td>Nova network exige no mínimo 2 VPN Nodes na cotação</td><td>comercial</td><td>Mínimo de dois nodes por nova rede é regra de transação.</td></tr></tbody></table>
+<p>Resultado: 18 regras permanecem comerciais; 2 passam a alimentar o contexto (R03 e R08); 1 passa à camada técnica (R04); 1 é dividida entre as camadas (R06).</p>
+<h3>Jornada do vendedor</h3>
+<table><thead><tr><th>Passo</th><th>Revisão 1</th><th>Modelo recomendado</th><th>Alteração</th></tr></thead><tbody><tr><td>1</td><td>Endereço e viabilidade</td><td>Endereço e viabilidade</td><td>Mantido: portão de pré-venda.</td></tr><tr><td>2</td><td>Velocidade e rede</td><td>Velocidade e rede</td><td>Mantido.</td></tr><tr><td>3</td><td>Instalação e infraestrutura</td><td>Instalação</td><td>Reduzido: tecnologia, interface, abordagem e metragem saem do formulário e passam a painel de contexto.</td></tr><tr><td>4</td><td>Equipamentos — tipo, quantidade e modalidade</td><td>Modalidade dos equipamentos</td><td>Reduzido: a lista vem da tecnologia; o vendedor confirma a modalidade de cada item. Montagem manual só no atendimento customizado.</td></tr><tr><td>5</td><td>Serviços de valor agregado</td><td>Adicionais</td><td>Mantido.</td></tr><tr><td>6</td><td>Condições contratuais</td><td>Condições contratuais</td><td>Mantido.</td></tr><tr><td>7</td><td>Golden Jumper — responsável e dados da conexão</td><td>Golden Jumper — responsável</td><td>Reduzido: só o responsável; interface e nome do jumper vão para a execução.</td></tr><tr><td>8</td><td>Revisão</td><td>Revisão</td><td>Mantido.</td></tr></tbody></table>
+<p>A quantidade de passos não se altera; altera-se o conteúdo dos passos 3, 4 e 7, que deixam de exigir decisões técnicas. O configurador passa a apresentar 31 atributos editáveis, com 11 exibidos como contexto.</p>
+<div class="box info"><b>Consequência para a Revisão 2 do caso de uso</b>O caso de uso deve descrever a oferta comercial com os 31 atributos de decisão, o painel de contexto com os 11 atributos derivados, e um bloco de decomposição técnica com os 4 atributos de execução e a derivação dos equipamentos por tecnologia. O conflito da Revisão 1 no atributo Alterar Fornecedor deixa de existir, uma vez que o atributo passa à camada técnica.</div><h2 id="classificacao"><span class="n">10</span>Classificação do atendimento</h2>
 <p>Formatado quando a matriz de formatação é atendida e nenhuma situação de customização está presente (UC-VPN-001, fluxo passo 4).</p>
 <p>[[&#x27;ctx.endereco.subterranea&#x27;, &#x27;Rede subterrânea sem prédio abordado&#x27;], [&quot;a.Tecnologia === &#x27;Rádio&#x27;&quot;, &#x27;Acesso por Rádio&#x27;], [&#x27;ctx.conta.internacional&#x27;, &#x27;Cliente internacional&#x27;], [&quot;[&#x27;Governo&#x27;,&#x27;Operadoras-Atacado&#x27;].includes(ctx.conta.segmento)&quot;, &#x27;Segmento Governo ou Operadoras&#x27;], [&#x27;ctx.endereco.dataCenter&#x27;, &#x27;Endereço classificado como Golden Jumper&#x27;], [&#x27;a.AcessoTerceiroLastMile&#x27;, &#x27;Acesso Terceiro Last Mile&#x27;], [&#x27;ctx.endereco.condominio&#x27;, &#x27;Condomínio empresarial&#x27;], [&#x27;ctx.endereco.arq5&#x27;, &#x27;Localidade ARQ5 (dúvida aberta)&#x27;], [&quot;c.mir.length &amp;&amp; c.mir[0].TipoMonitoramento === &#x27;PROBE&#x27;&quot;, &#x27;Monitoramento PROBE (alta complexidade)&#x27;]]</p>
 <h3>Matriz do atendimento formatado</h3>
@@ -251,7 +269,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &gt; 500 &amp;&amp; f.mbps(a.Velocidade) &lt;= 1000 &amp;&amp; a.Tecnologia === &#x27;XGSPON&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 400</code></td><td>500 Mb a 1 Gb: XGSPON a até 400 m da CTO</td></tr>
 <tr><td class="w"><code class="cond">f.mbps(a.Velocidade) &gt; 500 &amp;&amp; f.mbps(a.Velocidade) &lt;= 900 &amp;&amp; a.Tecnologia === &#x27;Metro&#x27; &amp;&amp; ctx.endereco.metragemDistancia &lt;= 400 &amp;&amp; ctx.endereco.anel</code></td><td>500 a 900 Mb: Metro a até 400 m com entrega em anel</td></tr></tbody></table>
 
-<h2 id="gerais"><span class="n">10</span>Regras gerais do produto</h2>
+<h2 id="gerais"><span class="n">11</span>Regras gerais do produto</h2>
 <table><thead><tr><th>Item</th><th>Texto do UC</th></tr></thead><tbody><tr><td class="cod"></td><td>O Produto não pode ser vendido para clientes Pessoa Física.</td></tr>
 <tr><td class="cod"></td><td>clientes do segmento Governo somente podem ter vendas feitas pelos canais Consultor Corporativo e Administração de Vendas Centralizada — restrição de canal de venda.</td></tr>
 <tr><td class="cod"></td><td>O Produto não pode ser vendido em rede neutra.</td></tr>
@@ -278,12 +296,12 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <tr><td class="cod"></td><td>Automação e integrações SVA: Existem hoje muitas regras de automação e integração com sistemas internos, Zabbix, NAVA que precisa ser olhada a arquitetura atual e replicar para Sales Force. Essas regras devem ser mapeadas para realizar o DE/PARA.</td></tr>
 <tr><td class="cod"></td><td>Automação e integrações SVA: Para cada plano existe um template de criação na Zabbix para ativação de acordo com o plano escolhido.</td></tr></tbody></table>
 
-<h2 id="nivel3"><span class="n">11</span>Nível 3 — Processos e interações</h2>
+<h2 id="nivel3"><span class="n">12</span>Nível 3 — Processos e interações</h2>
 <p class="lead">Nível 3: interações ordenadas no tempo, restritas aos sistemas envolvidos em cada processo.</p>
 <h3>Configuração com consulta de viabilidade</h3>
 <figure class="fig"><svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg"><defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3A3A3A"/></marker></defs><rect x="0" y="0" width="1080" height="34" fill="#0D0D0D"/><text x="14" y="22" font-size="11" font-weight="700" fill="#FAFBFC" letter-spacing="1.2">NÍVEL 3 · PROCESSO OU INTERAÇÃO</text><text x="540.0" y="22" font-size="12" font-weight="600" fill="#FAFBFC" text-anchor="middle">Configuração do VPN Node com consulta de viabilidade</text><text x="1066" y="22" font-size="10" fill="#C9C9C9" text-anchor="end">UC-VPN-001 · 15/09/2026</text><rect x="12.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="108.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Vendedor</text><rect x="228.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="324.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Configurador</text><rect x="444.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="540.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Modelo de restrição</text><rect x="660.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="756.0" y="72" font-size="11" font-weight="600" text-anchor="middle">MuleSoft</text><rect x="876.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="972.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Sistemas de rede</text><line x1="108.0" y1="88" x2="108.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="324.0" y1="88" x2="324.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="540.0" y1="88" x2="540.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="756.0" y1="88" x2="756.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="972.0" y1="88" x2="972.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="108.0" y1="116" x2="324.0" y2="116" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="102" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="112" font-size="10.5" text-anchor="middle" fill="#3A3A3A">1. informa localidade e endereço de instalação (passo 1)</text><line x1="324.0" y1="150" x2="756.0" y2="150" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="136" width="412.0" height="13" fill="#FAFBFC"/><text x="540.0" y="146" font-size="10.5" text-anchor="middle" fill="#3A3A3A">2. solicita consulta de viabilidade (passo 2)</text><line x1="756.0" y1="184" x2="972.0" y2="184" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="766.0" y="170" width="196.0" height="13" fill="#FAFBFC"/><text x="864.0" y="180" font-size="10.5" text-anchor="middle" fill="#3A3A3A">3. consulta cobertura, tecnologia, abordagem e metragem</text><line x1="972.0" y1="218" x2="756.0" y2="218" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="766.0" y="204" width="196.0" height="13" fill="#FAFBFC"/><text x="864.0" y="214" font-size="10.5" text-anchor="middle" fill="#3A3A3A">4. retorna resultado ou indicação de retorno manual</text><line x1="756.0" y1="252" x2="324.0" y2="252" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="238" width="412.0" height="13" fill="#FAFBFC"/><text x="540.0" y="248" font-size="10.5" text-anchor="middle" fill="#3A3A3A">5. devolve resultado normalizado ao configurador</text><line x1="324.0" y1="286" x2="540.0" y2="286" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="272" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="282" font-size="10.5" text-anchor="middle" fill="#3A3A3A">6. avalia as regras sobre os atributos preenchidos</text><line x1="540.0" y1="320" x2="324.0" y2="320" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="306" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="316" font-size="10.5" text-anchor="middle" fill="#3A3A3A">7. aplica ocultação, obrigatoriedade, filtros e mensagens</text><path d="M324.0,346 q40,0 40,12 q0,12 -40,12" fill="none" stroke="#3A3A3A" marker-end="url(#seta)"/><text x="372.0" y="356" font-size="10.5" fill="#3A3A3A">8. classifica o atendimento — formatado ou customizado</text><line x1="324.0" y1="388" x2="108.0" y2="388" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="374" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="384" font-size="10.5" text-anchor="middle" fill="#3A3A3A">9. apresenta apenas os valores permitidos</text><line x1="108.0" y1="422" x2="324.0" y2="422" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="408" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="418" font-size="10.5" text-anchor="middle" fill="#3A3A3A">10. conclui a configuração e salva a linha da cotação</text></svg><figcaption>O resultado da viabilidade determina os valores disponíveis ao vendedor; ausência de cobertura encerra o caminho padrão e o retorno manual encaminha a estudo dedicado.</figcaption></figure>
 <h3>Do aceite ao asset</h3>
-<figure class="fig"><svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg"><defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3A3A3A"/></marker></defs><rect x="0" y="0" width="1080" height="34" fill="#0D0D0D"/><text x="14" y="22" font-size="11" font-weight="700" fill="#FAFBFC" letter-spacing="1.2">NÍVEL 3 · PROCESSO OU INTERAÇÃO</text><text x="540.0" y="22" font-size="12" font-weight="600" fill="#FAFBFC" text-anchor="middle">Do aceite da proposta ao asset</text><text x="1066" y="22" font-size="10" fill="#C9C9C9" text-anchor="end">UC-VPN-001 · 15/09/2026</text><rect x="12.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="108.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Vendedor</text><rect x="228.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="324.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Revenue Cloud</text><rect x="444.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="540.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Orquestrador</text><rect x="660.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="756.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Sistemas técnicos</text><rect x="876.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="972.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Cliente</text><line x1="108.0" y1="88" x2="108.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="324.0" y1="88" x2="324.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="540.0" y1="88" x2="540.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="756.0" y1="88" x2="756.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="972.0" y1="88" x2="972.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="972.0" y1="116" x2="324.0" y2="116" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="102" width="628.0" height="13" fill="#FAFBFC"/><text x="648.0" y="112" font-size="10.5" text-anchor="middle" fill="#3A3A3A">1. aceite da proposta — cotação em Accepted</text><line x1="108.0" y1="150" x2="324.0" y2="150" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="136" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="146" font-size="10.5" text-anchor="middle" fill="#3A3A3A">2. cria e ativa o pedido</text><line x1="108.0" y1="184" x2="324.0" y2="184" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="170" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="180" font-size="10.5" text-anchor="middle" fill="#3A3A3A">3. submete o pedido</text><line x1="324.0" y1="218" x2="540.0" y2="218" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="204" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="214" font-size="10.5" text-anchor="middle" fill="#3A3A3A">4. decompõe o produto comercial em produtos técnicos</text><path d="M540.0,244 q40,0 40,12 q0,12 -40,12" fill="none" stroke="#3A3A3A" marker-end="url(#seta)"/><text x="588.0" y="254" font-size="10.5" fill="#3A3A3A">5. instancia o plano com raias e etapas</text><line x1="540.0" y1="286" x2="756.0" y2="286" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="550.0" y="272" width="196.0" height="13" fill="#FAFBFC"/><text x="648.0" y="282" font-size="10.5" text-anchor="middle" fill="#3A3A3A">6. executa etapas automáticas e callouts</text><line x1="756.0" y1="320" x2="540.0" y2="320" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="550.0" y="306" width="196.0" height="13" fill="#FAFBFC"/><text x="648.0" y="316" font-size="10.5" text-anchor="middle" fill="#3A3A3A">7. retorna conclusão ou erro por etapa</text><line x1="540.0" y1="354" x2="324.0" y2="354" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="340" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="350" font-size="10.5" text-anchor="middle" fill="#3A3A3A">8. sinaliza plano concluído</text><path d="M324.0,380 q40,0 40,12 q0,12 -40,12" fill="none" stroke="#3A3A3A" marker-end="url(#seta)"/><text x="372.0" y="390" font-size="10.5" fill="#3A3A3A">9. cria os assets e o vínculo com o contrato</text><line x1="324.0" y1="422" x2="972.0" y2="422" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="408" width="628.0" height="13" fill="#FAFBFC"/><text x="648.0" y="418" font-size="10.5" text-anchor="middle" fill="#3A3A3A">10. serviço entregue e ativo</text></svg><figcaption>O asset é criado ao término do plano de orquestração, não no aceite da proposta.</figcaption></figure><h2 id="ciclo"><span class="n">12</span>Ciclo transacional: cotação, pedido e asset</h2>
+<figure class="fig"><svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg"><defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3A3A3A"/></marker></defs><rect x="0" y="0" width="1080" height="34" fill="#0D0D0D"/><text x="14" y="22" font-size="11" font-weight="700" fill="#FAFBFC" letter-spacing="1.2">NÍVEL 3 · PROCESSO OU INTERAÇÃO</text><text x="540.0" y="22" font-size="12" font-weight="600" fill="#FAFBFC" text-anchor="middle">Do aceite da proposta ao asset</text><text x="1066" y="22" font-size="10" fill="#C9C9C9" text-anchor="end">UC-VPN-001 · 15/09/2026</text><rect x="12.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="108.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Vendedor</text><rect x="228.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="324.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Revenue Cloud</text><rect x="444.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="540.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Orquestrador</text><rect x="660.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="756.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Sistemas técnicos</text><rect x="876.0" y="48" width="192.0" height="40" rx="4" fill="#FAFBFC" stroke="#0D0D0D"/><text x="972.0" y="72" font-size="11" font-weight="600" text-anchor="middle">Cliente</text><line x1="108.0" y1="88" x2="108.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="324.0" y1="88" x2="324.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="540.0" y1="88" x2="540.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="756.0" y1="88" x2="756.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="972.0" y1="88" x2="972.0" y2="444" stroke="#A8A8A8" stroke-dasharray="4 4"/><line x1="972.0" y1="116" x2="324.0" y2="116" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="102" width="628.0" height="13" fill="#FAFBFC"/><text x="648.0" y="112" font-size="10.5" text-anchor="middle" fill="#3A3A3A">1. aceite da proposta — cotação em Accepted</text><line x1="108.0" y1="150" x2="324.0" y2="150" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="136" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="146" font-size="10.5" text-anchor="middle" fill="#3A3A3A">2. cria e ativa o pedido</text><line x1="108.0" y1="184" x2="324.0" y2="184" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="118.0" y="170" width="196.0" height="13" fill="#FAFBFC"/><text x="216.0" y="180" font-size="10.5" text-anchor="middle" fill="#3A3A3A">3. submete o pedido</text><line x1="324.0" y1="218" x2="540.0" y2="218" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="204" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="214" font-size="10.5" text-anchor="middle" fill="#3A3A3A">4. decompõe o produto comercial em produtos técnicos</text><path d="M540.0,244 q40,0 40,12 q0,12 -40,12" fill="none" stroke="#3A3A3A" marker-end="url(#seta)"/><text x="588.0" y="254" font-size="10.5" fill="#3A3A3A">5. instancia o plano com raias e etapas</text><line x1="540.0" y1="286" x2="756.0" y2="286" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="550.0" y="272" width="196.0" height="13" fill="#FAFBFC"/><text x="648.0" y="282" font-size="10.5" text-anchor="middle" fill="#3A3A3A">6. executa etapas automáticas e callouts</text><line x1="756.0" y1="320" x2="540.0" y2="320" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="550.0" y="306" width="196.0" height="13" fill="#FAFBFC"/><text x="648.0" y="316" font-size="10.5" text-anchor="middle" fill="#3A3A3A">7. retorna conclusão ou erro por etapa</text><line x1="540.0" y1="354" x2="324.0" y2="354" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="340" width="196.0" height="13" fill="#FAFBFC"/><text x="432.0" y="350" font-size="10.5" text-anchor="middle" fill="#3A3A3A">8. sinaliza plano concluído</text><path d="M324.0,380 q40,0 40,12 q0,12 -40,12" fill="none" stroke="#3A3A3A" marker-end="url(#seta)"/><text x="372.0" y="390" font-size="10.5" fill="#3A3A3A">9. cria os assets e o vínculo com o contrato</text><line x1="324.0" y1="422" x2="972.0" y2="422" stroke="#3A3A3A" marker-end="url(#seta)"/><rect x="334.0" y="408" width="628.0" height="13" fill="#FAFBFC"/><text x="648.0" y="418" font-size="10.5" text-anchor="middle" fill="#3A3A3A">10. serviço entregue e ativo</text></svg><figcaption>O asset é criado ao término do plano de orquestração, não no aceite da proposta.</figcaption></figure><h2 id="ciclo"><span class="n">13</span>Ciclo transacional: cotação, pedido e asset</h2>
 <table><thead><tr><th>Etapa</th><th>O que acontece</th><th>Objetos</th></tr></thead><tbody>
 <tr><td>Cotação</td><td>O item configurado vira linha da cotação; os componentes viram linhas filhas e o endereço amarra o node.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quote.htm" target="_blank" rel="noopener">Quote</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelineitem.htm" target="_blank" rel="noopener">QuoteLineItem</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinegroup.htm" target="_blank" rel="noopener">QuoteLineGroup</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinerelationship.htm" target="_blank" rel="noopener">QuoteLineRelationship</a></td></tr>
 <tr><td>Proposta</td><td>Documento gerado a partir da cotação.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotedocument.htm" target="_blank" rel="noopener">QuoteDocument</a></td></tr>
@@ -296,7 +314,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <tr><td>Origem comercial</td><td>Lead convertido em conta, contato e oportunidade.</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_lead.htm" target="_blank" rel="noopener">Lead</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm" target="_blank" rel="noopener">Account</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contact.htm" target="_blank" rel="noopener">Contact</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunity.htm" target="_blank" rel="noopener">Opportunity</a> · <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunitylineitem.htm" target="_blank" rel="noopener">OpportunityLineItem</a></td></tr>
 </tbody></table>
 
-<h2 id="nivel4"><span class="n">13</span>Nível 4 — Modelo de dados</h2>
+<h2 id="nivel4"><span class="n">14</span>Nível 4 — Modelo de dados</h2>
 <p class="lead">Nível 4: detalhe restrito aos objetos envolvidos no escopo.</p>
 <figure class="fig"><svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg"><defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3A3A3A"/></marker></defs>
 <rect x="0" y="0" width="1080" height="34" fill="#0D0D0D"/><text x="14" y="22" font-size="11" font-weight="700" fill="#FAFBFC" letter-spacing="1.2">NÍVEL 4 · MODELO DE DADOS</text><text x="540.0" y="22" font-size="12" font-weight="600" fill="#FAFBFC" text-anchor="middle">Entidades da transação — da origem comercial ao asset</text><text x="1066" y="22" font-size="10" fill="#C9C9C9" text-anchor="end">UC-VPN-001 · 15/09/2026</text>
@@ -325,7 +343,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <rect x="910" y="120" width="150" height="56" rx="4" fill="#FAFBFC" stroke="#0D0D0D" stroke-width="1.2"/><text x="985.0" y="148.0" font-size="11.5" font-weight="600" text-anchor="middle" fill="#0D0D0D">QuoteLineItem</text><text x="985.0" y="168" font-size="9.5" text-anchor="middle" fill="#6B6B6B">linha configurada</text>
 <line x1="250" y1="98" x2="330" y2="98" stroke="#3A3A3A" stroke-width="1.2" marker-end="url(#seta)"/><line x1="250" y1="198" x2="330" y2="198" stroke="#3A3A3A" stroke-width="1.2" marker-end="url(#seta)"/><line x1="550" y1="98" x2="630" y2="98" stroke="#3A3A3A" stroke-width="1.2" marker-end="url(#seta)"/><rect x="555.9" y="83.0" width="68.2" height="13" fill="#F2F3F5"/><text x="590.0" y="93.0" font-size="9.5" text-anchor="middle" fill="#3A3A3A">a confirmar</text><line x1="550" y1="198" x2="630" y2="140" stroke="#3A3A3A" stroke-width="1.2" marker-end="url(#seta)"/><line x1="850" y1="126" x2="910" y2="140" stroke="#3A3A3A" stroke-width="1.2" marker-end="url(#seta)"/><rect x="845.9" y="118.0" width="68.2" height="13" fill="#F2F3F5"/><text x="880.0" y="128.0" font-size="9.5" text-anchor="middle" fill="#3A3A3A">materializa</text>
 <text x="30" y="262" font-size="10.5" fill="#3A3A3A">O objeto de associação entre AttributeDefinition e Product2 não consta da Referência de Objetos consultada e deve ser confirmado na org.</text>
-</svg><figcaption>Entidades do catálogo e dos atributos. A associação atributo ↔ produto permanece pendente de confirmação na org.</figcaption></figure><h2 id="orquestracao"><span class="n">14</span>Decomposição e orquestração</h2>
+</svg><figcaption>Entidades do catálogo e dos atributos. A associação atributo ↔ produto permanece pendente de confirmação na org.</figcaption></figure><h2 id="orquestracao"><span class="n">15</span>Decomposição e orquestração</h2>
 <p>A submissão do pedido decompõe o produto comercial em produtos técnicos e instancia um plano de orquestração com raias por sistema e etapas tipadas. O mecanismo é nativo do orquestrador; a relação de produtos técnicos e as etapas do plano para o VPN Node são proposta do projeto, uma vez que a Revisão 1 não descreve o pós-venda.</p>
 <table><thead><tr><th>Peça</th><th>Objeto</th><th>Situação</th></tr></thead><tbody>
 <tr><td>Ordem de execução por sistema</td><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorder.htm" target="_blank" rel="noopener">FulfillmentOrder</a></td><td>Mecanismo oficial; conteúdo a validar com o time de catálogo</td></tr>
@@ -333,13 +351,13 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 <tr><td>Plano, raias e etapas</td><td><code class="api">Orchestration plan</code></td><td>Tipos usados: tarefa manual, callout, automática e marco</td></tr>
 </tbody></table>
 
-<h2 id="dicionario"><span class="n">15</span>Dicionário de objetos citados</h2>
+<h2 id="dicionario"><span class="n">16</span>Dicionário de objetos citados</h2>
 <p>Situação de cada nome de API na Referência de Objetos do Salesforce.</p>
 <table><thead><tr><th>Objeto</th><th>Situação da consulta</th></tr></thead><tbody>
 <tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm" target="_blank" rel="noopener">Account</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_asset.htm" target="_blank" rel="noopener">Asset</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetaction.htm" target="_blank" rel="noopener">AssetAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetactionsource.htm" target="_blank" rel="noopener">AssetActionSource</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetattribute.htm" target="_blank" rel="noopener">AssetAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetcontractrelationship.htm" target="_blank" rel="noopener">AssetContractRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiod.htm" target="_blank" rel="noopener">AssetStatePeriod</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_assetstateperiodattribute.htm" target="_blank" rel="noopener">AssetStatePeriodAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">AttributeCategory</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributedefinition.htm" target="_blank" rel="noopener">AttributeDefinition</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklist.htm" target="_blank" rel="noopener">AttributePicklist</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklistvalue.htm" target="_blank" rel="noopener">AttributePicklistValue</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contact.htm" target="_blank" rel="noopener">Contact</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contract.htm" target="_blank" rel="noopener">Contract</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_expressionsetconstraintobj.htm" target="_blank" rel="noopener">ExpressionSetConstraintObj</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorder.htm" target="_blank" rel="noopener">FulfillmentOrder</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_fulfillmentorderlineitem.htm" target="_blank" rel="noopener">FulfillmentOrderLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_lead.htm" target="_blank" rel="noopener">Lead</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunity.htm" target="_blank" rel="noopener">Opportunity</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_opportunitylineitem.htm" target="_blank" rel="noopener">OpportunityLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_order.htm" target="_blank" rel="noopener">Order</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderaction.htm" target="_blank" rel="noopener">OrderAction</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderdeliverygroup.htm" target="_blank" rel="noopener">OrderDeliveryGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitem.htm" target="_blank" rel="noopener">OrderItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_orderitemrelationship.htm" target="_blank" rel="noopener">OrderItemRelationship</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebook2.htm" target="_blank" rel="noopener">Pricebook2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_pricebookentry.htm" target="_blank" rel="noopener">PricebookEntry</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_product2.htm" target="_blank" rel="noopener">Product2</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattribute.htm" target="_blank" rel="noopener">ProductAttribute</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductAttributeDefinition</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributeset.htm" target="_blank" rel="noopener">ProductAttributeSet</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetitem.htm" target="_blank" rel="noopener">ProductAttributeSetItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetproduct.htm" target="_blank" rel="noopener">ProductAttributeSetProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategory.htm" target="_blank" rel="noopener">ProductCategory</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcategoryproduct.htm" target="_blank" rel="noopener">ProductCategoryProduct</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductClassification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductClassificationAttr</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productcomponentgroup.htm" target="_blank" rel="noopener">ProductComponentGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><code class="api">ProductDisqualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><code class="api">ProductQualification</code></td><td>não localizado na referência consultada — confirmar nome, versão de API e disponibilidade na org</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productrelatedcomponent.htm" target="_blank" rel="noopener">ProductRelatedComponent</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodel.htm" target="_blank" rel="noopener">ProductSellingModel</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productsellingmodeloption.htm" target="_blank" rel="noopener">ProductSellingModelOption</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quote.htm" target="_blank" rel="noopener">Quote</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotedocument.htm" target="_blank" rel="noopener">QuoteDocument</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinegroup.htm" target="_blank" rel="noopener">QuoteLineGroup</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelineitem.htm" target="_blank" rel="noopener">QuoteLineItem</a></td><td>localizado na Referência de Objetos</td></tr><tr><td><a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_quotelinerelationship.htm" target="_blank" rel="noopener">QuoteLineRelationship</a></td><td>localizado na Referência de Objetos</td></tr>
 </tbody></table>
 
-<h2 id="lacunas"><span class="n">16</span>Lacunas, dúvidas e validação</h2>
+<h2 id="lacunas"><span class="n">17</span>Lacunas, dúvidas e validação</h2>
 <h3>Não definido pela Revisão 1</h3>
 <ul>
 <li>Precificação e tabela de preços do VPN Node.</li>
@@ -361,20 +379,21 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
 
 
 
-<div class="parte"><div class="parte-k">Parte II — Especificação técnica</div><p>Especificação dos registros a criar no Revenue Cloud, campo a campo; destino de cada regra; ordem de construção e riscos. Destina-se à execução.</p></div><h2 id="build"><span class="n">17</span>Inventário de registros</h2>
+<div class="parte"><div class="parte-k">Parte II — Especificação técnica</div><p>Especificação dos registros a criar no Revenue Cloud, campo a campo; destino de cada regra; ordem de construção e riscos. Destina-se à execução.</p></div><h2 id="build"><span class="n">18</span>Inventário de registros</h2>
 <p class="lead">Esta parte especifica os registros a serem criados. Os nomes de campo foram extraídos da Referência de Objetos do Salesforce; os nomes de API atribuídos aos registros seguem convenção proposta e podem ser ajustados sem impacto estrutural.</p>
-<table><thead><tr><th>Objeto</th><th>Quantos</th><th>O que representa</th><th>Campos que precisam de valor</th></tr></thead><tbody><tr><td>Product2</td><td>4</td><td>Bundle VPN Node mais um produto por componente</td><td>Name, ProductCode, Type, IsConfigurable, IsActive</td></tr><tr><td>ProductComponentGroup</td><td>2</td><td>Um por grupo do bundle</td><td>ParentProductId, Name, MinBundleComponents, MaxBundleComponents, Sequence</td></tr><tr><td>ProductRelatedComponent</td><td>3</td><td>Um por componente dentro do grupo</td><td>ParentProductId, ChildProductId, ChildProductRole, ProductComponentGroupId, IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity, Quantity, Sequence</td></tr><tr><td>ProductSellingModel</td><td>2</td><td>Contínuo para o acesso e por período para o upgrade temporário</td><td>Name, SellingModelType, PricingTerm, PricingTermUnit, Status</td></tr><tr><td>ProductCategory e ProductCategoryProduct</td><td>1 categoria e 4 associações</td><td>Publicação do produto no catálogo</td><td>Name, CatalogId; ProductId, ProductCategoryId</td></tr><tr><td>AttributeDefinition</td><td>46</td><td>Um por atributo do caso de uso</td><td>Label, DeveloperName, DataType, IsRequired, DefaultValue, PicklistId, IsActive</td></tr><tr><td>AttributePicklist</td><td>27</td><td>Uma por atributo de lista</td><td>Name, DataType, Status</td></tr><tr><td>AttributePicklistValue</td><td>159</td><td>Um por valor de lista</td><td>PicklistId, Name, Value, DisplayValue, Code, Sequence, IsDefault, Status</td></tr><tr><td>Modelo de restrição</td><td>22 regras / 100 efeitos</td><td>Tradução das regras do caso de uso</td><td>Associação ao produto por ExpressionSetConstraintObj</td></tr></tbody></table>
+<table><thead><tr><th>Objeto</th><th>Quantos</th><th>O que representa</th><th>Campos que precisam de valor</th></tr></thead><tbody><tr><td>Product2</td><td>4</td><td>Bundle VPN Node mais um produto por componente</td><td>Name, ProductCode, Type, IsConfigurable, IsActive</td></tr><tr><td>ProductComponentGroup</td><td>2</td><td>Um por grupo do bundle</td><td>ParentProductId, Name, MinBundleComponents, MaxBundleComponents, Sequence</td></tr><tr><td>ProductRelatedComponent</td><td>3</td><td>Um por componente dentro do grupo</td><td>ParentProductId, ChildProductId, ChildProductRole, ProductComponentGroupId, IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity, Quantity, Sequence</td></tr><tr><td>ProductSellingModel</td><td>2</td><td>Contínuo para o acesso e por período para o upgrade temporário</td><td>Name, SellingModelType, PricingTerm, PricingTermUnit, Status</td></tr><tr><td>ProductCategory e ProductCategoryProduct</td><td>1 categoria e 4 associações</td><td>Publicação do produto no catálogo</td><td>Name, CatalogId; ProductId, ProductCategoryId</td></tr><tr><td>AttributeDefinition</td><td>42 na oferta (31 editáveis, 11 de contexto) · 4 na execução</td><td>Um por atributo, conforme a camada</td><td>Label, DeveloperName, DataType, IsRequired, DefaultValue, PicklistId, IsActive</td></tr><tr><td>AttributePicklist</td><td>27</td><td>Uma por atributo de lista</td><td>Name, DataType, Status</td></tr><tr><td>AttributePicklistValue</td><td>159</td><td>Um por valor de lista</td><td>PicklistId, Name, Value, DisplayValue, Code, Sequence, IsDefault, Status</td></tr><tr><td>Modelo de restrição</td><td>22 regras / 100 efeitos</td><td>Tradução das regras do caso de uso</td><td>Associação ao produto por ExpressionSetConstraintObj</td></tr></tbody></table>
 <div class="box info"><b>Síntese quantitativa</b>4 produtos, 2 grupos, 3 relações de componente, 46 atributos, 27 listas com 159 valores e 100 efeitos de regra. Preço fica fora, por falta de definição.</div>
 
-<h2 id="build-produtos"><span class="n">18</span>Produtos, grupos e componentes</h2>
+<h2 id="build-produtos"><span class="n">19</span>Produtos, grupos e componentes</h2>
 <table><thead><tr><th>Registro</th><th>Papel</th><th>ChildProductRole</th><th>Grupo</th><th>Quantidade</th><th>Campos de controle</th></tr></thead><tbody><tr><td>VPN Node</td><td>Bundle configurável</td><td>—</td><td>—</td><td>1</td><td>IsConfigurable = true</td></tr><tr><td>Equipamento de Acesso</td><td>Componente</td><td>BundleComponent</td><td>Equipamentos de Acesso</td><td>mín 1 · máx sem limite</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr><tr><td>Upgrade Temporário de Velocidade</td><td>Componente</td><td>BundleComponent</td><td>Serviços de Valor Agregado</td><td>mín 0 · máx 2</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr><tr><td>Monitoramento Inteligente de Rede</td><td>Componente</td><td>BundleComponent</td><td>Serviços de Valor Agregado</td><td>mín 0 · máx 2</td><td>IsComponentRequired, IsDefaultComponent, IsQuantityEditable, MinQuantity, MaxQuantity</td></tr></tbody></table>
 <div class="box"><b>Cardinalidade do Roteador</b>O caso de uso limita o Roteador a uma unidade. O limite é modelado no componente, por meio de MaxQuantity, e reforçado pela regra; assim, permanece válido independentemente da avaliação do modelo de restrição.</div>
 
-<h2 id="build-attrs"><span class="n">19</span>Atributos — especificação de criação</h2>
+<h2 id="build-attrs"><span class="n">20</span>Atributos — especificação de criação</h2>
 <p>Cada linha corresponde a um registro de AttributeDefinition. O campo <code>DataType</code> admite os valores Checkbox, Date, Datetime, Number, Picklist e Text. O atributo VPN Network é definido como Text, uma vez que referencia um registro cujo objeto ainda não está definido.</p>
-<table><thead><tr><th>Atributo</th><th>DeveloperName proposto</th><th>DataType</th><th>DefaultValue</th><th>IsRequired</th><th>Lista de valores</th><th>Quem preenche</th></tr></thead><tbody>
+<table><thead><tr><th>Atributo</th><th>Camada</th><th>DeveloperName proposto</th><th>DataType</th><th>DefaultValue</th><th>IsRequired</th><th>Lista de valores</th><th>Quem preenche</th></tr></thead><tbody>
 <tr>
           <td><b>Velocidade</b><div class="cod">Velocidade</div></td>
+          <td>oferta</td>
           <td><code>VPNN_Velocidade</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -384,6 +403,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tecnologia</b><div class="cod">Tecnologia</div></td>
+          <td>contexto</td>
           <td><code>VPNN_Tecnologia</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -393,6 +413,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Interface</b><div class="cod">Interface</div></td>
+          <td>contexto</td>
           <td><code>VPNN_Interface</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -402,6 +423,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Abordagem</b><div class="cod">Abordagem</div></td>
+          <td>contexto</td>
           <td><code>VPNN_Abordagem</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -411,6 +433,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Metragem</b><div class="cod">Metragem</div></td>
+          <td>contexto</td>
           <td><code>VPNN_Metragem</code></td>
           <td>Number</td>
           <td>—</td>
@@ -420,6 +443,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>VPN Network</b><div class="cod">VPNNetwork</div></td>
+          <td>oferta</td>
           <td><code>VPNN_VPNNetwork</code></td>
           <td>Text</td>
           <td>—</td>
@@ -429,6 +453,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Protocolo de Roteamento</b><div class="cod">ProtocoloRoteamento</div></td>
+          <td>tecnico</td>
           <td><code>VPNN_ProtocoloRoteamento</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -438,6 +463,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Golden Jumper</b><div class="cod">GoldenJumper</div></td>
+          <td>oferta</td>
           <td><code>VPNN_GoldenJumper</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -447,6 +473,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Nome do Data Center</b><div class="cod">NomeDataCenter</div></td>
+          <td>contexto</td>
           <td><code>VPNN_NomeDataCenter</code></td>
           <td>Text</td>
           <td>—</td>
@@ -456,6 +483,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Interface</b><div class="cod">InterfaceGJ</div></td>
+          <td>tecnico</td>
           <td><code>VPNN_InterfaceGJ</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -465,6 +493,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Nome do jumper</b><div class="cod">NomeJumper</div></td>
+          <td>tecnico</td>
           <td><code>VPNN_NomeJumper</code></td>
           <td>Text</td>
           <td>—</td>
@@ -474,6 +503,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Alterar Fornecedor Golden Jumper</b><div class="cod">AlterarFornecedorGJ</div></td>
+          <td>tecnico</td>
           <td><code>VPNN_AlterarFornecedorGJ</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -483,6 +513,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Modalidade de Instalação</b><div class="cod">ModalidadeInstalacao</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ModalidadeInstalacao</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -492,6 +523,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Modelo de Disponibilização</b><div class="cod">ModeloDisponibilizacao</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ModeloDisponibilizacao</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -501,6 +533,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Velocidade de Conexão</b><div class="cod">VelocidadeConexao</div></td>
+          <td>oferta</td>
           <td><code>VPNN_VelocidadeConexao</code></td>
           <td>Text</td>
           <td>—</td>
@@ -510,6 +543,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Provedor e Serviço Cloud</b><div class="cod">ProvedorCloud</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ProvedorCloud</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -519,6 +553,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Condomínio</b><div class="cod">Condominio</div></td>
+          <td>contexto</td>
           <td><code>VPNN_Condominio</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -528,6 +563,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Acesso Terceiro Last Mile</b><div class="cod">AcessoTerceiroLastMile</div></td>
+          <td>oferta</td>
           <td><code>VPNN_AcessoTerceiroLastMile</code></td>
           <td>Checkbox</td>
           <td>—</td>
@@ -537,6 +573,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Parceiro LastMile</b><div class="cod">ParceiroLastMile</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ParceiroLastMile</code></td>
           <td>Text</td>
           <td>—</td>
@@ -546,6 +583,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Proprietário do Roteador</b><div class="cod">ProprietarioRoteador</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ProprietarioRoteador</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -555,6 +593,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Número Viabilidade GLM</b><div class="cod">NumeroViabilidadeGLM</div></td>
+          <td>contexto</td>
           <td><code>VPNN_NumeroViabilidadeGLM</code></td>
           <td>Number</td>
           <td>—</td>
@@ -564,6 +603,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Vigência LastMile</b><div class="cod">VigenciaLastMile</div></td>
+          <td>oferta</td>
           <td><code>VPNN_VigenciaLastMile</code></td>
           <td>Text</td>
           <td>—</td>
@@ -573,6 +613,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Valor Instalação LastMile s/ Impostos</b><div class="cod">ValorInstalacaoLastMile</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ValorInstalacaoLastMile</code></td>
           <td>Number</td>
           <td>—</td>
@@ -582,6 +623,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Valor Mensal LastMile s/ Impostos</b><div class="cod">ValorMensalLastMile</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ValorMensalLastMile</code></td>
           <td>Number</td>
           <td>—</td>
@@ -591,6 +633,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo de Equipamento</b><div class="cod">TipoEquipamento</div></td>
+          <td>contexto</td>
           <td><code>VPNN_TipoEquipamento</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -600,6 +643,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Modalidade Equipamento</b><div class="cod">ModalidadeEquipamento</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ModalidadeEquipamento</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -609,6 +653,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Velocidade Temporária</b><div class="cod">VelocidadeTemporaria</div></td>
+          <td>oferta</td>
           <td><code>VPNN_VelocidadeTemporaria</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -618,6 +663,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Quantidade de Dias (corridos)</b><div class="cod">QuantidadeDias</div></td>
+          <td>oferta</td>
           <td><code>VPNN_QuantidadeDias</code></td>
           <td>Number</td>
           <td>—</td>
@@ -627,6 +673,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Referência do Cliente</b><div class="cod">ReferenciaCliente</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ReferenciaCliente</code></td>
           <td>Text</td>
           <td>—</td>
@@ -636,6 +683,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo Moeda</b><div class="cod">TipoMoeda</div></td>
+          <td>oferta</td>
           <td><code>VPNN_TipoMoeda</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -645,6 +693,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Valor Moeda</b><div class="cod">ValorMoeda</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ValorMoeda</code></td>
           <td>Number</td>
           <td>—</td>
@@ -654,6 +703,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Produto a Serviço</b><div class="cod">ProdutoAServico</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ProdutoAServico</code></td>
           <td>Text</td>
           <td>—</td>
@@ -663,6 +713,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Período Fidelização</b><div class="cod">PeriodoFidelizacao</div></td>
+          <td>oferta</td>
           <td><code>VPNN_PeriodoFidelizacao</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -672,6 +723,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo de Reajuste</b><div class="cod">TipoReajuste</div></td>
+          <td>oferta</td>
           <td><code>VPNN_TipoReajuste</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -681,6 +733,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data Base</b><div class="cod">DataBase</div></td>
+          <td>oferta</td>
           <td><code>VPNN_DataBase</code></td>
           <td>Date</td>
           <td>—</td>
@@ -690,6 +743,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data de Assinatura do Contrato</b><div class="cod">DataAssinatura</div></td>
+          <td>oferta</td>
           <td><code>VPNN_DataAssinatura</code></td>
           <td>Date</td>
           <td>—</td>
@@ -699,6 +753,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Índice de Reajuste</b><div class="cod">IndiceReajuste</div></td>
+          <td>oferta</td>
           <td><code>VPNN_IndiceReajuste</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -708,6 +763,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Reajustar Antes de 12 Meses</b><div class="cod">ReajustarAntes12Meses</div></td>
+          <td>oferta</td>
           <td><code>VPNN_ReajustarAntes12Meses</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -717,6 +773,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data do Próximo Reajuste</b><div class="cod">DataProximoReajuste</div></td>
+          <td>contexto</td>
           <td><code>VPNN_DataProximoReajuste</code></td>
           <td>Date</td>
           <td>—</td>
@@ -726,6 +783,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Percentual da Multa</b><div class="cod">PercentualMulta</div></td>
+          <td>oferta</td>
           <td><code>VPNN_PercentualMulta</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -735,6 +793,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data de Início do Contrato</b><div class="cod">DataInicioContrato</div></td>
+          <td>contexto</td>
           <td><code>VPNN_DataInicioContrato</code></td>
           <td>Date</td>
           <td>—</td>
@@ -744,6 +803,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Data de Término do Contrato</b><div class="cod">DataTerminoContrato</div></td>
+          <td>contexto</td>
           <td><code>VPNN_DataTerminoContrato</code></td>
           <td>Date</td>
           <td>—</td>
@@ -753,6 +813,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Recálculo Período do Contrato</b><div class="cod">RecalculoPeriodoContrato</div></td>
+          <td>oferta</td>
           <td><code>VPNN_RecalculoPeriodoContrato</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -762,6 +823,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Quantidade de Dias Aviso Previo</b><div class="cod">DiasAvisoPrevio</div></td>
+          <td>oferta</td>
           <td><code>VPNN_DiasAvisoPrevio</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -771,6 +833,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Plano</b><div class="cod">PlanoMIR</div></td>
+          <td>oferta</td>
           <td><code>VPNN_PlanoMIR</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -780,6 +843,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 <tr>
           <td><b>Tipo de Monitoramento</b><div class="cod">TipoMonitoramento</div></td>
+          <td>oferta</td>
           <td><code>VPNN_TipoMonitoramento</code></td>
           <td>Picklist</td>
           <td>—</td>
@@ -788,9 +852,10 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
           <td>usuário</td>
         </tr>
 </tbody></table>
+<div class="box"><b>Criação por camada</b>Atributos de oferta e de contexto são criados como AttributeDefinition e associados ao produto; os de contexto são apresentados somente leitura. Atributos técnicos não são criados na oferta: são capturados na execução do pedido, nos produtos técnicos da decomposição. Total a criar na oferta: 42; capturados na execução: 4.</div>
 <div class="box alerta"><b>Obrigatoriedade condicional</b>O campo IsRequired não admite condição. Atributos obrigatórios apenas sob condição são criados com IsRequired igual a falso, e a exigência é implementada no modelo de restrição; a coluna indica a regra responsável em cada caso.</div>
 
-<h2 id="atributos"><span class="n">20</span>Atributos — valores e categorias do caso de uso</h2>
+<h2 id="atributos"><span class="n">21</span>Atributos — valores e categorias do caso de uso</h2>
 <p>Distribuição por tipo de campo: 26 picklist, 7 text, 5 date, 4 number, 2 currency, 1 network, 1 checkbox. Por forma de preenchimento: 33 manual, 7 automático/manual, 4 automático, 1 manual/automático, 1 —.</p>
 <p>Todo atributo vira <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributedefinition.htm" target="_blank" rel="noopener">AttributeDefinition</a>; os de lista vêm com <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklist.htm" target="_blank" rel="noopener">AttributePicklist</a> e <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_attributepicklistvalue.htm" target="_blank" rel="noopener">AttributePicklistValue</a>. O agrupamento por produto usa <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributeset.htm" target="_blank" rel="noopener">ProductAttributeSet</a>, <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetitem.htm" target="_blank" rel="noopener">ProductAttributeSetItem</a> e <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattributesetproduct.htm" target="_blank" rel="noopener">ProductAttributeSetProduct</a>. A associação atributo ↔ produto é <a class="api" href="https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_productattribute.htm" target="_blank" rel="noopener">ProductAttribute</a>.</p>
 <table><thead><tr><th>Atributo</th><th>Categoria</th><th>Tipo</th><th>Valores</th><th>Obrigatório</th><th>Card.</th><th>Regras</th></tr></thead><tbody>
@@ -1210,7 +1275,7 @@ footer{border-top:1px solid var(--bd);margin-top:52px;padding:26px 0 46px;color:
         </tr>
 </tbody></table>
 
-<h2 id="regras"><span class="n">21</span>Regras — efeitos, condições e leitura</h2>
+<h2 id="regras"><span class="n">22</span>Regras — efeitos, condições e leitura</h2>
 <p>Cada regra aparece com seus efeitos, a condição que os dispara e o mecanismo correspondente na plataforma. As condições estão na notação do caso de uso; a tradução para o motor de restrições é trabalho de implementação.</p>
 <h3>Como ler as condições</h3>
 <p>As condições são apresentadas na notação do caso de uso, acompanhadas de leitura em português. A expressão original é a referência para implementação; a leitura é auxiliar. O prefixo de cada identificador indica a origem do dado:</p>
@@ -1704,8 +1769,8 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
         </tr>
 </tbody></table>
 
-<h2 id="build-regras"><span class="n">22</span>Regras — destino de cada uma na plataforma</h2>
-<table><thead><tr><th>Regra</th><th>Nome</th><th>Efeitos</th><th>Onde é construída</th><th>Contexto exigido</th><th>Função auxiliar</th></tr></thead><tbody>
+<h2 id="build-regras"><span class="n">23</span>Regras — destino de cada uma na plataforma</h2>
+<table><thead><tr><th>Regra</th><th>Nome</th><th>Efeitos</th><th>Onde é construída</th><th>Contexto exigido</th><th>Função auxiliar</th><th>Camada</th></tr></thead><tbody>
 <tr>
           <td><span class="rid big">R01</span></td>
           <td>Endereço sem cobertura</td>
@@ -1713,6 +1778,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Mensagem de validação</td>
           <td>endereco</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R02</span></td>
@@ -1721,6 +1787,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Mensagem de validação</td>
           <td>endereco</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R03</span></td>
@@ -1729,6 +1796,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>endereco · usuario</td>
           <td>—</td>
+          <td>contexto</td>
         </tr>
 <tr>
           <td><span class="rid big">R04</span></td>
@@ -1737,6 +1805,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>—</td>
           <td>—</td>
+          <td>tecnico</td>
         </tr>
 <tr>
           <td><span class="rid big">R05</span></td>
@@ -1745,6 +1814,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R06</span></td>
@@ -1753,6 +1823,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>endereco · transacao</td>
           <td>—</td>
+          <td>dividida</td>
         </tr>
 <tr>
           <td><span class="rid big">R07</span></td>
@@ -1761,6 +1832,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R08</span></td>
@@ -1769,6 +1841,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>—</td>
           <td>—</td>
+          <td>contexto</td>
         </tr>
 <tr>
           <td><span class="rid big">R09</span></td>
@@ -1777,6 +1850,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>usuario</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R10</span></td>
@@ -1785,6 +1859,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Componente do bundle<br>Mensagem de validação</td>
           <td>endereco</td>
           <td>equipamentosFaltando</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R11</span></td>
@@ -1793,6 +1868,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Mensagem de validação</td>
           <td>endereco</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R12</span></td>
@@ -1801,6 +1877,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição</td>
           <td>—</td>
           <td>mbps</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R13</span></td>
@@ -1809,6 +1886,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Mensagem de validação</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R14</span></td>
@@ -1817,6 +1895,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>conta</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R15</span></td>
@@ -1825,6 +1904,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Mensagem de validação<br>Regra do modelo de restrição</td>
           <td>conta</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R16</span></td>
@@ -1833,6 +1913,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R17</span></td>
@@ -1841,6 +1922,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>conta · transacao · usuario</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R18</span></td>
@@ -1849,6 +1931,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Configuração do atributo ou regra<br>Regra do modelo de restrição</td>
           <td>usuario</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R19</span></td>
@@ -1857,6 +1940,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição ou DefaultValue</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R20</span></td>
@@ -1865,6 +1949,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>conta</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R21</span></td>
@@ -1873,6 +1958,7 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra do modelo de restrição<br>Regra do modelo de restrição ou DefaultValue</td>
           <td>transacao</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 <tr>
           <td><span class="rid big">R22</span></td>
@@ -1881,16 +1967,17 @@ setdefault(true, DiasAvisoPrevio == &quot;30 dias&quot;);</pre></td>
           <td>Regra sensível ao contexto</td>
           <td>—</td>
           <td>—</td>
+          <td>comercial</td>
         </tr>
 </tbody></table>
 <h3>De cada tipo de efeito para o artefato</h3>
 <table><thead><tr><th>Tipo</th><th>Onde vira</th><th>Observação de construção</th></tr></thead><tbody><tr><td><code>require</code></td><td>Configuração do atributo ou regra</td><td>IsRequired fixo quando vale sempre; regra do modelo de restrição quando depende de condição</td></tr><tr><td><code>hide</code></td><td>Regra do modelo de restrição</td><td>Visibilidade condicional — não existe campo de “oculto” no AttributeDefinition</td></tr><tr><td><code>message</code></td><td>Mensagem de validação</td><td>Texto apresentado no configurador, com severidade</td></tr><tr><td><code>setValue</code></td><td>Regra do modelo de restrição ou DefaultValue</td><td>DefaultValue quando o valor é fixo; regra quando depende de condição</td></tr><tr><td><code>disable</code></td><td>Regra do modelo de restrição</td><td>Somente leitura condicional</td></tr><tr><td><code>hideValues</code></td><td>Regra do modelo de restrição</td><td>Filtro sobre os valores da lista do atributo</td></tr><tr><td><code>constraint</code></td><td>Regra do modelo de restrição</td><td>Bloqueia o salvamento da configuração</td></tr><tr><td><code>exclude</code></td><td>Regra do modelo de restrição</td><td>Exclusão mútua entre componentes do bundle</td></tr><tr><td><code>autoAdd</code></td><td>Componente do bundle</td><td>IsDefaultComponent no ProductRelatedComponent, com a regra ajustando quantidade</td></tr><tr><td><code>transacao</code></td><td>Regra sensível ao contexto</td><td>Depende do tipo de ação do pedido — precisa do dado da transação disponível na avaliação</td></tr></tbody></table>
 <div class="box info"><b>Dependência de contexto na avaliação das regras</b>Condições que referenciam segmento da conta, permissões do usuário, retorno da consulta de viabilidade ou tipo de transação exigem que tais dados estejam disponíveis no momento da avaliação. Cada item da coluna “contexto exigido” deve ser materializado como campo do cabeçalho da cotação, dado do endereço ou atributo de apoio antes da construção das regras.</div>
 
-<h2 id="build-ordem"><span class="n">23</span>Ordem de construção</h2>
+<h2 id="build-ordem"><span class="n">24</span>Ordem de construção</h2>
 <table><thead><tr><th>Passo</th><th>O que</th><th>Objetos</th><th>Depende de</th><th>Critério de pronto</th></tr></thead><tbody><tr><td>1</td><td>Modelos de venda e categoria</td><td>ProductSellingModel, ProductCategory</td><td>Nada depende antes</td><td>Registros ativos e visíveis no catálogo</td></tr><tr><td>2</td><td>Produtos</td><td>Product2 do bundle e dos componentes</td><td>Modelo de venda</td><td>Bundle marcado como configurável; componentes ativos</td></tr><tr><td>3</td><td>Listas de valores</td><td>AttributePicklist e AttributePicklistValue</td><td>Nada depende antes</td><td>159 valores conferidos contra o caso de uso</td></tr><tr><td>4</td><td>Atributos</td><td>AttributeDefinition</td><td>Listas de valores</td><td>Tipo, obrigatoriedade fixa e valor padrão conforme a tabela</td></tr><tr><td>5</td><td>Ligação atributo ↔ produto</td><td>Objeto a confirmar na org</td><td>Produtos e atributos</td><td>Atributo aparece na configuração do produto certo</td></tr><tr><td>6</td><td>Estrutura do bundle</td><td>ProductComponentGroup e ProductRelatedComponent</td><td>Produtos</td><td>Cardinalidade mínima e máxima conforme o caso de uso</td></tr><tr><td>7</td><td>Regras</td><td>Modelo de restrição associado ao produto</td><td>Atributos e estrutura</td><td>Os 100 efeitos reproduzidos, com severidade</td></tr><tr><td>8</td><td>Dados de contexto</td><td>Campos que recebem viabilidade, segmento e permissões</td><td>Integração de viabilidade</td><td>Regra que depende de contexto avalia com dado real</td></tr><tr><td>9</td><td>Preço</td><td>Tabela e procedimento de preço</td><td>Definição de negócio inexistente</td><td>Bloqueado: a Revisão 1 não define preço</td></tr></tbody></table>
 
-<h2 id="build-riscos"><span class="n">24</span>Riscos da construção</h2>
+<h2 id="build-riscos"><span class="n">25</span>Riscos da construção</h2>
 <table><thead><tr><th>Risco</th><th>Por quê</th><th>O que fazer antes</th></tr></thead><tbody><tr><td>Objeto de ligação atributo ↔ produto não confirmado</td><td>A Referência de Objetos consultada não traz ProductAttributeDefinition nem AttributeCategory; ProductAttributeSet pertence ao modelo de Commerce, não ao de Revenue.</td><td>Conferir na org antes de começar o passo 5: listar os objetos disponíveis e o modelo de atributo que a versão instalada usa.</td></tr><tr><td>Tradução das regras para o motor de restrições</td><td>As condições do caso de uso usam contexto de conta, usuário, endereço e transação. Nem todo contexto está disponível na avaliação da regra.</td><td>Para cada regra que usa contexto, decidir na org se o dado chega ao configurador ou se vira campo do cabeçalho da cotação.</td></tr><tr><td>Atributos de preenchimento automático</td><td>11 atributos nascem de integração ou de contexto, não do usuário.</td><td>Definir a origem de cada um e o que acontece quando a origem não responde.</td></tr><tr><td>Cardinalidade e quantidade dos equipamentos</td><td>O grupo aceita vários equipamentos, e o Roteador tem teto de um.</td><td>Modelar com MinQuantity, MaxQuantity e IsQuantityEditable no componente, e a regra tratando a soma.</td></tr><tr><td>Severidade das mensagens</td><td>O caso de uso distingue mensagem que apenas avisa de mensagem que bloqueia.</td><td>Preservar a severidade na tradução; erro que vira aviso deixa passar configuração inválida.</td></tr><tr><td>Preço ausente</td><td>Sem tabela e procedimento, a cotação fecha sem valor.</td><td>Tratar como bloqueio declarado, não como pendência menor.</td></tr></tbody></table>
 
 
