@@ -1,5 +1,5 @@
 {
-  "quando": "2026-09-15T13:04:33.967Z",
+  "quando": "2026-09-15T13:04:56.548Z",
   "documento": "UC-ILK-001",
   "comentarios": {
     "s1-a01": {
@@ -153,6 +153,10 @@
     "s2-l12": {
       "item": "Venda em lote e atributos que não se replicam",
       "comentario": "verificar a possibilidade de clonar algumas informações para atendimento em lote. exemplo clonar alguns atributos para atender x cotações adicionando apenas valores que são distintos um do outro."
+    },
+    "s2-l13": {
+      "item": "Monitoramento: alteração, cancelamento e ativação",
+      "comentario": "Desconsiderar"
     }
   }
 }
