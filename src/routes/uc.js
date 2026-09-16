@@ -16,7 +16,7 @@ export const UC_DOCS = {
   'UC-IPT-001': { titulo: 'IP Trânsito', pagina: 'uc-ip-transito.html' },
   'UC-ILK-001': { titulo: 'Internet Link', pagina: 'uc-internet-link.html' },
   'UC-L2L-001': { titulo: 'Lan to Lan', pagina: 'uc-lan-to-lan.html' },
-  'UC-WAV-001': { titulo: 'Wavelength', pagina: 'uc-wavelength.html' },
+  'UC-WAVELENGTH-001': { titulo: 'Wavelength', pagina: 'uc-wavelength.html' },
   'UC-SDW-001': { titulo: 'SD-WAN', pagina: 'uc-sd-wan.html' },
   'UC-HOS-001': { titulo: 'Hospedagem Dedicada', pagina: 'uc-hospedagem-dedicada.html' },
 };
