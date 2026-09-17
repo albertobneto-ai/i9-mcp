@@ -63,6 +63,11 @@
    "produto": "Monitoramento Inteligente de Rede",
    "familia": "TIC",
    "pagina": "uc-monitoramento-inteligente-de-rede-mir.html"
+  },
+  {
+   "produto": "Anti-DDoS",
+   "familia": "Segurança",
+   "pagina": "uc-anti-ddos.html"
   }
  ],
  "transversais": [
