@@ -246,7 +246,7 @@ transition:transform .12s}
 </style><style>.source-record{margin:0 0 16px;border:1px solid #ddd;border-radius:6px;padding:10px}.source-record>summary{font-size:12px;font-weight:600;cursor:pointer}.source-record dl{margin:12px 0}.source-record dt{font-size:10px;font-weight:700;color:#666;margin-top:10px}.source-record dd{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;margin:2px 0 8px}.ubody{overflow-wrap:anywhere}@media print{.source-record{break-inside:auto}}</style></head><body>
 <div class="cover"><div class="cover-in">
 <div class="kicker">ALGAR · CRM B2B</div>
-<h1>Configurar Wavelength na proposta comercial</h1><p class="sub">Caso de Uso — UC-WAV-001</p>
+<h1>Configurar Wavelength na proposta comercial</h1><p class="sub">Caso de Uso — UC-WAVELENGTH-001</p>
 <dl class="meta"><div><dt>Escopo</dt><dd>Catálogo de produto</dd></div>
 <div><dt>Nível</dt><dd>Objetivo do usuário</dd></div>
 <div><dt>Data</dt><dd>15/09/2026 · Rev. 1</dd></div></dl>
@@ -262,7 +262,7 @@ transition:transform .12s}
 </div>
 <section id="s1"><div class="sh"><div class="num">01</div><h2>Identificação e modelagem do produto</h2></div>
 <table><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>
-<tr><td class="mono">ID</td><td>UC-WAV-001</td></tr>
+<tr><td class="mono">ID</td><td>UC-WAVELENGTH-001</td></tr>
 <tr><td class="mono">Nome</td><td>Configurar Wavelength na proposta comercial</td></tr>
 <tr><td class="mono">Escopo</td><td>Wavelength — configuração das pontas A e B e contratação</td></tr>
 <tr><td class="mono">Nível</td><td>Objetivo do usuário</td></tr>
@@ -379,7 +379,7 @@ window.addEventListener('beforeprint',function(){a(true)});
 // ================= comentários persistentes =================
 var all=function(sel){return Array.prototype.slice.call(document.querySelectorAll(sel));};
 var API='https://i9-mcp-da48589780b2.herokuapp.com';
-var LSK='ucwav-comentarios-r1';
+var LSK='ucwavelength-comentarios-r1';
 function lsGet(){try{return JSON.parse(localStorage.getItem(LSK)||'{}')}catch(e){return{}}}
 function lsSet(m){try{localStorage.setItem(LSK,JSON.stringify(m))}catch(e){}}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)}
@@ -448,7 +448,7 @@ bar.innerHTML='<button id="cSave">Salvar comentários no i9</button>'+
 document.body.appendChild(bar);
 function stat(t){document.getElementById('cStat').textContent=t;}
 document.getElementById('cTxt').onclick=function(){
- var c=coletar(),lines=['Comentários — UC-WAV-001 · '+new Date().toLocaleString('pt-BR'),''];
+ var c=coletar(),lines=['Comentários — UC-WAVELENGTH-001 · '+new Date().toLocaleString('pt-BR'),''];
  Object.keys(c).forEach(function(k){lines.push('['+c[k].item+']');lines.push(c[k].comentario);lines.push('');});
  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join(String.fromCharCode(10))],{type:'text/plain'}));
  a.download='comentarios-uc-wavelength-r1.txt';a.click();};
@@ -457,12 +457,12 @@ document.getElementById('cHtml').onclick=function(){
   var tr2=bx.closest('tr');if(tr2)tr2.style.display='';}});
  var a=document.createElement('a');
  a.href=URL.createObjectURL(new Blob(['<!DOCTYPE html>'+document.documentElement.outerHTML],{type:'text/html'}));
- a.download='UC-WAV-001-comentado.html';a.click();};
+ a.download='UC-WAVELENGTH-001-comentado.html';a.click();};
 document.getElementById('cSave').onclick=function(){
  var c=coletar();
  if(!Object.keys(c).length){stat('Nenhum comentário para salvar.');return;}
  stat('Gravando…');
- fetch(API+'/api/uc/UC-WAV-001/comentarios',{method:'POST',headers:{'Content-Type':'application/json'},
+ fetch(API+'/api/uc/UC-WAVELENGTH-001/comentarios',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({rodada:1,comentarios:c})})
  .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
  .then(function(j){stat('Salvo ('+j.total+' comentário(s), rodada '+j.rodada+').');
@@ -471,6 +471,6 @@ document.getElementById('cSave').onclick=function(){
  .catch(function(e){stat('Falhou ('+e.message+'). Use Exportar .txt.');});
 };
 })();
-</script><script>window.__UC__={docId:"UC-WAV-001",fileBase:"UC-WAV-001-wavelength",rodada:1};</script>
+</script><script>window.__UC__={docId:"UC-WAVELENGTH-001",fileBase:"UC-WAVELENGTH-001-wavelength",rodada:1};</script>
 <script src="vendor/uc-doc.js"></script>
 </body></html>
