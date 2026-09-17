@@ -33,12 +33,26 @@
   {
    "produto": "Wavelength",
    "familia": "Conectividade",
-   "pagina": "uc-wavelength.html"
+   "pagina": "uc-wavelength.html",
+   "anexos": [
+    {
+     "titulo": "Catálogo de atributos compartilhados",
+     "pagina": "catalogo-atributos.html",
+     "nota": "referência dos códigos citados nas etiquetas de reaproveitamento deste documento"
+    }
+   ]
   },
   {
    "produto": "IP Trânsito",
    "familia": "Conectividade",
    "pagina": "uc-ip-transito.html"
+  }
+ ],
+ "transversais": [
+  {
+   "titulo": "Catálogo de atributos compartilhados",
+   "pagina": "catalogo-atributos.html",
+   "nota": "66 atributos que se repetem entre produtos, com código, comparação de conteúdo e veredito de reaproveitamento"
   }
  ]
 }
