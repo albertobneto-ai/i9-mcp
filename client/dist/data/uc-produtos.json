@@ -46,6 +46,18 @@
    "produto": "IP Trânsito",
    "familia": "Conectividade",
    "pagina": "uc-ip-transito.html"
+  },
+  {
+   "produto": "Hospedagem Dedicada",
+   "familia": "TIC TI",
+   "pagina": "uc-hospedagem-dedicada.html",
+   "anexos": [
+    {
+     "titulo": "Catálogo de atributos compartilhados",
+     "pagina": "catalogo-atributos.html",
+     "nota": "referência dos códigos citados nas etiquetas de reaproveitamento deste documento"
+    }
+   ]
   }
  ],
  "transversais": [
