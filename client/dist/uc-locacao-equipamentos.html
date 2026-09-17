@@ -297,7 +297,7 @@ var LBL={};all('.cbox').forEach(function(bx){LBL[bx.dataset.ckey]=bx.dataset.cla
 function coletar(){var m=lsGet(),out={};Object.keys(m).forEach(function(k){out[k]={item:LBL[k]||k,comentario:m[k]};});return out;}
 // toolbar
 var bar=document.createElement('div');bar.className='cbar';
-bar.innerHTML='<button id="cSave">Salvar comentários no i9</button>'+
+bar.innerHTML='<button id="cSave">Salvar comentários no i9</button><button id="cReload" class="sec">Atualizar documento</button>'+
  '<button id="cTxt" class="sec">Exportar .txt</button>'+
  '<button id="cHtml" class="sec">Baixar HTML comentado</button>'+
  '<span class="cstat" id="cStat"></span>';
@@ -314,6 +314,7 @@ document.getElementById('cHtml').onclick=function(){
  var a=document.createElement('a');
  a.href=URL.createObjectURL(new Blob(['<!DOCTYPE html>'+document.documentElement.outerHTML],{type:'text/html'}));
  a.download='UC-LOC-001-comentado.html';a.click();};
+document.getElementById('cReload').onclick=function(){var u=location.href.split('#')[0].split('?')[0];location.replace(u+'?v='+Date.now());};
 document.getElementById('cSave').onclick=function(){
  var c=coletar();
  if(!Object.keys(c).length){stat('Nenhum comentário para salvar.');return;}
