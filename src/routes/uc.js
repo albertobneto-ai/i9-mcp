@@ -20,6 +20,7 @@ export const UC_DOCS = {
   'UC-SDW-001': { titulo: 'SD-WAN', pagina: 'uc-sd-wan.html' },
   'UC-HOS-001': { titulo: 'Hospedagem Dedicada', pagina: 'uc-hospedagem-dedicada.html' },
   'UC-MIR-001': { titulo: 'Monitoramento Inteligente de Rede', pagina: 'uc-monitoramento-inteligente-de-rede-mir.html' },
+  'UC-ANTIDDOS-001': { titulo: 'Anti-DDoS', pagina: 'uc-anti-ddos.html' },
 };
 
 const MAX_ITENS = 400;
