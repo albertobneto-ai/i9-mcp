@@ -65,7 +65,7 @@ details.val summary{cursor:pointer;font-size:11.5px;color:#6B6B6B}
 <header class="cover"><div class="wrap">
 <div class="kicker">Algar · CRM B2B · Catálogo</div>
 <h1>Atributos compartilhados entre produtos</h1>
-<p>Template de reaproveitamento. Uma linha por atributo que aparece em mais de um produto do catálogo, com código estável, comparação do conteúdo publicado e veredito de reaproveitamento. O código é a etiqueta a ser citada dentro de cada caso de uso.</p>
+<p>Template de reaproveitamento. Uma linha por atributo que aparece em mais de um produto do catálogo, com código estável, comparação do conteúdo publicado e decisao de reaproveitamento. O código é a etiqueta a ser citada dentro de cada caso de uso.</p>
 <div class="meta">
 <div><b>Atributos catalogados</b><span>66</span></div>
 <div><b>Produtos analisados</b><span>10</span></div>
@@ -81,10 +81,10 @@ details.val summary{cursor:pointer;font-size:11.5px;color:#6B6B6B}
 <tr><td>Produtos</td><td>Onde o atributo aparece hoje, pela sigla: ILK = Internet Link, IPT = IP Trânsito, L2L = Lan to Lan, VPN = VPN Node, WAV = Wavelength, SDW = SD-WAN, LOC = Locação, IA = IA, MSG = Message, HOS = Hospedagem.</td></tr>
 <tr><td>Obrig.</td><td>Em quantos desses produtos o atributo é obrigatório. Divergência aqui costuma ser decisão de negócio, não erro.</td></tr>
 <tr><td>Comparação de conteúdo</td><td>Resultado do confronto das listas de valores publicadas. Abra para ver cada lista e quais produtos a compartilham.</td></tr>
-<tr><td>Reaproveitamento</td><td>Veredito: Compartilhar, Compartilhar com ajuste, Compartilhar com variação, Manter por produto, Confirmar.</td></tr>
+<tr><td>Reaproveitamento</td><td>Decisão: Compartilhar, Compartilhar com ajuste, Compartilhar com variação, Manter por produto, Confirmar.</td></tr>
 </tbody></table>
-<h3>Os cinco vereditos</h3>
-<table><thead><tr><th>Veredito</th><th>Quando</th><th>O que fazer</th></tr></thead><tbody>
+<h3>As cinco decisões</h3>
+<table><thead><tr><th>Decisão</th><th>Quando</th><th>O que fazer</th></tr></thead><tbody>
 <tr><td><span class="vd v1">Compartilhar</span></td><td>A lista de valores é a mesma em todos os produtos onde o atributo aparece</td><td>Uma definição única, referenciada por todos</td></tr>
 <tr><td><span class="vd v2">Compartilhar com ajuste</span></td><td>A diferença é de grafia ou de um valor isolado</td><td>Unificar o vocabulário e então compartilhar</td></tr>
 <tr><td><span class="vd v3">Compartilhar com variação</span></td><td>Há um núcleo comum e variações legítimas por produto</td><td>Definição comum, com a variação declarada por produto</td></tr>
@@ -94,7 +94,7 @@ details.val summary{cursor:pointer;font-size:11.5px;color:#6B6B6B}
 <div class="box info"><b>Como etiquetar no caso de uso</b>No atributo correspondente do UC, cite o código entre colchetes ao final do nome — por exemplo, <code>Tipo de Reajuste [CT-01]</code>. A etiqueta diz que aquele atributo tem definição compartilhada e onde encontrá-la. Atributo sem etiqueta é específico do produto.</div>
 
 <h2 id="resumo"><span class="n">02</span>Resumo</h2>
-<table><thead><tr><th>Veredito</th><th>Atributos</th></tr></thead><tbody><tr><td><span class="vd v1">Compartilhar</span></td><td>25</td></tr><tr><td><span class="vd v2">Compartilhar com ajuste</span></td><td>4</td></tr><tr><td><span class="vd v3">Compartilhar com variação</span></td><td>6</td></tr><tr><td><span class="vd v4">Manter por produto</span></td><td>10</td></tr><tr><td><span class="vd v5">Confirmar</span></td><td>21</td></tr></tbody></table>
+<table><thead><tr><th>Decisão</th><th>Atributos</th></tr></thead><tbody><tr><td><span class="vd v1">Compartilhar</span></td><td>25</td></tr><tr><td><span class="vd v2">Compartilhar com ajuste</span></td><td>4</td></tr><tr><td><span class="vd v3">Compartilhar com variação</span></td><td>6</td></tr><tr><td><span class="vd v4">Manter por produto</span></td><td>10</td></tr><tr><td><span class="vd v5">Confirmar</span></td><td>21</td></tr></tbody></table>
 <table><thead><tr><th>Domínio</th><th>Prefixo</th><th>Atributos</th><th>Produtos alcançados</th></tr></thead><tbody>
 <tr><td>Acesso</td><td><code>AC</code></td><td>21</td><td class="prod">HOS, ILK, IPT, L2L, VPN, WAV</td></tr><tr><td>Enquadramento comercial</td><td><code>CM</code></td><td>7</td><td class="prod">IA, ILK, IPT, L2L, LOC, MSG, SDW, VPN, WAV</td></tr><tr><td>Condições contratuais</td><td><code>CT</code></td><td>12</td><td class="prod">ILK, IPT, L2L, LOC, SDW, VPN, WAV</td></tr><tr><td>Equipamento</td><td><code>EQ</code></td><td>3</td><td class="prod">ILK, IPT, L2L, LOC, VPN</td></tr><tr><td>Geral</td><td><code>GE</code></td><td>5</td><td class="prod">ILK, IPT, L2L, LOC, SDW, VPN, WAV</td></tr><tr><td>Golden Jumper</td><td><code>GJ</code></td><td>4</td><td class="prod">ILK, IPT, L2L, VPN, WAV</td></tr><tr><td>Último trecho de terceiro</td><td><code>LM</code></td><td>6</td><td class="prod">ILK, IPT, L2L, VPN, WAV</td></tr><tr><td>Entrega em nuvem</td><td><code>NU</code></td><td>2</td><td class="prod">L2L, VPN, WAV</td></tr><tr><td>Serviço agregado</td><td><code>SV</code></td><td>6</td><td class="prod">IA, ILK, IPT, L2L, VPN</td></tr>
 </tbody></table>
