@@ -1,0 +1,284 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retorno de pendências — refinamento de modelagem de catálogo</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F2F3F5;--s1:#FAFBFC;--s2:#ECECEC;--s3:#D9D9D9;
+--tx:#0D0D0D;--tx2:#3A3A3A;--mut:#6B6B6B;--bd:#D9D9D9;--bd2:#A8A8A8;
+}
+body{background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;
+font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px 80px}
+
+/* capa */
+.cover{background:linear-gradient(135deg,#0D0D0D 0%,#4A4A4A 100%);color:#FAFBFC;
+padding:64px 32px 56px;margin-bottom:48px}
+.cover-in{max-width:1080px;margin:0 auto}
+.kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#B8B8B8;margin-bottom:18px}
+h1{font-size:34px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin-bottom:12px}
+.sub{font-size:16px;color:#D4D4D4;font-weight:400;margin-bottom:28px;max-width:640px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+background:rgba(250,251,252,.2);border:1px solid rgba(250,251,252,.2);margin-top:8px}
+.meta div{background:rgba(250,251,252,.08);padding:12px 14px}
+.meta dt{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:#B8B8B8;margin-bottom:5px}
+.meta dd{font-size:13px;color:#FAFBFC}
+
+/* sumario */
+.toc{background:var(--s1);border:1px solid var(--bd);padding:22px 26px;margin-bottom:48px}
+.toc h2{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut);
+margin-bottom:14px;font-weight:500}
+.toc ol{list-style:none;columns:2;column-gap:36px}
+.toc li{margin-bottom:7px;font-size:13px;break-inside:avoid}
+.toc a{color:var(--tx2);text-decoration:none;border-bottom:1px solid transparent}
+.toc a:hover{color:var(--tx);border-bottom-color:var(--bd2)}
+.toc .n{color:var(--mut);font-variant-numeric:tabular-nums;margin-right:9px}
+
+/* secoes */
+section{margin-bottom:52px}
+.sh{display:flex;align-items:center;gap:14px;padding-bottom:12px;
+border-bottom:1px solid var(--bd2);margin-bottom:24px}
+.sh .num{flex:0 0 34px;height:34px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;font-size:13px;
+font-variant-numeric:tabular-nums;color:var(--tx2)}
+.sh h2{font-size:19px;font-weight:600;letter-spacing:-.2px}
+h3{font-size:14px;font-weight:600;color:var(--tx);margin:26px 0 10px;
+letter-spacing:.3px;text-transform:uppercase;font-size:11px;letter-spacing:2px;color:var(--mut)}
+p{margin-bottom:12px;color:var(--tx2)}
+strong{color:var(--tx);font-weight:600}
+code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;
+background:var(--s2);border:1px solid var(--bd);padding:1px 6px;color:var(--tx)}
+
+/* listas de passos */
+ol.steps{list-style:none;counter-reset:s;margin:4px 0 8px}
+ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 44px;
+border-bottom:1px solid var(--bd);color:var(--tx2)}
+ol.steps li:last-child{border-bottom:none}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;
+width:26px;height:26px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;
+font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* fluxo alternativo */
+.alt{border-left:2px solid var(--bd2);background:var(--s1);padding:12px 16px;margin-bottom:10px}
+.alt.fail{border-left-color:#6B6B6B;background:#ECECEC}
+.alt .tag{display:inline-block;font-family:'SF Mono',Menlo,monospace;font-size:11px;
+color:var(--tx);background:var(--s3);border:1px solid var(--bd2);padding:1px 7px;margin-right:9px}
+.alt .ttl{font-weight:600;color:var(--tx);font-size:13.5px}
+.alt p{margin:7px 0 0;font-size:13px}
+
+/* tabelas */
+table{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:12.5px}
+thead th{background:#0D0D0D;color:#FAFBFC;text-align:left;padding:10px 12px;
+font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;
+border-bottom:1px solid var(--bd2)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--bd);color:var(--tx2);vertical-align:top}
+tbody tr:nth-child(even) td{background:#ECECEC}
+tbody tr:hover td{background:var(--s2)}
+td.mono,th.mono{font-family:'SF Mono',Menlo,monospace;font-size:11.5px}
+
+/* badges monocromaticos: peso e borda diferenciam, nunca cor */
+.b{display:inline-block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+padding:2px 9px;border:1px solid var(--bd2);white-space:nowrap;font-weight:600}
+.b-solid{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
+.b-mid{background:var(--s3);color:var(--tx)}
+.b-out{background:transparent;color:var(--mut);border-style:dashed}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+background:var(--bd);border:1px solid var(--bd);margin:8px 0 20px}
+.kpi{background:#FAFBFC;padding:16px 14px}
+.kpi .l{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.kpi.hi{background:#E2E2E2}
+
+/* callout */
+.call{border:1px solid var(--bd);border-left-width:3px;background:var(--s1);
+padding:14px 18px;margin:16px 0}
+.call .cl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.call p{margin:0;font-size:13px}
+.call.strong{border-left-color:var(--tx)}
+.call.mid{border-left-color:var(--bd2)}
+
+/* diagrama */
+figure{margin:22px 0;background:var(--s1);border:1px solid var(--bd);padding:24px 20px 16px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:11px;color:var(--mut);text-align:center;margin-top:14px;
+padding-top:12px;border-top:1px solid var(--bd)}
+
+/* perguntas */
+.q{border:1px solid var(--bd);background:var(--s1);padding:14px 18px;margin-bottom:10px}
+.q .qi{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);margin-bottom:5px}
+.q .qt{color:var(--tx);font-weight:600;font-size:13.5px;margin-bottom:7px}
+.q .qd{font-size:12.5px;color:var(--tx2)}
+.q .qd b{color:var(--mut);font-weight:600;font-size:9.5px;letter-spacing:1.4px;
+text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* cartao de componente — substitui tabela larga */
+.comps{display:grid;gap:10px;margin:14px 0}
+.comp{border:1px solid var(--bd);background:var(--s1);padding:14px 16px}
+.comp.criar{border-left:3px solid var(--tx)}
+.comp.estender{border-left:3px solid var(--bd2)}
+.comp.reusar{border-left:3px solid #C4C4C4}
+.comp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.comp-h .id{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);min-width:22px}
+.comp-h .nm{font-size:14px;font-weight:600;color:var(--tx)}
+.comp-h .tp{font-size:11px;color:var(--mut);border:1px solid var(--bd);padding:1px 7px}
+.comp-h .st{margin-left:auto}
+.comp dl{display:grid;grid-template-columns:104px 1fr;gap:5px 14px;font-size:12.5px}
+.comp dt{color:var(--mut);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;padding-top:2px}
+.comp dd{color:var(--tx2)}
+.comp .desc{font-size:13px;color:var(--tx2);margin:0 0 11px;line-height:1.6}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}
+.lk{font-size:11.5px;color:var(--tx);text-decoration:none;border:1px solid var(--bd2);
+padding:3px 10px;background:var(--s1);white-space:nowrap}
+.lk:hover{border-color:var(--tx);background:var(--s2)}
+.lk.doc{border-style:dashed}
+@media print{.lk{border-style:solid;background:none}}
+/* navegacao fixa */
+.navbar{position:sticky;top:0;z-index:20;background:rgba(242,243,245,.94);
+backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);margin:0 -32px 32px;padding:9px 32px;
+display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.navbar a{flex:0 0 auto;font-size:11px;color:var(--mut);text-decoration:none;
+padding:5px 11px;border:1px solid transparent;white-space:nowrap}
+.navbar a:hover{color:var(--tx);border-color:var(--bd2)}
+.navbar a .n{font-variant-numeric:tabular-nums;margin-right:6px;opacity:.65}
+section{scroll-margin-top:56px}
+@media print{.navbar{display:none}}
+
+.grp{display:flex;align-items:center;gap:12px;margin:26px 0 12px}
+.grp .gl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.grp .gc{font-size:11px;color:var(--tx);border:1px solid var(--bd2);padding:1px 8px}
+.grp .gr{flex:1;height:1px;background:var(--bd)}
+@media(max-width:700px){.comp dl{grid-template-columns:1fr}.comp dt{padding-top:8px}}
+
+footer{border-top:1px solid var(--bd2);margin-top:60px;padding-top:20px;
+display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:1.6px;
+text-transform:uppercase;color:var(--mut)}
+
+@page{size:A4;margin:16mm 14mm}
+@media print{
+ body{background:#fff}
+ .cover{page-break-after:always}
+ section,figure,table,.alt,.q{page-break-inside:avoid}
+ .toc{page-break-after:always}
+}
+
+.ubar{display:flex;gap:8px;align-items:center;margin:10px 0 8px}
+.ubar button{background:#0D0D0D;color:#FAFBFC;border:0;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+.ubar button+button{background:#FAFBFC;color:#0D0D0D;border:1px solid #A8A8A8}
+.uinfo{color:#6B6B6B;font-size:12px;margin-left:auto}
+.utree details{border:1px solid #D9D9D9;border-radius:8px;background:#FAFBFC;margin:6px 0}
+.utree summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:13px;color:#0D0D0D;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}
+.utree summary::-webkit-details-marker{display:none}
+.utree summary::before{content:"▸";color:#6B6B6B;margin-right:2px}
+.utree details[open]>summary::before{content:"▾"}
+.utree .ubody{padding:4px 12px 10px 22px}
+.u-fam>summary{background:#ECECEC;border-radius:8px 8px 0 0}
+.u-attr{background:#fff}
+.ulvl{background:#4A4A4A;color:#fff;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:800;letter-spacing:.5px}
+.ulvl.up{background:#0D0D0D}.ulvl.uf{background:#3A3A3A}.ulvl.ug{background:#6B6B6B}.ulvl.ur{background:#5C5C5C}
+.uc-chip{background:#ECECEC;border:1px solid #D9D9D9;border-radius:10px;padding:1px 9px;font-size:10.5px;font-weight:600;color:#3A3A3A}
+.uc-chip.cs{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.uc-chip.cn{background:#F2F3F5;color:#6B6B6B}
+.uc-chip.cp{border-color:#A8A8A8}
+.uc-chip.cc{border-style:dashed;border-color:#6B6B6B}
+.uc-chip.cd{background:#0D0D0D;color:#FAFBFC;border-style:dashed;border-color:#0D0D0D}
+.usec.uduv{border-left:3px solid #0D0D0D;background:#F2F3F5;padding:8px 10px;border-radius:0 6px 6px 0}
+.urec{margin-top:6px;color:#3A3A3A}
+.umodel{font-size:16px;font-weight:800;color:#0D0D0D;margin:18px 0 4px}
+.uchips{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.usec{font-size:12.5px;color:#3A3A3A;margin:7px 0;line-height:1.55}
+.usec b{color:#0D0D0D}
+.upills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.upill{background:#F2F3F5;border:1px solid #D9D9D9;border-radius:9px;padding:1px 9px;font-size:11px;color:#0D0D0D}
+@media print{.ubar,.cbar,.cbtn{display:none}.utree details{page-break-inside:avoid}.cbox:empty{display:none}}
+.cbtn{background:#FAFBFC;color:#0D0D0D;border:1px dashed #6B6B6B;border-radius:6px;padding:2px 10px;font-size:10.5px;cursor:pointer;margin:4px 0}
+.cbtn.on{background:#0D0D0D;color:#FAFBFC;border-style:solid}
+.cbtn.insum{margin-left:8px;font-size:10px;padding:1px 8px;vertical-align:1px}
+.cbox{display:none;border:1px dashed #6B6B6B;border-radius:6px;background:#FFFFFF;min-height:40px;padding:8px 10px;font-size:12px;color:#0D0D0D;margin:4px 0 8px}
+.cbox.show{display:block}
+.cbox:focus{outline:2px solid #0D0D0D}
+.cbox:empty::before{content:"Escreva o comentário aqui…";color:#A8A8A8}
+tr .cbtn{margin-left:8px}
+td.crow{background:#FAFBFC !important}
+.cbar{position:fixed;right:16px;bottom:16px;background:#0D0D0D;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;z-index:60;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.cbar button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer}
+.cbar button.sec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.cstat{color:#D9D9D9;font-size:11px;max-width:220px}
+
+.uapl{background:#0D0D0D;color:#FAFBFC;border-radius:4px;padding:10px 12px;margin:10px 0}
+.uapl b{color:#FFFFFF}
+.uc-chip.crev{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.cbar #cHub{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B;border-radius:6px;
+padding:6px 12px;font-size:11.5px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center}
+.cbar #cHub:hover{background:#2A2A2A}
+@media print{.cbar #cHub{display:none}}
+.umodal{position:fixed;inset:0;background:rgba(13,13,13,.72);z-index:80;display:flex;
+align-items:center;justify-content:center;padding:24px}
+.umbox{background:#FAFBFC;border-radius:10px;width:min(1100px,96vw);height:min(90vh,1000px);
+display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.umtop{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0D0D0D;color:#FAFBFC}
+.umtop b{font-size:13px}
+.umsub{font-size:11.5px;color:#9A9A9A}
+.umflex{flex:1}
+.umtop button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 14px;
+font-size:11.5px;font-weight:700;cursor:pointer}
+.umtop button.umsec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.umbody{flex:1;overflow:auto;background:#E8E9EC;padding:20px}
+.umload{font-size:13px;color:#3A3A3A;padding:20px}
+.umdocx-wrapper{background:transparent!important;padding:0!important}
+.umdocx-wrapper>section.umdocx{background:#FFFFFF;margin:0 auto 18px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.umpe{padding:10px 16px;background:#FFFFFF;border-top:1px solid #D9D9D9;font-size:11.5px;color:#3A3A3A}
+.umarv{display:flex;gap:8px;align-items:center;margin:0 0 14px}
+.umarv button{background:#FAFBFC;border:1px solid #D9D9D9;border-radius:6px;padding:5px 12px;
+font-size:11.5px;font-weight:700;color:#0D0D0D;cursor:pointer}
+.umdica{font-size:11.5px;color:#6B6B6B}
+#umDoc .umcom{margin-left:10px;background:#0D0D0D;color:#FAFBFC;border:0;border-radius:5px;
+padding:2px 8px;font-size:10.5px;font-weight:700;cursor:pointer;vertical-align:middle;
+font-family:Inter,system-ui,sans-serif;opacity:0;transition:opacity .12s}
+#umDoc .umtit:hover .umcom{opacity:1}
+#umDoc .umtit{position:relative;padding-left:16px}
+#umDoc .umseta{position:absolute;left:0;top:.45em;width:0;height:0;border-left:6px solid #0D0D0D;
+border-top:4px solid transparent;border-bottom:4px solid transparent;transform:rotate(90deg);
+transition:transform .12s}
+#umDoc .umtit.umfech .umseta{transform:none}
+@media print{.umodal{display:none}}
+.uol{margin:4px 0 0;padding-left:18px}.uol li{margin:3px 0}
+.pend{border:1px solid #E3E3E3;border-radius:6px;margin:14px 0;overflow:hidden}
+.pend-h{background:#F7F7F7;padding:10px 16px;font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pend-h .prod{font-weight:400;color:#6B6B6B;font-size:12px}
+.pend-b{padding:4px 16px 14px}
+.pergunta{border-left:3px solid #6B6B6B;background:#FAFAFA;padding:8px 12px;margin:10px 0;font-size:13px}
+.pergunta b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#6B6B6B;margin-bottom:4px}
+.resposta{border-left:3px solid #1D6B38;background:#F3F8F4;padding:8px 12px;margin:10px 0;font-size:13px}
+.resposta b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#1D6B38;margin-bottom:4px}
+.exemplo{border-left:3px solid #8C4B02;background:#FDF8F2;padding:8px 12px;margin:10px 0;font-size:12.5px}
+.exemplo b{color:#8C4B02}
+.nota{border-left:3px solid #A8A8A8;background:#F4F4F4;padding:8px 12px;margin:10px 0;font-size:12.5px;color:#3A3A3A}
+</style></head><body>
+<div class="cover"><div class="cover-in">
+<div class="kicker">REFINAMENTO DE CATÁLOGO · RETORNO DE PENDÊNCIAS</div>
+<h1>Retorno de pendências do refinamento</h1>
+<p class="sub">Registro estruturado das pendências levantadas na modelagem de catálogo e das respostas do time Algar</p>
+<dl class="meta"><div><dt>Origem</dt><dd>Time Algar</dd></div>
+<div><dt>Status</dt><dd>Aguardando aplicação ao contexto dos UCs</dd></div>
+<div><dt>Data de consolidação</dt><dd>17/09/2026</dd></div></dl>
+</div></div>
+<div class="wrap">
+<div class="navbar"><a href="#s1"><span class="n">01</span>Regras de Equipamento</a><a href="#s2"><span class="n">02</span>Regras de Contrato — Reajuste e Fidelização</a><a href="#s3"><span class="n">03</span>SLA</a><a href="#s4"><span class="n">04</span>Perfis e Segmentação — VPN Node</a><a href="#s5"><span class="n">05</span>Nomenclatura de Produto</a><a href="#s6"><span class="n">06</span>SVA — Upgrade Temporário</a><a href="#s7"><span class="n">07</span>Locação de Equipamentos — Parceiros</a><a href="#s8"><span class="n">08</span>SVA — Bloco de IP Adicional</a><a href="#s9"><span class="n">09</span>Projeto Customizável — Padronização de Exceção</a><a href="#s10"><span class="n">10</span>Anexo recebido</a><a href="#s11"><span class="n">11</span>Mapa de aplicação aos casos de uso</a></div>
+<nav class="toc"><h2>Conteúdo</h2><ol><li><a href="#s1"><span class="n">01</span>Regras de Equipamento</a></li><li><a href="#s2"><span class="n">02</span>Regras de Contrato — Reajuste e Fidelização</a></li><li><a href="#s3"><span class="n">03</span>SLA</a></li><li><a href="#s4"><span class="n">04</span>Perfis e Segmentação — VPN Node</a></li><li><a href="#s5"><span class="n">05</span>Nomenclatura de Produto</a></li><li><a href="#s6"><span class="n">06</span>SVA — Upgrade Temporário</a></li><li><a href="#s7"><span class="n">07</span>Locação de Equipamentos — Parceiros</a></li><li><a href="#s8"><span class="n">08</span>SVA — Bloco de IP Adicional</a></li><li><a href="#s9"><span class="n">09</span>Projeto Customizável — Padronização de Exceção</a></li><li><a href="#s10"><span class="n">10</span>Anexo recebido</a></li><li><a href="#s11"><span class="n">11</span>Mapa de aplicação aos casos de uso</a></li></ol></nav>
+<div class="kpis">
+<div class="kpi hi"><div class="l">Pendências respondidas</div><div class="v">13</div></div>
+<div class="kpi"><div class="l">Assuntos</div><div class="v">11</div></div>
+<div class="kpi"><div class="l">Produtos citados</div><div class="v">6+</div></div>
+<div class="kpi"><div class="l">Alvos mapeados</div><div class="v">43</div></div>
+<div class="kpi"><div class="l">Prontos para aplicar</div><div class="v">31</div></div>
+<div class="kpi"><div class="l">A confirmar</div><div class="v">10</div></div>
+</div>
+
+<div class="call strong"><div class="cl">Como usar este documento</div><p>Cada bloco é uma pendência levantada durante o refinamento, com a pergunta exatamente como foi feita e a resposta do time Algar. Nada aqui foi aplicado a um caso de uso ainda — este é o material de origem. Quando cada uma for incorporada, a definição passa a constar na regra de negócio do atributo correspondente, e a dúvida — quando existir uma dúvida equivalente no UC do produto — é encerrada.</p></div>
+
+<section id="s1"><div class="sh"><div class="num">01</div><h2>Regras de Equipamento</h2></div><div class="pend"><div class="pend-h"><span>PEND-01</span><span class="prod">Internet Link · VPN Node</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>Existe regra para incluir o equipamento Chave Ótica automaticamente quando a venda não passa por esteira customizada, a tecnologia do acesso é Metro e a entrega é em anel. Como saber se a entrega é em anel?</div><div class="resposta"><b>Resposta</b>A informação vem do retorno da viabilidade, campo APPROACH_MODE, quando o valor é ANEL_SWITCH.</div></div></div><div class="pend"><div class="pend-h"><span>PEND-02</span><span class="prod">VPN Node e demais produtos com inclusão automática de equipamento</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>Nos produtos com inclusão automática de equipamento em esteira formatada — GPON inclui Roteador e ONT; Metro inclui Roteador e Switch; anel em rede Metro inclui Chave Ótica — qual quantidade e qual modalidade de equipamento devem ser aplicadas na inclusão automática?</div><div class="resposta"><b>Resposta</b>Quantidade igual a 1 e Modalidade de Equipamento igual a Locação, em toda inclusão automática.</div></div></div></section><section id="s2"><div class="sh"><div class="num">02</div><h2>Regras de Contrato — Reajuste e Fidelização</h2></div><div class="pend"><div class="pend-h"><span>PEND-03</span><span class="prod">Produtos com Tipo de Reajuste</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>O atributo Tipo de Reajuste tem a regra "Sem reajuste válido apenas para segmento governo". O catálogo tem três segmentos — Operadoras, Corporativo, Empresarial — e três tipos de cliente governo — Governo Federal/Economia Mista, Governo Municipal e Governo Estadual. Como a regra deve ser aplicada?</div><div class="exemplo"><b>Exemplo sugerido</b>A opção "Sem reajuste" é elegível apenas para clientes dos tipos Governo Federal/Economia Mista, Governo Municipal e Governo Estadual.</div><div class="resposta"><b>Resposta</b>A opção "Sem reajuste" é elegível apenas para clientes dos tipos Governo Federal/Economia Mista, Governo Municipal e Governo Estadual.</div></div></div><div class="pend"><div class="pend-h"><span>PEND-04</span><span class="prod">Produtos com Tipo de Reajuste</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>A lista de valores do Tipo de Reajuste hoje é Data Ativação, Data de Assinatura do Contrato e Data Base. A opção "Sem reajuste", citada na regra, não está na lista. Ela precisa ser incluída? Se sim, com qual regra?</div><div class="resposta"><b>Resposta</b>A opção precisa ser inserida na lista, com a regra: elegível apenas para clientes dos tipos Governo Federal/Economia Mista, Governo Municipal e Governo Estadual.</div></div></div><div class="pend"><div class="pend-h"><span>PEND-05</span><span class="prod">Produtos com Período Fidelização</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>O atributo Período Fidelização tem as opções 0, 12, 24, 36, 48 e 60, com a regra "opção sem fidelidade válida apenas para segmento governo e atacado". A opção sem fidelidade é o valor zero?</div><div class="resposta"><b>Resposta</b>Sim, é a opção 0.</div><div class="pergunta"><b>Pendência complementar</b>Considerando os três segmentos do catálogo e os três tipos de cliente governo, como a regra se aplica com relação ao operador — a condição é "e" ou "ou" entre segmento e tipo de cliente?</div><div class="resposta"><b>Resposta</b>O valor 0 é elegível para cliente do segmento Operadoras OU cliente dos tipos Governo Federal/Economia Mista, Governo Municipal ou Governo Estadual — não é preciso que as duas condições ocorram juntas.</div></div></div></section><section id="s3"><div class="sh"><div class="num">03</div><h2>SLA</h2></div><div class="pend"><div class="pend-h"><span>PEND-06</span><span class="prod">Internet Link · VPN Node e demais com SLA descrito</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>Produtos como Internet Link e VPN Node trazem a regra de SLA de implantação — MTTR de incidente em 4 horas, implantação formatada em 9 dias, customizada de 25 a 85 dias. Essa regra pertence à Ordem de Serviço no Algar SOM, ou é uma regra a implantar no pedido de venda do Salesforce? Se for do pedido de venda, como tratar quando o pedido contém mais de um produto?</div><div class="resposta"><b>Resposta</b>É regra do Algar SOM. Não se aplica como regra do pedido de venda no Salesforce.</div></div></div></section><section id="s4"><div class="sh"><div class="num">04</div><h2>Perfis e Segmentação — VPN Node</h2></div><div class="pend"><div class="pend-h"><span>PEND-07</span><span class="prod">VPN Node</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>A aba de Regras Gerais registra: "Clientes do segmento Governo somente podem ter feitas por Consultor Corporativo e Administração de Vendas Centralizada". Considerando os três segmentos e os três tipos de cliente governo do catálogo, como a regra deve ser aplicada?</div><div class="resposta"><b>Resposta</b>Considerar como cliente Governo os clientes cujo tipo seja Governo Federal/Economia Mista, Governo Municipal ou Governo Estadual.</div><div class="pergunta"><b>Pendência complementar</b>A regra vale apenas para pedido de nova venda, ou também para pedido de alteração?</div><div class="resposta"><b>Resposta</b>Vale para os dois — nova venda e alteração.</div></div></div></section><section id="s5"><div class="sh"><div class="num">05</div><h2>Nomenclatura de Produto</h2></div><div class="nota"><b>Nota do negócio:</b> o produto "Antivírus", citado em conversas anteriores, é o mesmo produto "Endpoint", dentro da pasta Digital. Os dois nomes se referem ao mesmo item do catálogo.</div></section><section id="s6"><div class="sh"><div class="num">06</div><h2>SVA — Upgrade Temporário</h2></div><div class="pend"><div class="pend-h"><span>PEND-08</span><span class="prod">VPN Node — SVA Upgrade Temporário</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>O serviço "Upgrade Temporário" tem a regra "não pode ser alterado até o término do período do contrato". O que caracteriza esse término?</div><div class="resposta"><b>Resposta</b>O término corresponde à quantidade de dias contratada, contada a partir da ativação do SVA: data de ativação do SVA somada à quantidade de dias do atributo correspondente.</div><div class="pergunta"><b>Pendência complementar</b>Se não pode ser alterado, o cliente pode ao menos cancelar o serviço?</div><div class="resposta"><b>Resposta</b>Sim, pode cancelar. Nesse caso, continua sendo cobrado pelo que foi negociado inicialmente, conforme a regra detalhada no item 6 do atributo Velocidade Temporária.</div></div></div><div class="pend"><div class="pend-h"><span>PEND-09</span><span class="prod">VPN Node — SVA Upgrade Temporário</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>A regra de limite de upgrade de velocidade tem três faixas — abaixo de 100 Mbps, acima de 100 Mbps até 1 Gbps, e acima de 1 Gbps — e não define em qual faixa se enquadra uma instalação com velocidade exatamente igual a 100 Mbps.</div><div class="resposta"><b>Resposta</b>Enquadra-se na segunda faixa: igual ou acima de 100 Mbps e até 1 Gbps.</div></div></div><div class="pend"><div class="pend-h"><span>PEND-10</span><span class="prod">VPN Node — SVA Upgrade Temporário</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>A contratação de Upgrade Temporário direciona a venda para projeto customizável independentemente da velocidade selecionada no serviço?</div><div class="resposta"><b>Resposta</b>Não. Direciona para projeto customizável somente quando a velocidade selecionada é superior a 1 Gbps.</div></div></div></section><section id="s7"><div class="sh"><div class="num">07</div><h2>Locação de Equipamentos — Parceiros</h2></div><div class="pend"><div class="pend-h"><span>PEND-11</span><span class="prod">Locação de Equipamentos</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>A estrutura do produto cita três parceiros — Arklok, Simpress e Lello Group — e foi solicitada a conexão com as APIs dos parceiros para preencher a lista do atributo Modelo e os respectivos preços. Os parceiros têm API para retornar essas informações? Se sim, qual a previsão de disponibilização?</div><div class="resposta"><b>Resposta</b>Não, os parceiros não têm API disponível para essa integração.</div><div class="pergunta"><b>Pendência complementar</b>Sem API, a alternativa é cadastrar as informações diretamente no catálogo do Salesforce. Para isso, é necessária a listagem dos modelos de cada fornecedor para cadastro manual.</div><div class="resposta"><b>Resposta</b>Apenas o parceiro Arklok será mantido no catálogo. A lista de equipamentos a cadastrar é a da aba "Modelo LPU Parceiro Arklok", na planilha de modelagem do produto Locação de Equipamentos.</div></div></div></section><section id="s8"><div class="sh"><div class="num">08</div><h2>SVA — Bloco de IP Adicional</h2></div><div class="pend"><div class="pend-h"><span>PEND-12</span><span class="prod">Internet Link</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>O produto traz uma linha para o serviço "Bloco de IP Adicional", com o atributo Tipo de Bloco. Esse serviço é diferente do serviço "IP Adicional", já existente no produto? Ou é o mesmo serviço, e o atributo Tipo de Bloco deveria só ser incluído dentro de IP Adicional?</div><div class="resposta"><b>Resposta</b>São serviços diferentes: Bloco de IP Adicional e IP Adicional permanecem como itens distintos do catálogo.</div></div></div></section><section id="s9"><div class="sh"><div class="num">09</div><h2>Projeto Customizável — Padronização de Exceção</h2></div><div class="pend"><div class="pend-h"><span>PEND-13</span><span class="prod">Internet Link e demais produtos com regra de projeto customizável</span></div><div class="pend-b"><div class="pergunta"><b>Pendência</b>Produtos como o Internet Link descrevem, na aba de Regras Gerais, tanto as condições de produto formatado quanto as condições de produto não formatado (customizado), com sobreposição e sem padronização entre os dois conjuntos. Foi pedido padronizar e registrar apenas a exceção — o que deve ser considerado projeto customizável — em vez de descrever também o caminho formatado.</div><div class="resposta"><b>Resposta</b>Projeto customizado quando qualquer uma das condições a seguir se aplica: tipo do cliente é Governo Federal/Economia Mista, Governo Municipal ou Governo Estadual; segmento do cliente é Operadoras; tipo do cliente é internacional; endereço da cotação é Golden Jumper ou condomínio; atributo Abordagem é Parceiros; atributo Tecnologia Acesso é Rádio; Acesso Terceiro é Last Mile; o retorno da viabilidade traz Tipo de Rede Subterrânea com Abordagem diferente de Prédio Abordado ou Prédio Multi Abordado; o produto é Projeto Especial; Tecnologia Acesso GPON com velocidade acima de 500 Mbps; Tecnologia Acesso GPON com Abordagem Construir, velocidade até 500 Mbps e metragem da viabilidade acima de 2200 metros; Tecnologia Acesso XGSPON com velocidade acima de 1 Gbps; Tecnologia Acesso XGSPON com Abordagem Construir, velocidade até 1 Gbps e metragem da viabilidade acima de 400 metros; Tecnologia Acesso Metro com velocidade até 500 Mbps, Abordagem Construir e metragem da viabilidade acima de 400 metros; e Tecnologia Acesso Metro com velocidade acima de 500 Mbps e até 900 Mbps, Abordagem Construir ou Pronta, metragem da viabilidade acima de 400 metros e retorno da viabilidade lógica diferente de viável.</div></div></div></section><section id="s10"><div class="sh"><div class="num">10</div><h2>Anexo recebido</h2></div><div class="nota"><b>Material recebido, sem regra formal:</b> mapa mental dos serviços de Hospedagem Dedicada, enviado pelo time Algar como apoio de raciocínio para o refinamento — não contém regras a incorporar diretamente ao catálogo.</div></section><section id="s11"><div class="sh"><div class="num">11</div><h2>Mapa de aplicação aos casos de uso</h2></div><p class="lead">Cada linha liga uma pendência ao nó exato do caso de uso publicado onde a resposta deve entrar. A coluna de situação diz o que fazer: <b>aplicar</b> quando o alvo está confirmado pelo texto do próprio nó; <b>confirmar</b> quando o alvo é plausível mas o documento não comprova; <b>não se aplica</b> quando o termo coincide mas o conceito é outro.</p><table><thead><tr><th>Pendência</th><th>Produto</th><th>Nó no caso de uso</th><th>Situação</th><th>Por quê</th></tr></thead><tbody><tr><td class="mono">PEND-01</td><td>IP Trânsito</td><td class="mono">a-l19 · Tipo de Equipamento</td><td><span class="vd v1">aplicar</span></td><td>A regra do nó já descreve &quot;entrega em anel → incluir Chave ótica&quot;; falta a origem da informação</td></tr><tr><td class="mono">PEND-01</td><td>VPN Node</td><td class="mono">s1-l19 · Tipo de Equipamento</td><td><span class="vd v1">aplicar</span></td><td>Regra do nó: &quot;Metro com entrega em anel ⇒ adiciona 1 Chave Ótica&quot;</td></tr><tr><td class="mono">PEND-01</td><td>Internet Link</td><td class="mono">s1-e01 · Tipo de Equipamento</td><td><span class="vd v3">confirmar</span></td><td>Tem Chave óptica na lista e regra por tecnologia, mas o texto não cita anel</td></tr><tr><td class="mono">PEND-02</td><td>IP Trânsito</td><td class="mono">a-l19 · Tipo de Equipamento + a-l20 · Modalidade Equipamento</td><td><span class="vd v1">aplicar</span></td><td>Inclusão automática descrita; quantidade e modalidade não declaradas</td></tr><tr><td class="mono">PEND-02</td><td>VPN Node</td><td class="mono">s1-l19 · Tipo de Equipamento + s1-l20 · Modalidade Equipamento</td><td><span class="vd v1">aplicar</span></td><td>Modalidade já traz padrão Locação; falta a quantidade</td></tr><tr><td class="mono">PEND-02</td><td>Internet Link</td><td class="mono">s1-e01 · Tipo de Equipamento</td><td><span class="vd v3">confirmar</span></td><td>Define equipamentos por tecnologia; falta verificar se há atributo de modalidade equivalente</td></tr><tr><td class="mono">PEND-02</td><td>Lan to Lan</td><td class="mono">a-l32 · Tipo de Equipamento + a-l33 · Modalidade Equipamento</td><td><span class="vd v3">confirmar</span></td><td>Não foi localizada regra de inclusão automática neste produto</td></tr><tr><td class="mono">PEND-03/04</td><td>IP Trânsito</td><td class="mono">a-l37 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Lista já traz &quot;Sem reajuste&quot;; falta a restrição a cliente governo</td></tr><tr><td class="mono">PEND-03/04</td><td>Lan to Lan</td><td class="mono">a-l48 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-03/04</td><td>VPN Node</td><td class="mono">s1-l36 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-03/04</td><td>Wavelength</td><td class="mono">a-l32 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-03/04</td><td>SD-WAN</td><td class="mono">a-l15 e a-l28 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>O atributo aparece duas vezes na planilha; a definição vale para os dois</td></tr><tr><td class="mono">PEND-03/04</td><td>Locação de Equipamentos</td><td class="mono">s1-l8 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Lista já traz &quot;Sem reajuste&quot;; falta a restrição a cliente governo</td></tr><tr><td class="mono">PEND-03/04</td><td>Anti-DDoS</td><td class="mono">a-l13 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Lista tem 3 valores e NÃO traz &quot;Sem reajuste&quot; — o valor precisa ser acrescentado</td></tr><tr><td class="mono">PEND-03/04</td><td>Internet Link</td><td class="mono">s1-c03 · Tipo de Reajuste</td><td><span class="vd v1">aplicar</span></td><td>Lista com 3 valores, sem &quot;Sem reajuste&quot;</td></tr><tr><td class="mono">PEND-03/04</td><td>Internet Link</td><td class="mono">vig-eleg-62 · Tipo de Reajuste</td><td><span class="vd v3">confirmar</span></td><td>Nó de inventário de regras da org, não de catálogo</td></tr><tr><td class="mono">PEND-05</td><td>IP Trânsito</td><td class="mono">a-l36 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Sem o valor 0 na lista</td></tr><tr><td class="mono">PEND-05</td><td>Lan to Lan</td><td class="mono">a-l47 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Sem o valor 0 na lista</td></tr><tr><td class="mono">PEND-05</td><td>VPN Node</td><td class="mono">s1-l35 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Já traz o valor 0; falta a condição de elegibilidade</td></tr><tr><td class="mono">PEND-05</td><td>Wavelength</td><td class="mono">a-l31 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Sem o valor 0 na lista</td></tr><tr><td class="mono">PEND-05</td><td>SD-WAN</td><td class="mono">a-l14 e a-l26 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Atributo duplicado na planilha</td></tr><tr><td class="mono">PEND-05</td><td>Anti-DDoS</td><td class="mono">a-l12 · Período Fidelização</td><td><span class="vd v1">aplicar</span></td><td>Lista 12 a 120; sem o valor 0</td></tr><tr><td class="mono">PEND-05</td><td>Hospedagem Dedicada</td><td class="mono">a-l32 · Componente Período Fidelização</td><td><span class="vd v3">confirmar</span></td><td>Componente registrado como pendente, sem lista de valores</td></tr><tr><td class="mono">PEND-05</td><td>MIR</td><td class="mono">rg-l6 · Fidelização</td><td><span class="vd v3">confirmar</span></td><td>Prazo e multa vêm do contrato do circuito; depende da dúvida aberta do produto</td></tr><tr><td class="mono">PEND-05</td><td>Inteligência Artificial</td><td class="mono">s1-l5 · Período de Fidelização</td><td><span class="vd v4">não se aplica</span></td><td>Valor único de 12 meses, automático, sem lista de opções</td></tr><tr><td class="mono">PEND-06</td><td>IP Trânsito</td><td class="mono">rg-l8 · SLA de implantação</td><td><span class="vd v1">aplicar</span></td><td>Registrar que a regra pertence ao Algar SOM, fora do pedido de venda</td></tr><tr><td class="mono">PEND-06</td><td>Lan to Lan</td><td class="mono">rg-l10 · SLA de implantação do produto</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-06</td><td>Wavelength</td><td class="mono">rg-l9 · SLA: De implantação</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-07</td><td>VPN Node</td><td class="mono">s2-l3 · Venda ao segmento Governo restrita a usuários</td><td><span class="vd v1">aplicar</span></td><td>Definir governo pelos três tipos de cliente e valer para venda e alteração</td></tr><tr><td class="mono">PEND-08/09/10</td><td>VPN Node</td><td class="mono">s1-l28 · Velocidade Temporária</td><td><span class="vd v1">aplicar</span></td><td>Faixas de upgrade, término do período e direcionamento a customizado</td></tr><tr><td class="mono">PEND-08/09/10</td><td>Lan to Lan</td><td class="mono">a-l41 · Velocidade Temporária</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-08/09/10</td><td>IP Trânsito</td><td class="mono">a-l30 · Velocidade Temporária</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-08/09/10</td><td>Internet Link</td><td class="mono">s1-u01 · Velocidade Temporária</td><td><span class="vd v3">confirmar</span></td><td>Documento tem também nós de inventário sobre o mesmo SVA</td></tr><tr><td class="mono">PEND-11</td><td>Locação de Equipamentos</td><td class="mono">s1-l2 · Parceiro, s1-l3 · Modelo</td><td><span class="vd v1">aplicar</span></td><td>Manter apenas Arklok; lista de modelos vem da aba do parceiro</td></tr><tr><td class="mono">PEND-11</td><td>Locação de Equipamentos</td><td class="mono">s2-l9 · Carga de modelos e valores, s2-l15 · Integração com parceiros</td><td><span class="vd v1">aplicar</span></td><td>Sem API: cadastro manual por carga</td></tr><tr><td class="mono">PEND-12</td><td>Internet Link</td><td class="mono">s1-x02 · Tipo de Bloco Adicional, s1-x01 · Quantidade de Endereços IP</td><td><span class="vd v1">aplicar</span></td><td>Confirmar que são dois serviços distintos</td></tr><tr><td class="mono">PEND-12</td><td>Anti-DDoS</td><td class="mono">a-l10 · Bloco de IPv4 /24 adicional</td><td><span class="vd v4">não se aplica</span></td><td>Serviço de outro produto, com regra própria</td></tr><tr><td class="mono">PEND-13</td><td>Internet Link</td><td class="mono">s2-l5 · Critérios de produto formatado</td><td><span class="vd v1">aplicar</span></td><td>Substituir pela lista padronizada de exceção</td></tr><tr><td class="mono">PEND-13</td><td>Lan to Lan</td><td class="mono">rg-l8 e rg-l9 · Produto Formatado quando</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-13</td><td>VPN Node</td><td class="mono">s2-l13 · Critérios de classificação, s2-l6 · Modelos de venda</td><td><span class="vd v1">aplicar</span></td><td>Idem</td></tr><tr><td class="mono">PEND-13</td><td>IP Trânsito</td><td class="mono">rg-l1 · Este produto só roda em esteira customizada</td><td><span class="vd v3">confirmar</span></td><td>Produto inteiro é customizado; a lista de exceção pode não se aplicar</td></tr><tr><td class="mono">PEND-13</td><td>Wavelength</td><td class="mono">rg-l3 · Sempre será projeto customizado</td><td><span class="vd v3">confirmar</span></td><td>Mesma situação do IP Trânsito</td></tr><tr><td class="mono">PEND-13</td><td>Locação de Equipamentos</td><td class="mono">s2-l13 · Projeto customizável</td><td><span class="vd v3">confirmar</span></td><td>Produto sem viabilidade técnica; critérios de rede não se aplicam</td></tr></tbody></table><div class="call mid"><div class="cl">Como este mapa foi montado</div><p>Os candidatos foram levantados por busca nos doze casos de uso publicados e depois conferidos um a um, lendo o texto de cada nó. Busca por palavra não basta: no teste inicial, o termo "anel" marcou um atributo de reajuste porque a palavra aparecia dentro de "janela de apuração". Por isso nenhuma linha entra aqui sem evidência no próprio nó.</p></div></section>
+</div>
+<footer><span>Algar — Retorno de pendências do refinamento</span><span>Confidencial — uso interno</span></footer>
+</body></html>
