@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Configurar Monitoramento Inteligente de Rede na proposta comercial</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F2F3F5;--s1:#FAFBFC;--s2:#ECECEC;--s3:#D9D9D9;
+--tx:#0D0D0D;--tx2:#3A3A3A;--mut:#6B6B6B;--bd:#D9D9D9;--bd2:#A8A8A8;
+}
+body{background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;
+font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px 80px}
+
+/* capa */
+.cover{background:linear-gradient(135deg,#0D0D0D 0%,#4A4A4A 100%);color:#FAFBFC;
+padding:64px 32px 56px;margin-bottom:48px}
+.cover-in{max-width:1080px;margin:0 auto}
+.kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#B8B8B8;margin-bottom:18px}
+h1{font-size:34px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin-bottom:12px}
+.sub{font-size:16px;color:#D4D4D4;font-weight:400;margin-bottom:28px;max-width:640px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+background:rgba(250,251,252,.2);border:1px solid rgba(250,251,252,.2);margin-top:8px}
+.meta div{background:rgba(250,251,252,.08);padding:12px 14px}
+.meta dt{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:#B8B8B8;margin-bottom:5px}
+.meta dd{font-size:13px;color:#FAFBFC}
+
+/* sumario */
+.toc{background:var(--s1);border:1px solid var(--bd);padding:22px 26px;margin-bottom:48px}
+.toc h2{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut);
+margin-bottom:14px;font-weight:500}
+.toc ol{list-style:none;columns:2;column-gap:36px}
+.toc li{margin-bottom:7px;font-size:13px;break-inside:avoid}
+.toc a{color:var(--tx2);text-decoration:none;border-bottom:1px solid transparent}
+.toc a:hover{color:var(--tx);border-bottom-color:var(--bd2)}
+.toc .n{color:var(--mut);font-variant-numeric:tabular-nums;margin-right:9px}
+
+/* secoes */
+section{margin-bottom:52px}
+.sh{display:flex;align-items:center;gap:14px;padding-bottom:12px;
+border-bottom:1px solid var(--bd2);margin-bottom:24px}
+.sh .num{flex:0 0 34px;height:34px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;font-size:13px;
+font-variant-numeric:tabular-nums;color:var(--tx2)}
+.sh h2{font-size:19px;font-weight:600;letter-spacing:-.2px}
+h3{font-size:14px;font-weight:600;color:var(--tx);margin:26px 0 10px;
+letter-spacing:.3px;text-transform:uppercase;font-size:11px;letter-spacing:2px;color:var(--mut)}
+p{margin-bottom:12px;color:var(--tx2)}
+strong{color:var(--tx);font-weight:600}
+code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;
+background:var(--s2);border:1px solid var(--bd);padding:1px 6px;color:var(--tx)}
+
+/* listas de passos */
+ol.steps{list-style:none;counter-reset:s;margin:4px 0 8px}
+ol.steps li{counter-increment:s;position:relative;padding:9px 0 9px 44px;
+border-bottom:1px solid var(--bd);color:var(--tx2)}
+ol.steps li:last-child{border-bottom:none}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;
+width:26px;height:26px;border:1px solid var(--bd2);background:var(--s2);
+display:flex;align-items:center;justify-content:center;
+font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* fluxo alternativo */
+.alt{border-left:2px solid var(--bd2);background:var(--s1);padding:12px 16px;margin-bottom:10px}
+.alt.fail{border-left-color:#6B6B6B;background:#ECECEC}
+.alt .tag{display:inline-block;font-family:'SF Mono',Menlo,monospace;font-size:11px;
+color:var(--tx);background:var(--s3);border:1px solid var(--bd2);padding:1px 7px;margin-right:9px}
+.alt .ttl{font-weight:600;color:var(--tx);font-size:13.5px}
+.alt p{margin:7px 0 0;font-size:13px}
+
+/* tabelas */
+table{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:12.5px}
+thead th{background:#0D0D0D;color:#FAFBFC;text-align:left;padding:10px 12px;
+font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;
+border-bottom:1px solid var(--bd2)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--bd);color:var(--tx2);vertical-align:top}
+tbody tr:nth-child(even) td{background:#ECECEC}
+tbody tr:hover td{background:var(--s2)}
+td.mono,th.mono{font-family:'SF Mono',Menlo,monospace;font-size:11.5px}
+
+/* badges monocromaticos: peso e borda diferenciam, nunca cor */
+.b{display:inline-block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+padding:2px 9px;border:1px solid var(--bd2);white-space:nowrap;font-weight:600}
+.b-solid{background:var(--tx);color:#FAFBFC;border-color:var(--tx)}
+.b-mid{background:var(--s3);color:var(--tx)}
+.b-out{background:transparent;color:var(--mut);border-style:dashed}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+background:var(--bd);border:1px solid var(--bd);margin:8px 0 20px}
+.kpi{background:#FAFBFC;padding:16px 14px}
+.kpi .l{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.kpi.hi{background:#E2E2E2}
+
+/* callout */
+.call{border:1px solid var(--bd);border-left-width:3px;background:var(--s1);
+padding:14px 18px;margin:16px 0}
+.call .cl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.call p{margin:0;font-size:13px}
+.call.strong{border-left-color:var(--tx)}
+.call.mid{border-left-color:var(--bd2)}
+
+/* diagrama */
+figure{margin:22px 0;background:var(--s1);border:1px solid var(--bd);padding:24px 20px 16px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:11px;color:var(--mut);text-align:center;margin-top:14px;
+padding-top:12px;border-top:1px solid var(--bd)}
+
+/* perguntas */
+.q{border:1px solid var(--bd);background:var(--s1);padding:14px 18px;margin-bottom:10px}
+.q .qi{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);margin-bottom:5px}
+.q .qt{color:var(--tx);font-weight:600;font-size:13.5px;margin-bottom:7px}
+.q .qd{font-size:12.5px;color:var(--tx2)}
+.q .qd b{color:var(--mut);font-weight:600;font-size:9.5px;letter-spacing:1.4px;
+text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* cartao de componente — substitui tabela larga */
+.comps{display:grid;gap:10px;margin:14px 0}
+.comp{border:1px solid var(--bd);background:var(--s1);padding:14px 16px}
+.comp.criar{border-left:3px solid var(--tx)}
+.comp.estender{border-left:3px solid var(--bd2)}
+.comp.reusar{border-left:3px solid #C4C4C4}
+.comp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.comp-h .id{font-family:'SF Mono',Menlo,monospace;font-size:11px;color:var(--mut);min-width:22px}
+.comp-h .nm{font-size:14px;font-weight:600;color:var(--tx)}
+.comp-h .tp{font-size:11px;color:var(--mut);border:1px solid var(--bd);padding:1px 7px}
+.comp-h .st{margin-left:auto}
+.comp dl{display:grid;grid-template-columns:104px 1fr;gap:5px 14px;font-size:12.5px}
+.comp dt{color:var(--mut);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;padding-top:2px}
+.comp dd{color:var(--tx2)}
+.comp .desc{font-size:13px;color:var(--tx2);margin:0 0 11px;line-height:1.6}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}
+.lk{font-size:11.5px;color:var(--tx);text-decoration:none;border:1px solid var(--bd2);
+padding:3px 10px;background:var(--s1);white-space:nowrap}
+.lk:hover{border-color:var(--tx);background:var(--s2)}
+.lk.doc{border-style:dashed}
+@media print{.lk{border-style:solid;background:none}}
+/* navegacao fixa */
+.navbar{position:sticky;top:0;z-index:20;background:rgba(242,243,245,.94);
+backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);margin:0 -32px 32px;padding:9px 32px;
+display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.navbar a{flex:0 0 auto;font-size:11px;color:var(--mut);text-decoration:none;
+padding:5px 11px;border:1px solid transparent;white-space:nowrap}
+.navbar a:hover{color:var(--tx);border-color:var(--bd2)}
+.navbar a .n{font-variant-numeric:tabular-nums;margin-right:6px;opacity:.65}
+section{scroll-margin-top:56px}
+@media print{.navbar{display:none}}
+
+.grp{display:flex;align-items:center;gap:12px;margin:26px 0 12px}
+.grp .gl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.grp .gc{font-size:11px;color:var(--tx);border:1px solid var(--bd2);padding:1px 8px}
+.grp .gr{flex:1;height:1px;background:var(--bd)}
+@media(max-width:700px){.comp dl{grid-template-columns:1fr}.comp dt{padding-top:8px}}
+
+footer{border-top:1px solid var(--bd2);margin-top:60px;padding-top:20px;
+display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:1.6px;
+text-transform:uppercase;color:var(--mut)}
+
+@page{size:A4;margin:16mm 14mm}
+@media print{
+ body{background:#fff}
+ .cover{page-break-after:always}
+ section,figure,table,.alt,.q{page-break-inside:avoid}
+ .toc{page-break-after:always}
+}
+</style><style>
+.ubar{display:flex;gap:8px;align-items:center;margin:10px 0 8px}
+.ubar button{background:#0D0D0D;color:#FAFBFC;border:0;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+.ubar button+button{background:#FAFBFC;color:#0D0D0D;border:1px solid #A8A8A8}
+.uinfo{color:#6B6B6B;font-size:12px;margin-left:auto}
+.utree details{border:1px solid #D9D9D9;border-radius:8px;background:#FAFBFC;margin:6px 0}
+.utree summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:13px;color:#0D0D0D;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}
+.utree summary::-webkit-details-marker{display:none}
+.utree summary::before{content:"▸";color:#6B6B6B;margin-right:2px}
+.utree details[open]>summary::before{content:"▾"}
+.utree .ubody{padding:4px 12px 10px 22px}
+.u-fam>summary{background:#ECECEC;border-radius:8px 8px 0 0}
+.u-attr{background:#fff}
+.ulvl{background:#4A4A4A;color:#fff;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:800;letter-spacing:.5px}
+.ulvl.up{background:#0D0D0D}.ulvl.uf{background:#3A3A3A}.ulvl.ug{background:#6B6B6B}.ulvl.ur{background:#5C5C5C}
+.uc-chip{background:#ECECEC;border:1px solid #D9D9D9;border-radius:10px;padding:1px 9px;font-size:10.5px;font-weight:600;color:#3A3A3A}
+.uc-chip.cs{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.uc-chip.cn{background:#F2F3F5;color:#6B6B6B}
+.uc-chip.cp{border-color:#A8A8A8}
+.uc-chip.cc{border-style:dashed;border-color:#6B6B6B}
+.uc-chip.cd{background:#0D0D0D;color:#FAFBFC;border-style:dashed;border-color:#0D0D0D}
+.usec.uduv{border-left:3px solid #0D0D0D;background:#F2F3F5;padding:8px 10px;border-radius:0 6px 6px 0}
+.urec{margin-top:6px;color:#3A3A3A}
+.umodel{font-size:16px;font-weight:800;color:#0D0D0D;margin:18px 0 4px}
+.uchips{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.usec{font-size:12.5px;color:#3A3A3A;margin:7px 0;line-height:1.55}
+.usec b{color:#0D0D0D}
+.upills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.upill{background:#F2F3F5;border:1px solid #D9D9D9;border-radius:9px;padding:1px 9px;font-size:11px;color:#0D0D0D}
+@media print{.ubar,.cbar,.cbtn{display:none}.utree details{page-break-inside:avoid}.cbox:empty{display:none}}
+.cbtn{background:#FAFBFC;color:#0D0D0D;border:1px dashed #6B6B6B;border-radius:6px;padding:2px 10px;font-size:10.5px;cursor:pointer;margin:4px 0}
+.cbtn.on{background:#0D0D0D;color:#FAFBFC;border-style:solid}
+.cbtn.insum{margin-left:8px;font-size:10px;padding:1px 8px;vertical-align:1px}
+.cbox{display:none;border:1px dashed #6B6B6B;border-radius:6px;background:#FFFFFF;min-height:40px;padding:8px 10px;font-size:12px;color:#0D0D0D;margin:4px 0 8px}
+.cbox.show{display:block}
+.cbox:focus{outline:2px solid #0D0D0D}
+.cbox:empty::before{content:"Escreva o comentário aqui…";color:#A8A8A8}
+tr .cbtn{margin-left:8px}
+td.crow{background:#FAFBFC !important}
+.cbar{position:fixed;right:16px;bottom:16px;background:#0D0D0D;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;z-index:60;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.cbar button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer}
+.cbar button.sec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.cstat{color:#D9D9D9;font-size:11px;max-width:220px}
+</style><style>
+.uapl{background:#0D0D0D;color:#FAFBFC;border-radius:4px;padding:10px 12px;margin:10px 0}
+.uapl b{color:#FFFFFF}
+.uc-chip.crev{background:#0D0D0D;color:#FAFBFC;border-color:#0D0D0D}
+.cbar #cHub{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B;border-radius:6px;
+padding:6px 12px;font-size:11.5px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center}
+.cbar #cHub:hover{background:#2A2A2A}
+@media print{.cbar #cHub{display:none}}
+.umodal{position:fixed;inset:0;background:rgba(13,13,13,.72);z-index:80;display:flex;
+align-items:center;justify-content:center;padding:24px}
+.umbox{background:#FAFBFC;border-radius:10px;width:min(1100px,96vw);height:min(90vh,1000px);
+display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.umtop{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0D0D0D;color:#FAFBFC}
+.umtop b{font-size:13px}
+.umsub{font-size:11.5px;color:#9A9A9A}
+.umflex{flex:1}
+.umtop button{background:#FAFBFC;color:#0D0D0D;border:0;border-radius:6px;padding:6px 14px;
+font-size:11.5px;font-weight:700;cursor:pointer}
+.umtop button.umsec{background:transparent;color:#FAFBFC;border:1px solid #6B6B6B}
+.umbody{flex:1;overflow:auto;background:#E8E9EC;padding:20px}
+.umload{font-size:13px;color:#3A3A3A;padding:20px}
+.umdocx-wrapper{background:transparent!important;padding:0!important}
+.umdocx-wrapper>section.umdocx{background:#FFFFFF;margin:0 auto 18px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.umpe{padding:10px 16px;background:#FFFFFF;border-top:1px solid #D9D9D9;font-size:11.5px;color:#3A3A3A}
+.umarv{display:flex;gap:8px;align-items:center;margin:0 0 14px}
+.umarv button{background:#FAFBFC;border:1px solid #D9D9D9;border-radius:6px;padding:5px 12px;
+font-size:11.5px;font-weight:700;color:#0D0D0D;cursor:pointer}
+.umdica{font-size:11.5px;color:#6B6B6B}
+#umDoc .umcom{margin-left:10px;background:#0D0D0D;color:#FAFBFC;border:0;border-radius:5px;
+padding:2px 8px;font-size:10.5px;font-weight:700;cursor:pointer;vertical-align:middle;
+font-family:Inter,system-ui,sans-serif;opacity:0;transition:opacity .12s}
+#umDoc .umtit:hover .umcom{opacity:1}
+#umDoc .umtit{position:relative;padding-left:16px}
+#umDoc .umseta{position:absolute;left:0;top:.45em;width:0;height:0;border-left:6px solid #0D0D0D;
+border-top:4px solid transparent;border-bottom:4px solid transparent;transform:rotate(90deg);
+transition:transform .12s}
+#umDoc .umtit.umfech .umseta{transform:none}
+@media print{.umodal{display:none}}
+</style></head>
+<body>
+<div class="cover"><div class="cover-in">
+<div class="kicker">MIR · CASO DE USO</div>
+<h1>Configurar Monitoramento Inteligente de Rede na proposta comercial</h1><p class="sub">Caso de Uso — UC-MIR-001</p>
+<dl class="meta"><div><dt>Escopo</dt><dd>Catálogo de produto</dd></div>
+<div><dt>Nível</dt><dd>Objetivo do usuário</dd></div>
+<div><dt>Data</dt><dd>18/09/2026 · Rev. 1</dd></div></dl>
+</div></div>
+<div class="wrap">
+<div class="navbar"><a href="#s1"><span class="n">01</span>Identificação e modelagem</a><a href="#s2"><span class="n">02</span>Atores</a><a href="#s3"><span class="n">03</span>Gatilho</a><a href="#s4"><span class="n">04</span>Fluxo único — escolhas, efeitos e falhas</a></div>
+<nav class="toc"><h2>Conteúdo</h2><ol><li><a href="#s1"><span class="n">01</span>Identificação e modelagem</a></li><li><a href="#s2"><span class="n">02</span>Atores</a></li><li><a href="#s3"><span class="n">03</span>Gatilho</a></li><li><a href="#s4"><span class="n">04</span>Fluxo único — escolhas, efeitos e falhas</a></li></ol></nav>
+<div class="kpis">
+<div class="kpi"><div class="l">Passos do fluxo único</div><div class="v">23</div></div>
+<div class="kpi hi"><div class="l">Atributos no catálogo</div><div class="v">7</div></div>
+<div class="kpi"><div class="l">Regras gerais</div><div class="v">10</div></div>
+</div>
+<section id="s1"><div class="sh"><div class="num">01</div><h2>Identificação e modelagem do produto</h2></div>
+<table><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>
+<tr><td class="mono">ID</td><td>UC-MIR-001</td></tr>
+<tr><td class="mono">Nome</td><td>Configurar o produto Monitoramento Inteligente de Rede (MIR) em uma proposta comercial</td></tr>
+<tr><td class="mono">Escopo</td><td>MIR — configuração por plano, elegibilidade do produto relacionado e dependência do produto de dados</td></tr>
+<tr><td class="mono">Nível</td><td>Objetivo do usuário</td></tr>
+<tr><td class="mono">Fonte</td><td>HIERARQUIA - MONITORAMENTO INTELIGENTE DE REDE MIR.xlsx — Hierarquia MIR (linhas 2–8) e Regras Gerais Produto MIR (linhas 1–10)</td></tr>
+<tr><td class="mono">Data</td><td>18/09/2026 · Revisão 1</td></tr>
+</tbody></table>
+<h3>Relacionamento comercial e dependências</h3>
+<table><thead><tr><th>Aspecto</th><th>Regra do produto e decisão associada</th></tr></thead><tbody>
+<tr><td>Venda vinculada</td><td>O MIR é sempre um SVA de um produto de dados — Internet Link, VPN Node, LAN to LAN ou IP Trânsito. Referências: regra geral 1.</td></tr><tr><td>Elegibilidade por plano</td><td>O plano Pro só aceita Internet Link e VPN Node como produto relacionado; LAN to LAN e IP Trânsito ficam restritos ao plano Smart. Referências: atributos 2 e 4 e regra geral 5.</td></tr><tr><td>Migração de planos</td><td>O cliente pode migrar entre Smart e Pro nos dois sentidos, mas a regra não resolve o caso em que o produto relacionado do plano de origem não é elegível no plano de destino. Referências: regra geral 2.</td></tr><tr><td>Ativação e encerramento</td><td>A OS de ativação do MIR só se completa após a ativação do produto de dados relacionado; cancelar esse produto cancela o MIR automaticamente. Referências: regras gerais 3 e 4.</td></tr><tr><td>Cobrança</td><td>O MIR não tem taxa de instalação própria — ela incide sobre a linha do produto de dados relacionado. Referências: regra geral 7.</td></tr><tr><td>Automação e integrações</td><td>A ativação depende de integrações hoje existentes com Zabbix e NAVA, com um template de provisionamento por plano, ainda não mapeadas para o Salesforce. Referências: regras gerais 9 e 10.</td></tr>
+</tbody></table>
+<h3 class="umodel">Modelagem do produto</h3>
+<div class="ubar"><button id="uExp" type="button">Expandir tudo</button><button id="uCol" type="button">Recolher tudo</button>
+<span class="uinfo">7 atributos · 2 famílias · 4 grupos · 7 obrigatórios · 7 impactam preço</span></div>
+<div class="utree"><details class="u-root" open=""><summary><span class="ulvl up">PRODUTO RAIZ</span>Monitoramento Inteligente de Rede</summary><div class="ubody"><details class="u-fam" open=""><summary><span class="ulvl uf">FAMÍLIA</span>PLANOS DE MONITORAMENTO</summary><div class="ubody"><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>MIR Smart<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="a-l2" data-clabel="Produto Relacionado (linha 2)"><summary>Produto Relacionado<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cc">condicional</span><span class="uc-chip">linha 2</span></span></summary><div class="ubody"><div class="usec"><b>Valores (4):</b><div class="upills"><span class="upill">Internet Link</span><span class="upill">VPN Node</span><span class="upill">LAN to LAN</span><span class="upill">IP Trânsito</span></div></div><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Poderá selecionar apenas 1 componente por venda e ter apenas 1 atributo relacionado.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">O produto e o circuito de Monitoramento Inteligente de Rede sempre estarão relacionados a um produto de dados — Internet Link, VPN Node, LAN to LAN ou IP Trânsito. Poderá selecionar apenas um atributo relacionado.</div></div><div class="usec"><b>Melhorias:</b> Os valores hoje são tabelados; avaliar a opção de deixar a precificação no Salesforce com opções de alçadas de desconto.</div><details class="source-row"><summary>Transcrição integral da linha 2</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">MIR - Smart</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Produto Relacionado</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Lista</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Internet Link, VPN Node, LAN to LAN, IP Transito</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Poderá selecionar apenas 1 componente por venda e ter apenas 1 atributo relacionado</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">O PRODUTO E CIRCUITO DE MONITORAMENTO INTELIGENTE DE REDE, SEMPRE ESTARÁ RELACIONADO A UM PRODUTO DE DADOS (INTERNET LINK, VPN NODE, LAN TO LAN, IP TRANSITO. PODERÁ SELECIONAR APENAS UM ATRIBUTO.</div></div><div class="usec"><b>EVOLUÇÃO/CORREÇÃO DO SISTEMA/PROCESSO:</b><div style="white-space:pre-wrap">Os valores hoje são tabelados, então avaliar a opção de deixar a precificação no Sales Force com opções de alçadas de desconto</div></div></details><div class="usec"><b>Regra de negócio:</b> O produto relacionado define a que circuito de dados o MIR Smart fica vinculado. A seleção é obrigatória, manual, com natureza OPEX e impacto no preço; sem esse vínculo o MIR não existe como venda isolada. A cardinalidade 1 restringe a um único produto de dados por item.</div></div></details><details class="u-attr" data-ckey="a-l3" data-clabel="Tipo Monitoramento (linha 3)"><summary>Tipo Monitoramento<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cc">condicional</span><span class="uc-chip">linha 3</span></span></summary><div class="ubody"><div class="usec"><b>Valores (2):</b><div class="upills"><span class="upill">ICMP/SNMP</span><span class="upill">PROBE</span></div></div><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Poderá selecionar apenas 1 Tipo de Monitoramento; caso seja via PROBE, o fluxo deverá seguir em Alta Complexidade para desenho do escopo considerando equipamento específico no projeto.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">Caso seja selecionado o Tipo de Monitoramento via PROBE, o fluxo deverá seguir em Alta Complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div><details class="source-row"><summary>Transcrição integral da linha 3</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">MIR - Smart</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Tipo Monitoramento</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Lista</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">ICMP/SNMP,PROBE</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Poderá selecionar apenas 1 Tipo de Monitoramento, e caso seja via PROBE, o fluxo deverá seguir em Alta complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">Caso seja selecionado o Tipo de Monitorameto via PROBE, o fluxo deverá seguir em Alta complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div></details><div class="usec"><b>Regra de negócio:</b> O tipo de monitoramento do plano Smart define se a coleta é feita por ICMP/SNMP (padrão, monitoramento remoto) ou por PROBE (equipamento dedicado instalado no cliente). A escolha de PROBE muda a natureza da venda para um projeto de Alta Complexidade.</div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>MIR Pro<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="a-l4" data-clabel="Produto Relacionado (linha 4)"><summary>Produto Relacionado<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cc">condicional</span><span class="uc-chip">linha 4</span></span></summary><div class="ubody"><div class="usec"><b>Valores (2):</b><div class="upills"><span class="upill">Internet Link</span><span class="upill">VPN Node</span></div></div><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Poderá selecionar apenas 1 componente por venda e ter apenas 1 atributo relacionado.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">O produto e o circuito de Monitoramento Inteligente de Rede sempre estarão relacionados a um produto de dados — Internet Link ou VPN Node. Poderá selecionar apenas um atributo.</div></div><div class="usec"><b>Melhorias:</b> Os valores hoje são tabelados; avaliar a opção de deixar a precificação no Salesforce com opções de alçadas de desconto.</div><details class="source-row"><summary>Transcrição integral da linha 4</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">MIR - Pro</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Produto Relacionado</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Lista</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Internet Link, VPN Node</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Poderá selecionar apenas 1 componente por venda e ter apenas 1 atributo relacionado</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">O PRODUTO E CIRCUITO DE MONITORAMENTO INTELIGENTE DE REDE, SEMPRE ESTARÁ RELACIONADO A UM PRODUTO DE DADOS (INTERNET LINK, VPN NODE).PODERÁ SELECIONAR APENAS UM ATRIBUTO.</div></div><div class="usec"><b>EVOLUÇÃO/CORREÇÃO DO SISTEMA/PROCESSO:</b><div style="white-space:pre-wrap">Os valores hoje são tabelados, então avaliar a opção de deixar a precificação no Sales Force com opções de alçadas de desconto</div></div></details><div class="usec"><b>Regra de negócio:</b> No plano Pro, o produto relacionado é restrito a Internet Link e VPN Node — LAN to LAN e IP Trânsito não são elegíveis (ver regra geral 5, Exceção). A cardinalidade 1 mantém a mesma restrição a um único produto de dados por item do Smart.</div></div></details><details class="u-attr" data-ckey="a-l5" data-clabel="Tipo Monitoramento (linha 5)"><summary>Tipo Monitoramento<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cc">condicional</span><span class="uc-chip">linha 5</span></span></summary><div class="ubody"><div class="usec"><b>Valores (2):</b><div class="upills"><span class="upill">ICMP/SNMP</span><span class="upill">PROBE</span></div></div><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Poderá selecionar apenas 1 Tipo de Monitoramento; caso seja via PROBE, o fluxo deverá seguir em Alta Complexidade para desenho do escopo considerando equipamento específico no projeto.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">Caso seja selecionado o Tipo de Monitoramento via PROBE, o fluxo deverá seguir em Alta Complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div><details class="source-row"><summary>Transcrição integral da linha 5</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">MIR - Pro</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Tipo Monitoramento</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Lista</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">ICMP/SNMP,PROBE</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Poderá selecionar apenas 1 Tipo de Monitoramento, e caso seja via PROBE, o fluxo deverá seguir em Alta complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">Caso seja selecionado o Tipo de Monitorameto via PROBE, o fluxo deverá seguir em Alta complexidade para desenho do escopo considerando equipamento específico no projeto.</div></div></details><div class="usec"><b>Regra de negócio:</b> Mesma regra do Smart, aplicada ao plano Pro: a escolha de PROBE muda a natureza da venda para um projeto de Alta Complexidade, com equipamento dedicado no cliente.</div></div></details></div></details></div></details><details class="u-fam"><summary><span class="ulvl uf">FAMÍLIA</span>VÍNCULO E CONDIÇÕES COMERCIAIS</summary><div class="ubody"><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Circuito relacionado<span class="uc-chip">1 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="a-l6" data-clabel="Número circuito relacionado (linha 6)"><summary>Número circuito relacionado<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Número</span><span class="uc-chip">Cardinalidade: campo aberto</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cd">dúvida</span><span class="uc-chip">linha 6</span></span></summary><div class="ubody"><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Deverá relacionar 1 circuito ativo ou identificador, nos casos de novas vendas de circuitos de dados (Internet Link, VPN Node, LAN to LAN, IP Trânsito) que estão no estágio de cotação e ainda não geraram número de circuito.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">Deverá trazer a matriz de circuitos ativos ou identificador criado para que consiga relacionar o novo circuito de MIR, nos casos de novas vendas de circuitos de dados (Internet Link, VPN Node, LAN to LAN, IP Trânsito) que estão no estágio de cotação e ainda não geraram número de circuito.</div></div><div class="usec"><b>Melhorias:</b> Hoje a precificação é feita via planner ou lego, mas o preço é tabelado por tipo de plano; avaliar melhorias e otimização deste processo.</div><div class="usec"><b>Mapear processo:</b> Hoje a precificação é feita via planner ou lego, mas o preço é tabelado por tipo de plano; avaliar melhorias e otimização deste processo.</div><details class="source-row"><summary>Transcrição integral da linha 6</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">Circuito relacionado</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Numero circuito relacionado</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Número</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Número</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Deverá relacionar 1 circuito ativo ou identificador (nos casos de novas vendas de circuitos de dados (INTERNET LINK, VPN NODE, LAN TO LAN, IP TRANSITO) que estão no estágio de cotaçao e ainda não geraram número de circuito)</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">campo aberto</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">Deverá trazer a matriz de circuitos ativos ou identificador criado  para que consiga relacionar o novo circuito de MIR (nos casos de novas vendas de circuitos de dados (INTERNET LINK, VPN NODE, LAN TO LAN, IP TRANSITO) que estão no estágio de cotaçao e ainda não geraram número de circuito)</div></div><div class="usec"><b>EVOLUÇÃO/CORREÇÃO DO SISTEMA/PROCESSO:</b><div style="white-space:pre-wrap">Hoje a precificaçao é feita via planner ou lego mas o preço é tabelado por tipo de plano, avaliar melhorias e otimização deste processo</div></div></details><div class="usec"><b>Regra de negócio:</b> O circuito relacionado ancora o MIR a um circuito de dados concreto. Quando o produto de dados já está ativo, informa-se o número do circuito; quando ainda está em cotação, aceita-se um identificador provisório. O processo de conciliação entre o identificador e o número definitivo, gerado após a ativação, não está descrito.</div><div class="usec uduv"><b>Dúvida — Como o identificador provisório do circuito é conciliado com o número definitivo?</b><br/><div style="line-height:1.65;margin:6px 0 12px">A regra de preenchimento aceita um identificador quando o produto de dados relacionado ainda está em cotação e não gerou número de circuito. Não há descrição de como e quando esse identificador é substituído pelo número de circuito definitivo, gerado após a ativação.</div><p style="font-weight:700;margin:10px 0 6px">O que precisamos definir:</p><ol style="padding-left:22px;margin:0 0 14px"><li style="line-height:1.65;margin:7px 0">Quem faz essa conciliação, e em que evento do ciclo de vida ela ocorre — na ativação do produto de dados, na do MIR, ou depois?</li><li style="line-height:1.65;margin:7px 0">O item de MIR fica bloqueado ou pendente até que a conciliação aconteça?</li></ol><div style="margin-top:10px"><b>Exemplo:</b> Uma cotação vende Internet Link e MIR juntos, na mesma proposta; nenhum dos dois ainda tem número de circuito no momento da configuração do MIR.</div></div></div></details></div></details><details class="u-grp"><summary><span class="ulvl ug">GRUPO</span>Regra de Negócio e Contrato<span class="uc-chip">2 atributo(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="a-l7" data-clabel="Receita Bruta Esperada (linha 7)"><summary>Receita Bruta Esperada<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Número</span><span class="uc-chip">Cardinalidade: 1 a N</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip cd">dúvida</span><span class="uc-chip">linha 7</span></span></summary><div class="ubody"><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Valores precificados via planner/lego; existe um valor de tabela do produto, porém é possível aplicar desconto de acordo com as alçadas permitidas.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">Informar a receita bruta esperada no projeto.</div></div><details class="source-row"><summary>Transcrição integral da linha 7</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">Regra de Negócio</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Receita Bruta Esperada</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Número</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Valor R$</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Valores precificados via planner/lego, existe um valor de tabela do produto porém é possível aplicar desconto de acordo com as alçadas permitidas.</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1 a N</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">INFORMAR RECEITA BRUTA ESPERADA NO PROJETO</div></div></details><div class="usec"><b>Regra de negócio:</b> O campo registra a receita bruta esperada do projeto. A descrição da regra fala de um valor de tabela sujeito a desconto por alçada — o mesmo padrão de precificação usado em outros produtos do catálogo —, mas aqui o atributo está marcado como Impacta Preço: Sim, o que pede confirmação (ver dúvida abaixo).</div><div class="usec uduv"><b>Dúvida — A Receita Bruta Esperada realmente determina o preço da cotação?</b><br/><div style="line-height:1.65;margin:6px 0 12px">O atributo está marcado como Impacta Preço: Sim, mas a regra de preenchimento descreve uma precificação via planner/lego com valor de tabela e desconto por alçada — o mesmo padrão usado em outros produtos do catálogo, onde esse tipo de campo costuma ser apenas uma estimativa comercial de pipeline, sem alterar o preço da cotação.</div><p style="font-weight:700;margin:10px 0 6px">O que precisamos definir:</p><ol style="padding-left:22px;margin:0 0 14px"><li style="line-height:1.65;margin:7px 0">Este valor é o que efetivamente define o preço cobrado do cliente, ou é uma estimativa que convive com uma tabela de preço à parte?</li><li style="line-height:1.65;margin:7px 0">Caso seja apenas uma estimativa, a marcação de Impacta Preço deve ser corrigida?</li></ol><div style="margin-top:10px"><b>Exemplo:</b> O consultor informa uma Receita Bruta Esperada de R$ 5.000 para o projeto; não está claro se esse é o valor faturado ou apenas uma referência de pipeline.</div></div></div></details><details class="u-attr" data-ckey="a-l8" data-clabel="Prazo Contratual (linha 8)"><summary>Prazo Contratual<span class="uchips"><span class="uc-chip cs">Obrigatório: SIM</span><span class="uc-chip">Lista</span><span class="uc-chip">Cardinalidade: 1</span><span class="uc-chip">Manual</span><span class="uc-chip cp">Impacta preço</span><span class="uc-chip">linha 8</span></span></summary><div class="ubody"><div class="usec"><b>Valores (5):</b><div class="upills"><span class="upill">12 meses</span><span class="upill">24 meses</span><span class="upill">36 meses</span><span class="upill">48 meses</span><span class="upill">60 meses</span></div></div><div class="usec"><b>Quem edita:</b> Consultor/Pré-Vendas/Backoffice</div><div class="usec"><b>Regra de preenchimento:</b> Selecionar o item da lista.</div><div class="usec"><b>Regras de configuração e validação:</b><div style="white-space:pre-wrap">Lista com as opções de prazos contratuais; utilizada para precificação e definição da fidelização aplicável; informação de Prazo Contratual vazia bloqueia o avanço com a mensagem "Favor preencher o 'Prazo Contratual' para poder prosseguir!".</div></div><details class="source-row"><summary>Transcrição integral da linha 8</summary><div class="usec"><b>PRODUTO PAI:</b><div style="white-space:pre-wrap">Monitoramento Inteligente de Rede</div></div><div class="usec"><b>CATEGORIA:</b><div style="white-space:pre-wrap">TIC</div></div><div class="usec"><b>TIPO (OBRIGATÓRIO/OPCIONAL):</b><div style="white-space:pre-wrap">Obrigatório</div></div><div class="usec"><b>COMPONENTES:</b><div style="white-space:pre-wrap">Regra de Contrato</div></div><div class="usec"><b>ATRIBUTOS:</b><div style="white-space:pre-wrap">Prazo Contratual</div></div><div class="usec"><b>SELEÇÃO DO ATRIBUTO:</b><div style="white-space:pre-wrap">Lista</div></div><div class="usec"><b>QUEM EDITA A INFORMAÇÃO?:</b><div style="white-space:pre-wrap">Consultor/Pre-Vendas/Backoffice</div></div><div class="usec"><b>ATRIBUTO DO ATRIBUTO:</b><div style="white-space:pre-wrap">12 meses; 24 meses; 36 meses;48 meses;60 meses;</div></div><div class="usec"><b>PREENCHIMENTO (MANUAL, AUTOMÁTICO):</b><div style="white-space:pre-wrap">Manual</div></div><div class="usec"><b>REGRAS DE PREENCHIMENTO:</b><div style="white-space:pre-wrap">Selecionar o item da lista</div></div><div class="usec"><b>CARDINALIDADE DO ATRIBUTO:</b><div style="white-space:pre-wrap">1</div></div><div class="usec"><b>CAPEX OU OPEX:</b><div style="white-space:pre-wrap">OPEX</div></div><div class="usec"><b>IMPACTA PREÇO:</b><div style="white-space:pre-wrap">Sim</div></div><div class="usec"><b>REGRAS DE CONFIGURAÇÃO/VALIDAÇÃO:</b><div style="white-space:pre-wrap">Lista com as opções de prazos contratuais; utilizado para precificação e definição da fidelização aplicável;  informação de Prazo Contratual vazia bloqueia o avanço com a mensagem "Favor preencher o 'Prazo Contratual' para poder prosseguir!";</div></div></details><div class="usec"><b>Regra de negócio:</b> O prazo contratual determina a fidelização aplicável ao contrato (ver regra geral 6, Fidelização) e participa da formação do preço. É de preenchimento obrigatório: sem ele, o sistema bloqueia o avanço da configuração.</div></div></details></div></details></div></details><details class="u-fam"><summary><span class="ulvl uf">TRANSVERSAL</span>Regras Gerais do Produto<span class="uc-chip">10 regra(s)</span></summary><div class="ubody"><details class="u-attr" data-ckey="rg-l1" data-clabel="Regra geral 1"><summary>Este produto deve ser um SVA dos produtos de dados: Internet Link, VPN Node, LAN to LAN…<span class="uchips"><span class="uc-chip">linha 1</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Este produto deve ser um SVA dos produtos de dados: Internet Link, VPN Node, LAN to LAN e IP Trânsito. Para o plano Pro, apenas é considerado dentro de Internet Link e VPN Node, não considera LAN to LAN e IP Trânsito.</div><div class="usec"><b>Regra de negócio:</b> O MIR nunca é vendido isoladamente: ele é sempre um serviço de valor agregado (SVA) de um produto de dados. O plano Pro restringe esse vínculo a Internet Link e VPN Node.</div></div></details><details class="u-attr" data-ckey="rg-l2" data-clabel="Regra geral 2"><summary>Possibilita alteração entre planos MIR SMART &gt; MIR PRO e vice-versa.<span class="uchips"><span class="uc-chip">linha 2</span><span class="uc-chip cd">dúvida</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Possibilita alteração entre planos MIR SMART &gt; MIR PRO e vice-versa.</div><div class="usec"><b>Regra de negócio:</b> O cliente pode migrar entre os planos Smart e Pro nos dois sentidos. A regra não trata o caso em que o produto relacionado do plano de origem não é elegível no plano de destino (ver dúvida abaixo).</div><div class="usec uduv"><b>Dúvida — Como tratar a migração de Smart para Pro quando o produto relacionado é LAN to LAN ou IP Trânsito?</b><br/><div style="line-height:1.65;margin:6px 0 12px">A regra geral permite migrar entre os planos Smart e Pro nos dois sentidos, mas o Pro só aceita Internet Link e VPN Node como produto relacionado (regra geral 5, Exceção). Não há definição de como a migração se comporta quando o Smart está vinculado a um circuito de LAN to LAN ou IP Trânsito.</div><p style="font-weight:700;margin:10px 0 6px">O que precisamos definir:</p><ol style="padding-left:22px;margin:0 0 14px"><li style="line-height:1.65;margin:7px 0">A migração para o Pro é bloqueada nesses casos, ou passa a exigir também a troca do produto relacionado?</li><li style="line-height:1.65;margin:7px 0">Como esse impedimento é comunicado ao consultor durante a solicitação de migração?</li></ol><div style="margin-top:10px"><b>Exemplo:</b> Um cliente com MIR Smart vinculado a um IP Trânsito solicita a migração para o plano Pro; não está definido o comportamento do sistema.</div></div></div></details><details class="u-attr" data-ckey="rg-l3" data-clabel="Regra geral 3"><summary>Se cancelar o circuito de dados relacionado, o circuito deverá ser cancelado automaticam…<span class="uchips"><span class="uc-chip">linha 3</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Se cancelar o circuito de dados relacionado, o circuito deverá ser cancelado automaticamente.</div><div class="usec"><b>Regra de negócio:</b> O cancelamento do MIR é derivado: ele não é solicitado à parte, mas segue automaticamente o cancelamento do produto de dados ao qual está vinculado.</div></div></details><details class="u-attr" data-ckey="rg-l4" data-clabel="Regra geral 4"><summary>Gera OS de ativação, e somente quando ativa o circuito de dados, o circuito de MIR pode…<span class="uchips"><span class="uc-chip">linha 4</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Gera OS de ativação, e somente quando ativa o circuito de dados, o circuito de MIR pode ser ativado.</div><div class="usec"><b>Regra de negócio:</b> A ativação do MIR depende da conclusão da ativação do produto de dados relacionado; a OS de ativação do MIR só se completa depois dessa condição.</div></div></details><details class="u-attr" data-ckey="rg-l5" data-clabel="Regra geral 5"><summary>MIR Pro não é válido para LAN TO LAN e IP TRANSITO.<span class="uchips"><span class="uc-chip">linha 5</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>MIR Pro não é válido para LAN TO LAN e IP TRANSITO.</div><div class="usec"><b>Regra de negócio:</b> Restrição de elegibilidade do plano Pro, já refletida no atributo Produto Relacionado (linha 4): apenas Internet Link e VPN Node são aceitos nesse plano.</div></div></details><details class="u-attr" data-ckey="rg-l6" data-clabel="Regra geral 6"><summary>Fidelização obrigatória e do tipo Contratual (prazo e fórmula da multa vêm do contrato —…<span class="uchips"><span class="uc-chip">linha 6</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Fidelização obrigatória e do tipo Contratual (prazo e fórmula da multa vêm do contrato — 12/24/36/48/60 meses comuns em B2B). A regra elege uma única por venda.</div><div class="usec"><b>Regra de negócio:</b> A fidelização acompanha o Prazo Contratual escolhido (linha 8) e é sempre obrigatória; apenas uma condição de fidelização é aplicada por venda.</div></div></details><details class="u-attr" data-ckey="rg-l7" data-clabel="Regra geral 7"><summary>O MIR não tem charges próprias. A Taxa de Instalação B2B incide sobre a linha do sub-pro…<span class="uchips"><span class="uc-chip">linha 7</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>O MIR não tem charges próprias. A Taxa de Instalação B2B incide sobre a linha do sub-produto relacionado (Internet Link, IP Trânsito, VPN Node, LAN to LAN Node), não sobre o MIR.</div><div class="usec"><b>Regra de negócio:</b> O MIR não gera cobrança de instalação por si só; essa taxa é sempre lançada no produto de dados ao qual ele está vinculado.</div></div></details><details class="u-attr" data-ckey="rg-l8" data-clabel="Regra geral 8"><summary>Na seleção de Tipo de Monitoramento via "PROBE", deve seguir Alta Complexidade para dese…<span class="uchips"><span class="uc-chip">linha 8</span><span class="uc-chip cd">dúvida</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Na seleção de Tipo de Monitoramento via "PROBE", deve seguir Alta Complexidade para desenho da solução considerando um equipamento específico, não estocável.</div><div class="usec"><b>Regra de negócio:</b> A escolha de PROBE (linhas 3 e 5) tira a venda do fluxo padrão e a direciona para um projeto de Alta Complexidade, pelo uso de equipamento dedicado e não estocável.</div><div class="usec uduv"><b>Dúvida — Qual o alcance do projeto de Alta Complexidade quando o Tipo de Monitoramento é PROBE?</b><br/><div style="line-height:1.65;margin:6px 0 12px">A regra determina que a venda siga para Alta Complexidade quando o Tipo de Monitoramento é PROBE, por depender de um equipamento específico e não estocável. O desenho da solução, o processo de projeto especial associado e se a regra vale igualmente para os planos Smart e Pro não estão descritos.</div><p style="font-weight:700;margin:10px 0 6px">O que precisamos definir:</p><ol style="padding-left:22px;margin:0 0 14px"><li style="line-height:1.65;margin:7px 0">Que equipamento é esse, e qual o processo de projeto especial que passa a reger a venda?</li><li style="line-height:1.65;margin:7px 0">A regra de Alta Complexidade se aplica da mesma forma nos planos Smart e Pro?</li></ol><div style="margin-top:10px"><b>Exemplo:</b> Um consultor seleciona PROBE no plano Pro; não está definido se o processo de projeto especial é o mesmo usado para o Smart.</div></div></div></details><details class="u-attr" data-ckey="rg-l9" data-clabel="Regra geral 9"><summary>Existem hoje muitas regras de automação e integração com sistemas internos, Zabbix, NAVA…<span class="uchips"><span class="uc-chip">linha 9</span><span class="uc-chip cd">dúvida</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Existem hoje muitas regras de automação e integração com sistemas internos, Zabbix, NAVA que precisa ser olhada a arquitetura atual e replicar para Sales Force. Essas regras devem ser mapeadas para realizar o DE/PARA.</div><div class="usec"><b>Regra de negócio:</b> A operação do MIR depende de integrações hoje existentes com Zabbix e NAVA; essas regras ainda precisam ser mapeadas (DE/PARA) para a arquitetura do novo CRM B2B em Salesforce.</div><div class="usec uduv"><b>Dúvida — Como as integrações com Zabbix e NAVA devem ser mapeadas para o Salesforce?</b><br/><div style="line-height:1.65;margin:6px 0 12px">A regra reconhece que existem hoje muitas regras de automação e integração com sistemas internos (Zabbix, NAVA) que ainda precisam ser mapeadas (DE/PARA) para a arquitetura do Salesforce.</div><p style="font-weight:700;margin:10px 0 6px">O que precisamos definir:</p><ol style="padding-left:22px;margin:0 0 14px"><li style="line-height:1.65;margin:7px 0">Quem conduz esse mapeamento DE/PARA, e em que fase do projeto ele é feito?</li><li style="line-height:1.65;margin:7px 0">Enquanto o mapeamento não é concluído, a ativação do MIR depende de algum processo manual?</li></ol><div style="margin-top:10px"><b>Exemplo:</b> Um circuito de MIR é vendido e ativado, mas a integração que deveria criar o monitoramento no Zabbix ainda não está mapeada para o Salesforce.</div></div></div></details><details class="u-attr" data-ckey="rg-l10" data-clabel="Regra geral 10"><summary>Para cada plano existe um template de criação na Zabbix para ativação de acordo com o pl…<span class="uchips"><span class="uc-chip">linha 10</span></span></summary><div class="ubody"><div class="usec"><b>Transcrição integral:</b><br/>Para cada plano existe um template de criação na Zabbix para ativação de acordo com o plano escolhido.</div><div class="usec"><b>Regra de negócio:</b> Cada plano (Smart ou Pro) tem um template próprio de provisionamento no Zabbix, usado na ativação do monitoramento.</div></div></details></div></details></div></details></div>
+</section>
+<section id="s2"><div class="sh"><div class="num">02</div><h2>Atores</h2></div>
+<table><thead><tr><th>Ator</th><th>Papel no caso de uso</th></tr></thead><tbody>
+<tr><td>Consultor/Pré-Vendas/Backoffice</td><td>Seleciona o plano, o produto relacionado e o tipo de monitoramento, informa o circuito relacionado, a receita bruta esperada e o prazo contratual; é o editor de todos os 7 atributos do catálogo.</td></tr><tr><td>Produto de dados relacionado (Internet Link, VPN Node, LAN to LAN ou IP Trânsito)</td><td>Origina o vínculo obrigatório do MIR como SVA; sua ativação libera a ativação do MIR, e seu cancelamento cancela o MIR automaticamente.</td></tr><tr><td>Plataforma de monitoramento (Zabbix / NAVA)</td><td>Recebe o provisionamento do template de monitoramento conforme o plano e o tipo escolhidos; as regras de automação e integração ainda não estão mapeadas para o Salesforce.</td></tr>
+</tbody></table></section>
+<section id="s3"><div class="sh"><div class="num">03</div><h2>Gatilho</h2></div>
+<div class="call strong"><div class="cl">Gatilho</div><p>O consultor com permissão de venda adiciona o produto Monitoramento Inteligente de Rede (MIR) à proposta comercial, vinculado a um produto de dados elegível já presente na cotação ou já ativo do cliente.</p></div></section>
+<section id="s4"><div class="sh"><div class="num">04</div><h2>Fluxo único — escolhas, efeitos e falhas</h2></div>
+<table><thead><tr><th>Passo</th><th>Ação — escolha e efeito</th></tr></thead><tbody>
+<tr><td class="mono">1</td><td>O consultor identifica, na proposta, o produto de dados ao qual o MIR será vinculado — Internet Link, VPN Node, LAN to LAN ou IP Trânsito —, já que o MIR é sempre um SVA de um desses produtos e não é comercializado isoladamente.</td></tr><tr><td class="mono">1 ✕ Sem produto de dados elegível</td><td>Sem um produto de dados relacionado, já contratado ou presente na mesma cotação, o MIR não pode ser configurado.</td></tr><tr><td class="mono">2</td><td>O consultor seleciona o plano do MIR — Smart ou Pro.</td></tr><tr><td class="mono">2 · Restrição do plano Pro</td><td>O plano Pro só é oferecido para Internet Link e VPN Node; LAN to LAN e IP Trânsito não são elegíveis no Pro.</td></tr><tr><td class="mono">2 ✕ Produto de dados incompatível com o Pro</td><td>Se o produto de dados relacionado for LAN to LAN ou IP Trânsito, o sistema não apresenta o plano Pro como opção.</td></tr><tr><td class="mono">3</td><td>Conforme o plano escolhido, o consultor seleciona o Produto Relacionado na lista do próprio plano — Internet Link, VPN Node, LAN to LAN ou IP Trânsito no Smart; Internet Link ou VPN Node no Pro. A cardinalidade 1 admite um único produto relacionado por item.</td></tr><tr><td class="mono">4</td><td>O consultor seleciona o Tipo de Monitoramento do plano escolhido — ICMP/SNMP ou PROBE.</td></tr><tr><td class="mono">4 · Monitoramento via PROBE</td><td>A escolha de PROBE direciona a venda para Alta Complexidade, para desenho do escopo considerando um equipamento específico e não estocável — caso de uso estendido "Desenhar projeto especial de PROBE".</td></tr><tr><td class="mono">5</td><td>O consultor informa o Número do circuito relacionado — o circuito ativo do produto de dados ou, quando esse produto ainda está em cotação e não gerou número de circuito, um identificador provisório.</td></tr><tr><td class="mono">5 ✕ Sem circuito relacionado</td><td>Sem um circuito ativo ou um identificador informado, o item de MIR não pode ser concluído.</td></tr><tr><td class="mono">6</td><td>O consultor informa a Receita Bruta Esperada do projeto.</td></tr><tr><td class="mono">7</td><td>O consultor seleciona o Prazo Contratual — 12, 24, 36, 48 ou 60 meses.</td></tr><tr><td class="mono">7 ✕ Prazo não informado</td><td>O sistema bloqueia o avanço com a mensagem "Favor preencher o 'Prazo Contratual' para poder prosseguir!". O fluxo permanece no passo 7.</td></tr><tr><td class="mono">8</td><td>O prazo contratual escolhido define a fidelização aplicável; a fidelização é obrigatória, do tipo contratual, e apenas uma condição de fidelização é aplicada por venda.</td></tr><tr><td class="mono">9</td><td>O sistema confere a configuração completa antes de concluir: produto de dados elegível vinculado; plano compatível com esse produto; tipo de monitoramento definido; circuito relacionado informado; prazo contratual preenchido.</td></tr><tr><td class="mono">9 ✕ Pendências</td><td>Se qualquer verificação falhar, o sistema apresenta a lista de pendências, indicando o passo de origem; o consultor corrige e o fluxo retorna ao passo correspondente.</td></tr><tr><td class="mono">10</td><td>O consultor revisa o resumo do item — plano, produto relacionado, tipo de monitoramento, circuito, receita bruta esperada e prazo contratual — e confirma.</td></tr><tr><td class="mono">10 ✕ Descarta</td><td>Caso o consultor descarte a configuração antes de confirmar, o sistema a abandona sem gravar o item, e a proposta permanece exatamente como estava antes do início.</td></tr><tr><td class="mono">11</td><td>O sistema grava o item na proposta comercial e dispara a geração da OS de ativação do MIR; essa ativação só se completa depois de concluída a ativação do produto de dados relacionado.</td></tr><tr><td class="mono">12</td><td>Conforme o plano e o tipo de monitoramento escolhidos, o sistema aciona o provisionamento do template de configuração correspondente na plataforma de monitoramento — caso de uso incluído "Provisionar template no Zabbix".</td></tr><tr><td class="mono">13</td><td>Após a venda, o cliente pode solicitar a migração entre os planos Smart e Pro — caso de uso estendido "Migrar entre planos Smart e Pro".</td></tr><tr><td class="mono">13 ✕ Migração incompatível</td><td>Se o produto relacionado do MIR Smart for LAN to LAN ou IP Trânsito, a migração para o Pro não é elegível, já que o Pro não aceita esses produtos.</td></tr><tr><td class="mono">14</td><td>Se o produto de dados relacionado for cancelado, o circuito de MIR é cancelado automaticamente, encerrando o item sem necessidade de solicitação separada.</td></tr>
+</tbody></table></section>
+<footer><span>MIR — Configurar Monitoramento Inteligente de Rede na proposta comercial</span><span>Confidencial — Uso Interno</span></footer>
+</div>
+<style>.uol{margin:4px 0 0;padding-left:18px}.uol li{margin:3px 0}</style>
+<script>
+(function(){var a=function(o){document.querySelectorAll('.utree details').forEach(function(d){d.open=o;});};
+document.getElementById('uExp').onclick=function(){a(true)};
+document.getElementById('uCol').onclick=function(){a(false);document.querySelector('.u-root').open=true;};
+window.addEventListener('beforeprint',function(){a(true)});
+
+// ================= comentários persistentes =================
+var all=function(sel){return Array.prototype.slice.call(document.querySelectorAll(sel));};
+var API='https://i9-mcp-da48589780b2.herokuapp.com';
+var LSK='ucmir-comentarios-r1';
+function lsGet(){try{return JSON.parse(localStorage.getItem(LSK)||'{}')}catch(e){return{}}}
+function lsSet(m){try{localStorage.setItem(LSK,JSON.stringify(m))}catch(e){}}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)}
+function mkBox(key,label,mount,inline){
+ var b=document.createElement('button');b.type='button';b.className='cbtn';b.textContent='Comentar';
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ var saved=lsGet()[key];if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='Comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  box.classList.toggle('show');if(box.classList.contains('show'))box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'Comentário':'Comentar';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
+ if(inline){mount.appendChild(b);}else{mount.insertBefore(box,mount.firstChild);mount.insertBefore(b,box);}
+ return box;
+}
+// nós da modelagem — botão visível no próprio título
+all('[data-ckey]').forEach(function(d){
+ var body=d.querySelector(':scope > .ubody');
+ var sum=d.querySelector(':scope > summary');
+ if(!body||!sum)return;
+ var key=d.dataset.ckey,label=d.dataset.clabel||key;
+ var b=document.createElement('button');b.type='button';b.className='cbtn insum';b.textContent='＋ comentário';
+ sum.appendChild(b);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ body.insertBefore(box,body.firstChild);
+ var saved=lsGet()[key];
+ if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='✎ comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  d.open=true;box.classList.add('show');box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'✎ comentário':'＋ comentário';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
+});
+// linhas do fluxo único (seção 04)
+var s4=document.getElementById('s4');
+if(s4){all('#s4 tbody tr').forEach(function(tr){
+ var tds=tr.querySelectorAll('td');if(tds.length<2)return;
+ var passo=tds[0].textContent.trim();var key='fp-'+slug(passo);var label='Passo '+passo;
+ var b=document.createElement('button');b.type='button';b.className='cbtn';b.textContent='Comentar';
+ tds[1].appendChild(b);
+ var row=document.createElement('tr');var cell=document.createElement('td');
+ cell.colSpan=2;cell.className='crow';row.appendChild(cell);row.style.display='none';
+ tr.parentNode.insertBefore(row,tr.nextSibling);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;cell.appendChild(box);
+ var saved=lsGet()[key];if(saved){box.textContent=saved;box.classList.add('show');row.style.display='';b.classList.add('on');b.textContent='Comentário';}
+ b.addEventListener('click',function(){var on=row.style.display==='none';row.style.display=on?'':'none';
+  box.classList.add('show');if(on)box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'Comentário':'Comentar';});
+});}
+// dúvidas e pendências (blocos .usec.uduv)
+all('.usec.uduv').forEach(function(div,idx){
+ var b0=div.querySelector('b');
+ var label=b0?b0.textContent.trim():div.textContent.trim().slice(0,60);
+ var key='duv-'+slug(label)+'-'+idx;
+ var b=document.createElement('button');b.type='button';b.className='cbtn';b.textContent='＋ comentário';
+ div.appendChild(b);
+ var box=document.createElement('div');box.className='cbox';box.contentEditable='true';
+ box.dataset.ckey=key;box.dataset.clabel=label;
+ div.appendChild(box);
+ var saved=lsGet()[key];
+ if(saved){box.textContent=saved;box.classList.add('show');b.classList.add('on');b.textContent='✎ comentário';}
+ b.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+  box.classList.toggle('show');if(box.classList.contains('show'))box.focus();});
+ box.addEventListener('input',function(){var m=lsGet();var t=box.textContent.trim();
+  if(t)m[key]=t;else delete m[key];lsSet(m);
+  b.classList.toggle('on',!!t);b.textContent=t?'✎ comentário':'＋ comentário';});
+ box.addEventListener('click',function(ev){ev.stopPropagation();});
+});
+// labels p/ export
+var LBL={};all('.cbox').forEach(function(bx){LBL[bx.dataset.ckey]=bx.dataset.clabel;});
+function coletar(){var m=lsGet(),out={};Object.keys(m).forEach(function(k){out[k]={item:LBL[k]||k,comentario:m[k]};});return out;}
+// toolbar
+var bar=document.createElement('div');bar.className='cbar';
+bar.innerHTML='<button id="cSave">Salvar comentários no i9</button><button id="cReload" class="sec">Atualizar documento</button>'+
+ '<button id="cTxt" class="sec">Exportar .txt</button>'+
+ '<button id="cHtml" class="sec">Baixar HTML comentado</button>'+
+ '<span class="cstat" id="cStat"></span>';
+document.body.appendChild(bar);
+function stat(t){document.getElementById('cStat').textContent=t;}
+document.getElementById('cTxt').onclick=function(){
+ var c=coletar(),lines=['Comentários — UC-MIR-001 · '+new Date().toLocaleString('pt-BR'),''];
+ Object.keys(c).forEach(function(k){lines.push('['+c[k].item+']');lines.push(c[k].comentario);lines.push('');});
+ var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join(String.fromCharCode(10))],{type:'text/plain'}));
+ a.download='comentarios-uc-mir-r1.txt';a.click();};
+document.getElementById('cHtml').onclick=function(){
+ all('.cbox').forEach(function(bx){var t=bx.textContent.trim();if(t){bx.classList.add('show');
+  var tr2=bx.closest('tr');if(tr2)tr2.style.display='';}});
+ var a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob(['<!DOCTYPE html>'+document.documentElement.outerHTML],{type:'text/html'}));
+ a.download='UC-MIR-001-comentado.html';a.click();};
+document.getElementById('cReload').onclick=function(){var u=location.href.split('#')[0].split('?')[0];location.replace(u+'?v='+Date.now());};
+document.getElementById('cSave').onclick=function(){
+ var c=coletar();
+ if(!Object.keys(c).length){stat('Nenhum comentário para salvar.');return;}
+ stat('Gravando…');
+ fetch(API+'/api/uc/UC-MIR-001/comentarios',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({rodada:1,comentarios:c})})
+ .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});})
+ .then(function(j){stat('Salvo ('+j.total+' comentário(s), rodada '+j.rodada+').');
+  var p=window.__UC_APLICAR__?window.__UC_APLICAR__():Promise.resolve();
+  Promise.resolve(p).then(function(){if(window.__UC_POS_SALVAR__)window.__UC_POS_SALVAR__();});})
+ .catch(function(e){stat('Falhou ('+e.message+'). Use Exportar .txt.');});
+};
+})();
+</script>
+<script>window.__UC__={docId:"UC-MIR-001",fileBase:"UC-MIR-001-mir",rodada:1};</script>
+</body></html>
