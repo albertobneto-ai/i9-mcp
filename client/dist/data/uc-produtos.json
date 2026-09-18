@@ -68,6 +68,11 @@
    "produto": "Anti-DDoS",
    "familia": "Segurança",
    "pagina": "uc-anti-ddos-v2.html"
+  },
+  {
+   "produto": "Endpoint",
+   "familia": "TIC TI",
+   "pagina": "uc-endpoint.html"
   }
  ],
  "transversais": [
