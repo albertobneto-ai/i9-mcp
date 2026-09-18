@@ -19,7 +19,7 @@ export const UC_DOCS = {
   'UC-WAVELENGTH-001': { titulo: 'Wavelength', pagina: 'uc-wavelength.html' },
   'UC-SDW-001': { titulo: 'SD-WAN', pagina: 'uc-sd-wan.html' },
   'UC-HOS-001': { titulo: 'Hospedagem Dedicada', pagina: 'uc-hospedagem-dedicada.html' },
-  'UC-MIR-001': { titulo: 'Monitoramento Inteligente de Rede', pagina: 'uc-monitoramento-inteligente-de-rede-mir.html' },
+  'UC-MIR-001': { titulo: 'Monitoramento Inteligente de Rede', pagina: 'uc-monitoramento-inteligente-de-rede-mir-v2.html' },
   'UC-ANTIDDOS-001': { titulo: 'Anti-DDoS', pagina: 'uc-anti-ddos-v2.html' },
 };
 
