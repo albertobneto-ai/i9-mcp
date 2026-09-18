@@ -21,6 +21,7 @@ export const UC_DOCS = {
   'UC-HOS-001': { titulo: 'Hospedagem Dedicada', pagina: 'uc-hospedagem-dedicada.html' },
   'UC-MIR-001': { titulo: 'Monitoramento Inteligente de Rede', pagina: 'uc-monitoramento-inteligente-de-rede-mir-v2.html' },
   'UC-ANTIDDOS-001': { titulo: 'Anti-DDoS', pagina: 'uc-anti-ddos-v2.html' },
+  'UC-ENDPOINT-001': { titulo: 'Endpoint', pagina: 'uc-endpoint.html' },
 };
 
 const MAX_ITENS = 400;
